@@ -1,0 +1,11 @@
+variables:
+  APP_NAME: "th2-infra-operator"
+  MAJOR_VERSION: "7"
+  MINOR_VERSION: "0"
+  MAINTENANCE_VERSION: '3'
+  DOCKER_PUBLISH_ENABLED: 'true'
+
+include:
+  - project: 'vivarium/th2/pipelines'
+    ref: master
+    file: '/.gitlab-ci-java.yml'
