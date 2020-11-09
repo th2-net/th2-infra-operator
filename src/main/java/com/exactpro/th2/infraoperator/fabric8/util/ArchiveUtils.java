@@ -20,9 +20,8 @@ import java.util.zip.GZIPOutputStream;
 
 public final class ArchiveUtils {
 
-    private static final GzipBase64StringEncoder GZIP_BASE_64_STRING_ENCODER = new GzipBase64StringEncoder();
-
-    private static final GzipBase64StringDecoder GZIP_BASE_64_STRING_DECODER = new GzipBase64StringDecoder();
+    private static final GZIPBase64Encoder ENCODER = new GZIPBase64Encoder();
+    private static final GZIPBase64Decoder DECODER = new GZIPBase64Decoder();
 
 
     private ArchiveUtils() {
@@ -30,24 +29,24 @@ public final class ArchiveUtils {
     }
 
 
-    public static GzipBase64StringEncoder getGzipBase64StringEncoder() {
-        return GZIP_BASE_64_STRING_ENCODER;
-    }
-
-    public static GzipBase64StringDecoder getGzipBase64StringDecoder() {
-        return GZIP_BASE_64_STRING_DECODER;
+    public static GZIPBase64Encoder getGZIPBase64Encoder() {
+        return ENCODER;
     }
 
 
-    public static class GzipBase64StringEncoder {
+    public static GZIPBase64Decoder getGZIPBase64Decoder() {
+        return DECODER;
+    }
 
-        private GzipBase64StringEncoder() {
+
+    public static class GZIPBase64Encoder {
+
+        private GZIPBase64Encoder() {
         }
 
-        public byte[] encode(String value) throws IOException {
+        public byte[] encodeString(String value) throws IOException {
 
             var baos = new ByteArrayOutputStream();
-
             var gziposs = new GZIPOutputStream(baos);
 
             try (baos; gziposs) {
@@ -55,32 +54,27 @@ public final class ArchiveUtils {
                 gziposs.finish();
                 return Base64.getEncoder().encode(baos.toByteArray());
             }
-
         }
-
     }
 
-    public static class GzipBase64StringDecoder {
 
-        private GzipBase64StringDecoder() {
+    public static class GZIPBase64Decoder {
+
+        private GZIPBase64Decoder() {
         }
 
-        public byte[] decode(String value) throws IOException {
+        public byte[] decodeString(String value) throws IOException {
 
-            var decodedValue = Base64.getDecoder().decode(value.strip());
+            byte[] decodedValue = Base64.getDecoder().decode(value.strip());
 
             var bais = new ByteArrayInputStream(decodedValue);
-
             var gzipis = new GZIPInputStream(bais);
-
             var buffGzis = new BufferedInputStream(gzipis);
 
             try (bais; gzipis; buffGzis) {
                 return buffGzis.readAllBytes();
             }
-
         }
-
     }
 
 }

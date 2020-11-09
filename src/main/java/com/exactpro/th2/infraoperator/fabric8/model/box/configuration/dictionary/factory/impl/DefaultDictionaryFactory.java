@@ -52,7 +52,7 @@ public class DefaultDictionaryFactory implements DictionaryFactory {
                 var dicName = dic.getName();
                 var dicType = dic.getType();
                 var data = resourceFinder.getResource(dicName, ExtractUtils.extractNamespace(resource)).getSpec().getData();
-                var encodedData = new String(ArchiveUtils.getGzipBase64StringEncoder().encode(data));
+                var encodedData = new String(ArchiveUtils.getGZIPBase64Encoder().encodeString(data));
                 dictionaries.add(RawDictionary.builder().name(dicName).type(dicType).data(encodedData).build());
             }
         }
