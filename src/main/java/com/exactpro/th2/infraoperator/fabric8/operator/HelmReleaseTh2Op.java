@@ -31,13 +31,14 @@ import com.exactpro.th2.infraoperator.fabric8.spec.link.relation.boxes.bunch.imp
 import com.exactpro.th2.infraoperator.fabric8.spec.link.relation.boxes.bunch.impl.MqLinkBunch;
 import com.exactpro.th2.infraoperator.fabric8.spec.link.relation.dictionaries.bunch.DictionaryLinkBunch;
 import com.exactpro.th2.infraoperator.fabric8.spec.link.singleton.LinkSingleton;
+import com.exactpro.th2.infraoperator.fabric8.spec.shared.DirectionAttribute;
 import com.exactpro.th2.infraoperator.fabric8.spec.shared.PinSpec;
 import com.exactpro.th2.infraoperator.fabric8.spec.strategy.linkResolver.dictionary.DictionaryLinkResolver;
 import com.exactpro.th2.infraoperator.fabric8.spec.strategy.linkResolver.grpc.GrpcLinkResolver;
 import com.exactpro.th2.infraoperator.fabric8.spec.strategy.linkResolver.mq.QueueLinkResolver;
 import com.exactpro.th2.infraoperator.fabric8.spec.strategy.linkResolver.mq.impl.DeclareQueueResolver;
 import com.exactpro.th2.infraoperator.fabric8.spec.strategy.resFinder.box.BoxResourceFinder;
-import com.exactpro.th2.infraoperator.fabric8.spec.shared.DirectionAttribute;
+import com.exactpro.th2.infraoperator.fabric8.util.CustomResourceUtils;
 import io.fabric8.kubernetes.api.model.apiextensions.CustomResourceDefinition;
 import io.fabric8.kubernetes.client.Watch;
 import io.fabric8.kubernetes.client.Watcher;
@@ -363,7 +364,7 @@ public abstract class HelmReleaseTh2Op<CR extends Th2CustomResource> extends Abs
         var helmReleases = getAllHelmReleases(namespace);
 
         for (var res : linkedResources) {
-            debug("Linked resource: {}", res);
+            logger.debug("Linked resource: {}", CustomResourceUtils.annotationFor(res));
 
             var resourceName = extractName(res);
 
@@ -373,7 +374,7 @@ public abstract class HelmReleaseTh2Op<CR extends Th2CustomResource> extends Abs
                 continue;
             } else {
                 logger.info("Found helm release of '{}.{}' resource", namespace, resourceName);
-                debug("Founded helm release: {}", hr);
+                logger.debug("Found HelmRelease \"{}\"", CustomResourceUtils.annotationFor(hr));
             }
 
             var hrMqConfig = extractHelmReleaseMqConfig(hr);
@@ -394,9 +395,8 @@ public abstract class HelmReleaseTh2Op<CR extends Th2CustomResource> extends Abs
                         GRPC_CONFIG_ALIAS, newResRawGrpcConfig
                 ));
 
-                debug("Updated helm release: {}", hr);
-
                 createKubObj(extractNamespace(hr), hr);
+                logger.debug("Updated HelmRelease \"{}\"", CustomResourceUtils.annotationFor(hr));
 
             } else {
                 logger.info("Resource '{}.{}' doesn't need updating", namespace, resourceName);

@@ -23,7 +23,6 @@ import com.exactpro.th2.infraoperator.fabric8.model.kubernetes.client.ipml.Dicti
 import com.exactpro.th2.infraoperator.fabric8.model.kubernetes.client.ipml.LinkClient;
 import com.exactpro.th2.infraoperator.fabric8.operator.HelmReleaseTh2Op;
 import com.exactpro.th2.infraoperator.fabric8.operator.context.HelmOperatorContext;
-import com.exactpro.th2.infraoperator.fabric8.operator.manager.HelmWatchManager;
 import com.exactpro.th2.infraoperator.fabric8.spec.Th2CustomResource;
 import com.exactpro.th2.infraoperator.fabric8.spec.dictionary.Th2Dictionary;
 import com.exactpro.th2.infraoperator.fabric8.spec.link.Th2Link;
@@ -41,6 +40,8 @@ import com.exactpro.th2.infraoperator.fabric8.spec.strategy.resFinder.box.impl.S
 import com.exactpro.th2.infraoperator.fabric8.spec.strategy.resFinder.dictionary.DictionaryResourceFinder;
 import com.exactpro.th2.infraoperator.fabric8.spec.strategy.resFinder.dictionary.impl.DefaultDictionaryResourceFinder;
 import com.exactpro.th2.infraoperator.fabric8.spec.strategy.resFinder.dictionary.impl.EmptyDictionaryResourceFinder;
+import com.exactpro.th2.infraoperator.fabric8.util.CustomResourceUtils;
+import com.exactpro.th2.infraoperator.fabric8.util.Strings;
 import com.fasterxml.uuid.Generators;
 import io.fabric8.kubernetes.api.model.ConfigMap;
 import io.fabric8.kubernetes.client.KubernetesClient;
@@ -60,14 +61,12 @@ import java.util.stream.Collectors;
 import static com.exactpro.th2.infraoperator.fabric8.configuration.OperatorConfig.MQ_CONFIG_MAP_NAME;
 import static com.exactpro.th2.infraoperator.fabric8.configuration.OperatorConfig.MqWorkSpaceConfig.CONFIG_MAP_RABBITMQ_PROP_NAME;
 import static com.exactpro.th2.infraoperator.fabric8.operator.AbstractTh2Operator.REFRESH_TOKEN_ALIAS;
-import static com.exactpro.th2.infraoperator.fabric8.util.CustomResourceUtils.watchFor;
 import static com.exactpro.th2.infraoperator.fabric8.util.ExtractUtils.extractName;
 import static com.exactpro.th2.infraoperator.fabric8.util.ExtractUtils.extractNamespace;
 import static com.exactpro.th2.infraoperator.fabric8.util.JsonUtils.JSON_READER;
-import static io.sundr.codegen.utils.StringUtils.isNullOrEmpty;
 
 
-public class DefaultWatchManager implements HelmWatchManager {
+public class DefaultWatchManager {
 
     private static final Logger logger = LoggerFactory.getLogger(DefaultWatchManager.class);
 
@@ -80,11 +79,9 @@ public class DefaultWatchManager implements HelmWatchManager {
 
     private final DictionaryClient dictionaryClient;
 
-    private final List<Watch> watches = new ArrayList<>();
+    private final Set<Watch> watches = new HashSet<>();
 
     private final List<ResourceClient<Th2CustomResource>> resourceClients = new ArrayList<>();
-
-    private final List<HelmReleaseTh2Op<Th2CustomResource>> helmWatchers = new ArrayList<>();
 
     private final List<Supplier<HelmReleaseTh2Op<Th2CustomResource>>> helmWatchersCommands = new ArrayList<>();
 
@@ -96,7 +93,6 @@ public class DefaultWatchManager implements HelmWatchManager {
     }
 
 
-    @Override
     public void startWatching() {
         logger.info("Starting watching all resources...");
 
@@ -109,33 +105,32 @@ public class DefaultWatchManager implements HelmWatchManager {
         logger.info("All resources are watched");
     }
 
-    @Override
-    public void resetWatching() {
-        logger.info("Restarting all resource watchers...");
-
-        stopWatching();
-        startWatching();
-
-        logger.info("All resource watchers have been restarted");
-    }
-
-    @Override
     public void stopWatching() {
         logger.info("Stopping all resource watchers...");
 
         watches.forEach(Watch::close);
-
         isWatching = false;
 
         logger.info("All resource watchers have been stopped");
     }
 
-    @Override
+    private void addWatch(Watch watch) {
+        watches.add(watch);
+    }
+
+
+    private void removeWatch(Watch watch) {
+        if (watches.contains(watch))
+            watches.remove(watch);
+        else
+            throw  new IllegalArgumentException("Watch to update was not found in the set");
+    }
+
+
     public boolean isWatching() {
         return isWatching;
     }
 
-    @Override
     public <T extends Th2CustomResource> void addTarget(Function<HelmOperatorContext.Builder<?, ?>, HelmReleaseTh2Op<T>> operator) {
 
         helmWatchersCommands.add(() -> {
@@ -254,21 +249,17 @@ public class DefaultWatchManager implements HelmWatchManager {
 
     private void start() {
 
-        watches.add(watchFor(linkClient, new LinkWatcher()));
+        addWatch(CustomResourceUtils.watchFor(linkClient, new LinkWatcher()));
+        addWatch(CustomResourceUtils.watchFor(dictionaryClient, new DictionaryWatcher()));
 
-        watches.add(watchFor(dictionaryClient, new DictionaryWatcher()));
-
-        watches.add(operatorBuilder.getClient().configMaps().inAnyNamespace().watch(new ConfigMapWatcher()));
+        new ConfigMapWatcher(operatorBuilder.getClient(), this).watch();
         logger.info("Started watching for config map [ConfigMap<{}>]", MQ_CONFIG_MAP_NAME);
 
-        helmWatchersCommands.forEach(hwSup -> {
-            var hw = hwSup.get();
-            resourceClients.add(hw.getResourceClient());
-            helmWatchers.add(hw);
-        });
-
-        helmWatchers.forEach(hw -> watches.add(watchFor(hw.getResourceClient(), hw)));
-
+        for (var hwSup: helmWatchersCommands) {
+            HelmReleaseTh2Op<Th2CustomResource> helmReleaseTh2Op = hwSup.get();
+            resourceClients.add(helmReleaseTh2Op.getResourceClient());
+            addWatch(CustomResourceUtils.watchFor(helmReleaseTh2Op.getResourceClient(), helmReleaseTh2Op));
+        }
     }
 
     private void postInit() {
@@ -342,24 +333,46 @@ public class DefaultWatchManager implements HelmWatchManager {
         }
 
 
-        public boolean minIsNew() {
-            return minLinks == newLinks;
-        }
-
-        public boolean maxIsNew() {
-            return maxLinks == newLinks;
-        }
     }
 
     /**
      * Designed only to watch one config map - {@link OperatorConfig#MQ_CONFIG_MAP_NAME}
      */
     private class ConfigMapWatcher implements Watcher<ConfigMap> {
+        protected KubernetesClient client;
+        protected DefaultWatchManager manager;
+        protected Watch watch;
+
+        public ConfigMapWatcher(KubernetesClient client, DefaultWatchManager manager) {
+            this.client = client;
+            this.manager = manager;
+        }
+
+        protected void watch() {
+            if (watch != null) {
+                watch.close();
+                manager.removeWatch(watch);
+            }
+
+            watch = client.configMaps().inAnyNamespace().watch(this);
+            manager.addWatch(watch);
+            logger.info("Watch created ({})", this.getClass().getSimpleName());
+        }
+
+
+        @Override
+        public final void onClose(KubernetesClientException cause) {
+            if (cause != null) {
+                logger.error("Watcher closed ({})", this.getClass().getSimpleName(), cause);
+                watch();
+            }
+        }
 
         @SneakyThrows
         @Override
         public void eventReceived(Action action, ConfigMap cm) {
 
+            logger.debug("Received {} event for \"{}\"", action, CustomResourceUtils.annotationFor(cm));
             if (!Objects.equals(extractName(cm), MQ_CONFIG_MAP_NAME)) {
                 return;
             }
@@ -368,15 +381,15 @@ public class DefaultWatchManager implements HelmWatchManager {
 
             synchronized (LinkSingleton.INSTANCE.getLock(namespace)) {
 
-                logger.info("Received event '{}' for [ConfigMap<{}.{}>]", action, namespace, extractName(cm));
+                logger.info("Processing {} event for \"{}\"", action, CustomResourceUtils.annotationFor(cm));
 
-                var opConfig = OperatorConfig.INSTANCE;
+                OperatorConfig opConfig = OperatorConfig.INSTANCE;
 
-                var mqWsConfig = opConfig.getMqWorkSpaceConfig(namespace);
+                OperatorConfig.MqWorkSpaceConfig mqWsConfig = opConfig.getMqWorkSpaceConfig(namespace);
 
-                var configContent = cm.getData().get(CONFIG_MAP_RABBITMQ_PROP_NAME);
+                String configContent = cm.getData().get(CONFIG_MAP_RABBITMQ_PROP_NAME);
 
-                if (isNullOrEmpty(configContent)) {
+                if (Strings.isNullOrEmpty(configContent)) {
                     logger.warn("'{}' not found in '{}.{}' config map",
                             CONFIG_MAP_RABBITMQ_PROP_NAME, namespace, MQ_CONFIG_MAP_NAME);
                     return;
@@ -405,24 +418,17 @@ public class DefaultWatchManager implements HelmWatchManager {
 
         }
 
-        @Override
-        public void onClose(KubernetesClientException cause) {
-            if (cause != null) {
-                logger.error("Watcher has been closed cause: {}", cause.getMessage(), cause);
-            }
-        }
-
     }
 
     private class DictionaryWatcher implements Watcher<Th2Dictionary> {
 
+
         @Override
         public void eventReceived(Action action, Th2Dictionary dictionary) {
 
-            logger.info("Received event '{}' for [Th2Dictionary<{}.{}>]", action, extractNamespace(dictionary), extractName(dictionary));
-
-
-            logger.info("Updating all boxes that contains dictionary [Th2Dictionary<{}.{}>] ...", extractNamespace(dictionary), extractName(dictionary));
+            String resourceLabel = CustomResourceUtils.annotationFor(dictionary);
+            logger.debug("Received {} event for \"{}\"", action, resourceLabel);
+            logger.info("Updating all boxes that contains dictionary \"{}\"", resourceLabel);
 
             var linkedResources = getLinkedResources(dictionary);
 
@@ -435,12 +441,10 @@ public class DefaultWatchManager implements HelmWatchManager {
         }
 
         @Override
-        public void onClose(KubernetesClientException cause) {
-            if (cause != null) {
-                logger.error("Watcher has been closed cause: {}", cause.getMessage(), cause);
-            }
+        public final void onClose(KubernetesClientException cause) {
+            if (cause != null)
+                logger.error("Watcher closed ({})", this.getClass().getSimpleName(), cause);
         }
-
 
         private Set<String> getLinkedResources(Th2Dictionary dictionary) {
             Set<String> resources = new HashSet<>();
@@ -460,15 +464,15 @@ public class DefaultWatchManager implements HelmWatchManager {
 
     }
 
+
     private class LinkWatcher implements Watcher<Th2Link> {
 
         @Override
         public void eventReceived(Action action, Th2Link th2Link) {
 
+            logger.debug("Received {} event for \"{}\"", action, CustomResourceUtils.annotationFor(th2Link));
+
             var linkNamespace = extractNamespace(th2Link);
-
-            logger.info("Received event '{}' for [Th2Link<{}.{}>]", action, linkNamespace, extractName(th2Link));
-
             synchronized (LinkSingleton.INSTANCE.getLock(linkNamespace)) {
 
                 var linkSingleton = LinkSingleton.INSTANCE;
@@ -521,9 +525,8 @@ public class DefaultWatchManager implements HelmWatchManager {
 
         @Override
         public void onClose(KubernetesClientException cause) {
-            if (cause != null) {
-                logger.error("Watcher has been closed cause: {}", cause.getMessage(), cause);
-            }
+            if (cause != null)
+                logger.error("Watcher closed ({})",  this.getClass().getSimpleName(), cause);
         }
 
     }

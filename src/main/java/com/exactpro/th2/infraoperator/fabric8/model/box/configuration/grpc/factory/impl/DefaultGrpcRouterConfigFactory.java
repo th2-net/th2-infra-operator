@@ -24,6 +24,7 @@ import com.exactpro.th2.infraoperator.fabric8.spec.strategy.resFinder.box.BoxRes
 import com.exactpro.th2.infraoperator.fabric8.spec.shared.SchemaConnectionType;
 import com.exactpro.th2.infraoperator.fabric8.util.ExtractUtils;
 import com.exactpro.th2.infraoperator.fabric8.util.SchemeMappingUtils;
+import com.exactpro.th2.infraoperator.fabric8.util.Strings;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import org.apache.commons.lang3.StringUtils;
@@ -195,7 +196,7 @@ public class DefaultGrpcRouterConfigFactory implements GrpcRouterConfigFactory {
 
 
     private String getServiceName(String serviceClass) {
-        if (io.sundr.codegen.utils.StringUtils.isNullOrEmpty(serviceClass)) {
+        if (Strings.isNullOrEmpty(serviceClass)) {
             return SERVICE_CLASS_PLACEHOLDER;
         }
 

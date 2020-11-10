@@ -18,9 +18,8 @@ import com.exactpro.th2.infraoperator.fabric8.model.http.HttpCode;
 import com.exactpro.th2.infraoperator.fabric8.model.kubernetes.client.ResourceClient;
 import com.exactpro.th2.infraoperator.fabric8.spec.Th2CustomResource;
 import com.exactpro.th2.infraoperator.fabric8.spec.strategy.linkResolver.VHostCreateException;
-import io.fabric8.kubernetes.api.model.HasMetadata;
-import io.fabric8.kubernetes.api.model.OwnerReference;
-import io.fabric8.kubernetes.api.model.OwnerReferenceBuilder;
+import com.exactpro.th2.infraoperator.fabric8.util.CustomResourceUtils;
+import io.fabric8.kubernetes.api.model.*;
 import io.fabric8.kubernetes.client.KubernetesClient;
 import io.fabric8.kubernetes.client.KubernetesClientException;
 import io.fabric8.kubernetes.client.Watch;
@@ -65,6 +64,7 @@ public abstract class AbstractTh2Operator<CR extends Th2CustomResource, KO exten
     @Override
     public void eventReceived(Action action, CR resource) {
 
+        logger.debug("Received {} event for \"{}\"", action, CustomResourceUtils.annotationFor(resource));
         resourceType = extractType(resource);
 
         var resFullName = extractFullName(resource);
@@ -105,14 +105,8 @@ public abstract class AbstractTh2Operator<CR extends Th2CustomResource, KO exten
     @Override
     public void onClose(KubernetesClientException cause) {
 
-        if (cause != null) {
-            logger.error("Watcher has been closed cause: {}", cause.getMessage(), cause);
-        }
-
-        if (kubObjWatch != null) {
-            kubObjWatch.close();
-        }
-
+        if (cause != null)
+            logger.error("Watcher[1] has been closed for {}", this.getClass().getSimpleName(), cause);
     }
 
 
@@ -141,8 +135,8 @@ public abstract class AbstractTh2Operator<CR extends Th2CustomResource, KO exten
     }
 
     protected void processEvent(Action action, CR resource) {
-        debug("Received event '{}' for {}", action, resource);
 
+        logger.debug("Processing event {} for \"{}\"", action, CustomResourceUtils.annotationFor(resource));
 
         resource.getStatus().idle();
 
@@ -256,7 +250,9 @@ public abstract class AbstractTh2Operator<CR extends Th2CustomResource, KO exten
 
         createKubObj(extractNamespace(resource), kubObj);
 
-        log("Based on [{}<{}.{}>] resource, kubernetes object [{}<{}.{}>] has been created", resource, kubObj);
+        logger.info("Generated \"{}\" based on \"{}\""
+                , CustomResourceUtils.annotationFor(kubObj)
+                , CustomResourceUtils.annotationFor(resource));
 
         resource.getStatus().succeeded(kubObjType + " successfully deployed", extractName(kubObj));
 
@@ -267,12 +263,16 @@ public abstract class AbstractTh2Operator<CR extends Th2CustomResource, KO exten
 
         mapProperties(resource, kubObj);
 
-        log("Additional properties from [{}<{}.{}>] has been set to [{}<{}.{}>]", resource, kubObj);
+        logger.info("Generated additional properties from \"{}\" for the resource \"{}\""
+                , CustomResourceUtils.annotationFor(resource)
+                , CustomResourceUtils.annotationFor(kubObj));
 
 
         kubObj.getMetadata().setOwnerReferences(List.of(createOwnerReference(resource)));
 
-        log("Property 'OwnerReference' with reference to [{}<{}.{}>] has been set to [{}<{}.{}>]", resource, kubObj);
+        logger.info("Property \"OwnerReference\" with reference to \"{}\" has been set for the resource \"{}\""
+                , CustomResourceUtils.annotationFor(resource)
+                , CustomResourceUtils.annotationFor(kubObj));
 
     }
 
@@ -322,20 +322,6 @@ public abstract class AbstractTh2Operator<CR extends Th2CustomResource, KO exten
         return Objects.nonNull(bunches.get(resourceFullName));
     }
 
-    protected void log(String msg, CR resource, KO kubObj) {
-        logger.info(
-                msg,
-                resourceType, extractNamespace(resource), extractName(resource),
-                kubObjType, extractNamespace(kubObj), extractName(kubObj)
-        );
-    }
-
-    protected void debug(String format, Object... arguments) {
-        if (logger.isDebugEnabled()) {
-            logger.debug(format, arguments);
-        }
-    }
-
 
     protected abstract String getKubObjDefPath(CR resource);
 
@@ -348,48 +334,45 @@ public abstract class AbstractTh2Operator<CR extends Th2CustomResource, KO exten
 
         @Override
         public void eventReceived(Action action, KO kubObj) {
-            var currentOwnerFullName = extractOwnerFullName(kubObj);
 
-            if (Objects.isNull(currentOwnerFullName) || !targetCrFullNames.contains(currentOwnerFullName)) {
+            String resourceLabel = CustomResourceUtils.annotationFor(kubObj);
+            logger.debug("Received {} event for \"{}\"", action, resourceLabel);
+
+            String currentOwnerFullName = extractOwnerFullName(kubObj);
+            if (Objects.isNull(currentOwnerFullName) || !targetCrFullNames.contains(currentOwnerFullName))
                 return;
-            }
 
-            debug("Received event '{}' for {}", action, kubObj);
-
-            var kubObjFullName = extractFullName(kubObj);
+            logger.debug("Processing {} event for \"{}\"", action, resourceLabel);
 
             if (action.equals(DELETED)) {
-                logger.info("[{}<{}>] has been deleted. Trying to restart ...", kubObjType, kubObjFullName);
+                logger.info("\"{}\" has been deleted. Trying to redeploy", resourceLabel);
 
                 if (isResourceExist(currentOwnerFullName)) {
 
-                    var kubObjMD = kubObj.getMetadata();
+                    String namepace = kubObj.getMetadata().getNamespace();
+                    Namespace namespaceObj = kubClient.namespaces().withName(namepace).get();
+                    if (namespaceObj == null || !namespaceObj.getStatus().getPhase().equals("Active")) {
+                        logger.info("Namespace \"{}\" deleted or not active, cancelling", namepace);
+                        return;
+                    }
 
+                    ObjectMeta kubObjMD = kubObj.getMetadata();
                     kubObjMD.setUid(null);
-
                     kubObjMD.setResourceVersion(null);
+                    createKubObj(namepace, kubObj);
 
-                    createKubObj(extractNamespace(kubObj), kubObj);
+                    logger.info("\"{}\" has been redeployed", resourceLabel);
 
-                    logger.info("[{}<{}>] has been restarted", kubObjType, kubObjFullName);
-
-                } else {
-                    logger.warn("Owner of [{}<{}>] not present", kubObjType, kubObjFullName);
-                }
-
+                } else
+                    logger.warn("Owner for \"{}\" not found", resourceLabel);
             }
 
         }
 
         @Override
         public void onClose(KubernetesClientException cause) {
-            if (cause != null) {
-                logger.error("Watcher has been closed cause: {}", cause.getMessage(), cause);
-            }
-
-            if (kubObjWatch != null) {
-                kubObjWatch.close();
-            }
+            if (cause != null)
+                logger.error("Watcher[2] has been closed for {}", this.getClass().getSimpleName(), cause);
         }
 
     }

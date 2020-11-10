@@ -13,21 +13,16 @@
 
 package com.exactpro.th2.infraoperator.fabric8.model.kubernetes.client;
 
+import com.exactpro.th2.infraoperator.fabric8.util.CustomResourceUtils;
 import io.fabric8.kubernetes.api.model.Doneable;
 import io.fabric8.kubernetes.api.model.KubernetesResourceList;
 import io.fabric8.kubernetes.api.model.apiextensions.CustomResourceDefinition;
-import io.fabric8.kubernetes.client.CustomResource;
-import io.fabric8.kubernetes.client.KubernetesClient;
-import io.fabric8.kubernetes.client.KubernetesClientException;
-import io.fabric8.kubernetes.client.Watcher;
+import io.fabric8.kubernetes.client.*;
 import io.fabric8.kubernetes.client.dsl.MixedOperation;
 import io.fabric8.kubernetes.client.dsl.Resource;
 import lombok.Data;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-import static com.exactpro.th2.infraoperator.fabric8.util.CustomResourceUtils.getResourceCrd;
-import static com.exactpro.th2.infraoperator.fabric8.util.ExtractUtils.extractName;
 
 
 @Data
@@ -35,15 +30,13 @@ public abstract class DefaultResourceClient<CR extends CustomResource> implement
 
     private static final Logger logger = LoggerFactory.getLogger(DefaultResourceClient.class);
 
-
-    private final KubernetesClient kubClient;
-
+    private final KubernetesClient client;
     private final Class<CR> resourceType;
-
     private final CustomResourceDefinition customResourceDefinition;
-
     private final MixedOperation<CR, ? extends KubernetesResourceList<CR>, ? extends Doneable<CR>, ? extends Resource<CR, ? extends Doneable<CR>>> instance;
+    private final String crdName;
 
+    private CRDWatcher watcher;
 
     public DefaultResourceClient(
             KubernetesClient client,
@@ -52,13 +45,15 @@ public abstract class DefaultResourceClient<CR extends CustomResource> implement
             Class<? extends Doneable<CR>> doneClass,
             String crdName
     ) {
-        this.kubClient = client;
+        this.client = client;
         this.resourceType = resourceType;
-        this.customResourceDefinition = getResourceCrd(client, crdName);
-        this.instance = kubClient.customResources(customResourceDefinition, resourceType, listClass, doneClass);
+        this.customResourceDefinition = CustomResourceUtils.getResourceCrd(client, crdName);
+        this.crdName = crdName;
 
-        client.customResourceDefinitions().withName(crdName).watch(new CRDWatcher());
-        logger.info("Started watching for custom resource definition [CRD<{}>]", crdName);
+        instance = client.customResources(customResourceDefinition, resourceType, listClass, doneClass);
+
+        watcher = new CRDWatcher();
+        watcher.watch();
     }
 
 
@@ -73,28 +68,33 @@ public abstract class DefaultResourceClient<CR extends CustomResource> implement
     }
 
 
-    private static class CRDWatcher implements Watcher<CustomResourceDefinition> {
+
+    private class CRDWatcher implements Watcher<CustomResourceDefinition> {
+
+        private void watch() {
+            client.customResourceDefinitions().withName(crdName).watch(watcher);
+            logger.info("Watching for CustomResourceDefinition \"{}\"", crdName);
+        }
 
         @Override
         public void eventReceived(Action action, CustomResourceDefinition crd) {
 
-            switch (action) {
-                case MODIFIED:
-                case DELETED:
-                case ERROR:
-                    logger.error("[CRD<{}>] has been changed. Operator will shutdown...", extractName(crd));
-                    System.exit(1);
+            logger.debug("Received {} event for \"{}\"", action, CustomResourceUtils.annotationFor(crd));
+            if (action != Action.ADDED) {
+                logger.error("Modification detected for CustomResourceDefinition \"{}\". going to shutdown...", crd.getMetadata().getName());
+                System.exit(1);
             }
-
         }
+
 
         @Override
         public void onClose(KubernetesClientException cause) {
             if (cause != null) {
-                logger.error("Watcher has been closed cause: {}", cause.getMessage(), cause);
+                logger.error("Exception watching CustomResourceDefinition {}", crdName, cause);
+                watch();
             }
         }
-
     }
+
 }
 

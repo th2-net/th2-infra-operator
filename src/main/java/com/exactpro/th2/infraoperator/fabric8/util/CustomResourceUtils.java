@@ -15,13 +15,11 @@ package com.exactpro.th2.infraoperator.fabric8.util;
 
 import com.exactpro.th2.infraoperator.fabric8.model.kubernetes.client.ResourceClient;
 import io.fabric8.kubernetes.api.model.Doneable;
+import io.fabric8.kubernetes.api.model.HasMetadata;
 import io.fabric8.kubernetes.api.model.KubernetesResourceList;
 import io.fabric8.kubernetes.api.model.apiextensions.CustomResourceDefinition;
 import io.fabric8.kubernetes.api.model.apiextensions.CustomResourceDefinitionSpec;
-import io.fabric8.kubernetes.client.CustomResource;
-import io.fabric8.kubernetes.client.KubernetesClient;
-import io.fabric8.kubernetes.client.Watch;
-import io.fabric8.kubernetes.client.Watcher;
+import io.fabric8.kubernetes.client.*;
 import io.fabric8.kubernetes.client.dsl.MixedOperation;
 import io.fabric8.kubernetes.client.dsl.Resource;
 import io.fabric8.kubernetes.internal.KubernetesDeserializer;
@@ -36,6 +34,19 @@ public final class CustomResourceUtils {
 
     private CustomResourceUtils() {
         throw new AssertionError();
+    }
+
+
+    public static String annotationFor(String namespace, String kind, String resourceName) {
+        return String.format("%s:%s/%s", namespace, kind, resourceName);
+    }
+
+    public static String annotationFor(HasMetadata resource) {
+        return annotationFor(
+                  resource.getMetadata().getNamespace()
+                , resource.getKind()
+                , resource.getMetadata().getName()
+        );
     }
 
 
@@ -92,6 +103,61 @@ public final class CustomResourceUtils {
     }
 
 
+    private static class RecoveringWatch<T extends CustomResource, L extends KubernetesResourceList<T>, D extends Doneable<T>> implements Watcher<T>, Watch {
+
+        private Watch watch;
+        private String kind;
+        private Watcher<T> watcher;
+        MixedOperation<T, L, D, ? extends Resource<T, ? extends Doneable<T>>> crClient;
+
+
+        public RecoveringWatch(
+                Watcher<T> watcher,
+                Class<T> resourceType,
+                CustomResourceDefinition crd,
+                MixedOperation<T, L, D, ? extends Resource<T, ? extends Doneable<T>>> crClient
+        ) {
+
+            this.watcher = watcher;
+            this.crClient = crClient;
+
+            CustomResourceDefinitionSpec spec = crd.getSpec();
+
+            String apiVersion = spec.getGroup() + "/" + spec.getVersion();
+            kind = spec.getNames().getKind();
+
+            KubernetesDeserializer.registerCustomKind(apiVersion, kind, resourceType);
+        }
+
+
+        public Watch watch() {
+            watch = crClient.inAnyNamespace().watch(this);
+            logger.info("Started watching for \"{}\" resources", kind);
+            return watch;
+        }
+
+        @Override
+        public void close() {
+            watch.close();
+            logger.info("Closed watch for \"{}\"", kind);
+        }
+
+        @Override
+        public void eventReceived(Action action, T resource) {
+            watcher.eventReceived(action, resource);
+        }
+
+        @Override
+        public void onClose(KubernetesClientException cause) {
+            watcher.onClose(cause);
+            if (cause != null) {
+                logger.error("Exception watching for \"{}\" resources", kind, cause);
+                watch();
+            }
+        }
+    }
+
+
     public static <T extends CustomResource, L extends KubernetesResourceList<T>, D extends Doneable<T>> Watch watchFor(
             Watcher<T> watcher,
             Class<T> resourceType,
@@ -105,8 +171,8 @@ public final class CustomResourceUtils {
 
         KubernetesDeserializer.registerCustomKind(apiVersion, kind, resourceType);
 
-        Watch watch = crClient.inAnyNamespace().watch(watcher);
-        logger.info("Started watching for \"{}\" resources", kind);
+        RecoveringWatch<T, L, D> watch = new RecoveringWatch<>(watcher, resourceType, crd, crClient);
+        watch.watch();
         return watch;
     }
 

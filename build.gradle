@@ -30,7 +30,7 @@ dependencies {
 
     compile group: 'com.fasterxml.uuid', name: 'java-uuid-generator', version: '4.0.1'
 
-    compile group: 'io.fabric8', name: 'kubernetes-client', version: '4.10.1'
+    compile group: 'io.fabric8', name: 'kubernetes-client', version: '4.10.3'
 
     compile group: 'org.json', name: 'json', version: '20190722'
 

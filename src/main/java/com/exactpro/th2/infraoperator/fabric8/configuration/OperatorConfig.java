@@ -13,6 +13,7 @@
 
 package com.exactpro.th2.infraoperator.fabric8.configuration;
 
+import com.exactpro.th2.infraoperator.fabric8.util.Strings;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import lombok.*;
@@ -29,7 +30,6 @@ import java.util.Objects;
 
 import static com.exactpro.th2.infraoperator.fabric8.util.JsonUtils.JSON_READER;
 import static com.exactpro.th2.infraoperator.fabric8.util.JsonUtils.writeValueAsDeepMap;
-import static io.sundr.codegen.utils.StringUtils.isNullOrEmpty;
 import static java.nio.charset.StandardCharsets.UTF_8;
 
 
@@ -126,18 +126,19 @@ public enum OperatorConfig {
 
             var config = ChartConfig.newInstance(this);
 
-            if (!isNullOrEmpty(chartConfig.getGit())) {
+            if (!Strings.isNullOrEmpty(chartConfig.getGit())) {
                 config.git = chartConfig.getGit();
             }
-            if (!isNullOrEmpty(chartConfig.getRef())) {
+            if (!Strings.isNullOrEmpty(chartConfig.getRef())) {
                 config.ref = chartConfig.getRef();
             }
-            if (!isNullOrEmpty(chartConfig.getPath())) {
+            if (!Strings.isNullOrEmpty(chartConfig.getPath())) {
                 config.path = chartConfig.getPath();
             }
 
             return config;
         }
+
 
         @SneakyThrows
         public Map<String, Object> toMap() {
