@@ -17,4 +17,7 @@ public class VHostCreateException extends RuntimeException {
     public VHostCreateException(String message) {
         super(message);
     }
+    public VHostCreateException(Exception e) {
+        super(e);
+    }
 }
