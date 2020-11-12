@@ -26,7 +26,6 @@ import java.io.IOException;
 import java.util.Base64;
 import java.util.HashMap;
 import java.util.Map;
-import java.util.Objects;
 
 import static com.exactpro.th2.infraoperator.fabric8.util.JsonUtils.JSON_READER;
 import static com.exactpro.th2.infraoperator.fabric8.util.JsonUtils.writeValueAsDeepMap;
@@ -34,37 +33,27 @@ import static java.nio.charset.StandardCharsets.UTF_8;
 
 
 public enum OperatorConfig {
-
     INSTANCE;
 
-
-    public static final String ROOT_PATH = "/var/th2/config/";
-
     public static final String QUEUE_PREFIX = "queue_";
-
     public static final String ROUTING_KEY_PREFIX = "routing-key_";
-
     public static final String MQ_CONFIG_MAP_NAME = "rabbit-mq-app-config";
-
+    private static final String ROOT_PATH = "/var/th2/config/";
 
     private ChartConfig chartConfig;
-
     private MqGlobalConfig mqGlobalConfig;
-
     private Map<String, MqWorkSpaceConfig> mqWorkSpaceConfigPerNamespace = new HashMap<>();
 
 
     public synchronized MqGlobalConfig getMqAuthConfig() {
-        if (Objects.isNull(mqGlobalConfig)) {
+        if (mqGlobalConfig == null)
             mqGlobalConfig = getConfig(MqGlobalConfig.class, MqGlobalConfig.CONFIG_PATH);
-        }
         return mqGlobalConfig;
     }
 
     public synchronized ChartConfig getChartConfig() {
-        if (Objects.isNull(chartConfig)) {
+        if (chartConfig == null)
             chartConfig = getConfig(ChartConfig.class, ChartConfig.CONFIG_PATH);
-        }
         return chartConfig;
     }
 
@@ -73,6 +62,7 @@ public enum OperatorConfig {
         return mqWorkSpaceConfigPerNamespace.get(namespace);
     }
 
+
     public synchronized void setMqWorkSpaceConfig(String namespace, MqWorkSpaceConfig config) {
         mqWorkSpaceConfigPerNamespace.put(namespace, config);
     }
@@ -80,11 +70,11 @@ public enum OperatorConfig {
 
     private <T> T getConfig(Class<T> configType, String path) {
         try (var in = new FileInputStream(path)) {
-            var stringSubstitutor = new StringSubstitutor(StringLookupFactory.INSTANCE.environmentVariableStringLookup());
-            var content = stringSubstitutor.replace(new String(in.readAllBytes()));
+            StringSubstitutor stringSubstitutor = new StringSubstitutor(StringLookupFactory.INSTANCE.environmentVariableStringLookup());
+            String content = stringSubstitutor.replace(new String(in.readAllBytes()));
             return JSON_READER.readValue(content, configType);
         } catch (IOException e) {
-            throw new IllegalStateException("Can not read " + configType.getSimpleName() + " configuration", e);
+            throw new IllegalStateException("Exception reading configuration " + configType.getSimpleName(), e);
         }
     }
 
@@ -97,7 +87,6 @@ public enum OperatorConfig {
     public static class ChartConfig {
 
         public static final String CONFIG_PATH = ROOT_PATH + "infra-operator.json";
-
 
         private String git;
         private String ref;
@@ -126,15 +115,14 @@ public enum OperatorConfig {
 
             var config = ChartConfig.newInstance(this);
 
-            if (!Strings.isNullOrEmpty(chartConfig.getGit())) {
+            if (!Strings.isNullOrEmpty(chartConfig.getGit()))
                 config.git = chartConfig.getGit();
-            }
-            if (!Strings.isNullOrEmpty(chartConfig.getRef())) {
+
+            if (!Strings.isNullOrEmpty(chartConfig.getRef()))
                 config.ref = chartConfig.getRef();
-            }
-            if (!Strings.isNullOrEmpty(chartConfig.getPath())) {
+
+            if (!Strings.isNullOrEmpty(chartConfig.getPath()))
                 config.path = chartConfig.getPath();
-            }
 
             return config;
         }
@@ -154,7 +142,6 @@ public enum OperatorConfig {
     @JsonIgnoreProperties(ignoreUnknown = true)
     public static class MqGlobalConfig {
         public static final String CONFIG_PATH = ROOT_PATH + "rabbitMQ-mng.json";
-
 
         private String username;
         private String password;
@@ -186,7 +173,6 @@ public enum OperatorConfig {
 
         public static final String CONFIG_MAP_RABBITMQ_PROP_NAME = "rabbitMQ.json";
 
-
         private int port;
         private String host;
         @JsonProperty("vHost")
@@ -194,15 +180,19 @@ public enum OperatorConfig {
         @JsonProperty("exchangeName")
         private String exchangeName;
 
+        private String username;
+        private String password;
 
         protected MqWorkSpaceConfig() {
         }
 
-        protected MqWorkSpaceConfig(int port, String host, String vHost, String exchangeName) {
+        public MqWorkSpaceConfig(int port, String host, String vHost, String exchangeName, String username, String password) {
             this.port = port;
             this.host = host;
             this.vHost = vHost;
             this.exchangeName = exchangeName;
+            this.username = username;
+            this.password = password;
         }
     }
 
