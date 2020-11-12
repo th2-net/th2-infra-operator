@@ -83,8 +83,48 @@ public class MqVHostUtils {
             } else
                 logger.info("User \"{}\" was already present in RabbitMQ", username);
         } catch (Exception e) {
-            logger.error("Exception setting up vHost & user for namespace \"\"", namespace);
+            logger.error("Exception setting up vHost & user for namespace \"{}\"", namespace, e);
             throw new VHostCreateException(e);
         }
     }
+
+
+    public static void cleanupVHost(String namespace, OperatorConfig.MqGlobalConfig mqGlobalConfig) throws VHostCreateException {
+
+        OperatorConfig.MqWorkSpaceConfig mqSchemaConfig = OperatorConfig.INSTANCE.getMqWorkSpaceConfig(namespace);
+
+        if (mqSchemaConfig == null)
+            throw new ConfigNotFoundException(String.format(
+                    "Exception cleaning up RabbitMQ for namespace \"%s\". Check if \"%s\" is configured properly"
+                    , namespace
+                    , CustomResourceUtils.annotationFor(namespace, "ConfigMap", OperatorConfig.MQ_CONFIG_MAP_NAME)));
+
+        String vHostName = mqSchemaConfig.getVHost();
+        String username = mqSchemaConfig.getUsername();
+
+        try {
+            Client rmqClient = getClient(
+                    String.format("http://%s:%s/api", mqSchemaConfig.getHost(), mqGlobalConfig.getPort())
+                    , mqGlobalConfig.getUsername()
+                    , mqGlobalConfig.getPassword()
+            );
+
+            // delete user
+            if (rmqClient.getUser(username) != null) {
+                rmqClient.deleteUser(username);
+                logger.info("Deleted user \"{}\" in RabbitMQ", username);
+            }
+
+            // delete vhost
+            if (rmqClient.getVhost(vHostName) != null) {
+                rmqClient.deleteVhost(vHostName);
+                logger.info("Deleted vHost \"{}\" in RabbitMQ", username);
+            }
+
+        } catch (Exception e) {
+            logger.error("Exception cleaning up vHost  \"{}\"", vHostName, e);
+            throw new VHostCreateException(e);
+        }
+    }
+
 }
