@@ -34,6 +34,8 @@ dependencies {
 
     compile "io.fabric8:kubernetes-client:4.10.3"
     compile "com.rabbitmq:amqp-client:5.9.0"
+    compile "com.rabbitmq:http-client:3.9.0.RELEASE"
+    compile "org.springframework:spring-web:5.3.0"
 
     compile "org.json:json:20190722"
     compile "ch.qos.logback:logback-classic:1.2.3"

@@ -16,49 +16,115 @@ package com.exactpro.th2.infraoperator.fabric8.util;
 import com.exactpro.th2.infraoperator.fabric8.configuration.OperatorConfig;
 import com.exactpro.th2.infraoperator.fabric8.spec.strategy.linkResolver.ConfigNotFoundException;
 import com.exactpro.th2.infraoperator.fabric8.spec.strategy.linkResolver.VHostCreateException;
+import com.rabbitmq.http.client.Client;
+import com.rabbitmq.http.client.ClientParameters;
+import com.rabbitmq.http.client.OkHttpRestTemplateConfigurator;
+import com.rabbitmq.http.client.domain.UserPermissions;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.net.HttpURLConnection;
+import java.util.ArrayList;
 
 public class MqVHostUtils {
 
     private static final Logger logger = LoggerFactory.getLogger(MqVHostUtils.class);
 
-    public static void createVHostIfAbsent(String namespace, OperatorConfig.MqGlobalConfig mqGlobalConfig) {
+    private static Client getClient(String apiUrl, String username, String password) throws Exception {
+        return new Client(new ClientParameters()
+                        .url(apiUrl)
+                        .username(username)
+                        .password(password)
+                        .restTemplateConfigurator(new OkHttpRestTemplateConfigurator())
+        );
+    }
 
-        OperatorConfig.MqWorkSpaceConfig mqWsConfig = OperatorConfig.INSTANCE.getMqWorkSpaceConfig(namespace);
 
-        if (mqWsConfig == null) {
+    public static void createVHostIfAbsent(String namespace, OperatorConfig.MqGlobalConfig mqGlobalConfig) throws VHostCreateException {
 
-            String message = String.format(
-                    "Cannot find vHost and exchange in namespace '%s'. " +
-                            "Perhaps config map '%s.%s' does not exist or " +
-                            "is not watching yet, or property '%s' is not set",
-                    namespace, namespace, OperatorConfig.MQ_CONFIG_MAP_NAME, OperatorConfig.MqWorkSpaceConfig.CONFIG_MAP_RABBITMQ_PROP_NAME);
-            logger.warn(message);
+        OperatorConfig.MqWorkSpaceConfig mqSchemaConfig = OperatorConfig.INSTANCE.getMqWorkSpaceConfig(namespace);
 
-            throw new ConfigNotFoundException(message);
-        }
+        if (mqSchemaConfig == null)
+            throw new ConfigNotFoundException(String.format(
+                    "Exception setting up RabbitMQ for namespace \"%s\". Check if \"%s\" is configured properly"
+                    , namespace
+                    , CustomResourceUtils.annotationFor(namespace, "ConfigMap", OperatorConfig.MQ_CONFIG_MAP_NAME)));
 
-        String vhost = mqWsConfig.getVHost();
+        String vHostName = mqSchemaConfig.getVHost();
+        String username = mqSchemaConfig.getUsername();
 
         try {
-            int getVHostResponseCode = HttpConnectionUtils.getRabbitMqVHost(mqGlobalConfig, mqWsConfig).getResponseCode();
-            if (getVHostResponseCode >= HttpURLConnection.HTTP_OK && getVHostResponseCode < HttpURLConnection.HTTP_MULT_CHOICE) {
-                logger.info("vHost \"{}\" already exists on the server, skipping", vhost);
-            } else {
-                int putVHostResponseCode = HttpConnectionUtils.putRabbitMqVHost(mqGlobalConfig, mqWsConfig).getResponseCode();
-                if (putVHostResponseCode >= HttpURLConnection.HTTP_OK && putVHostResponseCode < HttpURLConnection.HTTP_MULT_CHOICE) {
-                    logger.info("Created vHost for \"{}\" namespace", vhost);
-                } else {
-                    logger.error("couldn't create host for \"{}\" namespace. Server response code: \"{}\" ", vhost, putVHostResponseCode);
-                    throw new VHostCreateException(String.format("couldn't create host for \"%s\" namespace. Server response code: %d ", vhost, putVHostResponseCode));
-                }
-            }
+            Client rmqClient = getClient(
+                    String.format("http://%s:%s/api", mqSchemaConfig.getHost(), mqGlobalConfig.getPort())
+                    , mqGlobalConfig.getUsername()
+                    , mqGlobalConfig.getPassword()
+            );
+
+            // check vhost
+            if (rmqClient.getVhost(vHostName) == null) {
+                rmqClient.createVhost(vHostName);
+                logger.info("Created vHost in RabbitMQ for namespace \"{}\"", namespace);
+            } else
+                logger.info("vHost \"{}\" was already present in RabbitMQ", vHostName);
+
+            // check user
+            if (rmqClient.getUser(username) == null) {
+                rmqClient.createUser(username, mqSchemaConfig.getPassword().toCharArray(), new ArrayList<>());
+                logger.info("Created user \"{}\"  in RabbitMQ for namespace \"{}\"", username, namespace);
+
+                // set permissions
+                UserPermissions permissions = new UserPermissions();
+                permissions.setConfigure("");
+                permissions.setRead(".*");
+                permissions.setWrite(".*");
+                // TODO: make permissions configurable
+
+                rmqClient.updatePermissions(vHostName, username, permissions);
+                logger.info("User \"{}\" permissions set in RabbitMQ", username);
+            } else
+                logger.info("User \"{}\" was already present in RabbitMQ", username);
         } catch (Exception e) {
-            logger.error("connection to rabbit failed with exception: {}", e.getMessage());
-            throw new VHostCreateException(e.getMessage());
+            logger.error("Exception setting up vHost & user for namespace \"{}\"", namespace, e);
+            throw new VHostCreateException(e);
         }
     }
+
+
+    public static void cleanupVHost(String namespace, OperatorConfig.MqGlobalConfig mqGlobalConfig) throws VHostCreateException {
+
+        OperatorConfig.MqWorkSpaceConfig mqSchemaConfig = OperatorConfig.INSTANCE.getMqWorkSpaceConfig(namespace);
+
+        if (mqSchemaConfig == null)
+            throw new ConfigNotFoundException(String.format(
+                    "Exception cleaning up RabbitMQ for namespace \"%s\". Check if \"%s\" is configured properly"
+                    , namespace
+                    , CustomResourceUtils.annotationFor(namespace, "ConfigMap", OperatorConfig.MQ_CONFIG_MAP_NAME)));
+
+        String vHostName = mqSchemaConfig.getVHost();
+        String username = mqSchemaConfig.getUsername();
+
+        try {
+            Client rmqClient = getClient(
+                    String.format("http://%s:%s/api", mqSchemaConfig.getHost(), mqGlobalConfig.getPort())
+                    , mqGlobalConfig.getUsername()
+                    , mqGlobalConfig.getPassword()
+            );
+
+            // delete user
+            if (rmqClient.getUser(username) != null) {
+                rmqClient.deleteUser(username);
+                logger.info("Deleted user \"{}\" in RabbitMQ", username);
+            }
+
+            // delete vhost
+            if (rmqClient.getVhost(vHostName) != null) {
+                rmqClient.deleteVhost(vHostName);
+                logger.info("Deleted vHost \"{}\" in RabbitMQ", username);
+            }
+
+        } catch (Exception e) {
+            logger.error("Exception cleaning up vHost  \"{}\"", vHostName, e);
+            throw new VHostCreateException(e);
+        }
+    }
+
 }

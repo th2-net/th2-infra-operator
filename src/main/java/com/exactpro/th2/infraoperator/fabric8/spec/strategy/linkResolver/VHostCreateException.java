@@ -14,7 +14,7 @@
 package com.exactpro.th2.infraoperator.fabric8.spec.strategy.linkResolver;
 
 public class VHostCreateException extends RuntimeException {
-    public VHostCreateException(String message) {
-        super(message);
+    public VHostCreateException(Exception e) {
+        super(e);
     }
 }
