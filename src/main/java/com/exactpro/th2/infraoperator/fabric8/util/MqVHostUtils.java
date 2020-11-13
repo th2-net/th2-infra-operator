@@ -72,10 +72,11 @@ public class MqVHostUtils {
                 logger.info("Created user \"{}\"  in RabbitMQ for namespace \"{}\"", username, namespace);
 
                 // set permissions
+                OperatorConfig.MqSchemaUserPermissions schemaUserPermissions = mqGlobalConfig.getSchemaUserPermissions();
                 UserPermissions permissions = new UserPermissions();
-                permissions.setConfigure("");
-                permissions.setRead(".*");
-                permissions.setWrite(".*");
+                permissions.setConfigure(schemaUserPermissions.getConfigure());
+                permissions.setRead(schemaUserPermissions.getRead());
+                permissions.setWrite(schemaUserPermissions.getWrite());
                 // TODO: make permissions configurable
 
                 rmqClient.updatePermissions(vHostName, username, permissions);

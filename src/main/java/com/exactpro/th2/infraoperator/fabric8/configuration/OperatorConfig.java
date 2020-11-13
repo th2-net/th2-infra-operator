@@ -14,6 +14,7 @@
 package com.exactpro.th2.infraoperator.fabric8.configuration;
 
 import com.exactpro.th2.infraoperator.fabric8.util.Strings;
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import lombok.*;
@@ -42,6 +43,7 @@ public enum OperatorConfig {
 
     private ChartConfig chartConfig;
     private MqGlobalConfig mqGlobalConfig;
+
     private Map<String, MqWorkSpaceConfig> mqWorkSpaceConfigPerNamespace = new HashMap<>();
 
 
@@ -56,6 +58,7 @@ public enum OperatorConfig {
             chartConfig = getConfig(ChartConfig.class, ChartConfig.CONFIG_PATH);
         return chartConfig;
     }
+
 
     @Nullable
     public synchronized MqWorkSpaceConfig getMqWorkSpaceConfig(String namespace) {
@@ -135,10 +138,6 @@ public enum OperatorConfig {
 
     }
 
-    @Getter
-    @Builder
-    @ToString
-    @EqualsAndHashCode
     @JsonIgnoreProperties(ignoreUnknown = true)
     public static class MqGlobalConfig {
         public static final String CONFIG_PATH = ROOT_PATH + "rabbitMQ-mng.json";
@@ -147,22 +146,92 @@ public enum OperatorConfig {
         private String password;
         private int port;
         private boolean persistence;
+        private MqSchemaUserPermissions schemaUserPermissions;
 
 
         protected MqGlobalConfig() {
+            schemaUserPermissions = new MqSchemaUserPermissions();
         }
 
-        protected MqGlobalConfig(String username, String password, int port, boolean persistence) {
-            this.username = username;
-            this.password = password;
-            this.port = port;
-            this.persistence = persistence;
-        }
-
+        @JsonIgnore
         public String getEncoded() {
             return Base64.getEncoder().encodeToString(String.format("%s:%s", username, password).getBytes(UTF_8));
         }
+
+        public String getUsername() {
+            return username;
+        }
+
+        public void setUsername(String username) {
+            this.username = username;
+        }
+
+        public String getPassword() {
+            return password;
+        }
+
+        public void setPassword(String password) {
+            this.password = password;
+        }
+
+        public int getPort() {
+            return port;
+        }
+
+        public void setPort(int port) {
+            this.port = port;
+        }
+
+        public boolean isPersistence() {
+            return persistence;
+        }
+
+        public void setPersistence(boolean persistence) {
+            this.persistence = persistence;
+        }
+
+        public MqSchemaUserPermissions getSchemaUserPermissions() {
+            return schemaUserPermissions;
+        }
+
+        public void setSchemaUserPermissions(MqSchemaUserPermissions schemaUserPermissions) {
+            if (schemaUserPermissions != null)
+                this.schemaUserPermissions = schemaUserPermissions;
+        }
     }
+
+
+    @JsonIgnoreProperties(ignoreUnknown = true)
+    public static class MqSchemaUserPermissions {
+        private String configure = "";
+        private String read = ".*";
+        private String write = ".*";
+
+        public String getConfigure() {
+            return configure;
+        }
+
+        public void setConfigure(String configure) {
+            this.configure = (configure == null) ? "" : configure;
+        }
+
+        public String getRead() {
+            return read;
+        }
+
+        public void setRead(String read) {
+            this.read = (read == null) ? "" : read;
+        }
+
+        public String getWrite() {
+            return write;
+        }
+
+        public void setWrite(String write) {
+            this.write = (write == null) ? "" : write;
+        }
+    }
+
 
     @Getter
     @Builder
