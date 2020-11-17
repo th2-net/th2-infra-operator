@@ -40,10 +40,33 @@ public enum OperatorConfig {
     public static final String ROUTING_KEY_PREFIX = "routing-key_";
     public static final String MQ_CONFIG_MAP_NAME = "rabbit-mq-app-config";
     private static final String ROOT_PATH = "/var/th2/config/";
+    public static final String DEFAULT_RABBITMQ_SECRET = "rabbitmq";
+    public static final String DEFAULT_CASSANDRA_SECRET = "cassandra";
+
+    public static final String RABBITMQ_SECRET_PASSWORD_KEY = "rabbitmq-password";
+    public static final String RABBITMQ_SECRET_USERNAME_KEY = "rabbitmq-username";
 
     private ChartConfig chartConfig;
     private MqGlobalConfig mqGlobalConfig;
 
+    private String rabbitMQSecretName = DEFAULT_RABBITMQ_SECRET;
+    private String cassandraSecretName = DEFAULT_CASSANDRA_SECRET;
+
+    public String getRabbitMQSecretName() {
+        return rabbitMQSecretName;
+    }
+
+    public void setRabbitMQSecretName(String rabbitMQSecretName) {
+        this.rabbitMQSecretName = rabbitMQSecretName;
+    }
+
+    public String getCassandraSecretName() {
+        return cassandraSecretName;
+    }
+
+    public void setCassandraSecretName(String cassandraSecretName) {
+        this.cassandraSecretName = cassandraSecretName;
+    }
     private Map<String, MqWorkSpaceConfig> mqWorkSpaceConfigPerNamespace = new HashMap<>();
 
 
@@ -234,6 +257,7 @@ public enum OperatorConfig {
 
 
     @Getter
+    @Setter
     @Builder
     @ToString
     @EqualsAndHashCode

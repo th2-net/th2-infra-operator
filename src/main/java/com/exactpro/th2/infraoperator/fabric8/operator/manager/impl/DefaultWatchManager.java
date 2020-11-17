@@ -41,15 +41,16 @@ import com.exactpro.th2.infraoperator.fabric8.spec.strategy.resFinder.dictionary
 import com.exactpro.th2.infraoperator.fabric8.spec.strategy.resFinder.dictionary.impl.DefaultDictionaryResourceFinder;
 import com.exactpro.th2.infraoperator.fabric8.spec.strategy.resFinder.dictionary.impl.EmptyDictionaryResourceFinder;
 import com.exactpro.th2.infraoperator.fabric8.util.CustomResourceUtils;
+import com.exactpro.th2.infraoperator.fabric8.util.MqVHostUtils;
 import com.exactpro.th2.infraoperator.fabric8.util.Strings;
 import com.fasterxml.uuid.Generators;
 import io.fabric8.kubernetes.api.model.ConfigMap;
+import io.fabric8.kubernetes.api.model.Secret;
 import io.fabric8.kubernetes.client.KubernetesClient;
 import io.fabric8.kubernetes.client.KubernetesClientException;
 import io.fabric8.kubernetes.client.Watch;
 import io.fabric8.kubernetes.client.Watcher;
 import lombok.Getter;
-import lombok.SneakyThrows;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -69,6 +70,7 @@ import static com.exactpro.th2.infraoperator.fabric8.util.JsonUtils.JSON_READER;
 public class DefaultWatchManager {
 
     private static final Logger logger = LoggerFactory.getLogger(DefaultWatchManager.class);
+    public static final String SECRET_TYPE_OPAQUE = "Opaque";
 
 
     private boolean isWatching = false;
@@ -368,56 +370,68 @@ public class DefaultWatchManager {
             }
         }
 
-        @SneakyThrows
         @Override
-        public void eventReceived(Action action, ConfigMap cm) {
+        public void eventReceived(Action action, ConfigMap configMap) {
 
-            logger.debug("Received {} event for \"{}\"", action, CustomResourceUtils.annotationFor(cm));
-            if (!Objects.equals(extractName(cm), MQ_CONFIG_MAP_NAME)) {
+            String resourceLabel = CustomResourceUtils.annotationFor(configMap);
+            logger.debug("Received {} event for \"{}\"", action, resourceLabel);
+
+            if (!configMap.getMetadata().getName().equals(MQ_CONFIG_MAP_NAME) || action == Action.DELETED)
                 return;
-            }
 
-            var namespace = extractNamespace(cm);
+            try {
+                String namespace = configMap.getMetadata().getNamespace();
+                synchronized (LinkSingleton.INSTANCE.getLock(namespace)) {
 
-            synchronized (LinkSingleton.INSTANCE.getLock(namespace)) {
+                    logger.info("Processing {} event for \"{}\"", action, resourceLabel);
+                    OperatorConfig opConfig = OperatorConfig.INSTANCE;
+                    OperatorConfig.MqWorkSpaceConfig mqWsConfig = opConfig.getMqWorkSpaceConfig(namespace);
+                    String configContent = configMap.getData().get(CONFIG_MAP_RABBITMQ_PROP_NAME);
 
-                logger.info("Processing {} event for \"{}\"", action, CustomResourceUtils.annotationFor(cm));
+                    if (Strings.isNullOrEmpty(configContent)) {
+                        logger.error("Key \"{}\" not found in \"{}\"", CONFIG_MAP_RABBITMQ_PROP_NAME, resourceLabel);
+                        return;
+                    }
 
-                OperatorConfig opConfig = OperatorConfig.INSTANCE;
+                    // TODO: remove if there are no problems with rabbitmq configmaps
+                    // configContent = configContent.replace(System.lineSeparator(), "");
 
-                OperatorConfig.MqWorkSpaceConfig mqWsConfig = opConfig.getMqWorkSpaceConfig(namespace);
+                    OperatorConfig.MqWorkSpaceConfig newMqWsConfig = JSON_READER.readValue(configContent, OperatorConfig.MqWorkSpaceConfig.class);
+                    newMqWsConfig.setPassword(readRabbitMQPasswordForSchema(client, namespace, opConfig.getRabbitMQSecretName()));
 
-                String configContent = cm.getData().get(CONFIG_MAP_RABBITMQ_PROP_NAME);
-
-                if (Strings.isNullOrEmpty(configContent)) {
-                    logger.warn("'{}' not found in '{}.{}' config map",
-                            CONFIG_MAP_RABBITMQ_PROP_NAME, namespace, MQ_CONFIG_MAP_NAME);
-                    return;
+                    if (!Objects.equals(mqWsConfig, newMqWsConfig)) {
+                        opConfig.setMqWorkSpaceConfig(namespace, newMqWsConfig);
+                        MqVHostUtils.createVHostIfAbsent(namespace, opConfig.getMqAuthConfig());
+                        logger.info(String.format("RabbitMQ workspace data in namespace \"%s\" has been updated. Updating all boxes", namespace));
+                        int refreshedBoxesCount = refreshBoxes(namespace);
+                        logger.info("{} box-definition(s) have been updated", refreshedBoxesCount);
+                    } else
+                        logger.info("RabbitMQ workspace data hasn't changed");
                 }
-
-                configContent = configContent.replace(System.lineSeparator(), "");
-
-                var newMqWsConfig = JSON_READER.readValue(configContent, OperatorConfig.MqWorkSpaceConfig.class);
-
-                if (!Objects.equals(mqWsConfig, newMqWsConfig)) {
-
-                    opConfig.setMqWorkSpaceConfig(namespace, newMqWsConfig);
-
-                    logger.info("RabbitMQ workspace data in namespace '{}' has been updated with '{}'. " +
-                            "Updating all boxes in namespace '{}'", namespace, newMqWsConfig, namespace);
-
-                    var refreshedBoxesCount = refreshBoxes(namespace);
-
-                    logger.info("{} box-definition(s) updated", refreshedBoxesCount);
-
-                } else {
-                    logger.info("RabbitMQ workspace data hasn't changed");
-                }
-
+            } catch (Exception e) {
+                logger.error("Exception processing {} event for \"{}\"", action, resourceLabel, e);
             }
-
         }
+    }
 
+
+    private String readRabbitMQPasswordForSchema(KubernetesClient client, String namespace, String secretName) throws Exception {
+
+        Secret secret = client.secrets().inNamespace(namespace).withName(secretName).get();
+        if (secret == null)
+            throw new Exception(String.format("Secret not found \"%s\"", CustomResourceUtils.annotationFor(namespace, "Secret", secretName)));
+        if (secret.getData() == null)
+            throw new Exception(String.format("Invalid secret \"%s\". No data", CustomResourceUtils.annotationFor(secret)));
+
+        String password = secret.getData().get(OperatorConfig.RABBITMQ_SECRET_PASSWORD_KEY);
+        if (password == null)
+            throw new Exception(String.format("Invalid secret \"%s\". No password was found with key \"%s\""
+                    , CustomResourceUtils.annotationFor(secret)
+                    , OperatorConfig.RABBITMQ_SECRET_PASSWORD_KEY));
+
+        if (secret.getType().equals(SECRET_TYPE_OPAQUE))
+            password = new String(Base64.getDecoder().decode(password.getBytes()));
+        return password;
     }
 
     private class DictionaryWatcher implements Watcher<Th2Dictionary> {

@@ -38,7 +38,6 @@ public class MqVHostUtils {
         );
     }
 
-
     public static void createVHostIfAbsent(String namespace, OperatorConfig.MqGlobalConfig mqGlobalConfig) throws VHostCreateException {
 
         OperatorConfig.MqWorkSpaceConfig mqSchemaConfig = OperatorConfig.INSTANCE.getMqWorkSpaceConfig(namespace);
@@ -51,6 +50,9 @@ public class MqVHostUtils {
 
         String vHostName = mqSchemaConfig.getVHost();
         String username = mqSchemaConfig.getUsername();
+
+        if (Strings.isNullOrEmpty(username))
+            return;
 
         try {
             Client rmqClient = getClient(
@@ -67,9 +69,9 @@ public class MqVHostUtils {
                 logger.info("vHost \"{}\" was already present in RabbitMQ", vHostName);
 
             // check user
-            if (rmqClient.getUser(username) == null) {
+//            if (rmqClient.getUser(username) == null) {
                 rmqClient.createUser(username, mqSchemaConfig.getPassword().toCharArray(), new ArrayList<>());
-                logger.info("Created user \"{}\"  in RabbitMQ for namespace \"{}\"", username, namespace);
+                logger.info("Created user \"{}\" in RabbitMQ for namespace \"{}\"", username, namespace);
 
                 // set permissions
                 OperatorConfig.MqSchemaUserPermissions schemaUserPermissions = mqGlobalConfig.getSchemaUserPermissions();
@@ -77,12 +79,11 @@ public class MqVHostUtils {
                 permissions.setConfigure(schemaUserPermissions.getConfigure());
                 permissions.setRead(schemaUserPermissions.getRead());
                 permissions.setWrite(schemaUserPermissions.getWrite());
-                // TODO: make permissions configurable
 
                 rmqClient.updatePermissions(vHostName, username, permissions);
                 logger.info("User \"{}\" permissions set in RabbitMQ", username);
-            } else
-                logger.info("User \"{}\" was already present in RabbitMQ", username);
+//            } else
+//                logger.info("User \"{}\" was already present in RabbitMQ", username);
         } catch (Exception e) {
             logger.error("Exception setting up vHost & user for namespace \"{}\"", namespace, e);
             throw new VHostCreateException(e);
