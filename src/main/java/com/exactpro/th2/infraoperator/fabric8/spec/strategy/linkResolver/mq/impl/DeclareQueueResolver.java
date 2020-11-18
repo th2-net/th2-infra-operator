@@ -28,7 +28,6 @@ import org.slf4j.LoggerFactory;
 import java.util.Map;
 
 import static com.exactpro.th2.infraoperator.fabric8.spec.strategy.linkResolver.mq.impl.RabbitMqStaticContext.*;
-import static java.util.Collections.emptyMap;
 
 public class DeclareQueueResolver {
 
@@ -97,7 +96,7 @@ public class DeclareQueueResolver {
 
             if (!attrs.contains(DirectionAttribute.publish.name())) {
                 String queue = buildQueue(namespace, boxMq);
-                var declareResult = channel.queueDeclare(queue, mqGlobalConfig.isPersistence(), false, false, emptyMap());
+                var declareResult = channel.queueDeclare(queue, mqGlobalConfig.isPersistence(), false, false, generateQueueArguments(pin.getSettings()));
                 logger.info("Queue '{}' of resource {} was successfully declared", declareResult.getQueue(), ExtractUtils.extractName(resource));
             }
         }

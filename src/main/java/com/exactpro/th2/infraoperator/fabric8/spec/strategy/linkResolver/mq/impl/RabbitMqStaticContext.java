@@ -14,6 +14,7 @@
 package com.exactpro.th2.infraoperator.fabric8.spec.strategy.linkResolver.mq.impl;
 
 import com.exactpro.th2.infraoperator.fabric8.configuration.OperatorConfig;
+import com.exactpro.th2.infraoperator.fabric8.spec.shared.PinSettings;
 import com.exactpro.th2.infraoperator.fabric8.spec.strategy.linkResolver.ConfigNotFoundException;
 import com.rabbitmq.client.Channel;
 import com.rabbitmq.client.ConnectionFactory;
@@ -23,6 +24,8 @@ import lombok.SneakyThrows;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.util.Collections;
+import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
@@ -91,5 +94,17 @@ public class RabbitMqStaticContext {
 
     public static Map<String, Boolean> getMqExchangeResets() {
         return mqExchangeResets;
+    }
+
+    public static Map<String, Object> generateQueueArguments(PinSettings pinSettings) throws NumberFormatException {
+
+        if (pinSettings.getStorageOnDemand().equals("true")) {
+            return Collections.emptyMap();
+        } else {
+            Map<String, Object> args = new HashMap<>();
+            int queueLength = Integer.parseInt(pinSettings.getQueueLength());
+            args.put("x-max-length", queueLength);
+            return args;
+        }
     }
 }

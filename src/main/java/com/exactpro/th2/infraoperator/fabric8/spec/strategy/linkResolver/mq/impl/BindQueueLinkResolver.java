@@ -27,6 +27,7 @@ import com.exactpro.th2.infraoperator.fabric8.spec.link.validator.chain.impl.Pin
 import com.exactpro.th2.infraoperator.fabric8.spec.link.validator.chain.impl.ResourceExist;
 import com.exactpro.th2.infraoperator.fabric8.spec.link.validator.model.DirectionalLinkContext;
 import com.exactpro.th2.infraoperator.fabric8.spec.shared.BoxDirection;
+import com.exactpro.th2.infraoperator.fabric8.spec.shared.PinSettings;
 import com.exactpro.th2.infraoperator.fabric8.spec.strategy.linkResolver.mq.QueueLinkResolver;
 import com.exactpro.th2.infraoperator.fabric8.spec.strategy.resFinder.box.BoxResourceFinder;
 import com.exactpro.th2.infraoperator.fabric8.spec.shared.SchemaConnectionType;
@@ -44,7 +45,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 
-import static java.util.Collections.emptyMap;
+import static com.exactpro.th2.infraoperator.fabric8.spec.strategy.linkResolver.mq.impl.RabbitMqStaticContext.generateQueueArguments;
 
 
 public class BindQueueLinkResolver implements QueueLinkResolver {
@@ -101,7 +102,7 @@ public class BindQueueLinkResolver implements QueueLinkResolver {
                     continue;
                 }
 
-                bindQueues(linkNamespace, queueBunch);
+                bindQueues(linkNamespace, queueBunch, resourceCouple.to, link.getTo());
 
                 logger.info("Queue '{}' of link {{}.{} -> {}.{}} successfully bound",
                         queueBunch.getQueue(), linkNamespace, link.getFrom(), linkNamespace, link.getTo());
@@ -124,7 +125,7 @@ public class BindQueueLinkResolver implements QueueLinkResolver {
 
 
     @SneakyThrows
-    private void bindQueues(String namespace, QueueBunch queueBunch) {
+    private void bindQueues(String namespace, QueueBunch queueBunch, Th2CustomResource resource, BoxMq boxMq) {
 
         Map<String, RabbitMqStaticContext.ChannelBunch> channelBunchMap = RabbitMqStaticContext.getMqChannels();
 
@@ -138,7 +139,8 @@ public class BindQueueLinkResolver implements QueueLinkResolver {
             logger.info("RMQ connection has been restored");
         }
 
-        channel.queueDeclare(queueBunch.getQueue(), mqGlobalConfig.isPersistence(), false, false, emptyMap());
+        PinSettings pinSettings = resource.getSpec().getPin(boxMq.getPin()).getSettings();
+        channel.queueDeclare(queueBunch.getQueue(), mqGlobalConfig.isPersistence(), false, false, generateQueueArguments(pinSettings));
         channel.queueBind(queueBunch.getQueue(), queueBunch.getExchange(), queueBunch.getRoutingKey());
 
     }
