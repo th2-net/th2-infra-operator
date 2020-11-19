@@ -23,6 +23,8 @@ import lombok.ToString;
 @EqualsAndHashCode(callSuper = true)
 public class Th2GenericBox extends Th2CustomResource {
 
+    public static final String KIND = "Th2GenericBox";
+
     private Th2GenericBoxSpec spec;
 
 }

@@ -22,5 +22,8 @@ import lombok.ToString;
 @ToString(callSuper = true)
 @EqualsAndHashCode(callSuper = true)
 public class Th2EventStore extends Th2CustomResource {
+
+    public static final String KIND = "Th2EventStore";
+
     private Th2EventStoreSpec spec;
 }

@@ -17,7 +17,8 @@ import com.exactpro.th2.infraoperator.fabric8.Th2CrdController;
 import com.exactpro.th2.infraoperator.fabric8.model.http.HttpCode;
 import com.exactpro.th2.infraoperator.fabric8.model.kubernetes.client.ResourceClient;
 import com.exactpro.th2.infraoperator.fabric8.spec.Th2CustomResource;
-import com.exactpro.th2.infraoperator.fabric8.spec.strategy.linkResolver.VHostCreateException;
+import com.exactpro.th2.infraoperator.fabric8.spec.strategy.redeploy.RetryableTaskQueue;
+import com.exactpro.th2.infraoperator.fabric8.spec.strategy.redeploy.tasks.TriggerRedeployTask;
 import com.exactpro.th2.infraoperator.fabric8.util.CustomResourceUtils;
 import io.fabric8.kubernetes.api.model.*;
 import io.fabric8.kubernetes.client.KubernetesClient;
@@ -40,14 +41,15 @@ public abstract class AbstractTh2Operator<CR extends Th2CustomResource, KO exten
 
     private static final Logger logger = LoggerFactory.getLogger(AbstractTh2Operator.class);
 
+    private static final int REDEPLOY_DELAY = 120;
 
     public static final String REFRESH_TOKEN_ALIAS = "refresh-token";
 
     public static final String ANTECEDENT_LABEL_KEY_ALIAS = "th2.exactpro.com/antecedent";
 
+    private final RetryableTaskQueue retryableTaskQueue = new RetryableTaskQueue();
 
-    protected String kubObjType;
-    protected String resourceType;
+
     protected Watch kubObjWatch;
     protected final Set<String> targetCrFullNames;
     protected final KubernetesClient kubClient;
@@ -65,7 +67,7 @@ public abstract class AbstractTh2Operator<CR extends Th2CustomResource, KO exten
     public void eventReceived(Action action, CR resource) {
 
         logger.debug("Received {} event for \"{}\"", action, CustomResourceUtils.annotationFor(resource));
-        resourceType = extractType(resource);
+        String resourceType = extractType(resource);
 
         var resFullName = extractFullName(resource);
 
@@ -79,25 +81,25 @@ public abstract class AbstractTh2Operator<CR extends Th2CustomResource, KO exten
                     && Objects.nonNull(existRes)
                     && compareRefreshTokens(existRes, resource)
                     && extractGeneration(existRes).equals(extractGeneration(resource))) {
+                logger.debug("Received {} event for \"{}\", but no changes detected and exiting", action, CustomResourceUtils.annotationFor(resource));
+
                 return;
             }
 
             processEvent(action, resource);
 
-        } catch (VHostCreateException e) {
-            logger.error("Something went wrong while creating Vhost during processing [{}] event of [{}<{}>]",
-                    action, resourceType, resFullName, e);
-
-            resource.getStatus().failed(e.getMessage());
-
-            updateStatus(resource);
         } catch (Exception e) {
             logger.error("Something went wrong while processing [{}] event of [{}<{}>]",
                     action, resourceType, resFullName, e);
 
-            resource.getStatus().failed(e.getMessage());
-
+            resource.getStatus().failed(e);
             updateStatus(resource);
+
+            //create and schedule task to redeploy failed component
+            TriggerRedeployTask triggerRedeployTask = new TriggerRedeployTask(this, getResourceClient(), kubClient, resource, action, REDEPLOY_DELAY);
+            retryableTaskQueue.add(triggerRedeployTask, true);
+
+            logger.info("added task \"{}\" to scheduler, with delay \"{}\" seconds", triggerRedeployTask.getName(), REDEPLOY_DELAY);
         }
 
     }
@@ -120,7 +122,7 @@ public abstract class AbstractTh2Operator<CR extends Th2CustomResource, KO exten
 
             var ko = parseStreamToKubObj(somePodYml);
 
-            kubObjType = ko.getClass().getSimpleName();
+            String kubObjType = ko.getClass().getSimpleName();
 
             logger.info("[{}] from '{}' has been loaded", kubObjType, kubObjDefPath);
 
@@ -220,8 +222,8 @@ public abstract class AbstractTh2Operator<CR extends Th2CustomResource, KO exten
         } catch (KubernetesClientException e) {
 
             if (HttpCode.ofCode(e.getCode()) == HttpCode.SERVER_CONFLICT) {
-                logger.warn("Failed to update status of [{}] resource because it has been " +
-                        "already changed on the server. Trying to sync a resource...", resFullName);
+                logger.warn("Failed to update status of [{}] resource to [{}] because it has been " +
+                        "already changed on the server. Trying to sync a resource...", resFullName, resource.getStatus().getPhase());
                 var freshRes = resClient.inNamespace(extractNamespace(resource)).list().getItems().stream()
                         .filter(r -> extractName(r).equals(extractName(resource)))
                         .findFirst()
@@ -230,10 +232,10 @@ public abstract class AbstractTh2Operator<CR extends Th2CustomResource, KO exten
                     freshRes.setStatus(resource.getStatus());
                     var updatedRes = updateStatus(freshRes);
                     bunches.put(resFullName, updatedRes);
-                    logger.info("Status of [{}] resource successfully updated", resFullName);
+                    logger.info("Status of [{}] resource successfully updated to [{}]", resFullName, resource.getStatus().getPhase());
                     return updatedRes;
                 } else {
-                    logger.warn("Unable to update status of [{}] resource: resource not present", resFullName);
+                    logger.warn("Unable to update status of [{}] resource to [{}]: resource not present", resFullName, resource.getStatus().getPhase());
                     return resource;
                 }
             }
@@ -253,6 +255,8 @@ public abstract class AbstractTh2Operator<CR extends Th2CustomResource, KO exten
         logger.info("Generated \"{}\" based on \"{}\""
                 , CustomResourceUtils.annotationFor(kubObj)
                 , CustomResourceUtils.annotationFor(resource));
+
+        String kubObjType = kubObj.getClass().getSimpleName();
 
         resource.getStatus().succeeded(kubObjType + " successfully deployed", extractName(kubObj));
 
@@ -278,8 +282,10 @@ public abstract class AbstractTh2Operator<CR extends Th2CustomResource, KO exten
 
     protected void startWatchForKubObj(CR resource) {
         targetCrFullNames.add(extractFullName(resource));
-        if (Objects.isNull(kubObjWatch)) {
-            kubObjWatch = setKubObjWatcher(extractNamespace(resource), new KubObjWatcher());
+        synchronized (this) {
+            if (kubObjWatch == null) {
+                kubObjWatch = setKubObjWatcher(extractNamespace(resource), new KubObjWatcher());
+            }
         }
     }
 
@@ -303,6 +309,8 @@ public abstract class AbstractTh2Operator<CR extends Th2CustomResource, KO exten
         kubObjMD.setAnnotations(resMD.getAnnotations());
 
         kubObjMD.setAnnotations(kubObjMD.getAnnotations() != null ? kubObjMD.getAnnotations() : new HashMap<>());
+
+        String resourceType = extractType(resource);
 
         kubObjMD.getAnnotations().put(ANTECEDENT_LABEL_KEY_ALIAS, resNamespace + ":" + resourceType + "/" + resName);
 

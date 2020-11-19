@@ -189,9 +189,6 @@ public abstract class HelmReleaseTh2Op<CR extends Th2CustomResource> extends Abs
 
         var lSingleton = LinkSingleton.INSTANCE;
 
-
-        var mqActiveLinks = lSingleton.getMqActiveLinks(resNamespace);
-
         var grpcActiveLinks = lSingleton.getGrpcActiveLinks(resNamespace);
 
         var dictionaryActiveLinks = lSingleton.getDictionaryActiveLinks(resNamespace);
@@ -301,6 +298,7 @@ public abstract class HelmReleaseTh2Op<CR extends Th2CustomResource> extends Abs
         super.setupKubObj(resource, helmRelease);
 
         if (!isResourceCrdExist(kubClient, helmReleaseCrd)) {
+            String kubObjType = helmRelease.getClass().getSimpleName();
             createResourceCrd(kubClient, helmReleaseCrd, kubObjType);
         }
 

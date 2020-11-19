@@ -21,10 +21,12 @@ public enum RolloutPhase {
     UPGRADING("Upgrading", "ComponentUpgrading"),
     DELETING("Deleting", "ComponentDeleting"),
     SUCCEEDED("Succeeded", "Succeeded"),
-    FAILED("Failed", "SomeExceptionOccurred");
+    FAILED("Failed", "SomeExceptionOccurred"),
+    FAILED_VHOST("Failed", "VHostCreateException"),
+    FAILED_CONFIG("Failed", "ConfigNotFoundException");
 
-    private String name;
-    private String reason;
+    private final String name;
+    private final String reason;
 
     RolloutPhase(String name, String reason) {
         this.name = name;

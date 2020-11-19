@@ -13,10 +13,9 @@
 
 package com.exactpro.th2.infraoperator.fabric8.spec.shared.status;
 
+import com.exactpro.th2.infraoperator.fabric8.spec.strategy.linkResolver.ConfigNotFoundException;
+import com.exactpro.th2.infraoperator.fabric8.spec.strategy.linkResolver.VHostCreateException;
 import com.fasterxml.jackson.annotation.JsonInclude;
-import lombok.EqualsAndHashCode;
-import lombok.Getter;
-import lombok.ToString;
 
 import java.time.Instant;
 import java.util.ArrayList;
@@ -24,15 +23,12 @@ import java.util.List;
 
 import static java.time.temporal.ChronoUnit.SECONDS;
 
-@Getter
-@ToString
-@EqualsAndHashCode
 @JsonInclude(JsonInclude.Include.NON_EMPTY)
 public class StatusSpec {
 
     private static final String SUB_RESOURCE_NAME_PLACEHOLDER = "unknown";
 
-    private List<Condition> conditions = new ArrayList<>();
+    private final List<Condition> conditions = new ArrayList<>();
     private RolloutPhase phase = RolloutPhase.IDLE;
     private String subResourceName;
     private String message;
@@ -42,8 +38,8 @@ public class StatusSpec {
     }
 
     public void idle(String message) {
-        refreshDeployCondition(RolloutPhase.IDLE, false, message);
-        refreshQueueCondition(RolloutPhase.IDLE, false, message);
+        refreshCondition(Condition.Type.DEPLOYED, RolloutPhase.IDLE, false, message);
+        refreshCondition(Condition.Type.ENQUEUED, RolloutPhase.IDLE, false, message);
     }
 
     public void installing() {
@@ -51,8 +47,8 @@ public class StatusSpec {
     }
 
     public void installing(String message) {
-        refreshDeployCondition(RolloutPhase.INSTALLING, false, message);
-        refreshQueueCondition(RolloutPhase.INSTALLING, true, message);
+        refreshCondition(Condition.Type.DEPLOYED, RolloutPhase.INSTALLING, false, message);
+        refreshCondition(Condition.Type.ENQUEUED, RolloutPhase.INSTALLING, true, message);
     }
 
     public void upgrading() {
@@ -60,7 +56,7 @@ public class StatusSpec {
     }
 
     public void upgrading(String message) {
-        refreshDeployCondition(RolloutPhase.UPGRADING, false, message);
+        refreshCondition(Condition.Type.DEPLOYED, RolloutPhase.UPGRADING, false, message);
     }
 
     public void deleting() {
@@ -68,8 +64,8 @@ public class StatusSpec {
     }
 
     public void deleting(String message) {
-        refreshDeployCondition(RolloutPhase.DELETING, false, message);
-        refreshQueueCondition(RolloutPhase.DELETING, false, message);
+        refreshCondition(Condition.Type.DEPLOYED, RolloutPhase.DELETING, false, message);
+        refreshCondition(Condition.Type.ENQUEUED, RolloutPhase.DELETING, false, message);
     }
 
     public void succeeded() {
@@ -77,95 +73,90 @@ public class StatusSpec {
     }
 
     public void succeeded(String message, String subResourceName) {
-        refreshDeployCondition(RolloutPhase.SUCCEEDED, subResourceName, true, message);
-        refreshQueueCondition(RolloutPhase.SUCCEEDED, subResourceName, true, message);
+        refreshCondition(Condition.Type.DEPLOYED, RolloutPhase.SUCCEEDED, subResourceName, true, message);
+        refreshCondition(Condition.Type.ENQUEUED, RolloutPhase.SUCCEEDED, subResourceName, true, message);
     }
 
-    public void failed() {
-        failed(null);
+    public void failed(Exception e) {
+        if (e instanceof VHostCreateException) {
+            failedVHost(e.getMessage());
+        } else if (e instanceof ConfigNotFoundException) {
+            failedConfig(e.getMessage());
+        } else {
+            failed(e.getMessage());
+        }
     }
 
     public void failed(String message) {
-        refreshDeployCondition(RolloutPhase.FAILED, false, message);
-        refreshQueueCondition(RolloutPhase.FAILED, false, message);
+        refreshCondition(Condition.Type.DEPLOYED, RolloutPhase.FAILED, false, message);
+        refreshCondition(Condition.Type.ENQUEUED, RolloutPhase.FAILED, false, message);
+    }
+
+    public void failedVHost(String message) {
+        refreshCondition(Condition.Type.DEPLOYED, RolloutPhase.FAILED, false, message);
+        refreshCondition(Condition.Type.ENQUEUED, RolloutPhase.FAILED_VHOST, false, message);
+    }
+
+    public void failedConfig(String message) {
+        refreshCondition(Condition.Type.DEPLOYED, RolloutPhase.FAILED, false, message);
+        refreshCondition(Condition.Type.ENQUEUED, RolloutPhase.FAILED_CONFIG, false, message);
+    }
+
+    private void refreshCondition(Condition.Type type, RolloutPhase phase, boolean status, String message) {
+        refreshCondition(type, phase, SUB_RESOURCE_NAME_PLACEHOLDER, status, message);
     }
 
 
-    public void refreshDeployCondition(RolloutPhase cStatus, boolean status, String message) {
-        refreshDeployCondition(cStatus, SUB_RESOURCE_NAME_PLACEHOLDER, status, message);
-    }
+    private void refreshCondition(Condition.Type type, RolloutPhase phase, String subResourceName, boolean status, String message) {
 
-    public void refreshDeployCondition(RolloutPhase cStatus, String subResourceName, boolean status, String message) {
-        Condition deployCondition;
-
+        Condition condition;
         if (conditions.isEmpty()) {
-            deployCondition = Condition.builder().type(Condition.Type.DEPLOYED.toString()).build();
-            this.conditions.add(deployCondition);
+            condition = Condition.builder().type(type.toString()).build();
+            this.conditions.add(condition);
         } else {
-            deployCondition = conditions.stream()
-                    .filter(condition -> condition.getType().equals(Condition.Type.DEPLOYED.toString()))
+            condition = conditions.stream()
+                    .filter(con -> con.getType().equals(type.toString()))
                     .findFirst().orElse(null);
-            if (deployCondition == null) {
-                deployCondition = Condition.builder().type(Condition.Type.DEPLOYED.toString()).build();
-                this.conditions.add(deployCondition);
+            if (condition == null) {
+                condition = Condition.builder().type(type.toString()).build();
+                this.conditions.add(condition);
             }
         }
 
-        String currentTime = Instant.now().truncatedTo(SECONDS).toString();
-
-        deployCondition.setLastUpdateTime(currentTime);
-
-        String currentStatus = Condition.Status.valueOf(status).toString();
-
-        if (!currentStatus.equals(deployCondition.getStatus())) {
-            deployCondition.setLastTransitionTime(currentTime);
-        }
-
-        this.message = message;
-        this.phase = cStatus;
-        this.subResourceName = subResourceName;
-
-        deployCondition.setMessage(message);
-        deployCondition.setReason(phase.getReason());
-        deployCondition.setStatus(currentStatus);
-    }
-
-    public void refreshQueueCondition(RolloutPhase cStatus, boolean status, String message) {
-        refreshQueueCondition(cStatus, SUB_RESOURCE_NAME_PLACEHOLDER, status, message);
-    }
-
-    public void refreshQueueCondition(RolloutPhase cStatus, String subResourceName, boolean status, String message) {
-        Condition queueCondition;
-
-        if (conditions.isEmpty()) {
-            queueCondition = Condition.builder().type(Condition.Type.ENQUEUED.toString()).build();
-            this.conditions.add(queueCondition);
-        } else {
-            queueCondition = conditions.stream()
-                    .filter(condition -> condition.getType().equals(Condition.Type.ENQUEUED.toString()))
-                    .findFirst().orElse(null);
-            if (queueCondition == null) {
-                queueCondition = Condition.builder().type(Condition.Type.ENQUEUED.toString()).build();
-                this.conditions.add(queueCondition);
-            }
-        }
 
         String currentTime = Instant.now().truncatedTo(SECONDS).toString();
-
-        queueCondition.setLastUpdateTime(currentTime);
+        condition.setLastUpdateTime(currentTime);
 
         String currentStatus = Condition.Status.valueOf(status).toString();
-
-        if (!currentStatus.equals(queueCondition.getStatus())) {
-            queueCondition.setLastTransitionTime(currentTime);
-        }
+        if (!currentStatus.equals(condition.getStatus()))
+            condition.setLastTransitionTime(currentTime);
 
         this.message = message;
-        this.phase = cStatus;
+        this.phase = phase;
         this.subResourceName = subResourceName;
 
-        queueCondition.setMessage(message);
-        queueCondition.setReason(phase.getReason());
-        queueCondition.setStatus(currentStatus);
+        condition.setMessage(message);
+        condition.setReason(phase.getReason());
+        condition.setStatus(currentStatus);
+    }
+
+    public List<Condition> getConditions() {
+        return this.conditions;
+    }
+
+    public RolloutPhase getPhase() {
+        return this.phase;
+    }
+
+    public String getSubResourceName() {
+        return this.subResourceName;
+    }
+
+    public String getMessage() {
+        return this.message;
+    }
+
+    public String toString() {
+        return "StatusSpec(conditions=" + this.getConditions() + ", phase=" + this.getPhase() + ", subResourceName=" + this.getSubResourceName() + ", message=" + this.getMessage() + ")";
     }
 }
