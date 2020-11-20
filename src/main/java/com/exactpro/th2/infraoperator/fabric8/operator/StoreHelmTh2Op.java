@@ -28,20 +28,20 @@ public abstract class StoreHelmTh2Op<CR extends Th2CustomResource> extends HelmR
     private static final Logger logger = LoggerFactory.getLogger(StoreHelmTh2Op.class);
 
 
-    public static final String EVENT_STORAGE_PIN_ALIAS = "estore-pin";
+    public static final String EVENT_STORAGE_PIN_ALIAS = "event-store-pin";
 
-    public static final String EVENT_STORAGE_LINK_NAME_SUFFIX = "-to-estore_hidden-link";
+    public static final String EVENT_STORAGE_LINK_NAME_SUFFIX = "-to-event-storage_hidden-link";
 
-    public static final String EVENT_ST_LINK_RESOURCE_NAME = "estore-hidden-links";
+    public static final String EVENT_ST_LINK_RESOURCE_NAME = "event-storage-hidden-links";
 
     public static final String EVENT_STORAGE_BOX_ALIAS = "estore";
 
 
-    public static final String MESSAGE_STORAGE_PIN_ALIAS = "mstore-pin";
+    public static final String MESSAGE_STORAGE_PIN_ALIAS = "msg-store-pin";
 
-    public static final String MESSAGE_STORAGE_LINK_NAME_SUFFIX = "-to-mstore_hidden-link";
+    public static final String MESSAGE_STORAGE_LINK_NAME_SUFFIX = "-to-msg-storage_hidden-link";
 
-    public static final String MSG_ST_LINK_RESOURCE_NAME = "mstore-hidden-links";
+    public static final String MSG_ST_LINK_RESOURCE_NAME = "message-storage-hidden-links";
 
     public static final String MESSAGE_STORAGE_BOX_ALIAS = "mstore";
 
