@@ -1,11 +1,11 @@
 # infra-operator
 
-Infra operator is java implementation of Kubernetes 
+infra-operator is java implementation of Kubernetes 
 [custom resource controller](https://kubernetes.io/docs/concepts/extend-kubernetes/api-extension/custom-resources/#custom-controllers). 
 It is part of _th2 infrastructure_. Together with [infra-mgr](https://github.com/th2-net/th2-infra-mgr) and 
 [helm-operator](https://github.com/fluxcd/helm-operator) 
 it ensures synchronization of custom resource files from GitHub and actual resources 
-in Kubernetes. Infra operator uses [fabric8](https://fabric8.io/guide/) library for communication with Kubernetes. 
+in Kubernetes. infra-operator uses [fabric8](https://fabric8.io/guide/) library for communication with Kubernetes. 
 
 [Custom resources](https://kubernetes.io/docs/concepts/extend-kubernetes/api-extension/custom-resources/) 
 allow us to extend Kubernetes API with custom components specifically designed for our needs. 
@@ -14,7 +14,7 @@ task to look over them. Below you can see one of the examples of custom resource
 
 ```yaml
 apiVersion: th2.exactpro.com/v1
-kind: Th2GenericBox //FIXME change kind to Th2Generic
+kind: Th2Generic
 metadata:
   name: read-log
 spec:
@@ -53,7 +53,7 @@ spec:
 ```  
 
 For more information on what kind of custom resources are used ind th2 and what each section of their configuration represents
-please refer to (TODO: where ?) 
+please refer to [th2-documentation](https://github.com/th2-net/th2-documentation)
 
 infra-operator is also responsible for queues and user permission management on [RabbitMQ](https://www.rabbitmq.com/documentation.html).
 List below covers main responsibilities and objectives of this component.
