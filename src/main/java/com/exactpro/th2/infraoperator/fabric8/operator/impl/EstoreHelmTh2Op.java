@@ -14,32 +14,37 @@
 package com.exactpro.th2.infraoperator.fabric8.operator.impl;
 
 import com.exactpro.th2.infraoperator.fabric8.model.kubernetes.client.ResourceClient;
-import com.exactpro.th2.infraoperator.fabric8.model.kubernetes.client.ipml.GenericBoxClient;
-import com.exactpro.th2.infraoperator.fabric8.operator.BoxHelmTh2Op;
+import com.exactpro.th2.infraoperator.fabric8.model.kubernetes.client.ipml.EstoreClient;
+import com.exactpro.th2.infraoperator.fabric8.operator.StoreHelmTh2Op;
 import com.exactpro.th2.infraoperator.fabric8.operator.context.HelmOperatorContext;
-import com.exactpro.th2.infraoperator.fabric8.spec.generic.Th2GenericBox;
+import com.exactpro.th2.infraoperator.fabric8.spec.estore.Th2Estore;
 import io.fabric8.kubernetes.client.KubernetesClient;
 
-public class GenericBoxHelmTh2Op extends BoxHelmTh2Op<Th2GenericBox> {
+public class EstoreHelmTh2Op extends StoreHelmTh2Op<Th2Estore> {
 
-    private final GenericBoxClient genericBoxClient;
+    private final EstoreClient estoreClient;
 
 
-    public GenericBoxHelmTh2Op(HelmOperatorContext.Builder<?, ?> builder) {
+    public EstoreHelmTh2Op(HelmOperatorContext.Builder<?, ?> builder) {
         super(builder);
-        this.genericBoxClient = new GenericBoxClient(builder.getClient());
+        this.estoreClient = new EstoreClient(builder.getClient());
     }
 
 
     @Override
-    public ResourceClient<Th2GenericBox> getResourceClient() {
-        return genericBoxClient;
+    public ResourceClient<Th2Estore> getResourceClient() {
+        return estoreClient;
     }
 
 
     @Override
-    protected String getKubObjDefPath(Th2GenericBox resource) {
-        return "/cr/helm/th2-generic-box-helm-release-live.yml";
+    protected String getKubObjDefPath(Th2Estore resource) {
+        return "/cr/helm/th2-estore-helm-release-live.yml";
+    }
+
+    @Override
+    protected String getStorageName() {
+        return EVENT_STORAGE_BOX_ALIAS;
     }
 
 
@@ -47,15 +52,15 @@ public class GenericBoxHelmTh2Op extends BoxHelmTh2Op<Th2GenericBox> {
         return new Builder(client);
     }
 
-    public static class Builder extends HelmOperatorContext.Builder<GenericBoxHelmTh2Op, Builder> {
+    public static class Builder extends HelmOperatorContext.Builder<EstoreHelmTh2Op, Builder> {
 
         public Builder(KubernetesClient client) {
             super(client);
         }
 
         @Override
-        public GenericBoxHelmTh2Op build() {
-            return new GenericBoxHelmTh2Op(this);
+        public EstoreHelmTh2Op build() {
+            return new EstoreHelmTh2Op(this);
         }
 
         @Override
@@ -64,5 +69,4 @@ public class GenericBoxHelmTh2Op extends BoxHelmTh2Op<Th2GenericBox> {
         }
 
     }
-
 }

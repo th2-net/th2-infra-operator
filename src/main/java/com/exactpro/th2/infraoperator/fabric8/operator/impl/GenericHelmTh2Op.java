@@ -14,37 +14,32 @@
 package com.exactpro.th2.infraoperator.fabric8.operator.impl;
 
 import com.exactpro.th2.infraoperator.fabric8.model.kubernetes.client.ResourceClient;
-import com.exactpro.th2.infraoperator.fabric8.model.kubernetes.client.ipml.MessageStoreClient;
-import com.exactpro.th2.infraoperator.fabric8.operator.StoreHelmTh2Op;
+import com.exactpro.th2.infraoperator.fabric8.model.kubernetes.client.ipml.GenericClient;
+import com.exactpro.th2.infraoperator.fabric8.operator.BoxHelmTh2Op;
 import com.exactpro.th2.infraoperator.fabric8.operator.context.HelmOperatorContext;
-import com.exactpro.th2.infraoperator.fabric8.spec.mstore.Th2MessageStore;
+import com.exactpro.th2.infraoperator.fabric8.spec.generic.Th2Generic;
 import io.fabric8.kubernetes.client.KubernetesClient;
 
-public class MessageStoreHelmTh2Op extends StoreHelmTh2Op<Th2MessageStore> {
+public class GenericHelmTh2Op extends BoxHelmTh2Op<Th2Generic> {
 
-    private final MessageStoreClient messageStoreClient;
+    private final GenericClient genericClient;
 
 
-    public MessageStoreHelmTh2Op(HelmOperatorContext.Builder<?, ?> builder) {
+    public GenericHelmTh2Op(HelmOperatorContext.Builder<?, ?> builder) {
         super(builder);
-        this.messageStoreClient = new MessageStoreClient(builder.getClient());
+        this.genericClient = new GenericClient(builder.getClient());
     }
 
 
     @Override
-    public ResourceClient<Th2MessageStore> getResourceClient() {
-        return messageStoreClient;
+    public ResourceClient<Th2Generic> getResourceClient() {
+        return genericClient;
     }
 
 
     @Override
-    protected String getKubObjDefPath(Th2MessageStore resource) {
-        return "/cr/helm/th2-message-store-helm-release-live.yml";
-    }
-
-    @Override
-    protected String getStorageName() {
-        return MESSAGE_STORAGE_BOX_ALIAS;
+    protected String getKubObjDefPath(Th2Generic resource) {
+        return "/cr/helm/th2-generic-helm-release-live.yml";
     }
 
 
@@ -52,15 +47,15 @@ public class MessageStoreHelmTh2Op extends StoreHelmTh2Op<Th2MessageStore> {
         return new Builder(client);
     }
 
-    public static class Builder extends HelmOperatorContext.Builder<MessageStoreHelmTh2Op, Builder> {
+    public static class Builder extends HelmOperatorContext.Builder<GenericHelmTh2Op, Builder> {
 
         public Builder(KubernetesClient client) {
             super(client);
         }
 
         @Override
-        public MessageStoreHelmTh2Op build() {
-            return new MessageStoreHelmTh2Op(this);
+        public GenericHelmTh2Op build() {
+            return new GenericHelmTh2Op(this);
         }
 
         @Override
@@ -69,4 +64,5 @@ public class MessageStoreHelmTh2Op extends StoreHelmTh2Op<Th2MessageStore> {
         }
 
     }
+
 }

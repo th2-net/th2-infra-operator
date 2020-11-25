@@ -14,20 +14,20 @@
 package com.exactpro.th2.infraoperator.fabric8.model.kubernetes.client.ipml;
 
 import com.exactpro.th2.infraoperator.fabric8.model.kubernetes.client.DefaultResourceClient;
-import com.exactpro.th2.infraoperator.fabric8.spec.generic.DoneableTh2GenericBox;
-import com.exactpro.th2.infraoperator.fabric8.spec.generic.Th2GenericBox;
-import com.exactpro.th2.infraoperator.fabric8.spec.generic.Th2GenericBoxList;
+import com.exactpro.th2.infraoperator.fabric8.spec.mstore.DoneableTh2Mstore;
+import com.exactpro.th2.infraoperator.fabric8.spec.mstore.Th2Mstore;
+import com.exactpro.th2.infraoperator.fabric8.spec.mstore.Th2MstoreList;
 import io.fabric8.kubernetes.client.KubernetesClient;
 
-public class GenericBoxClient extends DefaultResourceClient<Th2GenericBox> {
+public class MstoreClient extends DefaultResourceClient<Th2Mstore> {
 
-    public GenericBoxClient(KubernetesClient client) {
+    public MstoreClient(KubernetesClient client) {
         super(
                 client,
-                Th2GenericBox.class,
-                Th2GenericBoxList.class,
-                DoneableTh2GenericBox.class,
-                "th2genericboxes.th2.exactpro.com"
+                Th2Mstore.class,
+                Th2MstoreList.class,
+                DoneableTh2Mstore.class,
+                "th2messagestores.th2.exactpro.com"
         );
     }
 
