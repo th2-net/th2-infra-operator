@@ -10,52 +10,14 @@ in Kubernetes. infra-operator uses [fabric8](https://fabric8.io/guide/) library 
 [Custom resources](https://kubernetes.io/docs/concepts/extend-kubernetes/api-extension/custom-resources/) 
 allow us to extend Kubernetes API with custom components specifically designed for our needs. 
 However, as such custom components are not part of default Kubernetes installation It is infra-operator's 
-task to look over them. Below you can see one of the examples of custom resource used in th2.
+task to look over them. infra-operator monitors 5 kind of custom resources, which are defined in 
+[th2-infra](https://github.com/th2-net/th2-infra/blob/master/values/CRD) repository.
 
-```yaml
-apiVersion: th2.exactpro.com/v1
-kind: Th2Generic
-metadata:
-  name: read-log
-spec:
-  image-name: ghcr.io/th2-net/th2-read-log
-  image-version: 2.3.0
-  type: th2-read
-  custom-config:
-    log-file: "/logsToRead/demo_log.txt"
-    regexp: "8=FIX.+10=.+\\b\\u0001"
-    regexp-groups: [0]
-  pins:
-    - name: read_log_demo_out
-      connection-type: mq
-      attributes:
-        - raw
-        - publish
-        - store
-  extended-settings:
-    chart-cfg:
-      ref: schema-stable
-      path: custom-component
-    service:
-      enabled: false
-    envVariables:
-      JAVA_TOOL_OPTIONS: "-XX:+ExitOnOutOfMemoryError"
-    mounting:
-      - path: "/logsToRead"
-        pvcName: components
-    resources:
-      limits:
-        memory: 200Mi
-        cpu: 200m
-      requests:
-        memory: 100Mi
-        cpu: 20m
-```  
-
-For more information on what kind of custom resources are used ind th2 and what each section of their configuration represents
+For more information on custom resources used in th2, and their configuration, 
 please refer to [th2-documentation](https://github.com/th2-net/th2-documentation)
 
 infra-operator is also responsible for queues and user permission management on [RabbitMQ](https://www.rabbitmq.com/documentation.html).
+
 List below covers main responsibilities and objectives of this component.
 
 #### Main objectives
