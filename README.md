@@ -23,7 +23,7 @@ List below covers main responsibilities and objectives of this component.
 #### Main objectives
 * Monitor Kubernetes events related to the _Th2CustomResources_ and Generate or modify 
 corresponding Helm Releases.
-* Create Vhost in RabbitMQ for each deployed schema.
+* Based on config map `rabbit-mq-app-config` which is deployed by infra-mgr, creates Vhost in RabbitMQ for every schema namespace.
 * For each Vhost create user in RabbitMQ and configure its permissions. 
 * Based on pins described in CRs and pins described in _Th2Link_ resources declare queues in RabbitMQ. 
 * Bind queues in RabbitMQ according to _Th2Link_ resources. 
