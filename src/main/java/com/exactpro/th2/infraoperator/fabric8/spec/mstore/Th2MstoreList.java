@@ -13,13 +13,7 @@
 
 package com.exactpro.th2.infraoperator.fabric8.spec.mstore;
 
-import com.exactpro.th2.infraoperator.fabric8.spec.Th2Spec;
-import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
-import lombok.Data;
-import lombok.EqualsAndHashCode;
+import io.fabric8.kubernetes.client.CustomResourceList;
 
-@Data
-@JsonDeserialize
-@EqualsAndHashCode(callSuper = true)
-public class Th2MessageStoreSpec extends Th2Spec {
+public class Th2MstoreList extends CustomResourceList<Th2Mstore> {
 }

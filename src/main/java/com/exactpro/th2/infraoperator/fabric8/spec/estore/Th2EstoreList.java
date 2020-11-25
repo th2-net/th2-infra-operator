@@ -11,10 +11,9 @@
  * limitations under the License.
  */
 
-package com.exactpro.th2.infraoperator.fabric8.spec.generic;
+package com.exactpro.th2.infraoperator.fabric8.spec.estore;
 
 import io.fabric8.kubernetes.client.CustomResourceList;
 
-public class Th2GenericBoxList extends CustomResourceList<Th2GenericBox> {
-
+public class Th2EstoreList extends CustomResourceList<Th2Estore> {
 }

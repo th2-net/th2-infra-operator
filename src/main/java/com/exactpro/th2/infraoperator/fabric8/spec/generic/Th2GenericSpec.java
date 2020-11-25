@@ -13,18 +13,13 @@
 
 package com.exactpro.th2.infraoperator.fabric8.spec.generic;
 
-import com.exactpro.th2.infraoperator.fabric8.spec.Th2CustomResource;
+import com.exactpro.th2.infraoperator.fabric8.spec.Th2Spec;
+import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
-import lombok.ToString;
 
 @Data
-@ToString(callSuper = true)
+@JsonDeserialize
 @EqualsAndHashCode(callSuper = true)
-public class Th2GenericBox extends Th2CustomResource {
-
-    public static final String KIND = "Th2GenericBox";
-
-    private Th2GenericBoxSpec spec;
-
+public class Th2GenericSpec extends Th2Spec {
 }

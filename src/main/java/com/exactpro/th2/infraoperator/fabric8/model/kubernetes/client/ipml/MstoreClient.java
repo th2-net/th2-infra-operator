@@ -14,20 +14,20 @@
 package com.exactpro.th2.infraoperator.fabric8.model.kubernetes.client.ipml;
 
 import com.exactpro.th2.infraoperator.fabric8.model.kubernetes.client.DefaultResourceClient;
-import com.exactpro.th2.infraoperator.fabric8.spec.estore.DoneableTh2EventStore;
-import com.exactpro.th2.infraoperator.fabric8.spec.estore.Th2EventStore;
-import com.exactpro.th2.infraoperator.fabric8.spec.estore.Th2EventStoreList;
+import com.exactpro.th2.infraoperator.fabric8.spec.mstore.DoneableTh2Mstore;
+import com.exactpro.th2.infraoperator.fabric8.spec.mstore.Th2Mstore;
+import com.exactpro.th2.infraoperator.fabric8.spec.mstore.Th2MstoreList;
 import io.fabric8.kubernetes.client.KubernetesClient;
 
-public class EventStoreClient extends DefaultResourceClient<Th2EventStore> {
+public class MstoreClient extends DefaultResourceClient<Th2Mstore> {
 
-    public EventStoreClient(KubernetesClient client) {
+    public MstoreClient(KubernetesClient client) {
         super(
                 client,
-                Th2EventStore.class,
-                Th2EventStoreList.class,
-                DoneableTh2EventStore.class,
-                "th2eventstores.th2.exactpro.com"
+                Th2Mstore.class,
+                Th2MstoreList.class,
+                DoneableTh2Mstore.class,
+                "th2mstores.th2.exactpro.com"
         );
     }
 

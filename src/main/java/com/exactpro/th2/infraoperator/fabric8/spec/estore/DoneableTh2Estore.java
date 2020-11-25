@@ -16,9 +16,9 @@ package com.exactpro.th2.infraoperator.fabric8.spec.estore;
 import io.fabric8.kubernetes.api.builder.Function;
 import io.fabric8.kubernetes.client.CustomResourceDoneable;
 
-public class DoneableTh2EventStore extends CustomResourceDoneable<Th2EventStore> {
+public class DoneableTh2Estore extends CustomResourceDoneable<Th2Estore> {
 
-    public DoneableTh2EventStore(Th2EventStore resource, Function<Th2EventStore, Th2EventStore> function) {
+    public DoneableTh2Estore(Th2Estore resource, Function<Th2Estore, Th2Estore> function) {
         super(resource, function);
     }
 

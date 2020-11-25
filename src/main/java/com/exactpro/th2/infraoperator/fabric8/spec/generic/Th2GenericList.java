@@ -11,19 +11,10 @@
  * limitations under the License.
  */
 
-package com.exactpro.th2.infraoperator.fabric8.spec.estore;
+package com.exactpro.th2.infraoperator.fabric8.spec.generic;
 
-import com.exactpro.th2.infraoperator.fabric8.spec.Th2CustomResource;
-import lombok.Data;
-import lombok.EqualsAndHashCode;
-import lombok.ToString;
+import io.fabric8.kubernetes.client.CustomResourceList;
 
-@Data
-@ToString(callSuper = true)
-@EqualsAndHashCode(callSuper = true)
-public class Th2EventStore extends Th2CustomResource {
+public class Th2GenericList extends CustomResourceList<Th2Generic> {
 
-    public static final String KIND = "Th2EventStore";
-
-    private Th2EventStoreSpec spec;
 }

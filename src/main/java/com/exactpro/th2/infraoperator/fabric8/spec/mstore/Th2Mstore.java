@@ -13,7 +13,17 @@
 
 package com.exactpro.th2.infraoperator.fabric8.spec.mstore;
 
-import io.fabric8.kubernetes.client.CustomResourceList;
+import com.exactpro.th2.infraoperator.fabric8.spec.Th2CustomResource;
+import lombok.Data;
+import lombok.EqualsAndHashCode;
+import lombok.ToString;
 
-public class Th2MessageStoreList extends CustomResourceList<Th2MessageStore> {
+@Data
+@ToString(callSuper = true)
+@EqualsAndHashCode(callSuper = true)
+public class Th2Mstore extends Th2CustomResource {
+
+    public static final String KIND = "Th2Mstore";
+
+    private Th2MstoreSpec spec;
 }

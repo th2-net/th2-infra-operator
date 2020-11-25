@@ -16,9 +16,9 @@ package com.exactpro.th2.infraoperator.fabric8.spec.mstore;
 import io.fabric8.kubernetes.api.builder.Function;
 import io.fabric8.kubernetes.client.CustomResourceDoneable;
 
-public class DoneableTh2MessageStore extends CustomResourceDoneable<Th2MessageStore> {
+public class DoneableTh2Mstore extends CustomResourceDoneable<Th2Mstore> {
 
-    public DoneableTh2MessageStore(Th2MessageStore resource, Function<Th2MessageStore, Th2MessageStore> function) {
+    public DoneableTh2Mstore(Th2Mstore resource, Function<Th2Mstore, Th2Mstore> function) {
         super(resource, function);
     }
 

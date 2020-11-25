@@ -11,15 +11,15 @@
  * limitations under the License.
  */
 
-package com.exactpro.th2.infraoperator.fabric8.spec.generic;
+package com.exactpro.th2.infraoperator.fabric8.spec.mstore;
 
-import io.fabric8.kubernetes.api.builder.Function;
-import io.fabric8.kubernetes.client.CustomResourceDoneable;
+import com.exactpro.th2.infraoperator.fabric8.spec.Th2Spec;
+import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
+import lombok.Data;
+import lombok.EqualsAndHashCode;
 
-public class DoneableTh2GenericBox extends CustomResourceDoneable<Th2GenericBox> {
-
-    public DoneableTh2GenericBox(Th2GenericBox resource, Function<Th2GenericBox, Th2GenericBox> function) {
-        super(resource, function);
-    }
-
+@Data
+@JsonDeserialize
+@EqualsAndHashCode(callSuper = true)
+public class Th2MstoreSpec extends Th2Spec {
 }

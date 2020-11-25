@@ -14,37 +14,37 @@
 package com.exactpro.th2.infraoperator.fabric8.operator.impl;
 
 import com.exactpro.th2.infraoperator.fabric8.model.kubernetes.client.ResourceClient;
-import com.exactpro.th2.infraoperator.fabric8.model.kubernetes.client.ipml.EventStoreClient;
+import com.exactpro.th2.infraoperator.fabric8.model.kubernetes.client.ipml.MstoreClient;
 import com.exactpro.th2.infraoperator.fabric8.operator.StoreHelmTh2Op;
 import com.exactpro.th2.infraoperator.fabric8.operator.context.HelmOperatorContext;
-import com.exactpro.th2.infraoperator.fabric8.spec.estore.Th2EventStore;
+import com.exactpro.th2.infraoperator.fabric8.spec.mstore.Th2Mstore;
 import io.fabric8.kubernetes.client.KubernetesClient;
 
-public class EventStoreHelmTh2Op extends StoreHelmTh2Op<Th2EventStore> {
+public class MstoreHelmTh2Op extends StoreHelmTh2Op<Th2Mstore> {
 
-    private final EventStoreClient eventStoreClient;
+    private final MstoreClient mstoreClient;
 
 
-    public EventStoreHelmTh2Op(HelmOperatorContext.Builder<?, ?> builder) {
+    public MstoreHelmTh2Op(HelmOperatorContext.Builder<?, ?> builder) {
         super(builder);
-        this.eventStoreClient = new EventStoreClient(builder.getClient());
+        this.mstoreClient = new MstoreClient(builder.getClient());
     }
 
 
     @Override
-    public ResourceClient<Th2EventStore> getResourceClient() {
-        return eventStoreClient;
+    public ResourceClient<Th2Mstore> getResourceClient() {
+        return mstoreClient;
     }
 
 
     @Override
-    protected String getKubObjDefPath(Th2EventStore resource) {
-        return "/cr/helm/th2-event-store-helm-release-live.yml";
+    protected String getKubObjDefPath(Th2Mstore resource) {
+        return "/cr/helm/th2-mstore-helm-release-live.yml";
     }
 
     @Override
     protected String getStorageName() {
-        return EVENT_STORAGE_BOX_ALIAS;
+        return MESSAGE_STORAGE_BOX_ALIAS;
     }
 
 
@@ -52,15 +52,15 @@ public class EventStoreHelmTh2Op extends StoreHelmTh2Op<Th2EventStore> {
         return new Builder(client);
     }
 
-    public static class Builder extends HelmOperatorContext.Builder<EventStoreHelmTh2Op, Builder> {
+    public static class Builder extends HelmOperatorContext.Builder<MstoreHelmTh2Op, Builder> {
 
         public Builder(KubernetesClient client) {
             super(client);
         }
 
         @Override
-        public EventStoreHelmTh2Op build() {
-            return new EventStoreHelmTh2Op(this);
+        public MstoreHelmTh2Op build() {
+            return new MstoreHelmTh2Op(this);
         }
 
         @Override
