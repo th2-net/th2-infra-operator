@@ -21,5 +21,5 @@ import lombok.EqualsAndHashCode;
 @Data
 @JsonDeserialize
 @EqualsAndHashCode(callSuper = true)
-public class Th2EventStoreSpec extends Th2Spec {
+public class Th2EstoreSpec extends Th2Spec {
 }

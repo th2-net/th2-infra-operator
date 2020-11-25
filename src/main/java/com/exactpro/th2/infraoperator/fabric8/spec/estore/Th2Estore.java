@@ -13,7 +13,17 @@
 
 package com.exactpro.th2.infraoperator.fabric8.spec.estore;
 
-import io.fabric8.kubernetes.client.CustomResourceList;
+import com.exactpro.th2.infraoperator.fabric8.spec.Th2CustomResource;
+import lombok.Data;
+import lombok.EqualsAndHashCode;
+import lombok.ToString;
 
-public class Th2EventStoreList extends CustomResourceList<Th2EventStore> {
+@Data
+@ToString(callSuper = true)
+@EqualsAndHashCode(callSuper = true)
+public class Th2Estore extends Th2CustomResource {
+
+    public static final String KIND = "Th2Estore";
+
+    private Th2EstoreSpec spec;
 }

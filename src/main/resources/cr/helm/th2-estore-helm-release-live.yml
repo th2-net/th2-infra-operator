@@ -7,7 +7,7 @@ spec:
   resetValues: true
   wait: false
   forceUpgrade: false
-  releaseName: th2-message-store
+  releaseName: th2-estore
   chart:
     secretRef:
       name: git-chart-creds

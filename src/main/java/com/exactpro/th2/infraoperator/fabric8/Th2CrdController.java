@@ -15,9 +15,9 @@ package com.exactpro.th2.infraoperator.fabric8;
 
 import com.exactpro.th2.infraoperator.fabric8.configuration.OperatorConfig;
 import com.exactpro.th2.infraoperator.fabric8.operator.manager.impl.DefaultWatchManager;
-import com.exactpro.th2.infraoperator.fabric8.operator.impl.EventStoreHelmTh2Op;
-import com.exactpro.th2.infraoperator.fabric8.operator.impl.GenericBoxHelmTh2Op;
-import com.exactpro.th2.infraoperator.fabric8.operator.impl.MessageStoreHelmTh2Op;
+import com.exactpro.th2.infraoperator.fabric8.operator.impl.EstoreHelmTh2Op;
+import com.exactpro.th2.infraoperator.fabric8.operator.impl.GenericHelmTh2Op;
+import com.exactpro.th2.infraoperator.fabric8.operator.impl.MstoreHelmTh2Op;
 import io.fabric8.kubernetes.client.DefaultKubernetesClient;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -43,11 +43,11 @@ public class Th2CrdController {
 
         try {
 
-            watchManager.addTarget(MessageStoreHelmTh2Op::new);
+            watchManager.addTarget(MstoreHelmTh2Op::new);
 
-            watchManager.addTarget(EventStoreHelmTh2Op::new);
+            watchManager.addTarget(EstoreHelmTh2Op::new);
 
-            watchManager.addTarget(GenericBoxHelmTh2Op::new);
+            watchManager.addTarget(GenericHelmTh2Op::new);
 
             watchManager.startWatching();
 

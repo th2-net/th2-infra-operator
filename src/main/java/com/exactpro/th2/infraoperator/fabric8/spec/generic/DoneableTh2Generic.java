@@ -11,19 +11,15 @@
  * limitations under the License.
  */
 
-package com.exactpro.th2.infraoperator.fabric8.spec.mstore;
+package com.exactpro.th2.infraoperator.fabric8.spec.generic;
 
-import com.exactpro.th2.infraoperator.fabric8.spec.Th2CustomResource;
-import lombok.Data;
-import lombok.EqualsAndHashCode;
-import lombok.ToString;
+import io.fabric8.kubernetes.api.builder.Function;
+import io.fabric8.kubernetes.client.CustomResourceDoneable;
 
-@Data
-@ToString(callSuper = true)
-@EqualsAndHashCode(callSuper = true)
-public class Th2MessageStore extends Th2CustomResource {
+public class DoneableTh2Generic extends CustomResourceDoneable<Th2Generic> {
 
-    public static final String KIND = "Th2MessageStore";
+    public DoneableTh2Generic(Th2Generic resource, Function<Th2Generic, Th2Generic> function) {
+        super(resource, function);
+    }
 
-    private Th2MessageStoreSpec spec;
 }
