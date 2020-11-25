@@ -27,7 +27,7 @@ public class GenericClient extends DefaultResourceClient<Th2Generic> {
                 Th2Generic.class,
                 Th2GenericList.class,
                 DoneableTh2Generic.class,
-                "th2genericboxes.th2.exactpro.com"
+                "th2generics.th2.exactpro.com"
         );
     }
 

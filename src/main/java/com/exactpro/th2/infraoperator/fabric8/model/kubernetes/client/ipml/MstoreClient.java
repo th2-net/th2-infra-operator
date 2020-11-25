@@ -27,7 +27,7 @@ public class MstoreClient extends DefaultResourceClient<Th2Mstore> {
                 Th2Mstore.class,
                 Th2MstoreList.class,
                 DoneableTh2Mstore.class,
-                "th2messagestores.th2.exactpro.com"
+                "th2mstores.th2.exactpro.com"
         );
     }
 

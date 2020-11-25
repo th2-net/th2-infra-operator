@@ -27,7 +27,7 @@ public class EstoreClient extends DefaultResourceClient<Th2Estore> {
                 Th2Estore.class,
                 Th2EstoreList.class,
                 DoneableTh2Estore.class,
-                "th2eventstores.th2.exactpro.com"
+                "th2estores.th2.exactpro.com"
         );
     }
 
