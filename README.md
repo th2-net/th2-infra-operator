@@ -16,16 +16,16 @@ task to look over them. The infra-operator monitors 5 kind of custom resources, 
 For more information about custom resources used in th2 and their configuration, 
 please refer to [th2-documentation](https://github.com/th2-net/th2-documentation)
 
-infra-operator is also responsible for queues and user permission management on [RabbitMQ](https://www.rabbitmq.com/documentation.html).
+The infra-operator is also responsible for queues and users permission management on [RabbitMQ](https://www.rabbitmq.com/documentation.html).
 
 The list below covers the main duties and objectives of this component.
 
 #### Main objectives
 * It monitors Kubernetes events related to the _Th2CustomResources_ and generates or modifies the corresponding Helm Releases.
 * Based on the config map `rabbit-mq-app-config` which is deployed by infra-mgr, it creates Vhost in RabbitMQ for every schema namespace.
-* For each Vhost create user in RabbitMQ and configure its permissions. 
-* Based on pins described in CRs and pins described in _Th2Link_ resources declare queues in RabbitMQ. 
-* Bind queues in RabbitMQ according to _Th2Link_ resources. 
+* For each Vhost it creates a user in RabbitMQ and configures its permissions. 
+* Based on the pins described in CRs, and the pins described in _Th2Link_ resources it declares queues in RabbitMQ. 
+* It binds queues in RabbitMQ according to _Th2Link_ resources. 
 * Generate RabbitMQ configs for each resource that needs it.
 * Generate [gRPC](https://grpc.io/docs/) configs for each resource that needs it.
 
@@ -33,8 +33,8 @@ The list below covers the main duties and objectives of this component.
 TODO
 
 ## Deployment
-infra-operator is a cluster-wide resource, meaning that there should be only one instance of it deployed on the cluster.
- infra-operator is deployed in `service` namespace. As it needs specific configurations attached to its pod,
- deployment is done through charts by applying `/values/service.helmrelease.yaml` 
+The infra-operator is a cluster-wide resource, meaning that there should only be one instance of it deployed on the cluster.
+ The infra-operator is deployed in `service` namespace. Since it needs specific configurations attached to its pod,
+ the deployment is performed through charts by applying `/values/service.helmrelease.yaml` 
  (from [th2-infra](https://gitlab.exactpro.com/vivarium/th2/th2-core-open-source/th2-infra)) 
  (FIXME: update with github link when repository is moved).
