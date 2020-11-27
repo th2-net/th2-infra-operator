@@ -11,7 +11,7 @@
  * limitations under the License.
  */
 
-package com.exactpro.th2.infraoperator.fabric8.spec.generic;
+package com.exactpro.th2.infraoperator.fabric8.spec.rpt;
 
 import com.exactpro.th2.infraoperator.fabric8.spec.Th2CustomResource;
 import lombok.Data;
@@ -21,10 +21,10 @@ import lombok.ToString;
 @Data
 @ToString(callSuper = true)
 @EqualsAndHashCode(callSuper = true)
-public class Th2Generic extends Th2CustomResource {
+public class Th2Rpt extends Th2CustomResource {
 
-    public static final String KIND = "Th2Generic";
+    public static final String KIND = "Th2Rpt";
 
-    private Th2GenericSpec spec;
+    private Th2RptSpec spec;
 
 }

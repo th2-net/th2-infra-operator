@@ -11,10 +11,10 @@
  * limitations under the License.
  */
 
-package com.exactpro.th2.infraoperator.fabric8.spec.generic;
+package com.exactpro.th2.infraoperator.fabric8.spec.rpt;
 
 import io.fabric8.kubernetes.client.CustomResourceList;
 
-public class Th2GenericList extends CustomResourceList<Th2Generic> {
+public class Th2RptList extends CustomResourceList<Th2Rpt> {
 
 }

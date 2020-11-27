@@ -11,15 +11,15 @@
  * limitations under the License.
  */
 
-package com.exactpro.th2.infraoperator.fabric8.spec.generic;
+package com.exactpro.th2.infraoperator.fabric8.operator;
 
-import io.fabric8.kubernetes.api.builder.Function;
-import io.fabric8.kubernetes.client.CustomResourceDoneable;
+import com.exactpro.th2.infraoperator.fabric8.operator.context.HelmOperatorContext;
+import com.exactpro.th2.infraoperator.fabric8.spec.Th2CustomResource;
 
-public class DoneableTh2Generic extends CustomResourceDoneable<Th2Generic> {
+public abstract class GenericHelmTh2Op<CR extends Th2CustomResource> extends HelmReleaseTh2Op<CR> {
 
-    public DoneableTh2Generic(Th2Generic resource, Function<Th2Generic, Th2Generic> function) {
-        super(resource, function);
+    public GenericHelmTh2Op(HelmOperatorContext.Builder<?, ?> builder) {
+        super(builder);
     }
 
 }

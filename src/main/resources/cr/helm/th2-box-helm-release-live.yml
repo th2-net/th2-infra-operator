@@ -7,7 +7,7 @@ spec:
   resetValues: true
   wait: false
   forceUpgrade: false
-  releaseName: th2-generic
+  releaseName: th2-box
   chart:
     secretRef:
       name: git-chart-creds

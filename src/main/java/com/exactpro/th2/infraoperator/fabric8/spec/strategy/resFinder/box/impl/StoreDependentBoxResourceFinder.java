@@ -30,8 +30,6 @@ import java.util.Objects;
 import java.util.Set;
 import java.util.stream.Collectors;
 
-import static com.exactpro.th2.infraoperator.fabric8.util.ExtractUtils.isStorageBox;
-
 public class StoreDependentBoxResourceFinder implements BoxResourceFinder {
 
     private BoxResourceFinder resourceFinder;

@@ -11,15 +11,10 @@
  * limitations under the License.
  */
 
-package com.exactpro.th2.infraoperator.fabric8.operator;
+package com.exactpro.th2.infraoperator.fabric8.spec.box;
 
-import com.exactpro.th2.infraoperator.fabric8.operator.context.HelmOperatorContext;
-import com.exactpro.th2.infraoperator.fabric8.spec.Th2CustomResource;
+import io.fabric8.kubernetes.client.CustomResourceList;
 
-public abstract class BoxHelmTh2Op<CR extends Th2CustomResource> extends HelmReleaseTh2Op<CR> {
-
-    public BoxHelmTh2Op(HelmOperatorContext.Builder<?, ?> builder) {
-        super(builder);
-    }
+public class Th2BoxList extends CustomResourceList<Th2Box> {
 
 }
