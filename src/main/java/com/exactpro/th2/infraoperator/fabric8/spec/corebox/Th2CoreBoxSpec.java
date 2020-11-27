@@ -11,15 +11,15 @@
  * limitations under the License.
  */
 
-package com.exactpro.th2.infraoperator.fabric8.operator;
+package com.exactpro.th2.infraoperator.fabric8.spec.corebox;
 
-import com.exactpro.th2.infraoperator.fabric8.operator.context.HelmOperatorContext;
-import com.exactpro.th2.infraoperator.fabric8.spec.Th2CustomResource;
+import com.exactpro.th2.infraoperator.fabric8.spec.Th2Spec;
+import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
+import lombok.Data;
+import lombok.EqualsAndHashCode;
 
-public abstract class BoxHelmTh2Op<CR extends Th2CustomResource> extends HelmReleaseTh2Op<CR> {
-
-    public BoxHelmTh2Op(HelmOperatorContext.Builder<?, ?> builder) {
-        super(builder);
-    }
-
+@Data
+@JsonDeserialize
+@EqualsAndHashCode(callSuper = true)
+public class Th2CoreBoxSpec extends Th2Spec {
 }
