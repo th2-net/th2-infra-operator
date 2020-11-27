@@ -11,20 +11,15 @@
  * limitations under the License.
  */
 
-package com.exactpro.th2.infraoperator.fabric8.spec.rpt;
+package com.exactpro.th2.infraoperator.fabric8.spec.corebox;
 
-import com.exactpro.th2.infraoperator.fabric8.spec.Th2CustomResource;
+import com.exactpro.th2.infraoperator.fabric8.spec.Th2Spec;
+import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
-import lombok.ToString;
 
 @Data
-@ToString(callSuper = true)
+@JsonDeserialize
 @EqualsAndHashCode(callSuper = true)
-public class Th2Rpt extends Th2CustomResource {
-
-    public static final String KIND = "Th2Rpt";
-
-    private Th2RptSpec spec;
-
+public class Th2CoreBoxSpec extends Th2Spec {
 }

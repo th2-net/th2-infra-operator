@@ -11,10 +11,20 @@
  * limitations under the License.
  */
 
-package com.exactpro.th2.infraoperator.fabric8.spec.rpt;
+package com.exactpro.th2.infraoperator.fabric8.spec.corebox;
 
-import io.fabric8.kubernetes.client.CustomResourceList;
+import com.exactpro.th2.infraoperator.fabric8.spec.Th2CustomResource;
+import lombok.Data;
+import lombok.EqualsAndHashCode;
+import lombok.ToString;
 
-public class Th2RptList extends CustomResourceList<Th2Rpt> {
+@Data
+@ToString(callSuper = true)
+@EqualsAndHashCode(callSuper = true)
+public class Th2CoreBox extends Th2CustomResource {
+
+    public static final String KIND = "Th2CoreBox";
+
+    private Th2CoreBoxSpec spec;
 
 }

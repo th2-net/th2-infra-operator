@@ -11,14 +11,14 @@
  * limitations under the License.
  */
 
-package com.exactpro.th2.infraoperator.fabric8.spec.rpt;
+package com.exactpro.th2.infraoperator.fabric8.spec.corebox;
 
 import io.fabric8.kubernetes.api.builder.Function;
 import io.fabric8.kubernetes.client.CustomResourceDoneable;
 
-public class DoneableTh2Rpt extends CustomResourceDoneable<Th2Rpt> {
+public class DoneableTh2CoreBox extends CustomResourceDoneable<Th2CoreBox> {
 
-    public DoneableTh2Rpt(Th2Rpt resource, Function<Th2Rpt, Th2Rpt> function) {
+    public DoneableTh2CoreBox(Th2CoreBox resource, Function<Th2CoreBox, Th2CoreBox> function) {
         super(resource, function);
     }
 
