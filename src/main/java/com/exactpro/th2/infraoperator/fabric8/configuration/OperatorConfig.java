@@ -102,6 +102,30 @@ public enum OperatorConfig {
     }
 
     @JsonIgnoreProperties(ignoreUnknown = true)
+    public static class Configuration {
+
+        private static final String CONFIG_PATH = "./src/test/resources/data.yml";
+
+        @JsonProperty("chart")
+        private ChartConfig chartConfig;
+        @JsonProperty("rabbitMQManagement")
+        private MqGlobalConfig mqGlobalConfig;
+
+        public Configuration() {
+            chartConfig = new ChartConfig();
+            mqGlobalConfig = new MqGlobalConfig();
+        }
+
+        public ChartConfig getChartConfig() {
+            return chartConfig;
+        }
+
+        public MqGlobalConfig getMqGlobalConfig() {
+            return mqGlobalConfig;
+        }
+    }
+
+    @JsonIgnoreProperties(ignoreUnknown = true)
     public static class ChartConfig {
 
         public static final String CONFIG_PATH = ROOT_PATH + "infra-operator.json";
@@ -123,12 +147,24 @@ public enum OperatorConfig {
             return git;
         }
 
+        public void setGit(String git) {
+            this.git = git;
+        }
+
         public String getRef() {
             return ref;
         }
 
+        public void setRef(String ref) {
+            this.ref = ref;
+        }
+
         public String getPath() {
             return path;
+        }
+
+        public void setPath(String path) {
+            this.path = path;
         }
 
         public static ChartConfig newInstance(ChartConfig config) {
@@ -227,6 +263,7 @@ public enum OperatorConfig {
         private int port;
         private String host;
         private boolean persistence;
+        @JsonProperty("schemaPermissions")
         private MqSchemaUserPermissions schemaUserPermissions;
 
         protected MqGlobalConfig() {
