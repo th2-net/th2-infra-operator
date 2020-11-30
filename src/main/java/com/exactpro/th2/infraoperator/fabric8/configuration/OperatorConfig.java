@@ -53,7 +53,7 @@ public enum OperatorConfig {
     public List<String> getNamespacePrefixes () {
         //TODO: actual valid namespace prefixes should be returned
 
-        return Arrays.asList("dev-");
+        return Arrays.asList("dev-lt-");
     }
 
     public String getRabbitMQSecretName() {

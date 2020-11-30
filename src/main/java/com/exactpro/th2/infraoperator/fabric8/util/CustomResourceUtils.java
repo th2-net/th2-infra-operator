@@ -18,8 +18,8 @@ import com.exactpro.th2.infraoperator.fabric8.model.kubernetes.client.ResourceCl
 import io.fabric8.kubernetes.api.model.Doneable;
 import io.fabric8.kubernetes.api.model.HasMetadata;
 import io.fabric8.kubernetes.api.model.KubernetesResourceList;
-import io.fabric8.kubernetes.api.model.apiextensions.CustomResourceDefinition;
-import io.fabric8.kubernetes.api.model.apiextensions.CustomResourceDefinitionSpec;
+import io.fabric8.kubernetes.api.model.apiextensions.v1.CustomResourceDefinition;
+import io.fabric8.kubernetes.api.model.apiextensions.v1.CustomResourceDefinitionSpec;
 import io.fabric8.kubernetes.client.*;
 import io.fabric8.kubernetes.client.dsl.MixedOperation;
 import io.fabric8.kubernetes.client.dsl.Resource;
@@ -54,7 +54,7 @@ public final class CustomResourceUtils {
 
     public static CustomResourceDefinition getResourceCrd(KubernetesClient client, String crdName) {
 
-        CustomResourceDefinition crd = client.customResourceDefinitions().withName(crdName).get();
+        CustomResourceDefinition crd = client.apiextensions().v1().customResourceDefinitions().withName(crdName).get();
         if (crd == null)
             throw new IllegalStateException(String.format("CRD with name '%s' not found", crdName));
         return crd;
@@ -64,7 +64,7 @@ public final class CustomResourceUtils {
     public static void createResourceCrd(KubernetesClient kubClient, CustomResourceDefinition crd, String resourceType) {
 
         try {
-            kubClient.customResourceDefinitions().createOrReplace(crd);
+            kubClient.apiextensions().v1().customResourceDefinitions().createOrReplace(crd);
             logger.info("Created CRD for '{}'", resourceType);
         } catch (Exception e) {
             logger.error("Exception creating CRD for '{}'", resourceType, e);
@@ -125,7 +125,12 @@ public final class CustomResourceUtils {
 
             CustomResourceDefinitionSpec spec = crd.getSpec();
 
-            String apiVersion = spec.getGroup() + "/" + spec.getVersion();
+            /*
+                Multiple versions in CRD specs in new lib
+                TODO: please check if getting the first version will suffice
+            */
+
+            String apiVersion = spec.getGroup() + "/" + spec.getVersions().get(0);
             kind = spec.getNames().getKind();
 
             KubernetesDeserializer.registerCustomKind(apiVersion, kind, resourceType);
@@ -174,7 +179,12 @@ public final class CustomResourceUtils {
     ) {
         CustomResourceDefinitionSpec spec = crd.getSpec();
 
-        String apiVersion = spec.getGroup() + "/" + spec.getVersion();
+        /*
+            Multiple versions in CRD specs in new lib
+            TODO: please check if getting the first version will suffice
+         */
+
+        String apiVersion = spec.getGroup() + "/" + spec.getVersions().get(0);
         String kind = spec.getNames().getKind();
 
         KubernetesDeserializer.registerCustomKind(apiVersion, kind, resourceType);

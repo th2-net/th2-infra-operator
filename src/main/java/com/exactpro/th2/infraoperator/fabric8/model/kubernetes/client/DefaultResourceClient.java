@@ -16,7 +16,7 @@ package com.exactpro.th2.infraoperator.fabric8.model.kubernetes.client;
 import com.exactpro.th2.infraoperator.fabric8.util.CustomResourceUtils;
 import io.fabric8.kubernetes.api.model.Doneable;
 import io.fabric8.kubernetes.api.model.KubernetesResourceList;
-import io.fabric8.kubernetes.api.model.apiextensions.CustomResourceDefinition;
+import io.fabric8.kubernetes.api.model.apiextensions.v1.CustomResourceDefinition;
 import io.fabric8.kubernetes.client.*;
 import io.fabric8.kubernetes.client.dsl.MixedOperation;
 import io.fabric8.kubernetes.client.dsl.Resource;
@@ -50,7 +50,14 @@ public abstract class DefaultResourceClient<CR extends CustomResource> implement
         this.customResourceDefinition = CustomResourceUtils.getResourceCrd(client, crdName);
         this.crdName = crdName;
 
-        instance = client.customResources(customResourceDefinition, resourceType, listClass, doneClass);
+        CustomResourceDefinitionContext crdContext = new CustomResourceDefinitionContext.Builder()
+                .withGroup("th2.exactpro.com")
+                .withVersion("v1")
+                .withScope("Namespaced")
+                .withPlural("th2boxes")
+                .build();
+
+        instance = client.customResources(crdContext, resourceType, listClass, doneClass);
 
         watcher = new CRDWatcher();
         watcher.watch();
@@ -72,7 +79,7 @@ public abstract class DefaultResourceClient<CR extends CustomResource> implement
     private class CRDWatcher implements Watcher<CustomResourceDefinition> {
 
         private void watch() {
-            client.customResourceDefinitions().withName(crdName).watch(watcher);
+            client.apiextensions().v1().customResourceDefinitions().withName(crdName).watch(watcher);
             logger.info("Watching for CustomResourceDefinition \"{}\"", crdName);
         }
 
