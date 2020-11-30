@@ -129,6 +129,7 @@ public abstract class HelmReleaseTh2Op<CR extends Th2CustomResource> extends Abs
 
     protected final StorageTh2LinksRefresher eventStLinkUpdaterOnAdd;
 
+
     public HelmReleaseTh2Op(HelmOperatorContext.Builder<?, ?> builder) {
         super(builder.getClient());
 
@@ -141,14 +142,14 @@ public abstract class HelmReleaseTh2Op<CR extends Th2CustomResource> extends Abs
         this.grpcConfigFactory = builder.getGrpcConfigFactory();
         this.dictionaryFactory = builder.getDictionaryFactory();
 
-        CustomResourceDefinitionContext crdContext = new CustomResourceDefinitionContext.Builder()
-                .withGroup("helm.fluxcd.io")
-                .withVersion("v1")
-                .withScope("Namespaced")
-                .withPlural("helmreleases")
-                .build();
-
         helmReleaseCrd = getResourceCrd(kubClient, HELM_RELEASE_CRD_NAME);
+
+        CustomResourceDefinitionContext crdContext = new CustomResourceDefinitionContext.Builder()
+                .withGroup(helmReleaseCrd.getSpec().getGroup())
+                .withVersion(helmReleaseCrd.getSpec().getVersions().get(0).getName())
+                .withScope(helmReleaseCrd.getSpec().getScope())
+                .withPlural(helmReleaseCrd.getSpec().getNames().getPlural())
+                .build();
 
         helmReleaseClient = kubClient.customResources(
                 crdContext,

@@ -52,10 +52,10 @@ public abstract class DefaultResourceClient<CR extends CustomResource> implement
         this.crdName = crdName;
 
         CustomResourceDefinitionContext crdContext = new CustomResourceDefinitionContext.Builder()
-                .withGroup("th2.exactpro.com")
-                .withVersion("v1")
-                .withScope("Namespaced")
-                .withPlural("th2boxes")
+                .withGroup(customResourceDefinition.getSpec().getGroup())
+                .withVersion(customResourceDefinition.getSpec().getVersions().get(0).getName())
+                .withScope(customResourceDefinition.getSpec().getScope())
+                .withPlural(customResourceDefinition.getSpec().getNames().getPlural())
                 .build();
 
         instance = client.customResources(crdContext, resourceType, listClass, doneClass);
