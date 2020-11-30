@@ -32,25 +32,26 @@ import static com.exactpro.th2.infraoperator.fabric8.util.JsonUtils.JSON_READER;
 import static com.exactpro.th2.infraoperator.fabric8.util.JsonUtils.writeValueAsDeepMap;
 import static java.nio.charset.StandardCharsets.UTF_8;
 
-
 public enum OperatorConfig {
     INSTANCE;
 
     public static final String QUEUE_PREFIX = "queue_";
     public static final String ROUTING_KEY_PREFIX = "routing-key_";
     public static final String MQ_CONFIG_MAP_NAME = "rabbit-mq-app-config";
-    private static final String ROOT_PATH = "/var/th2/config/";
     public static final String DEFAULT_RABBITMQ_SECRET = "rabbitmq";
     public static final String DEFAULT_CASSANDRA_SECRET = "cassandra";
-
     public static final String RABBITMQ_SECRET_PASSWORD_KEY = "rabbitmq-password";
     public static final String RABBITMQ_SECRET_USERNAME_KEY = "rabbitmq-username";
+
+    private static final String ROOT_PATH = "/var/th2/config/";
 
     private ChartConfig chartConfig;
     private MqGlobalConfig mqGlobalConfig;
 
     private String rabbitMQSecretName = DEFAULT_RABBITMQ_SECRET;
     private String cassandraSecretName = DEFAULT_CASSANDRA_SECRET;
+
+    private Map<String, MqWorkSpaceConfig> mqWorkSpaceConfigPerNamespace = new HashMap<>();
 
     public String getRabbitMQSecretName() {
         return rabbitMQSecretName;
@@ -67,13 +68,14 @@ public enum OperatorConfig {
     public void setCassandraSecretName(String cassandraSecretName) {
         this.cassandraSecretName = cassandraSecretName;
     }
-    private Map<String, MqWorkSpaceConfig> mqWorkSpaceConfigPerNamespace = new HashMap<>();
 
+    @Nullable
+    public synchronized MqWorkSpaceConfig getMqWorkSpaceConfig(String namespace) {
+        return mqWorkSpaceConfigPerNamespace.get(namespace);
+    }
 
-    public synchronized MqGlobalConfig getMqAuthConfig() {
-        if (mqGlobalConfig == null)
-            mqGlobalConfig = getConfig(MqGlobalConfig.class, MqGlobalConfig.CONFIG_PATH);
-        return mqGlobalConfig;
+    public synchronized void setMqWorkSpaceConfig(String namespace, MqWorkSpaceConfig config) {
+        mqWorkSpaceConfigPerNamespace.put(namespace, config);
     }
 
     public synchronized ChartConfig getChartConfig() {
@@ -82,28 +84,22 @@ public enum OperatorConfig {
         return chartConfig;
     }
 
-
-    @Nullable
-    public synchronized MqWorkSpaceConfig getMqWorkSpaceConfig(String namespace) {
-        return mqWorkSpaceConfigPerNamespace.get(namespace);
+    public synchronized MqGlobalConfig getMqAuthConfig() {
+        if (mqGlobalConfig == null)
+            mqGlobalConfig = getConfig(MqGlobalConfig.class, MqGlobalConfig.CONFIG_PATH);
+        return mqGlobalConfig;
     }
-
-
-    public synchronized void setMqWorkSpaceConfig(String namespace, MqWorkSpaceConfig config) {
-        mqWorkSpaceConfigPerNamespace.put(namespace, config);
-    }
-
 
     private <T> T getConfig(Class<T> configType, String path) {
         try (var in = new FileInputStream(path)) {
-            StringSubstitutor stringSubstitutor = new StringSubstitutor(StringLookupFactory.INSTANCE.environmentVariableStringLookup());
+            StringSubstitutor stringSubstitutor =
+                new StringSubstitutor(StringLookupFactory.INSTANCE.environmentVariableStringLookup());
             String content = stringSubstitutor.replace(new String(in.readAllBytes()));
             return JSON_READER.readValue(content, configType);
         } catch (IOException e) {
             throw new IllegalStateException("Exception reading configuration " + configType.getSimpleName(), e);
         }
     }
-
 
     @Getter
     @Builder
@@ -118,7 +114,6 @@ public enum OperatorConfig {
         private String ref;
         private String path;
 
-
         protected ChartConfig() {
         }
 
@@ -128,13 +123,12 @@ public enum OperatorConfig {
             this.path = path;
         }
 
-
         public static ChartConfig newInstance(ChartConfig config) {
             return ChartConfig.builder()
-                    .git(config.getGit())
-                    .ref(config.getRef())
-                    .path(config.getPath())
-                    .build();
+                .git(config.getGit())
+                .ref(config.getRef())
+                .path(config.getPath())
+                .build();
         }
 
         public ChartConfig updateWithAndCreate(ChartConfig chartConfig) {
@@ -153,16 +147,15 @@ public enum OperatorConfig {
             return config;
         }
 
-
         @SneakyThrows
         public Map<String, Object> toMap() {
             return writeValueAsDeepMap(this);
         }
-
     }
 
     @JsonIgnoreProperties(ignoreUnknown = true)
     public static class MqGlobalConfig {
+
         public static final String CONFIG_PATH = ROOT_PATH + "rabbitMQ-mng.json";
 
         private String username;
@@ -170,7 +163,6 @@ public enum OperatorConfig {
         private int port;
         private boolean persistence;
         private MqSchemaUserPermissions schemaUserPermissions;
-
 
         protected MqGlobalConfig() {
             schemaUserPermissions = new MqSchemaUserPermissions();
@@ -223,9 +215,9 @@ public enum OperatorConfig {
         }
     }
 
-
     @JsonIgnoreProperties(ignoreUnknown = true)
     public static class MqSchemaUserPermissions {
+
         private String configure = "";
         private String read = ".*";
         private String write = ".*";
@@ -255,7 +247,6 @@ public enum OperatorConfig {
         }
     }
 
-
     @Getter
     @Setter
     @Builder
@@ -279,7 +270,8 @@ public enum OperatorConfig {
         protected MqWorkSpaceConfig() {
         }
 
-        public MqWorkSpaceConfig(int port, String host, String vHost, String exchangeName, String username, String password) {
+        public MqWorkSpaceConfig(int port, String host, String vHost, String exchangeName, String username,
+                                 String password) {
             this.port = port;
             this.host = host;
             this.vHost = vHost;
@@ -288,5 +280,4 @@ public enum OperatorConfig {
             this.password = password;
         }
     }
-
 }
