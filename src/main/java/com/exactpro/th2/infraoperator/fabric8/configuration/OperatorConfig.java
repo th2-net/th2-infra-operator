@@ -225,6 +225,7 @@ public enum OperatorConfig {
         private String username;
         private String password;
         private int port;
+        private String host;
         private boolean persistence;
         private MqSchemaUserPermissions schemaUserPermissions;
 
@@ -259,6 +260,14 @@ public enum OperatorConfig {
 
         public void setPort(int port) {
             this.port = port;
+        }
+
+        public String getHost() {
+            return host;
+        }
+
+        public void setHost(String host) {
+            this.host = host;
         }
 
         public boolean isPersistence() {
