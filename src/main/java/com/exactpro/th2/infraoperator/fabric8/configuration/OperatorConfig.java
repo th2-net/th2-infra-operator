@@ -17,6 +17,8 @@ import com.exactpro.th2.infraoperator.fabric8.util.Strings;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonProperty;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.dataformat.yaml.YAMLFactory;
 import org.apache.commons.text.StringSubstitutor;
 import org.apache.commons.text.lookup.StringLookupFactory;
 import org.jetbrains.annotations.Nullable;
@@ -28,7 +30,6 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.Objects;
 
-import static com.exactpro.th2.infraoperator.fabric8.util.JsonUtils.JSON_READER;
 import static com.exactpro.th2.infraoperator.fabric8.util.JsonUtils.writeValueAsDeepMap;
 import static java.nio.charset.StandardCharsets.UTF_8;
 
@@ -80,24 +81,31 @@ public enum OperatorConfig {
 
     public synchronized ChartConfig getChartConfig() {
         if (chartConfig == null)
-            chartConfig = getConfig(ChartConfig.class, ChartConfig.CONFIG_PATH);
+            getFullConfig();
         return chartConfig;
     }
 
     public synchronized MqGlobalConfig getMqAuthConfig() {
         if (mqGlobalConfig == null)
-            mqGlobalConfig = getConfig(MqGlobalConfig.class, MqGlobalConfig.CONFIG_PATH);
+            getFullConfig();
         return mqGlobalConfig;
     }
 
-    private <T> T getConfig(Class<T> configType, String path) {
-        try (var in = new FileInputStream(path)) {
+    private void getFullConfig() {
+        Configuration config = getConfig();
+        chartConfig = config.getChartConfig();
+        mqGlobalConfig = config.getMqGlobalConfig();
+    }
+
+    private Configuration getConfig() {
+        try (var in = new FileInputStream(Configuration.CONFIG_PATH)) {
             StringSubstitutor stringSubstitutor =
                 new StringSubstitutor(StringLookupFactory.INSTANCE.environmentVariableStringLookup());
             String content = stringSubstitutor.replace(new String(in.readAllBytes()));
-            return JSON_READER.readValue(content, configType);
+            return new ObjectMapper(new YAMLFactory()).readValue(content, Configuration.class);
         } catch (IOException e) {
-            throw new IllegalStateException("Exception reading configuration " + configType.getSimpleName(), e);
+            throw new IllegalStateException(
+                "Exception reading configuration " + Configuration.class.getSimpleName(), e);
         }
     }
 
@@ -120,8 +128,18 @@ public enum OperatorConfig {
             return chartConfig;
         }
 
+        public void setChartConfig(ChartConfig chartConfig) {
+            if (chartConfig != null)
+                this.chartConfig = chartConfig;
+        }
+
         public MqGlobalConfig getMqGlobalConfig() {
             return mqGlobalConfig;
+        }
+
+        public void setMqGlobalConfig(MqGlobalConfig mqGlobalConfig) {
+            if (mqGlobalConfig != null)
+                this.mqGlobalConfig = mqGlobalConfig;
         }
     }
 
@@ -223,7 +241,7 @@ public enum OperatorConfig {
             return Objects.hash(getGit(), getRef(), getPath());
         }
 
-        private static class ChartConfigBuilder {
+        public static class ChartConfigBuilder {
 
             private String git;
             private String ref;
@@ -323,6 +341,19 @@ public enum OperatorConfig {
             if (schemaUserPermissions != null)
                 this.schemaUserPermissions = schemaUserPermissions;
         }
+
+        @Override
+        public boolean equals(Object o) {
+            if (this == o) return true;
+            if (!(o instanceof MqGlobalConfig)) return false;
+            MqGlobalConfig that = (MqGlobalConfig) o;
+            return getPort() == that.getPort() &&
+                isPersistence() == that.isPersistence() &&
+                Objects.equals(getUsername(), that.getUsername()) &&
+                Objects.equals(getPassword(), that.getPassword()) &&
+                Objects.equals(getHost(), that.getHost()) &&
+                Objects.equals(getSchemaUserPermissions(), that.getSchemaUserPermissions());
+        }
     }
 
     @JsonIgnoreProperties(ignoreUnknown = true)
@@ -354,6 +385,16 @@ public enum OperatorConfig {
 
         public void setWrite(String write) {
             this.write = (write == null) ? "" : write;
+        }
+
+        @Override
+        public boolean equals(Object o) {
+            if (this == o) return true;
+            if (!(o instanceof MqSchemaUserPermissions)) return false;
+            MqSchemaUserPermissions that = (MqSchemaUserPermissions) o;
+            return Objects.equals(getConfigure(), that.getConfigure()) &&
+                Objects.equals(getRead(), that.getRead()) &&
+                Objects.equals(getWrite(), that.getWrite());
         }
     }
 
@@ -461,7 +502,7 @@ public enum OperatorConfig {
             return Objects.hash(getPort(), getHost(), vHost, getExchangeName(), getUsername(), getPassword());
         }
 
-        private static class MqWorkSpaceConfigBuilder {
+        public static class MqWorkSpaceConfigBuilder {
 
             private int port;
             private String host;
