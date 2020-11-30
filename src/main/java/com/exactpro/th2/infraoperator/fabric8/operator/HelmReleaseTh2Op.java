@@ -539,7 +539,7 @@ public abstract class HelmReleaseTh2Op<CR extends Th2CustomResource> extends Abs
 
             logger.info(String.format(
                     "Updated active links in namespace '%s'. Active links: %s (hidden %s). " +
-                            "Details: %+d mq, %+d grpc, %+d dictionary, %+d hidden[message-storage], %+d hidden[event-storage]",
+                            "Details: %+d mq, %+d grpc, %+d dictionary, %+d hidden[mstore], %+d hidden[estore]",
                     resNamespace, allSize, hiddenLinks,
                     newMqSize - oldMqSize,
                     newGrpcSize - oldGrpcSize,

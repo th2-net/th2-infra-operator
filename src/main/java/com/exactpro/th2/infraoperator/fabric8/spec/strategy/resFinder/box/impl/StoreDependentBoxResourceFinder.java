@@ -30,7 +30,7 @@ import java.util.Objects;
 import java.util.Set;
 import java.util.stream.Collectors;
 
-import static com.exactpro.th2.infraoperator.fabric8.util.ExtractUtils.isStorageBox;
+import static com.exactpro.th2.infraoperator.fabric8.operator.StoreHelmTh2Op.EVENT_STORAGE_PIN_ALIAS;
 
 public class StoreDependentBoxResourceFinder implements BoxResourceFinder {
 
@@ -96,7 +96,7 @@ public class StoreDependentBoxResourceFinder implements BoxResourceFinder {
                         attributes.add(DirectionAttribute.parsed.name());
                     } else if (toPinName.contains(DirectionAttribute.raw.name())) {
                         attributes.add(DirectionAttribute.raw.name());
-                    } else if (toPinName.contains(DirectionAttribute.event.name())) {
+                    } else if (toPinName.equals(EVENT_STORAGE_PIN_ALIAS)) {
                         attributes.add(DirectionAttribute.event.name());
                     }
 

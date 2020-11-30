@@ -14,20 +14,20 @@
 package com.exactpro.th2.infraoperator.fabric8.model.kubernetes.client.ipml;
 
 import com.exactpro.th2.infraoperator.fabric8.model.kubernetes.client.DefaultResourceClient;
-import com.exactpro.th2.infraoperator.fabric8.spec.generic.DoneableTh2Generic;
-import com.exactpro.th2.infraoperator.fabric8.spec.generic.Th2Generic;
-import com.exactpro.th2.infraoperator.fabric8.spec.generic.Th2GenericList;
+import com.exactpro.th2.infraoperator.fabric8.spec.box.DoneableTh2Box;
+import com.exactpro.th2.infraoperator.fabric8.spec.box.Th2Box;
+import com.exactpro.th2.infraoperator.fabric8.spec.box.Th2BoxList;
 import io.fabric8.kubernetes.client.KubernetesClient;
 
-public class GenericClient extends DefaultResourceClient<Th2Generic> {
+public class BoxClient extends DefaultResourceClient<Th2Box> {
 
-    public GenericClient(KubernetesClient client) {
+    public BoxClient(KubernetesClient client) {
         super(
                 client,
-                Th2Generic.class,
-                Th2GenericList.class,
-                DoneableTh2Generic.class,
-                "th2generics.th2.exactpro.com"
+                Th2Box.class,
+                Th2BoxList.class,
+                DoneableTh2Box.class,
+                "th2boxes.th2.exactpro.com"
         );
     }
 

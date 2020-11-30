@@ -11,20 +11,10 @@
  * limitations under the License.
  */
 
-package com.exactpro.th2.infraoperator.fabric8.spec.generic;
+package com.exactpro.th2.infraoperator.fabric8.spec.corebox;
 
-import com.exactpro.th2.infraoperator.fabric8.spec.Th2CustomResource;
-import lombok.Data;
-import lombok.EqualsAndHashCode;
-import lombok.ToString;
+import io.fabric8.kubernetes.client.CustomResourceList;
 
-@Data
-@ToString(callSuper = true)
-@EqualsAndHashCode(callSuper = true)
-public class Th2Generic extends Th2CustomResource {
-
-    public static final String KIND = "Th2Generic";
-
-    private Th2GenericSpec spec;
+public class Th2CoreBoxList extends CustomResourceList<Th2CoreBox> {
 
 }
