@@ -46,8 +46,7 @@ public enum OperatorConfig {
 
     private static final String ROOT_PATH = "/var/th2/config/";
 
-    private ChartConfig chartConfig;
-    private MqGlobalConfig mqGlobalConfig;
+    private Configuration configuration;
 
     private String rabbitMQSecretName = DEFAULT_RABBITMQ_SECRET;
     private String cassandraSecretName = DEFAULT_CASSANDRA_SECRET;
@@ -80,21 +79,19 @@ public enum OperatorConfig {
     }
 
     public synchronized ChartConfig getChartConfig() {
-        if (chartConfig == null)
+        if (configuration == null)
             getFullConfig();
-        return chartConfig;
+        return configuration.getChartConfig();
     }
 
     public synchronized MqGlobalConfig getMqAuthConfig() {
-        if (mqGlobalConfig == null)
+        if (configuration == null)
             getFullConfig();
-        return mqGlobalConfig;
+        return configuration.getMqGlobalConfig();
     }
 
     private void getFullConfig() {
-        Configuration config = getConfig();
-        chartConfig = config.getChartConfig();
-        mqGlobalConfig = config.getMqGlobalConfig();
+        configuration = getConfig();
     }
 
     private Configuration getConfig() {
