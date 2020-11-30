@@ -17,7 +17,6 @@ import com.exactpro.th2.infraoperator.fabric8.util.Strings;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonProperty;
-import lombok.*;
 import org.apache.commons.text.StringSubstitutor;
 import org.apache.commons.text.lookup.StringLookupFactory;
 import org.jetbrains.annotations.Nullable;
@@ -27,6 +26,7 @@ import java.io.IOException;
 import java.util.Base64;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Objects;
 
 import static com.exactpro.th2.infraoperator.fabric8.util.JsonUtils.JSON_READER;
 import static com.exactpro.th2.infraoperator.fabric8.util.JsonUtils.writeValueAsDeepMap;
@@ -101,10 +101,6 @@ public enum OperatorConfig {
         }
     }
 
-    @Getter
-    @Builder
-    @ToString
-    @EqualsAndHashCode
     @JsonIgnoreProperties(ignoreUnknown = true)
     public static class ChartConfig {
 
@@ -123,12 +119,28 @@ public enum OperatorConfig {
             this.path = path;
         }
 
+        public String getGit() {
+            return git;
+        }
+
+        public String getRef() {
+            return ref;
+        }
+
+        public String getPath() {
+            return path;
+        }
+
         public static ChartConfig newInstance(ChartConfig config) {
             return ChartConfig.builder()
                 .git(config.getGit())
                 .ref(config.getRef())
                 .path(config.getPath())
                 .build();
+        }
+
+        public static ChartConfigBuilder builder() {
+            return new ChartConfigBuilder();
         }
 
         public ChartConfig updateWithAndCreate(ChartConfig chartConfig) {
@@ -147,9 +159,61 @@ public enum OperatorConfig {
             return config;
         }
 
-        @SneakyThrows
         public Map<String, Object> toMap() {
-            return writeValueAsDeepMap(this);
+            try {
+                return writeValueAsDeepMap(this);
+            } catch (IllegalArgumentException e) {
+                throw new IllegalArgumentException("Exception converting object", e);
+            }
+        }
+
+        @Override
+        public String toString() {
+            return "ChartConfig{" + "git='" + git + '\'' + ", ref='" + ref + '\'' + ", path='" + path + '\'' + '}';
+        }
+
+        @Override
+        public boolean equals(Object o) {
+            if (this == o) return true;
+            if (!(o instanceof ChartConfig)) return false;
+            ChartConfig that = (ChartConfig) o;
+            return Objects.equals(getGit(), that.getGit()) &&
+                Objects.equals(getRef(), that.getRef()) &&
+                Objects.equals(getPath(), that.getPath());
+        }
+
+        @Override
+        public int hashCode() {
+            return Objects.hash(getGit(), getRef(), getPath());
+        }
+
+        private static class ChartConfigBuilder {
+
+            private String git;
+            private String ref;
+            private String path;
+
+            ChartConfigBuilder() {
+            }
+
+            public ChartConfigBuilder git(String git) {
+                this.git = git;
+                return this;
+            }
+
+            public ChartConfigBuilder ref(String ref) {
+                this.ref = ref;
+                return this;
+            }
+
+            public ChartConfigBuilder path(String path) {
+                this.path = path;
+                return this;
+            }
+
+            public ChartConfig build() {
+                return new ChartConfig(git, ref, path);
+            }
         }
     }
 
@@ -247,11 +311,6 @@ public enum OperatorConfig {
         }
     }
 
-    @Getter
-    @Setter
-    @Builder
-    @ToString
-    @EqualsAndHashCode
     @JsonIgnoreProperties(ignoreUnknown = true)
     public static class MqWorkSpaceConfig {
 
@@ -263,7 +322,6 @@ public enum OperatorConfig {
         private String vHost;
         @JsonProperty("exchangeName")
         private String exchangeName;
-
         private String username;
         private String password;
 
@@ -278,6 +336,130 @@ public enum OperatorConfig {
             this.exchangeName = exchangeName;
             this.username = username;
             this.password = password;
+        }
+
+        public int getPort() {
+            return port;
+        }
+
+        public void setPort(int port) {
+            this.port = port;
+        }
+
+        public String getHost() {
+            return host;
+        }
+
+        public void setHost(String host) {
+            this.host = host;
+        }
+
+        public String getVHost() {
+            return vHost;
+        }
+
+        public void setVHost(String vHost) {
+            this.vHost = vHost;
+        }
+
+        public String getExchangeName() {
+            return exchangeName;
+        }
+
+        public void setExchangeName(String exchangeName) {
+            this.exchangeName = exchangeName;
+        }
+
+        public String getUsername() {
+            return username;
+        }
+
+        public void setUsername(String username) {
+            this.username = username;
+        }
+
+        public String getPassword() {
+            return password;
+        }
+
+        public void setPassword(String password) {
+            this.password = password;
+        }
+
+        public static MqWorkSpaceConfigBuilder builder() {
+            return new MqWorkSpaceConfigBuilder();
+        }
+
+        @Override
+        public String toString() {
+            return "MqWorkSpaceConfig{" + "port=" + port + ", host='" + host + '\'' +
+                ", vHost='" + vHost + '\'' + ", exchangeName='" + exchangeName + '\'' +
+                ", username='" + username + '\'' + ", password='" + password + '\'' + '}';
+        }
+
+        @Override
+        public boolean equals(Object o) {
+            if (this == o) return true;
+            if (!(o instanceof MqWorkSpaceConfig)) return false;
+            MqWorkSpaceConfig that = (MqWorkSpaceConfig) o;
+            return getPort() == that.getPort() &&
+                Objects.equals(getHost(), that.getHost()) &&
+                Objects.equals(vHost, that.vHost) &&
+                Objects.equals(getExchangeName(), that.getExchangeName()) &&
+                Objects.equals(getUsername(), that.getUsername()) &&
+                Objects.equals(getPassword(), that.getPassword());
+        }
+
+        @Override
+        public int hashCode() {
+            return Objects.hash(getPort(), getHost(), vHost, getExchangeName(), getUsername(), getPassword());
+        }
+
+        private static class MqWorkSpaceConfigBuilder {
+
+            private int port;
+            private String host;
+            private String vHost;
+            private String exchangeName;
+            private String username;
+            private String password;
+
+            MqWorkSpaceConfigBuilder() {
+            }
+
+            public MqWorkSpaceConfigBuilder port(int port) {
+                this.port = port;
+                return this;
+            }
+
+            public MqWorkSpaceConfigBuilder host(String host) {
+                this.host = host;
+                return this;
+            }
+
+            public MqWorkSpaceConfigBuilder vHost(String vHost) {
+                this.vHost = vHost;
+                return this;
+            }
+
+            public MqWorkSpaceConfigBuilder exchangeName(String exchangeName) {
+                this.exchangeName = exchangeName;
+                return this;
+            }
+
+            public MqWorkSpaceConfigBuilder username(String username) {
+                this.username = username;
+                return this;
+            }
+
+            public MqWorkSpaceConfigBuilder password(String password) {
+                this.password = password;
+                return this;
+            }
+
+            public MqWorkSpaceConfig build() {
+                return new MqWorkSpaceConfig(port, host, vHost, exchangeName, username, password);
+            }
         }
     }
 }
