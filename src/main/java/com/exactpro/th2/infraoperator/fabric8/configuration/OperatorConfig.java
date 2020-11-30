@@ -143,8 +143,6 @@ public enum OperatorConfig {
     @JsonIgnoreProperties(ignoreUnknown = true)
     public static class ChartConfig {
 
-        public static final String CONFIG_PATH = ROOT_PATH + "infra-operator.json";
-
         private String git;
         private String ref;
         private String path;
@@ -270,8 +268,6 @@ public enum OperatorConfig {
 
     @JsonIgnoreProperties(ignoreUnknown = true)
     public static class MqGlobalConfig {
-
-        public static final String CONFIG_PATH = ROOT_PATH + "rabbitMQ-mng.json";
 
         private String username;
         private String password;
