@@ -251,6 +251,13 @@ public class DefaultWatchManager {
 
 
     private void start() {
+
+        addWatch(CustomResourceUtils.watchFor(linkClient, new LinkWatcher()));
+        addWatch(CustomResourceUtils.watchFor(dictionaryClient, new DictionaryWatcher()));
+
+        new ConfigMapWatcher(operatorBuilder.getClient(), this).watch();
+        logger.info("Started watching for ConfigMaps");
+
         /*
              resourceClients initialization should be done first
              for concurrency issues
@@ -269,11 +276,6 @@ public class DefaultWatchManager {
         }
 
 
-        new ConfigMapWatcher(operatorBuilder.getClient(), this).watch();
-        logger.info("Started watching for config map [ConfigMap<{}>]", MQ_CONFIG_MAP_NAME);
-
-        addWatch(CustomResourceUtils.watchFor(linkClient, new LinkWatcher()));
-        addWatch(CustomResourceUtils.watchFor(dictionaryClient, new DictionaryWatcher()));
     }
 
 
