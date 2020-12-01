@@ -78,20 +78,18 @@ public enum OperatorConfig {
         mqWorkSpaceConfigPerNamespace.put(namespace, config);
     }
 
-    public synchronized ChartConfig getChartConfig() {
-        if (configuration == null)
-            getFullConfig();
-        return configuration.getChartConfig();
+    public ChartConfig getChartConfig() {
+        return getFullConfig().getChartConfig();
     }
 
-    public synchronized MqGlobalConfig getMqAuthConfig() {
-        if (configuration == null)
-            getFullConfig();
-        return configuration.getMqGlobalConfig();
+    public MqGlobalConfig getMqAuthConfig() {
+        return getFullConfig().getMqGlobalConfig();
     }
 
-    private void getFullConfig() {
-        configuration = getConfig();
+    public synchronized Configuration getFullConfig() {
+        if (configuration == null)
+            configuration = getConfig();
+        return configuration;
     }
 
     private Configuration getConfig() {
@@ -282,7 +280,7 @@ public enum OperatorConfig {
         }
 
         protected MqGlobalConfig(String username, String password, int port, String host, boolean persistence,
-                              MqSchemaUserPermissions schemaUserPermissions) {
+                                 MqSchemaUserPermissions schemaUserPermissions) {
             this.username = username;
             this.password = password;
             this.port = port;
