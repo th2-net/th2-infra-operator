@@ -13,25 +13,25 @@
 
 package com.exactpro.th2.infraoperator.fabric8.model.box.configuration.dictionary.factory;
 
-import com.exactpro.th2.infraoperator.fabric8.model.box.configuration.dictionary.RawDictionary;
+import com.exactpro.th2.infraoperator.fabric8.model.box.configuration.dictionary.Dictionary;
 import com.exactpro.th2.infraoperator.fabric8.spec.Th2CustomResource;
 import com.exactpro.th2.infraoperator.fabric8.spec.link.relation.dictionaries.bunch.DictionaryLinkBunch;
 
 import java.util.List;
 
 /**
- * A factory that creates list of {@link RawDictionary}
+ * A factory that creates list of {@link Dictionary}
  * based on the th2 resource and a list of active links.
  */
 public interface DictionaryFactory {
 
     /**
-     * Creates a list of {@link RawDictionary} based on the th2 resource and a list of active links.
+     * Creates a list of {@link Dictionary} based on the th2 resource and a list of active links.
      *
      * @param resource th2 resource
      * @param links    active links
-     * @return list of {@link RawDictionary} based on provided active {@code activeLinks} and {@code resource}
+     * @return list of {@link Dictionary} based on provided active {@code activeLinks} and {@code resource}
      */
-    List<RawDictionary> create(Th2CustomResource resource, List<DictionaryLinkBunch> links);
+    List<Dictionary> create(Th2CustomResource resource, List<DictionaryLinkBunch> links);
 
 }
