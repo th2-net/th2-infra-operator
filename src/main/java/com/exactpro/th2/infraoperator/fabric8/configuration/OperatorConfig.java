@@ -136,6 +136,15 @@ public enum OperatorConfig {
             if (mqGlobalConfig != null)
                 this.mqGlobalConfig = mqGlobalConfig;
         }
+
+        @Override
+        public boolean equals(Object o) {
+            if (this == o) return true;
+            if (!(o instanceof Configuration)) return false;
+            Configuration that = (Configuration) o;
+            return Objects.equals(getChartConfig(), that.getChartConfig()) &&
+                Objects.equals(getMqGlobalConfig(), that.getMqGlobalConfig());
+        }
     }
 
     @JsonIgnoreProperties(ignoreUnknown = true)
