@@ -14,6 +14,7 @@
 package com.exactpro.th2.infraoperator.fabric8;
 
 import com.exactpro.th2.infraoperator.fabric8.configuration.OperatorConfig;
+import com.exactpro.th2.infraoperator.fabric8.configuration.OperatorConfig.*;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 
@@ -21,18 +22,15 @@ public class TestConfiguration {
 
     @Test
     void testConfig() {
-        OperatorConfig.Configuration expected  = new OperatorConfig.Configuration();
-        expected.setChartConfig(OperatorConfig.ChartConfig.builder().git("git").path("path").ref("ref").build());
-        expected.getMqGlobalConfig().setHost("host");
-        expected.getMqGlobalConfig().setPort(8080);
-        expected.getMqGlobalConfig().setUsername("username");
-        expected.getMqGlobalConfig().setPassword("password");
-        expected.getMqGlobalConfig().setPersistence(true);
-        expected.getMqGlobalConfig().getSchemaUserPermissions().setConfigure("configure");
-        expected.getMqGlobalConfig().getSchemaUserPermissions().setRead("read");
-        expected.getMqGlobalConfig().getSchemaUserPermissions().setWrite("write");
+        Configuration expected = new Configuration();
+        expected.setChartConfig(ChartConfig.builder().git("git").path("path").ref("ref").build());
+        expected.setMqGlobalConfig(
+            MqGlobalConfig.builder().host("host").port(8080).username("username").password("password")
+                .persistence(true).schemaUserPermissions(
+                MqSchemaUserPermissions.builder().configure("configure").read("read").write("write").build())
+                .build()
+        );
 
-        Assertions.assertEquals(expected.getChartConfig(), OperatorConfig.INSTANCE.getChartConfig());
-        Assertions.assertEquals(expected.getMqGlobalConfig(), OperatorConfig.INSTANCE.getMqAuthConfig());
+        Assertions.assertEquals(expected, OperatorConfig.INSTANCE.getFullConfig());
     }
 }
