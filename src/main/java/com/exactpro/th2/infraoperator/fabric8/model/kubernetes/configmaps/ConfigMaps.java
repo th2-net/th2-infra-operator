@@ -12,10 +12,9 @@ public enum ConfigMaps {
     private static Map<String, Object> prometheus;
 
     public static synchronized Map<String, Object> getPrometheusParams() {
-        if (prometheus == null)
-            return null;
         Map<String, Object> copy = new HashMap<>();
-        copy.putAll(prometheus);
+        if (prometheus != null)
+            copy.putAll(prometheus);
         return copy;
     }
 
