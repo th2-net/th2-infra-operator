@@ -19,6 +19,7 @@ import com.exactpro.th2.infraoperator.fabric8.model.box.configuration.grpc.facto
 import com.exactpro.th2.infraoperator.fabric8.model.box.configuration.mq.MessageRouterConfiguration;
 import com.exactpro.th2.infraoperator.fabric8.model.box.configuration.mq.factory.MessageRouterConfigFactory;
 import com.exactpro.th2.infraoperator.fabric8.model.box.schema.link.QueueLinkBunch;
+import com.exactpro.th2.infraoperator.fabric8.model.kubernetes.configmaps.ConfigMaps;
 import com.exactpro.th2.infraoperator.fabric8.operator.context.HelmOperatorContext;
 import com.exactpro.th2.infraoperator.fabric8.spec.Th2CustomResource;
 import com.exactpro.th2.infraoperator.fabric8.spec.helmRelease.DoneableHelmRelease;
@@ -64,72 +65,43 @@ public abstract class HelmReleaseTh2Op<CR extends Th2CustomResource> extends Abs
 
     private static final Logger logger = LoggerFactory.getLogger(HelmReleaseTh2Op.class);
 
-
     public static final int PROPERTIES_MERGE_DEPTH = 1;
 
     public static final String CHART_PROPERTIES_ALIAS = "chart";
-
     public static final String ROOT_PROPERTIES_ALIAS = "component";
-
     public static final String EXTENDED_SETTINGS_ALIAS = "extendedSettings";
-
     public static final String MQ_CONFIG_ALIAS = "routerMq";
-
     public static final String CUSTOM_CONFIG_ALIAS = "custom";
-
+    public static final String PROMETHEUS_CONFIG_ALIAS = "prometheus";
     public static final String GRPC_CONFIG_ALIAS = "grpcRouter";
-
     public static final String DICTIONARIES_ALIAS = "dictionaries";
-
     public static final String ANNOTATIONS_ALIAS = "annotations";
-
     public static final String DOCKER_IMAGE_ALIAS = "image";
-
     public static final String COMPONENT_NAME_ALIAS = "name";
-
     public static final String RELEASE_NAME_ALIAS = "releaseName";
-
     public static final String HELM_RELEASE_CRD_NAME = "helmreleases.helm.fluxcd.io";
 
-
     protected final BoxResourceFinder resourceFinder;
-
     protected final GrpcLinkResolver grpcLinkResolver;
-
     protected final QueueLinkResolver queueGenLinkResolver;
-
     protected final DictionaryLinkResolver dictionaryLinkResolver;
-
     protected final DeclareQueueResolver declareQueueResolver;
-
     protected final MessageRouterConfigFactory mqConfigFactory;
-
     protected final GrpcRouterConfigFactory grpcConfigFactory;
-
     protected final DictionaryFactory dictionaryFactory;
 
-
     protected final CustomResourceDefinition helmReleaseCrd;
-
     protected final MixedOperation<HelmRelease, HelmReleaseList, DoneableHelmRelease, Resource<HelmRelease, DoneableHelmRelease>> helmReleaseClient;
 
-
     protected final ActiveLinkUpdater activeLinkUpdaterOnDelete;
-
     protected final ActiveLinkUpdater activeLinkUpdaterOnAdd;
-
-
     protected final StorageTh2LinksRefresher msgStLinkUpdaterOnDelete;
-
     protected final StorageTh2LinksRefresher msgStLinkUpdaterOnAdd;
-
-
     protected final StorageTh2LinksRefresher eventStLinkUpdaterOnDelete;
-
     protected final StorageTh2LinksRefresher eventStLinkUpdaterOnAdd;
 
-
     public HelmReleaseTh2Op(HelmOperatorContext.Builder<?, ?> builder) {
+
         super(builder.getClient());
 
         this.resourceFinder = builder.getResourceFinder();
@@ -140,7 +112,6 @@ public abstract class HelmReleaseTh2Op<CR extends Th2CustomResource> extends Abs
         this.dictionaryLinkResolver = builder.getDictionaryLinkResolver();
         this.grpcConfigFactory = builder.getGrpcConfigFactory();
         this.dictionaryFactory = builder.getDictionaryFactory();
-
 
         helmReleaseCrd = getResourceCrd(kubClient, HELM_RELEASE_CRD_NAME);
 
@@ -166,15 +137,10 @@ public abstract class HelmReleaseTh2Op<CR extends Th2CustomResource> extends Abs
                 .build();
 
         this.msgStLinkUpdaterOnDelete = new StorageTh2LinksCleaner(msgStContext);
-
         this.msgStLinkUpdaterOnAdd = new StorageTh2LinksUpdater(msgStContext);
-
         this.eventStLinkUpdaterOnDelete = new StorageTh2LinksCleaner(eventStContext);
-
         this.eventStLinkUpdaterOnAdd = new StorageTh2LinksUpdater(eventStContext);
-
         this.activeLinkUpdaterOnDelete = new DeletedActiveLinkUpdater();
-
         this.activeLinkUpdaterOnAdd = new AddedActiveLinkUpdater();
     }
 
@@ -184,31 +150,24 @@ public abstract class HelmReleaseTh2Op<CR extends Th2CustomResource> extends Abs
         super.mapProperties(resource, helmRelease);
 
         var resNamespace = extractNamespace(resource);
-
         var resSpec = resource.getSpec();
-
         var lSingleton = LinkSingleton.INSTANCE;
-
         var grpcActiveLinks = lSingleton.getGrpcActiveLinks(resNamespace);
-
         var dictionaryActiveLinks = lSingleton.getDictionaryActiveLinks(resNamespace);
 
-
         var mqConfig = mqConfigFactory.createConfig(resource);
-
         var grpcConfig = grpcConfigFactory.createConfig(resource, grpcActiveLinks);
-
         var dictionaries = dictionaryFactory.create(resource, dictionaryActiveLinks);
-
+        var prometheusConfig = ConfigMaps.getPrometheus();
 
         helmRelease.putSpecProp(RELEASE_NAME_ALIAS, extractNamespace(helmRelease) + "-" + extractName(helmRelease));
-
         helmRelease.mergeValue(PROPERTIES_MERGE_DEPTH, ROOT_PROPERTIES_ALIAS, Map.of(
                 DOCKER_IMAGE_ALIAS, resSpec.getImageName() + ":" + resSpec.getImageVersion(),
                 COMPONENT_NAME_ALIAS, extractName(resource),
                 CUSTOM_CONFIG_ALIAS, resource.getSpec().getCustomConfig(),
                 MQ_CONFIG_ALIAS, writeValueAsDeepMap(mqConfig),
-                GRPC_CONFIG_ALIAS, writeValueAsDeepMap(grpcConfig)
+                GRPC_CONFIG_ALIAS, writeValueAsDeepMap(grpcConfig),
+                PROMETHEUS_CONFIG_ALIAS, prometheusConfig
         ));
 
         if (!dictionaries.isEmpty()) {
@@ -232,7 +191,6 @@ public abstract class HelmReleaseTh2Op<CR extends Th2CustomResource> extends Abs
         }
 
         helmRelease.mergeSpecProp(CHART_PROPERTIES_ALIAS, defaultChartConfig.toMap());
-
         helmRelease.mergeValue(Map.of(ANNOTATIONS_ALIAS, extractAnnotations(resource).get(ANTECEDENT_LABEL_KEY_ALIAS)));
     }
 
