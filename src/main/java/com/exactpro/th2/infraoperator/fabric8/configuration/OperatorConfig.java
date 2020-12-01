@@ -281,6 +281,17 @@ public enum OperatorConfig {
             schemaUserPermissions = new MqSchemaUserPermissions();
         }
 
+        protected MqGlobalConfig(String username, String password, int port, String host, boolean persistence,
+                              MqSchemaUserPermissions schemaUserPermissions) {
+            this.username = username;
+            this.password = password;
+            this.port = port;
+            this.host = host;
+            this.persistence = persistence;
+            this.schemaUserPermissions =
+                schemaUserPermissions != null ? schemaUserPermissions : new MqSchemaUserPermissions();
+        }
+
         @JsonIgnore
         public String getEncoded() {
             return Base64.getEncoder().encodeToString(String.format("%s:%s", username, password).getBytes(UTF_8));
@@ -335,6 +346,10 @@ public enum OperatorConfig {
                 this.schemaUserPermissions = schemaUserPermissions;
         }
 
+        public static MqGlobalConfigBuilder builder() {
+            return new MqGlobalConfigBuilder();
+        }
+
         @Override
         public boolean equals(Object o) {
             if (this == o) return true;
@@ -347,6 +362,53 @@ public enum OperatorConfig {
                 Objects.equals(getHost(), that.getHost()) &&
                 Objects.equals(getSchemaUserPermissions(), that.getSchemaUserPermissions());
         }
+
+        public static class MqGlobalConfigBuilder {
+
+            private String username;
+            private String password;
+            private int port;
+            private String host;
+            private boolean persistence;
+            private MqSchemaUserPermissions schemaUserPermissions;
+
+            MqGlobalConfigBuilder() {
+            }
+
+            public MqGlobalConfigBuilder username(String username) {
+                this.username = username;
+                return this;
+            }
+
+            public MqGlobalConfigBuilder password(String password) {
+                this.password = password;
+                return this;
+            }
+
+            public MqGlobalConfigBuilder port(int port) {
+                this.port = port;
+                return this;
+            }
+
+            public MqGlobalConfigBuilder host(String host) {
+                this.host = host;
+                return this;
+            }
+
+            public MqGlobalConfigBuilder persistence(boolean persistence) {
+                this.persistence = persistence;
+                return this;
+            }
+
+            public MqGlobalConfigBuilder schemaUserPermissions(MqSchemaUserPermissions schemaUserPermissions) {
+                this.schemaUserPermissions = schemaUserPermissions;
+                return this;
+            }
+
+            public MqGlobalConfig build() {
+                return new MqGlobalConfig(username, password, port, host, persistence, schemaUserPermissions);
+            }
+        }
     }
 
     @JsonIgnoreProperties(ignoreUnknown = true)
@@ -355,6 +417,15 @@ public enum OperatorConfig {
         private String configure = "";
         private String read = ".*";
         private String write = ".*";
+
+        public MqSchemaUserPermissions() {
+        }
+
+        public MqSchemaUserPermissions(String configure, String read, String write) {
+            this.configure = configure == null ? "" : configure;
+            this.read = read == null ? "" : read;
+            this.write = write == null ? "" : write;
+        }
 
         public String getConfigure() {
             return configure;
@@ -380,6 +451,10 @@ public enum OperatorConfig {
             this.write = (write == null) ? "" : write;
         }
 
+        public static MqSchemaUserPermissionsBuilder builder() {
+            return new MqSchemaUserPermissionsBuilder();
+        }
+
         @Override
         public boolean equals(Object o) {
             if (this == o) return true;
@@ -388,6 +463,35 @@ public enum OperatorConfig {
             return Objects.equals(getConfigure(), that.getConfigure()) &&
                 Objects.equals(getRead(), that.getRead()) &&
                 Objects.equals(getWrite(), that.getWrite());
+        }
+
+        public static class MqSchemaUserPermissionsBuilder {
+
+            private String configure;
+            private String read;
+            private String write;
+
+            MqSchemaUserPermissionsBuilder() {
+            }
+
+            public MqSchemaUserPermissionsBuilder configure(String configure) {
+                this.configure = configure;
+                return this;
+            }
+
+            public MqSchemaUserPermissionsBuilder read(String read) {
+                this.read = read;
+                return this;
+            }
+
+            public MqSchemaUserPermissionsBuilder write(String write) {
+                this.write = write;
+                return this;
+            }
+
+            public MqSchemaUserPermissions build() {
+                return new MqSchemaUserPermissions(configure, read, write);
+            }
         }
     }
 
