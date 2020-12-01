@@ -24,9 +24,7 @@ import org.jetbrains.annotations.Nullable;
 
 import java.io.FileInputStream;
 import java.io.IOException;
-import java.util.Base64;
-import java.util.HashMap;
-import java.util.Map;
+import java.util.*;
 
 import static com.exactpro.th2.infraoperator.fabric8.util.JsonUtils.JSON_READER;
 import static com.exactpro.th2.infraoperator.fabric8.util.JsonUtils.writeValueAsDeepMap;
@@ -51,6 +49,12 @@ public enum OperatorConfig {
 
     private String rabbitMQSecretName = DEFAULT_RABBITMQ_SECRET;
     private String cassandraSecretName = DEFAULT_CASSANDRA_SECRET;
+
+    public List<String> getNamespacePrefixes () {
+        //TODO: actual valid namespace prefixes should be returned
+
+        return Arrays.asList("schema-");
+    }
 
     public String getRabbitMQSecretName() {
         return rabbitMQSecretName;

@@ -13,6 +13,7 @@
 
 package com.exactpro.th2.infraoperator.fabric8.util;
 
+import com.exactpro.th2.infraoperator.fabric8.configuration.OperatorConfig;
 import com.exactpro.th2.infraoperator.fabric8.model.kubernetes.client.ResourceClient;
 import io.fabric8.kubernetes.api.model.Doneable;
 import io.fabric8.kubernetes.api.model.HasMetadata;
@@ -25,6 +26,7 @@ import io.fabric8.kubernetes.client.dsl.Resource;
 import io.fabric8.kubernetes.internal.KubernetesDeserializer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import java.util.List;
 
 
 public final class CustomResourceUtils {
@@ -144,6 +146,12 @@ public final class CustomResourceUtils {
 
         @Override
         public void eventReceived(Action action, T resource) {
+            String namespace = resource.getMetadata().getNamespace();
+            List<String> namespacePrefixes = OperatorConfig.INSTANCE.getNamespacePrefixes();
+            if (namespace != null && namespacePrefixes.stream().noneMatch(namespace::startsWith)) {
+                return;
+            }
+
             watcher.eventReceived(action, resource);
         }
 

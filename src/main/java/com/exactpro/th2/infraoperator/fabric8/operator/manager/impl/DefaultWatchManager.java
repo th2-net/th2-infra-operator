@@ -372,6 +372,11 @@ public class DefaultWatchManager {
 
         @Override
         public void eventReceived(Action action, ConfigMap configMap) {
+            String namespace = configMap.getMetadata().getNamespace();
+            List<String> namespacePrefixes = OperatorConfig.INSTANCE.getNamespacePrefixes();
+            if (namespace != null && namespacePrefixes.stream().noneMatch(namespace::startsWith)) {
+                return;
+            }
 
             String resourceLabel = CustomResourceUtils.annotationFor(configMap);
             logger.debug("Received {} event for \"{}\"", action, resourceLabel);
@@ -380,7 +385,6 @@ public class DefaultWatchManager {
                 return;
 
             try {
-                String namespace = configMap.getMetadata().getNamespace();
                 synchronized (LinkSingleton.INSTANCE.getLock(namespace)) {
 
                     logger.info("Processing {} event for \"{}\"", action, resourceLabel);
@@ -483,7 +487,6 @@ public class DefaultWatchManager {
 
         @Override
         public void eventReceived(Action action, Th2Link th2Link) {
-
             logger.debug("Received {} event for \"{}\"", action, CustomResourceUtils.annotationFor(th2Link));
 
             var linkNamespace = extractNamespace(th2Link);
