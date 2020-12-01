@@ -14,7 +14,9 @@
 package com.exactpro.th2.infraoperator.fabric8.operator;
 
 import com.exactpro.th2.infraoperator.fabric8.configuration.OperatorConfig;
+import com.exactpro.th2.infraoperator.fabric8.model.box.configuration.dictionary.RawDictionary;
 import com.exactpro.th2.infraoperator.fabric8.model.box.configuration.dictionary.factory.DictionaryFactory;
+import com.exactpro.th2.infraoperator.fabric8.model.box.configuration.grpc.GrpcRouterConfiguration;
 import com.exactpro.th2.infraoperator.fabric8.model.box.configuration.grpc.factory.GrpcRouterConfigFactory;
 import com.exactpro.th2.infraoperator.fabric8.model.box.configuration.mq.MessageRouterConfiguration;
 import com.exactpro.th2.infraoperator.fabric8.model.box.configuration.mq.factory.MessageRouterConfigFactory;
@@ -22,6 +24,7 @@ import com.exactpro.th2.infraoperator.fabric8.model.box.schema.link.QueueLinkBun
 import com.exactpro.th2.infraoperator.fabric8.model.kubernetes.configmaps.ConfigMaps;
 import com.exactpro.th2.infraoperator.fabric8.operator.context.HelmOperatorContext;
 import com.exactpro.th2.infraoperator.fabric8.spec.Th2CustomResource;
+import com.exactpro.th2.infraoperator.fabric8.spec.Th2Spec;
 import com.exactpro.th2.infraoperator.fabric8.spec.helmRelease.DoneableHelmRelease;
 import com.exactpro.th2.infraoperator.fabric8.spec.helmRelease.HelmRelease;
 import com.exactpro.th2.infraoperator.fabric8.spec.helmRelease.HelmReleaseList;
@@ -79,7 +82,10 @@ public abstract class HelmReleaseTh2Op<CR extends Th2CustomResource> extends Abs
     public static final String DOCKER_IMAGE_ALIAS = "image";
     public static final String COMPONENT_NAME_ALIAS = "name";
     public static final String RELEASE_NAME_ALIAS = "releaseName";
+    public static final String MONITORING_ALIAS = "monitoring";
+    public static final String PROMETHEUS_ALIAS = "prometheus";
     public static final String HELM_RELEASE_CRD_NAME = "helmreleases.helm.fluxcd.io";
+    public static final String PROMETHEUS_ENABLED_DEFAULT_VALUE = "true";
 
     protected final BoxResourceFinder resourceFinder;
     protected final GrpcLinkResolver grpcLinkResolver;
@@ -149,16 +155,15 @@ public abstract class HelmReleaseTh2Op<CR extends Th2CustomResource> extends Abs
     protected void mapProperties(CR resource, HelmRelease helmRelease) {
         super.mapProperties(resource, helmRelease);
 
-        var resNamespace = extractNamespace(resource);
-        var resSpec = resource.getSpec();
-        var lSingleton = LinkSingleton.INSTANCE;
+        String resNamespace = extractNamespace(resource);
+        Th2Spec resSpec = resource.getSpec();
+        LinkSingleton lSingleton = LinkSingleton.INSTANCE;
         var grpcActiveLinks = lSingleton.getGrpcActiveLinks(resNamespace);
         var dictionaryActiveLinks = lSingleton.getDictionaryActiveLinks(resNamespace);
 
-        var mqConfig = mqConfigFactory.createConfig(resource);
-        var grpcConfig = grpcConfigFactory.createConfig(resource, grpcActiveLinks);
-        var dictionaries = dictionaryFactory.create(resource, dictionaryActiveLinks);
-        var prometheusConfig = ConfigMaps.getPrometheus();
+        MessageRouterConfiguration mqConfig = mqConfigFactory.createConfig(resource);
+        GrpcRouterConfiguration grpcConfig = grpcConfigFactory.createConfig(resource, grpcActiveLinks);
+        List<RawDictionary> dictionaries = dictionaryFactory.create(resource, dictionaryActiveLinks);
 
         helmRelease.putSpecProp(RELEASE_NAME_ALIAS, extractNamespace(helmRelease) + "-" + extractName(helmRelease));
         helmRelease.mergeValue(PROPERTIES_MERGE_DEPTH, ROOT_PROPERTIES_ALIAS, Map.of(
@@ -166,8 +171,7 @@ public abstract class HelmReleaseTh2Op<CR extends Th2CustomResource> extends Abs
                 COMPONENT_NAME_ALIAS, extractName(resource),
                 CUSTOM_CONFIG_ALIAS, resource.getSpec().getCustomConfig(),
                 MQ_CONFIG_ALIAS, writeValueAsDeepMap(mqConfig),
-                GRPC_CONFIG_ALIAS, writeValueAsDeepMap(grpcConfig),
-                PROMETHEUS_CONFIG_ALIAS, prometheusConfig
+                GRPC_CONFIG_ALIAS, writeValueAsDeepMap(grpcConfig)
         ));
 
         if (!dictionaries.isEmpty()) {
@@ -176,23 +180,39 @@ public abstract class HelmReleaseTh2Op<CR extends Th2CustomResource> extends Abs
             ));
         }
 
-        var extendedSettings = resSpec.getExtendedSettings();
-        if (Objects.nonNull(extendedSettings)) {
+        Map<String, Object> prometheusConfig = ConfigMaps.getPrometheusParams();
+        Map<String, Object> extendedSettings = resSpec.getExtendedSettings();
+
+        String prometheusEnabled = PROMETHEUS_ENABLED_DEFAULT_VALUE;
+        if (extendedSettings != null) {
             helmRelease.mergeValue(PROPERTIES_MERGE_DEPTH, ROOT_PROPERTIES_ALIAS, Map.of(
                     EXTENDED_SETTINGS_ALIAS, extendedSettings
             ));
+
+            // extract prometheus monitoring parameter
+            var monitoring = extendedSettings.get(MONITORING_ALIAS);
+            if (monitoring != null && monitoring instanceof Map) {
+                var prometheus = ((Map) monitoring).get(PROMETHEUS_ALIAS);
+                if (prometheus != null)
+                    prometheusEnabled = prometheus.toString();
+            }
         }
 
-        var defaultChartConfig = OperatorConfig.INSTANCE.getChartConfig();
+        prometheusConfig.put(ConfigMaps.PROMETHEUS_JSON_ENABLED_PROPERTY, prometheusEnabled);
+        helmRelease.mergeValue(PROPERTIES_MERGE_DEPTH, ROOT_PROPERTIES_ALIAS, Map.of(
+                PROMETHEUS_CONFIG_ALIAS, prometheusConfig
+        ));
 
+        var defaultChartConfig = OperatorConfig.INSTANCE.getChartConfig();
         var chartConfig = resSpec.getChartConfig();
-        if (Objects.nonNull(chartConfig)) {
+        if (chartConfig != null) {
             defaultChartConfig = defaultChartConfig.updateWithAndCreate(chartConfig);
         }
 
         helmRelease.mergeSpecProp(CHART_PROPERTIES_ALIAS, defaultChartConfig.toMap());
         helmRelease.mergeValue(Map.of(ANNOTATIONS_ALIAS, extractAnnotations(resource).get(ANTECEDENT_LABEL_KEY_ALIAS)));
     }
+
 
     @Override
     protected void addedEvent(CR resource) {

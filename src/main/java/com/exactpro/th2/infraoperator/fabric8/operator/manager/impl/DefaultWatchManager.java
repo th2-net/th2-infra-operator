@@ -416,7 +416,7 @@ public class DefaultWatchManager {
                     }
 
                     Map<String, Object> map = JSON_READER.readValue(configContent, Map.class);
-                    ConfigMaps.setPrometheus(map);
+                    ConfigMaps.setPrometheusParams(map);
                 }
 
                 if (configMapName.equals(MQ_CONFIG_MAP_NAME)) {
