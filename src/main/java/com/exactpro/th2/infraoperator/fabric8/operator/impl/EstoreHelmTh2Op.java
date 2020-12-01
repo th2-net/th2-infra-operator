@@ -39,7 +39,7 @@ public class EstoreHelmTh2Op extends StoreHelmTh2Op<Th2Estore> {
 
     @Override
     protected String getKubObjDefPath(Th2Estore resource) {
-        return "/cr/helm/th2-estore-helm-release-live.yml";
+        return "/Th2Estore-HelmRelease.yml";
     }
 
     @Override
