@@ -49,6 +49,14 @@ public enum OperatorConfig {
         return getFullConfig(null).getNamespacePrefixes();
     }
 
+    public String getRabbitMQSecretName() {
+        return getSchemaSecrets().getRabbitMQ();
+    }
+
+    public String getCassandraSecretName() {
+        return getSchemaSecrets().getCassandra();
+    }
+
     public SchemaSecrets getSchemaSecrets() {
         return getFullConfig(null).getSchemaSecrets();
     }
