@@ -25,10 +25,7 @@ import org.jetbrains.annotations.Nullable;
 
 import java.io.FileInputStream;
 import java.io.IOException;
-import java.util.Base64;
-import java.util.HashMap;
-import java.util.Map;
-import java.util.Objects;
+import java.util.*;
 
 import static com.exactpro.th2.infraoperator.fabric8.util.JsonUtils.writeValueAsDeepMap;
 import static java.nio.charset.StandardCharsets.UTF_8;
@@ -50,6 +47,10 @@ public enum OperatorConfig {
     private String cassandraSecretName = DEFAULT_CASSANDRA_SECRET;
 
     private Map<String, MqWorkSpaceConfig> mqWorkSpaceConfigPerNamespace = new HashMap<>();
+
+    public List<String> getNamespacePrefixes() {
+        return getFullConfig(null).getNamespacePrefixes();
+    }
 
     public String getRabbitMQSecretName() {
         return rabbitMQSecretName;
@@ -116,11 +117,13 @@ public enum OperatorConfig {
         @JsonProperty("rabbitMQManagement")
         private MqGlobalConfig mqGlobalConfig;
         private SchemaSecrets schemaSecrets;
+        private List<String> namespacePrefixes;
 
         public Configuration() {
             chartConfig = new ChartConfig();
             mqGlobalConfig = new MqGlobalConfig();
             schemaSecrets = new SchemaSecrets();
+            namespacePrefixes = new ArrayList<>();
         }
 
         public ChartConfig getChartConfig() {
@@ -150,6 +153,15 @@ public enum OperatorConfig {
                 this.schemaSecrets = schemaSecrets;
         }
 
+        public List<String> getNamespacePrefixes() {
+            return namespacePrefixes;
+        }
+
+        public void setNamespacePrefixes(List<String> namespacePrefixes) {
+            if (namespacePrefixes != null)
+                this.namespacePrefixes = namespacePrefixes;
+        }
+
         @Override
         public boolean equals(Object o) {
             if (this == o) return true;
@@ -157,7 +169,8 @@ public enum OperatorConfig {
             Configuration that = (Configuration) o;
             return Objects.equals(getChartConfig(), that.getChartConfig()) &&
                 Objects.equals(getMqGlobalConfig(), that.getMqGlobalConfig()) &&
-                Objects.equals(getSchemaSecrets(), that.getSchemaSecrets());
+                Objects.equals(getSchemaSecrets(), that.getSchemaSecrets()) &&
+                Objects.equals(getNamespacePrefixes(), that.getNamespacePrefixes());
         }
     }
 
