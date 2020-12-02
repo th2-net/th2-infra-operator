@@ -43,29 +43,14 @@ public enum OperatorConfig {
 
     private Configuration configuration;
 
-    private String rabbitMQSecretName = DEFAULT_RABBITMQ_SECRET;
-    private String cassandraSecretName = DEFAULT_CASSANDRA_SECRET;
-
     private Map<String, MqWorkSpaceConfig> mqWorkSpaceConfigPerNamespace = new HashMap<>();
 
     public List<String> getNamespacePrefixes() {
         return getFullConfig(null).getNamespacePrefixes();
     }
 
-    public String getRabbitMQSecretName() {
-        return rabbitMQSecretName;
-    }
-
-    public void setRabbitMQSecretName(String rabbitMQSecretName) {
-        this.rabbitMQSecretName = rabbitMQSecretName;
-    }
-
-    public String getCassandraSecretName() {
-        return cassandraSecretName;
-    }
-
-    public void setCassandraSecretName(String cassandraSecretName) {
-        this.cassandraSecretName = cassandraSecretName;
+    public SchemaSecrets getSchemaSecrets() {
+        return getFullConfig(null).getSchemaSecrets();
     }
 
     @Nullable
