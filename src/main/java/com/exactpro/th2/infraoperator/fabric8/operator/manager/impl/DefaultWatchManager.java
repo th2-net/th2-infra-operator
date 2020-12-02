@@ -250,19 +250,31 @@ public class DefaultWatchManager {
 
 
     private void start() {
+        /*
+             resourceClients initialization should be done first
+             for concurrency issues
+         */
+        for (var hwSup : helmWatchersCommands) {
+            HelmReleaseTh2Op<Th2CustomResource> helmReleaseTh2Op = hwSup.get();
+            resourceClients.add(helmReleaseTh2Op.getResourceClient());
+        }
 
-        addWatch(CustomResourceUtils.watchFor(linkClient, new LinkWatcher()));
-        addWatch(CustomResourceUtils.watchFor(dictionaryClient, new DictionaryWatcher()));
+        /*
+            Appropriate watchers will be initialized afterwards
+         */
+        for (var hwSup: helmWatchersCommands) {
+            HelmReleaseTh2Op<Th2CustomResource> helmReleaseTh2Op = hwSup.get();
+            addWatch(CustomResourceUtils.watchFor(helmReleaseTh2Op.getResourceClient(), helmReleaseTh2Op));
+        }
+
 
         new ConfigMapWatcher(operatorBuilder.getClient(), this).watch();
         logger.info("Started watching for config map [ConfigMap<{}>]", MQ_CONFIG_MAP_NAME);
 
-        for (var hwSup: helmWatchersCommands) {
-            HelmReleaseTh2Op<Th2CustomResource> helmReleaseTh2Op = hwSup.get();
-            resourceClients.add(helmReleaseTh2Op.getResourceClient());
-            addWatch(CustomResourceUtils.watchFor(helmReleaseTh2Op.getResourceClient(), helmReleaseTh2Op));
-        }
+        addWatch(CustomResourceUtils.watchFor(linkClient, new LinkWatcher()));
+        addWatch(CustomResourceUtils.watchFor(dictionaryClient, new DictionaryWatcher()));
     }
+
 
     private void postInit() {
 
@@ -372,6 +384,11 @@ public class DefaultWatchManager {
 
         @Override
         public void eventReceived(Action action, ConfigMap configMap) {
+            String namespace = configMap.getMetadata().getNamespace();
+            List<String> namespacePrefixes = OperatorConfig.INSTANCE.getNamespacePrefixes();
+            if (namespace != null && namespacePrefixes.stream().noneMatch(namespace::startsWith)) {
+                return;
+            }
 
             String resourceLabel = CustomResourceUtils.annotationFor(configMap);
             logger.debug("Received {} event for \"{}\"", action, resourceLabel);
@@ -380,7 +397,6 @@ public class DefaultWatchManager {
                 return;
 
             try {
-                String namespace = configMap.getMetadata().getNamespace();
                 synchronized (LinkSingleton.INSTANCE.getLock(namespace)) {
 
                     logger.info("Processing {} event for \"{}\"", action, resourceLabel);
@@ -483,7 +499,6 @@ public class DefaultWatchManager {
 
         @Override
         public void eventReceived(Action action, Th2Link th2Link) {
-
             logger.debug("Received {} event for \"{}\"", action, CustomResourceUtils.annotationFor(th2Link));
 
             var linkNamespace = extractNamespace(th2Link);
