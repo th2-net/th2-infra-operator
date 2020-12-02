@@ -41,12 +41,15 @@ public enum OperatorConfig {
     public static final String RABBITMQ_SECRET_PASSWORD_KEY = "rabbitmq-password";
     public static final String RABBITMQ_SECRET_USERNAME_KEY = "rabbitmq-username";
 
+    private static final String CONFIG_FILE = "/var/th2/config/infra-operator.yml";
+    private static final String CONFIG_File_SYSTEM_PROPERTY = "infra-operator.config";
+
     private Configuration configuration;
 
     private Map<String, MqWorkSpaceConfig> mqWorkSpaceConfigPerNamespace = new HashMap<>();
 
     public List<String> getNamespacePrefixes() {
-        return getFullConfig(null).getNamespacePrefixes();
+        return getFullConfig().getNamespacePrefixes();
     }
 
     public String getRabbitMQSecretName() {
@@ -58,7 +61,7 @@ public enum OperatorConfig {
     }
 
     public SchemaSecrets getSchemaSecrets() {
-        return getFullConfig(null).getSchemaSecrets();
+        return getFullConfig().getSchemaSecrets();
     }
 
     @Nullable
@@ -71,21 +74,21 @@ public enum OperatorConfig {
     }
 
     public ChartConfig getChartConfig() {
-        return getFullConfig(null).getChartConfig();
+        return getFullConfig().getChartConfig();
     }
 
     public MqGlobalConfig getMqAuthConfig() {
-        return getFullConfig(null).getMqGlobalConfig();
+        return getFullConfig().getMqGlobalConfig();
     }
 
-    public synchronized Configuration getFullConfig(String pathName) {
+    private synchronized Configuration getFullConfig() {
         if (configuration == null)
-            configuration = getConfig(pathName);
+            configuration = getConfig();
         return configuration;
     }
 
-    private Configuration getConfig(String pathName) {
-        try (var in = new FileInputStream(System.getProperty(pathName, Configuration.CONFIG_PATH))) {
+    Configuration getConfig() {
+        try (var in = new FileInputStream(System.getProperty(CONFIG_File_SYSTEM_PROPERTY, CONFIG_FILE))) {
             StringSubstitutor stringSubstitutor =
                 new StringSubstitutor(StringLookupFactory.INSTANCE.environmentVariableStringLookup());
             String content = stringSubstitutor.replace(new String(in.readAllBytes()));
@@ -97,9 +100,7 @@ public enum OperatorConfig {
     }
 
     @JsonIgnoreProperties(ignoreUnknown = true)
-    public static class Configuration {
-
-        private static final String CONFIG_PATH = "/var/th2/config/?.yml";
+    static class Configuration {
 
         @JsonProperty("chart")
         private ChartConfig chartConfig;

@@ -11,14 +11,13 @@
  * limitations under the License.
  */
 
-package com.exactpro.th2.infraoperator.fabric8;
+package com.exactpro.th2.infraoperator.fabric8.configuration;
 
-import com.exactpro.th2.infraoperator.fabric8.configuration.OperatorConfig;
-import com.exactpro.th2.infraoperator.fabric8.configuration.OperatorConfig.*;
-import com.exactpro.th2.infraoperator.fabric8.configuration.SchemaSecrets;
-import org.junit.jupiter.api.AfterEach;
+import com.exactpro.th2.infraoperator.fabric8.configuration.OperatorConfig.ChartConfig;
+import com.exactpro.th2.infraoperator.fabric8.configuration.OperatorConfig.Configuration;
+import com.exactpro.th2.infraoperator.fabric8.configuration.OperatorConfig.MqGlobalConfig;
+import com.exactpro.th2.infraoperator.fabric8.configuration.OperatorConfig.MqSchemaUserPermissions;
 import org.junit.jupiter.api.Assertions;
-import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 import java.util.Arrays;
@@ -27,13 +26,15 @@ public class TestConfiguration {
 
     private Configuration expected;
 
-    @BeforeEach
-    private void assignExpected() {
+    private void beforeEach(String path) {
         expected = new Configuration();
+        System.setProperty("infra-operator.config", path);
     }
 
     @Test
     void testFullConfig() {
+        beforeEach("./src/test/resources/fullConfig.yml");
+
         expected.setChartConfig(ChartConfig.builder().git("git").path("path").ref("ref").build());
         expected.setMqGlobalConfig(
             MqGlobalConfig.builder().host("host").port(8080).username("username").password("password")
@@ -44,28 +45,31 @@ public class TestConfiguration {
         expected.setSchemaSecrets(SchemaSecrets.builder().rabbitMQ("rabbitMQ").cassandra("cassandra").build());
         expected.setNamespacePrefixes(Arrays.asList("string1", "string2"));
 
-        Assertions.assertEquals(expected, OperatorConfig.INSTANCE.getFullConfig(
-            "./src/test/resources/fullConfig.yml"));
+        Assertions.assertEquals(expected, OperatorConfig.INSTANCE.getConfig());
     }
 
     @Test
     void testNsPrefixes() {
+        beforeEach("./src/test/resources/nsPrefixesConfig.yml");
+
         expected.setNamespacePrefixes(Arrays.asList("string1", "string2"));
 
-        Assertions.assertEquals(expected, OperatorConfig.INSTANCE.getFullConfig(
-            "./src/test/resources/nsPrefixesConfig.yml"));
+        Assertions.assertEquals(expected, OperatorConfig.INSTANCE.getConfig());
     }
 
     @Test
     void testChartConfig() {
+        beforeEach("./src/test/resources/chartConfig.yml");
+
         expected.setChartConfig(ChartConfig.builder().git("git").path("path").ref("ref").build());
 
-        Assertions.assertEquals(expected, OperatorConfig.INSTANCE.getFullConfig(
-            "./src/test/resources/chartConfig.yml"));
+        Assertions.assertEquals(expected, OperatorConfig.INSTANCE.getConfig());
     }
 
     @Test
     void testMqGlobalConfig() {
+        beforeEach("./src/test/resources/mqGlobalConfig.yml");
+
         expected.setMqGlobalConfig(
             MqGlobalConfig.builder().host("host").port(8080).username("username").password("password")
                 .persistence(true).schemaUserPermissions(
@@ -73,24 +77,25 @@ public class TestConfiguration {
                 .build()
         );
 
-        Assertions.assertEquals(expected, OperatorConfig.INSTANCE.getFullConfig(
-            "./src/test/resources/mqGlobalConfig.yml"));
+        Assertions.assertEquals(expected, OperatorConfig.INSTANCE.getConfig());
     }
 
     @Test
     void testSchemaSecretsConfig() {
+        beforeEach("./src/test/resources/schemaSecretsConfig.yml");
+
         expected.setSchemaSecrets(SchemaSecrets.builder().rabbitMQ("rabbitMQ").cassandra("cassandra").build());
 
-        Assertions.assertEquals(expected, OperatorConfig.INSTANCE.getFullConfig(
-            "./src/test/resources/schemaSecretsConfig.yml"));
+        Assertions.assertEquals(expected, OperatorConfig.INSTANCE.getConfig());
     }
 
     @Test
     void testEmptyConfig() {
+        beforeEach("./src/test/resources/emptyConfig.yml");
+
         expected.setMqGlobalConfig(MqGlobalConfig.builder().schemaUserPermissions(
             MqSchemaUserPermissions.builder().read("").write("").build()).build());
 
-        Assertions.assertEquals(expected, OperatorConfig.INSTANCE.getFullConfig(
-            "./src/test/resources/emptyConfig.yml"));
+        Assertions.assertEquals(expected, OperatorConfig.INSTANCE.getConfig());
     }
 }
