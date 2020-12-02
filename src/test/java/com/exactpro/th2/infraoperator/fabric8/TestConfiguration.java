@@ -15,8 +15,11 @@ package com.exactpro.th2.infraoperator.fabric8;
 
 import com.exactpro.th2.infraoperator.fabric8.configuration.OperatorConfig;
 import com.exactpro.th2.infraoperator.fabric8.configuration.OperatorConfig.*;
+import com.exactpro.th2.infraoperator.fabric8.configuration.SchemaSecrets;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
+
+import java.util.Arrays;
 
 public class TestConfiguration {
 
@@ -30,6 +33,8 @@ public class TestConfiguration {
                 MqSchemaUserPermissions.builder().configure("configure").read("read").write("write").build())
                 .build()
         );
+        expected.setSchemaSecrets(SchemaSecrets.builder().rabbitMQ("rabbitMQ").cassandra("cassandra").build());
+        expected.setNamespacePrefixes(Arrays.asList("string1", "string2"));
 
         Assertions.assertEquals(expected, OperatorConfig.INSTANCE.getFullConfig("./src/test/resources/data.yml"));
     }
