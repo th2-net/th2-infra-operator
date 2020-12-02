@@ -78,14 +78,14 @@ public enum OperatorConfig {
         return getFullConfig(null).getMqGlobalConfig();
     }
 
-    public synchronized Configuration getFullConfig(String path) {
+    public synchronized Configuration getFullConfig(String pathName) {
         if (configuration == null)
-            configuration = getConfig(path);
+            configuration = getConfig(pathName);
         return configuration;
     }
 
-    private Configuration getConfig(String path) {
-        try (var in = new FileInputStream(getConfigPath(path))) {
+    private Configuration getConfig(String pathName) {
+        try (var in = new FileInputStream(System.getProperty(pathName, Configuration.CONFIG_PATH))) {
             StringSubstitutor stringSubstitutor =
                 new StringSubstitutor(StringLookupFactory.INSTANCE.environmentVariableStringLookup());
             String content = stringSubstitutor.replace(new String(in.readAllBytes()));
@@ -94,10 +94,6 @@ public enum OperatorConfig {
             throw new IllegalStateException(
                 "Exception reading configuration " + Configuration.class.getSimpleName(), e);
         }
-    }
-
-    private String getConfigPath(String path) {
-        return path != null ? path : Configuration.CONFIG_PATH;
     }
 
     @JsonIgnoreProperties(ignoreUnknown = true)
