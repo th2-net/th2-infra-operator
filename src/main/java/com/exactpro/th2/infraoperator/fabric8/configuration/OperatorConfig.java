@@ -437,9 +437,9 @@ public enum OperatorConfig {
         }
 
         public MqSchemaUserPermissions(String configure, String read, String write) {
-            this.configure = configure == null ? "" : configure;
-            this.read = read == null ? "" : read;
-            this.write = write == null ? "" : write;
+            setConfigure(configure);
+            setRead(read);
+            setWrite(write);
         }
 
         public String getConfigure() {
