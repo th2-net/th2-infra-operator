@@ -31,6 +31,6 @@ public class TestConfiguration {
                 .build()
         );
 
-        Assertions.assertEquals(expected, OperatorConfig.INSTANCE.getFullConfig());
+        Assertions.assertEquals(expected, OperatorConfig.INSTANCE.getFullConfig("./src/test/resources/data.yml"));
     }
 }

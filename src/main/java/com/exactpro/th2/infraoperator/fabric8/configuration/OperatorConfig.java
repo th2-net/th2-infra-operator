@@ -44,8 +44,6 @@ public enum OperatorConfig {
     public static final String RABBITMQ_SECRET_PASSWORD_KEY = "rabbitmq-password";
     public static final String RABBITMQ_SECRET_USERNAME_KEY = "rabbitmq-username";
 
-    private static final String ROOT_PATH = "/var/th2/config/";
-
     private Configuration configuration;
 
     private String rabbitMQSecretName = DEFAULT_RABBITMQ_SECRET;
@@ -79,21 +77,21 @@ public enum OperatorConfig {
     }
 
     public ChartConfig getChartConfig() {
-        return getFullConfig().getChartConfig();
+        return getFullConfig(null).getChartConfig();
     }
 
     public MqGlobalConfig getMqAuthConfig() {
-        return getFullConfig().getMqGlobalConfig();
+        return getFullConfig(null).getMqGlobalConfig();
     }
 
-    public synchronized Configuration getFullConfig() {
+    public synchronized Configuration getFullConfig(String path) {
         if (configuration == null)
-            configuration = getConfig();
+            configuration = getConfig(path);
         return configuration;
     }
 
-    private Configuration getConfig() {
-        try (var in = new FileInputStream(Configuration.CONFIG_PATH)) {
+    private Configuration getConfig(String path) {
+        try (var in = new FileInputStream(getConfigPath(path))) {
             StringSubstitutor stringSubstitutor =
                 new StringSubstitutor(StringLookupFactory.INSTANCE.environmentVariableStringLookup());
             String content = stringSubstitutor.replace(new String(in.readAllBytes()));
@@ -104,10 +102,14 @@ public enum OperatorConfig {
         }
     }
 
+    private String getConfigPath(String path) {
+        return path != null ? path : Configuration.CONFIG_PATH;
+    }
+
     @JsonIgnoreProperties(ignoreUnknown = true)
     public static class Configuration {
 
-        private static final String CONFIG_PATH = "./src/test/resources/data.yml";
+        private static final String CONFIG_PATH = "/var/th2/config/?.yml";
 
         @JsonProperty("chart")
         private ChartConfig chartConfig;
