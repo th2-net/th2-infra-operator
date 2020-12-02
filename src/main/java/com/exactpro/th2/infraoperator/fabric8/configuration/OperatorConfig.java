@@ -169,24 +169,12 @@ public enum OperatorConfig {
             return git;
         }
 
-        public void setGit(String git) {
-            this.git = git;
-        }
-
         public String getRef() {
             return ref;
         }
 
-        public void setRef(String ref) {
-            this.ref = ref;
-        }
-
         public String getPath() {
             return path;
-        }
-
-        public void setPath(String path) {
-            this.path = path;
         }
 
         public static ChartConfig newInstance(ChartConfig config) {
