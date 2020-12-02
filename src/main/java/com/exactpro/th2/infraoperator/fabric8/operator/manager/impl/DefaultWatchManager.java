@@ -416,7 +416,12 @@ public class DefaultWatchManager {
                     }
 
                     Map<String, Object> map = JSON_READER.readValue(configContent, Map.class);
-                    ConfigMaps.setPrometheusParams(map);
+                    if (!ConfigMaps.getPrometheusParams().equals(map)) {
+                        logger.info("Prometheus ConfigMap has been changed in namespace \"%s\" has. Updating all boxes", namespace);
+                        ConfigMaps.setPrometheusParams(map);
+                        int refreshedBoxesCount = refreshBoxes(namespace);
+                        logger.info("{} box-definition(s) have been updated", refreshedBoxesCount);
+                    }
                 }
 
                 if (configMapName.equals(MQ_CONFIG_MAP_NAME)) {
@@ -436,11 +441,11 @@ public class DefaultWatchManager {
                         if (!Objects.equals(mqWsConfig, newMqWsConfig)) {
                             opConfig.setMqWorkSpaceConfig(namespace, newMqWsConfig);
                             MqVHostUtils.createVHostIfAbsent(namespace, opConfig.getMqAuthConfig());
-                            logger.info(String.format("RabbitMQ workspace data in namespace \"%s\" has been updated. Updating all boxes", namespace));
+                            logger.info("RabbitMQ ConfigMap has been updated in namespace \"%s\". Updating all boxes", namespace);
                             int refreshedBoxesCount = refreshBoxes(namespace);
                             logger.info("{} box-definition(s) have been updated", refreshedBoxesCount);
                         } else
-                            logger.info("RabbitMQ workspace data hasn't changed");
+                            logger.info("RabbitMQ ConfigMap data hasn't changed");
                     }
                 }
             } catch (Exception e) {
