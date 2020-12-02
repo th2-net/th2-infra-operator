@@ -115,10 +115,12 @@ public enum OperatorConfig {
         private ChartConfig chartConfig;
         @JsonProperty("rabbitMQManagement")
         private MqGlobalConfig mqGlobalConfig;
+        private SchemaSecrets schemaSecrets;
 
         public Configuration() {
             chartConfig = new ChartConfig();
             mqGlobalConfig = new MqGlobalConfig();
+            schemaSecrets = new SchemaSecrets();
         }
 
         public ChartConfig getChartConfig() {
@@ -139,13 +141,23 @@ public enum OperatorConfig {
                 this.mqGlobalConfig = mqGlobalConfig;
         }
 
+        public SchemaSecrets getSchemaSecrets() {
+            return schemaSecrets;
+        }
+
+        public void setSchemaSecrets(SchemaSecrets schemaSecrets) {
+            if (schemaSecrets != null)
+                this.schemaSecrets = schemaSecrets;
+        }
+
         @Override
         public boolean equals(Object o) {
             if (this == o) return true;
             if (!(o instanceof Configuration)) return false;
             Configuration that = (Configuration) o;
             return Objects.equals(getChartConfig(), that.getChartConfig()) &&
-                Objects.equals(getMqGlobalConfig(), that.getMqGlobalConfig());
+                Objects.equals(getMqGlobalConfig(), that.getMqGlobalConfig()) &&
+                Objects.equals(getSchemaSecrets(), that.getSchemaSecrets());
         }
     }
 
@@ -488,6 +500,74 @@ public enum OperatorConfig {
 
             public MqSchemaUserPermissions build() {
                 return new MqSchemaUserPermissions(configure, read, write);
+            }
+        }
+    }
+
+    @JsonIgnoreProperties(ignoreUnknown = true)
+    public static class SchemaSecrets {
+
+        private String rabbitMQ;
+        private String cassandra;
+
+        public SchemaSecrets() {
+            this(null, null);
+        }
+
+        public SchemaSecrets(String rabbitMQ, String cassandra) {
+            setRabbitMQ(rabbitMQ);
+            setCassandra(cassandra);
+        }
+
+        public String getRabbitMQ() {
+            return rabbitMQ;
+        }
+
+        public void setRabbitMQ(String rabbitMQ) {
+            this.rabbitMQ = rabbitMQ != null ? rabbitMQ : DEFAULT_RABBITMQ_SECRET;
+        }
+
+        public String getCassandra() {
+            return cassandra;
+        }
+
+        public void setCassandra(String cassandra) {
+            this.cassandra = cassandra != null ? cassandra : DEFAULT_CASSANDRA_SECRET;
+        }
+
+        public static SchemaSecretsBuilder builder() {
+            return new SchemaSecretsBuilder();
+        }
+
+        @Override
+        public boolean equals(Object o) {
+            if (this == o) return true;
+            if (!(o instanceof SchemaSecrets)) return false;
+            SchemaSecrets that = (SchemaSecrets) o;
+            return Objects.equals(getRabbitMQ(), that.getRabbitMQ()) &&
+                Objects.equals(getCassandra(), that.getCassandra());
+        }
+
+        public static class SchemaSecretsBuilder {
+
+            private String rabbitMQ;
+            private String cassandra;
+
+            SchemaSecretsBuilder() {
+            }
+
+            public SchemaSecretsBuilder rabbitMQ(String rabbitMQ) {
+                this.rabbitMQ = rabbitMQ;
+                return this;
+            }
+
+            public SchemaSecretsBuilder cassandra(String cassandra) {
+                this.cassandra = cassandra;
+                return this;
+            }
+
+            public SchemaSecrets build() {
+                return new SchemaSecrets(rabbitMQ, cassandra);
             }
         }
     }
