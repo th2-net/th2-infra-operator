@@ -79,9 +79,3 @@ rabbitMQManagement:
   
 ```
 
-## Deployment
-The infra-operator is a cluster-wide resource, meaning that there should only be one instance of it deployed on the cluster.
- The infra-operator is deployed in `service` namespace. Since it needs specific configurations attached to its pod,
- the deployment is performed through charts by applying `/values/service.helmrelease.yaml` 
- (from [th2-infra](https://gitlab.exactpro.com/vivarium/th2/th2-core-open-source/th2-infra)) 
- (FIXME: update with github link when repository is moved).
