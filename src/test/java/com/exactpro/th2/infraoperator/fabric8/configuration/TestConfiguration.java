@@ -28,12 +28,12 @@ public class TestConfiguration {
 
     private void beforeEach(String path) {
         expected = new Configuration();
-        System.setProperty("infra-operator.config", path);
+        System.setProperty(OperatorConfig.CONFIG_FILE_SYSTEM_PROPERTY, path);
     }
 
     @Test
     void testFullConfig() {
-        beforeEach("./src/test/resources/fullConfig.yml");
+        beforeEach("src/test/resources/fullConfig.yml");
 
         expected.setChartConfig(ChartConfig.builder().git("git").path("path").ref("ref").build());
         expected.setMqGlobalConfig(
@@ -50,7 +50,7 @@ public class TestConfiguration {
 
     @Test
     void testNsPrefixes() {
-        beforeEach("./src/test/resources/nsPrefixesConfig.yml");
+        beforeEach("src/test/resources/nsPrefixesConfig.yml");
 
         expected.setNamespacePrefixes(Arrays.asList("string1", "string2"));
 
@@ -59,7 +59,7 @@ public class TestConfiguration {
 
     @Test
     void testChartConfig() {
-        beforeEach("./src/test/resources/chartConfig.yml");
+        beforeEach("src/test/resources/chartConfig.yml");
 
         expected.setChartConfig(ChartConfig.builder().git("git").path("path").ref("ref").build());
 
@@ -68,7 +68,7 @@ public class TestConfiguration {
 
     @Test
     void testMqGlobalConfig() {
-        beforeEach("./src/test/resources/mqGlobalConfig.yml");
+        beforeEach("src/test/resources/mqGlobalConfig.yml");
 
         expected.setMqGlobalConfig(
             MqGlobalConfig.builder().host("host").port(8080).username("username").password("password")
@@ -82,7 +82,7 @@ public class TestConfiguration {
 
     @Test
     void testSchemaSecretsConfig() {
-        beforeEach("./src/test/resources/schemaSecretsConfig.yml");
+        beforeEach("src/test/resources/schemaSecretsConfig.yml");
 
         expected.setSchemaSecrets(SchemaSecrets.builder().rabbitMQ("rabbitMQ").cassandra("cassandra").build());
 
@@ -91,7 +91,7 @@ public class TestConfiguration {
 
     @Test
     void testEmptyConfig() {
-        beforeEach("./src/test/resources/emptyConfig.yml");
+        beforeEach("src/test/resources/emptyConfig.yml");
 
         expected.setMqGlobalConfig(MqGlobalConfig.builder().schemaUserPermissions(
             MqSchemaUserPermissions.builder().read("").write("").build()).build());

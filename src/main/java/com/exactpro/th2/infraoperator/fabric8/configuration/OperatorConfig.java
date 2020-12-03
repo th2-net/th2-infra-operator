@@ -42,7 +42,7 @@ public enum OperatorConfig {
     public static final String RABBITMQ_SECRET_USERNAME_KEY = "rabbitmq-username";
 
     private static final String CONFIG_FILE = "/var/th2/config/infra-operator.yml";
-    private static final String CONFIG_File_SYSTEM_PROPERTY = "infra-operator.config";
+    public static final String CONFIG_FILE_SYSTEM_PROPERTY = "infra.operator.config";
 
     private Configuration configuration;
 
@@ -88,7 +88,7 @@ public enum OperatorConfig {
     }
 
     Configuration getConfig() {
-        try (var in = new FileInputStream(System.getProperty(CONFIG_File_SYSTEM_PROPERTY, CONFIG_FILE))) {
+        try (var in = new FileInputStream(System.getProperty(CONFIG_FILE_SYSTEM_PROPERTY, CONFIG_FILE))) {
             StringSubstitutor stringSubstitutor =
                 new StringSubstitutor(StringLookupFactory.INSTANCE.environmentVariableStringLookup());
             String content = stringSubstitutor.replace(new String(in.readAllBytes()));
