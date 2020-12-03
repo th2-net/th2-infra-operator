@@ -30,7 +30,54 @@ The list below covers the main duties and objectives of this component.
 * Generate [gRPC](https://grpc.io/docs/) configs for each resource that needs it.
 
 ## Configuration
-TODO
+The infra-operator configuration is given with infra-operator.yml file that should be on the classpath of the application
+
+```yaml
+namespacePrefixes:
+  - namespace-
+  - prefixes-
+# these prefixes are used to filter namespaces that infra-operator will manage as a schema
+
+chart:
+  git: git@some.server.com:some/repository
+  # git repository URL for helm charts used by Th2 Custom Resources
+  
+  ref: branch
+  # branch for helm charts
+
+  path: /path/to/charts
+  # repository path for charts
+  
+rabbitMQManagement:
+  host: host
+  # rabbitMQ host used for managing vHosts and users
+  
+  port: 8080
+  # rabbitMQ port
+  
+  username: username
+  # rabbitMQ management username
+  
+  password: password
+  # password for management user
+  
+  persistence: true
+  # determines if the RabbitMQ resources are persistent or not
+  
+  schemaPermissions:
+    # this section describes what permissions will have schema RabbitMQ user on its own resouces
+    # see RabbitMQ documentation to find out how permissions are described
+    configure: pattern
+    # configuration permissions on resources
+    
+    read: pattern
+    # read permission on resources
+    
+    write: pattern
+    # write permission on resources
+    
+  
+```
 
 ## Deployment
 The infra-operator is a cluster-wide resource, meaning that there should only be one instance of it deployed on the cluster.
