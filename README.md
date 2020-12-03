@@ -74,7 +74,7 @@ rabbitMQManagement:
     # read permission on resources
     
     write: pattern
-    # writ permission on resources
+    # write permission on resources
     
   
 ```
