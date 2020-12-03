@@ -36,7 +36,7 @@ The infra-operator configuration is given with infra-operator.yml file that shou
 namespacePrefixes:
   - namespace-
   - prefixes-
-# these prefixes are used to filter the list of namespaces
+# these prefixes are used to filter namespaces that infra-operator will manage as a schema
 
 chart:
   git: git@some.server.com:some/repository
@@ -48,7 +48,6 @@ chart:
   path: /path/to/charts
   # repository path for charts
   
-
 rabbitMQManagement:
   host: host
   # rabbitMQ host used for managing vHosts and users
