@@ -40,39 +40,41 @@ namespacePrefixes:
 
 chart:
   git: git@some.server.com:some/repository
-  # git ssh repository URL
-  
-  path: /path/to/chart
-  # repository path
+  # git ssh repository URL for helm charts used by Th2 Custom Resources
   
   ref: branch
-  # branch reference
+  # branch for helm charts
+
+  path: /path/to/charts
+  # repository path for charts
+  
 
 rabbitMQManagement:
   host: host
-  # rabbitMQ user host
+  # rabbitMQ host used for managing vHosts and users
   
   port: 8080
-  # rabbitMQ user port
+  # rabbitMQ port
   
   username: username
-  # rabbitMQ username
+  # rabbitMQ management username
   
   password: password
-  # user password
+  # password for management user
   
   persistence: true
-  # determines if the resources are persistent or not
+  # determines if the RabbitMQ resources are persistent or not
   
   schemaPermissions:
-    configure: fileName.extension
-    # configuration permission
+    # this section describes what permissions will have schema RabbitMQ user on its own resouces
+    configure: pattern
+    # configuration permissions on resources
     
-    read: fileName.extension
-    # reader permission
+    read: pattern
+    # read permission on resources
     
-    write: fileName.extension
-    # writer permission
+    write: pattern
+    # writ permission on resources
     
   # RabbitMQ user permission documentation
 
