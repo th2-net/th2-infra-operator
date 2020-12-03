@@ -39,7 +39,7 @@ public class MstoreHelmTh2Op extends StoreHelmTh2Op<Th2Mstore> {
 
     @Override
     protected String getKubObjDefPath(Th2Mstore resource) {
-        return "/cr/helm/th2-mstore-helm-release-live.yml";
+        return "/Th2Mstore-HelmRelease.yml";
     }
 
     @Override
