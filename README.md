@@ -66,6 +66,7 @@ rabbitMQManagement:
   
   schemaPermissions:
     # this section describes what permissions will have schema RabbitMQ user on its own resouces
+    # see RabbitMQ documentation to find out how permissions are described
     configure: pattern
     # configuration permissions on resources
     
@@ -75,8 +76,7 @@ rabbitMQManagement:
     write: pattern
     # writ permission on resources
     
-  # RabbitMQ user permission documentation
-
+  
 ```
 
 ## Deployment
