@@ -36,29 +36,45 @@ The infra-operator configuration is given with infra-operator.yml file that shou
 namespacePrefixes:
   - namespace-
   - prefixes-
-  - here-
-# these prefixes are used to find corresponding schemas
+# these prefixes are used to filter the list of namespaces
 
 chart:
-  git: git
-  path: path/to/
-  ref: ref
+  git: git@some.server.com:some/repository
+  # git ssh repository URL
+  
+  path: /path/to/chart
+  # repository path
+  
+  ref: branch
+  # branch reference
 
 rabbitMQManagement:
   host: host
+  # rabbitMQ user host
+  
   port: 8080
+  # rabbitMQ user port
+  
   username: username
+  # rabbitMQ username
+  
   password: password
+  # user password
+  
   persistence: true
+  # determines if the resources are persistent or not
+  
   schemaPermissions:
-    configure: configure
-    read: read
-    write: write
-  # configuration used to define RabbitMQ user permissions
-
-schemaSecrets:
-  rabbitMQ: rabbitMQ
-  cassandra: cassandra
+    configure: fileName.extension
+    # configuration permission
+    
+    read: fileName.extension
+    # reader permission
+    
+    write: fileName.extension
+    # writer permission
+    
+  # RabbitMQ user permission documentation
 
 ```
 
