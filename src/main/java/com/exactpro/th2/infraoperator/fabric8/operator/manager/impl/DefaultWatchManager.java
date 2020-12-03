@@ -21,6 +21,7 @@ import com.exactpro.th2.infraoperator.fabric8.model.box.configuration.grpc.facto
 import com.exactpro.th2.infraoperator.fabric8.model.kubernetes.client.ResourceClient;
 import com.exactpro.th2.infraoperator.fabric8.model.kubernetes.client.ipml.DictionaryClient;
 import com.exactpro.th2.infraoperator.fabric8.model.kubernetes.client.ipml.LinkClient;
+import com.exactpro.th2.infraoperator.fabric8.model.kubernetes.configmaps.ConfigMaps;
 import com.exactpro.th2.infraoperator.fabric8.operator.HelmReleaseTh2Op;
 import com.exactpro.th2.infraoperator.fabric8.operator.context.HelmOperatorContext;
 import com.exactpro.th2.infraoperator.fabric8.spec.Th2CustomResource;
@@ -255,14 +256,28 @@ public class DefaultWatchManager {
         addWatch(CustomResourceUtils.watchFor(dictionaryClient, new DictionaryWatcher()));
 
         new ConfigMapWatcher(operatorBuilder.getClient(), this).watch();
-        logger.info("Started watching for config map [ConfigMap<{}>]", MQ_CONFIG_MAP_NAME);
+        logger.info("Started watching for ConfigMaps");
 
-        for (var hwSup: helmWatchersCommands) {
+        /*
+             resourceClients initialization should be done first
+             for concurrency issues
+         */
+        for (var hwSup : helmWatchersCommands) {
             HelmReleaseTh2Op<Th2CustomResource> helmReleaseTh2Op = hwSup.get();
             resourceClients.add(helmReleaseTh2Op.getResourceClient());
+        }
+
+        /*
+            Appropriate watchers will be initialized afterwards
+         */
+        for (var hwSup: helmWatchersCommands) {
+            HelmReleaseTh2Op<Th2CustomResource> helmReleaseTh2Op = hwSup.get();
             addWatch(CustomResourceUtils.watchFor(helmReleaseTh2Op.getResourceClient(), helmReleaseTh2Op));
         }
+
+
     }
+
 
     private void postInit() {
 
@@ -372,6 +387,7 @@ public class DefaultWatchManager {
 
         @Override
         public void eventReceived(Action action, ConfigMap configMap) {
+
             String namespace = configMap.getMetadata().getNamespace();
             List<String> namespacePrefixes = OperatorConfig.INSTANCE.getNamespacePrefixes();
             if (namespace != null && namespacePrefixes.stream().noneMatch(namespace::startsWith)) {
@@ -381,40 +397,61 @@ public class DefaultWatchManager {
             String resourceLabel = CustomResourceUtils.annotationFor(configMap);
             logger.debug("Received {} event for \"{}\"", action, resourceLabel);
 
-            if (!configMap.getMetadata().getName().equals(MQ_CONFIG_MAP_NAME) || action == Action.DELETED)
+            if (action == Action.DELETED)
+                return;
+
+            String configMapName = configMap.getMetadata().getName();
+
+            if (!(configMapName.equals(MQ_CONFIG_MAP_NAME) || configMapName.equals(ConfigMaps.PROMETHEUS_CONFIGMAP_NAME)))
                 return;
 
             try {
-                synchronized (LinkSingleton.INSTANCE.getLock(namespace)) {
+                logger.info("Processing {} event for \"{}\"", action, resourceLabel);
 
-                    logger.info("Processing {} event for \"{}\"", action, resourceLabel);
-                    OperatorConfig opConfig = OperatorConfig.INSTANCE;
-                    OperatorConfig.MqWorkSpaceConfig mqWsConfig = opConfig.getMqWorkSpaceConfig(namespace);
-                    String configContent = configMap.getData().get(CONFIG_MAP_RABBITMQ_PROP_NAME);
-
+                if (configMapName.equals(ConfigMaps.PROMETHEUS_CONFIGMAP_NAME)) {
+                    String configContent = configMap.getData().get(ConfigMaps.PROMETHEUS_JSON_KEY);
                     if (Strings.isNullOrEmpty(configContent)) {
-                        logger.error("Key \"{}\" not found in \"{}\"", CONFIG_MAP_RABBITMQ_PROP_NAME, resourceLabel);
+                        logger.error("Key \"{}\" not found in \"{}\"", ConfigMaps.PROMETHEUS_JSON_KEY, resourceLabel);
                         return;
                     }
 
-                    // TODO: remove if there are no problems with rabbitmq configmaps
-                    // configContent = configContent.replace(System.lineSeparator(), "");
-
-                    OperatorConfig.MqWorkSpaceConfig newMqWsConfig = JSON_READER.readValue(configContent, OperatorConfig.MqWorkSpaceConfig.class);
-                    newMqWsConfig.setPassword(readRabbitMQPasswordForSchema(client, namespace, opConfig.getRabbitMQSecretName()));
-
-                    if (!Objects.equals(mqWsConfig, newMqWsConfig)) {
-                        opConfig.setMqWorkSpaceConfig(namespace, newMqWsConfig);
-                        MqVHostUtils.createVHostIfAbsent(namespace, opConfig.getMqAuthConfig());
-                        logger.info(String.format("RabbitMQ workspace data in namespace \"%s\" has been updated. Updating all boxes", namespace));
+                    Map<String, Object> map = JSON_READER.readValue(configContent, Map.class);
+                    if (!ConfigMaps.getPrometheusParams().equals(map)) {
+                        logger.info("Prometheus ConfigMap has been changed in namespace \"%s\" has. Updating all boxes", namespace);
+                        ConfigMaps.setPrometheusParams(map);
                         int refreshedBoxesCount = refreshBoxes(namespace);
                         logger.info("{} box-definition(s) have been updated", refreshedBoxesCount);
-                    } else
-                        logger.info("RabbitMQ workspace data hasn't changed");
+                    }
+                }
+
+                if (configMapName.equals(MQ_CONFIG_MAP_NAME)) {
+                    synchronized (LinkSingleton.INSTANCE.getLock(namespace)) {
+                        OperatorConfig opConfig = OperatorConfig.INSTANCE;
+                        OperatorConfig.MqWorkSpaceConfig mqWsConfig = opConfig.getMqWorkSpaceConfig(namespace);
+
+                        String configContent = configMap.getData().get(CONFIG_MAP_RABBITMQ_PROP_NAME);
+                        if (Strings.isNullOrEmpty(configContent)) {
+                            logger.error("Key \"{}\" not found in \"{}\"", CONFIG_MAP_RABBITMQ_PROP_NAME, resourceLabel);
+                            return;
+                        }
+
+                        OperatorConfig.MqWorkSpaceConfig newMqWsConfig = JSON_READER.readValue(configContent, OperatorConfig.MqWorkSpaceConfig.class);
+                        newMqWsConfig.setPassword(readRabbitMQPasswordForSchema(client, namespace, opConfig.getRabbitMQSecretName()));
+
+                        if (!Objects.equals(mqWsConfig, newMqWsConfig)) {
+                            opConfig.setMqWorkSpaceConfig(namespace, newMqWsConfig);
+                            MqVHostUtils.createVHostIfAbsent(namespace, opConfig.getMqAuthConfig());
+                            logger.info("RabbitMQ ConfigMap has been updated in namespace \"%s\". Updating all boxes", namespace);
+                            int refreshedBoxesCount = refreshBoxes(namespace);
+                            logger.info("{} box-definition(s) have been updated", refreshedBoxesCount);
+                        } else
+                            logger.info("RabbitMQ ConfigMap data hasn't changed");
+                    }
                 }
             } catch (Exception e) {
                 logger.error("Exception processing {} event for \"{}\"", action, resourceLabel, e);
             }
+
         }
     }
 
