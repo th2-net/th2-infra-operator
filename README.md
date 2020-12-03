@@ -40,7 +40,7 @@ namespacePrefixes:
 
 chart:
   git: git@some.server.com:some/repository
-  # git ssh repository URL for helm charts used by Th2 Custom Resources
+  # git repository URL for helm charts used by Th2 Custom Resources
   
   ref: branch
   # branch for helm charts
