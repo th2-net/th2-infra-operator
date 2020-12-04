@@ -600,7 +600,7 @@ public enum OperatorConfig {
             RabbitMQConfig that = (RabbitMQConfig) o;
             return getPort() == that.getPort() &&
                 Objects.equals(getHost(), that.getHost()) &&
-                Objects.equals(vHost, that.vHost) &&
+                Objects.equals(getVHost(), that.getVHost()) &&
                 Objects.equals(getExchangeName(), that.getExchangeName()) &&
                 Objects.equals(getUsername(), that.getUsername()) &&
                 Objects.equals(getPassword(), that.getPassword());
@@ -608,7 +608,7 @@ public enum OperatorConfig {
 
         @Override
         public int hashCode() {
-            return Objects.hash(getPort(), getHost(), vHost, getExchangeName(), getUsername(), getPassword());
+            return Objects.hash(getPort(), getHost(), getVHost(), getExchangeName(), getUsername(), getPassword());
         }
 
         public static class RabbitMQConfigBuilder {
