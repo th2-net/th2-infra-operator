@@ -390,7 +390,10 @@ public class DefaultWatchManager {
 
             String namespace = configMap.getMetadata().getNamespace();
             List<String> namespacePrefixes = OperatorConfig.INSTANCE.getNamespacePrefixes();
-            if (namespace != null && namespacePrefixes.stream().noneMatch(namespace::startsWith)) {
+            if (namespace != null
+                    && namespacePrefixes != null
+                    && namespacePrefixes.size() > 0
+                    && namespacePrefixes.stream().noneMatch(namespace::startsWith)) {
                 return;
             }
 
