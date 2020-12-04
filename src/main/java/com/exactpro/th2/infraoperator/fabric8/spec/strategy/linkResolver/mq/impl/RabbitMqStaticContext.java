@@ -43,7 +43,7 @@ public class RabbitMqStaticContext {
             OperatorConfig.MqGlobalConfig mqGlobalConfig,
             ConnectionFactory connectionFactory) {
 
-        OperatorConfig.MqWorkSpaceConfig mqWsConfig = getWsConfig(namespace);
+        OperatorConfig.RabbitMQConfig mqWsConfig = getWsConfig(namespace);
 
         ChannelBunch channelBunch = mqChannels.get(namespace);
 
@@ -62,9 +62,9 @@ public class RabbitMqStaticContext {
 
     }
 
-    public static OperatorConfig.MqWorkSpaceConfig getWsConfig(String namespace) throws ConfigNotFoundException {
+    public static OperatorConfig.RabbitMQConfig getWsConfig(String namespace) throws ConfigNotFoundException {
 
-        OperatorConfig.MqWorkSpaceConfig mqWsConfig = OperatorConfig.INSTANCE.getMqWorkSpaceConfig(namespace);
+        OperatorConfig.RabbitMQConfig mqWsConfig = OperatorConfig.INSTANCE.getRabbitMQConfigNamespace(namespace);
 
         if (mqWsConfig == null) {
 
@@ -72,7 +72,7 @@ public class RabbitMqStaticContext {
                     "Cannot find vHost and exchange in namespace '%s'. " +
                             "Perhaps config map '%s.%s' does not exist or " +
                             "is not watching yet, or property '%s' is not set",
-                    namespace, namespace, OperatorConfig.MQ_CONFIG_MAP_NAME, OperatorConfig.MqWorkSpaceConfig.CONFIG_MAP_RABBITMQ_PROP_NAME);
+                    namespace, namespace, OperatorConfig.MQ_CONFIG_MAP_NAME, OperatorConfig.RabbitMQConfig.CONFIG_MAP_RABBITMQ_PROP_NAME);
             logger.warn(message);
 
             throw new ConfigNotFoundException(message);
@@ -85,7 +85,7 @@ public class RabbitMqStaticContext {
     @AllArgsConstructor
     public static class ChannelBunch {
         private final Channel channel;
-        private final OperatorConfig.MqWorkSpaceConfig config;
+        private final OperatorConfig.RabbitMQConfig config;
     }
 
     public static Map<String, ChannelBunch> getMqChannels() {

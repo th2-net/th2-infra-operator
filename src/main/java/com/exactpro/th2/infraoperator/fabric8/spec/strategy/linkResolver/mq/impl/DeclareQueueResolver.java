@@ -60,7 +60,7 @@ public class DeclareQueueResolver {
     @SneakyThrows
     private void declareQueueBunch(String namespace, Th2CustomResource resource) {
 
-        OperatorConfig.MqWorkSpaceConfig wsConfig = getWsConfig(namespace);
+        OperatorConfig.RabbitMQConfig wsConfig = getWsConfig(namespace);
 
         Map<String, RabbitMqStaticContext.ChannelBunch> channelBunchMap = getMqChannels();
 

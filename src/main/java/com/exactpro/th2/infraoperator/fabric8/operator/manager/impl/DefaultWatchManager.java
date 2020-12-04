@@ -61,7 +61,7 @@ import java.util.function.Supplier;
 import java.util.stream.Collectors;
 
 import static com.exactpro.th2.infraoperator.fabric8.configuration.OperatorConfig.MQ_CONFIG_MAP_NAME;
-import static com.exactpro.th2.infraoperator.fabric8.configuration.OperatorConfig.MqWorkSpaceConfig.CONFIG_MAP_RABBITMQ_PROP_NAME;
+import static com.exactpro.th2.infraoperator.fabric8.configuration.OperatorConfig.RabbitMQConfig.CONFIG_MAP_RABBITMQ_PROP_NAME;
 import static com.exactpro.th2.infraoperator.fabric8.operator.AbstractTh2Operator.REFRESH_TOKEN_ALIAS;
 import static com.exactpro.th2.infraoperator.fabric8.util.ExtractUtils.extractName;
 import static com.exactpro.th2.infraoperator.fabric8.util.ExtractUtils.extractNamespace;
@@ -430,7 +430,7 @@ public class DefaultWatchManager {
                 if (configMapName.equals(MQ_CONFIG_MAP_NAME)) {
                     synchronized (LinkSingleton.INSTANCE.getLock(namespace)) {
                         OperatorConfig opConfig = OperatorConfig.INSTANCE;
-                        OperatorConfig.MqWorkSpaceConfig mqWsConfig = opConfig.getMqWorkSpaceConfig(namespace);
+                        OperatorConfig.RabbitMQConfig mqWsConfig = opConfig.getRabbitMQConfigNamespace(namespace);
 
                         String configContent = configMap.getData().get(CONFIG_MAP_RABBITMQ_PROP_NAME);
                         if (Strings.isNullOrEmpty(configContent)) {
@@ -438,11 +438,11 @@ public class DefaultWatchManager {
                             return;
                         }
 
-                        OperatorConfig.MqWorkSpaceConfig newMqWsConfig = JSON_READER.readValue(configContent, OperatorConfig.MqWorkSpaceConfig.class);
+                        OperatorConfig.RabbitMQConfig newMqWsConfig = JSON_READER.readValue(configContent, OperatorConfig.RabbitMQConfig.class);
                         newMqWsConfig.setPassword(readRabbitMQPasswordForSchema(client, namespace, opConfig.getRabbitMQSecretName()));
 
                         if (!Objects.equals(mqWsConfig, newMqWsConfig)) {
-                            opConfig.setMqWorkSpaceConfig(namespace, newMqWsConfig);
+                            opConfig.setRabbitMQConfigNamespace(namespace, newMqWsConfig);
                             MqVHostUtils.createVHostIfAbsent(namespace, opConfig.getMqAuthConfig());
                             logger.info("RabbitMQ ConfigMap has been updated in namespace \"%s\". Updating all boxes", namespace);
                             int refreshedBoxesCount = refreshBoxes(namespace);

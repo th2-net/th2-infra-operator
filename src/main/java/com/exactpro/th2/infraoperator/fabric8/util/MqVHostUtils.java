@@ -40,7 +40,7 @@ public class MqVHostUtils {
 
     public static void createVHostIfAbsent(String namespace, OperatorConfig.MqGlobalConfig mqGlobalConfig) throws VHostCreateException {
 
-        OperatorConfig.MqWorkSpaceConfig mqSchemaConfig = OperatorConfig.INSTANCE.getMqWorkSpaceConfig(namespace);
+        OperatorConfig.RabbitMQConfig mqSchemaConfig = OperatorConfig.INSTANCE.getRabbitMQConfigNamespace(namespace);
 
         if (mqSchemaConfig == null)
             throw new ConfigNotFoundException(String.format(
@@ -93,7 +93,7 @@ public class MqVHostUtils {
 
     public static void cleanupVHost(String namespace, OperatorConfig.MqGlobalConfig mqGlobalConfig) throws VHostCreateException {
 
-        OperatorConfig.MqWorkSpaceConfig mqSchemaConfig = OperatorConfig.INSTANCE.getMqWorkSpaceConfig(namespace);
+        OperatorConfig.RabbitMQConfig mqSchemaConfig = OperatorConfig.INSTANCE.getRabbitMQConfigNamespace(namespace);
 
         if (mqSchemaConfig == null)
             throw new ConfigNotFoundException(String.format(

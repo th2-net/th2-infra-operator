@@ -46,7 +46,7 @@ public enum OperatorConfig {
 
     private Configuration configuration;
 
-    private Map<String, MqWorkSpaceConfig> mqWorkSpaceConfigPerNamespace = new HashMap<>();
+    private Map<String, RabbitMQConfig> RabbitMQConfigNamespace = new HashMap<>();
 
     public List<String> getNamespacePrefixes() {
         return getFullConfig().getNamespacePrefixes();
@@ -65,12 +65,12 @@ public enum OperatorConfig {
     }
 
     @Nullable
-    public synchronized MqWorkSpaceConfig getMqWorkSpaceConfig(String namespace) {
-        return mqWorkSpaceConfigPerNamespace.get(namespace);
+    public synchronized RabbitMQConfig getRabbitMQConfigNamespace(String namespace) {
+        return RabbitMQConfigNamespace.get(namespace);
     }
 
-    public synchronized void setMqWorkSpaceConfig(String namespace, MqWorkSpaceConfig config) {
-        mqWorkSpaceConfigPerNamespace.put(namespace, config);
+    public synchronized void setRabbitMQConfigNamespace(String namespace, RabbitMQConfig config) {
+        RabbitMQConfigNamespace.put(namespace, config);
     }
 
     public ChartConfig getChartConfig() {
@@ -508,7 +508,7 @@ public enum OperatorConfig {
     }
 
     @JsonIgnoreProperties(ignoreUnknown = true)
-    public static class MqWorkSpaceConfig {
+    public static class RabbitMQConfig {
 
         public static final String CONFIG_MAP_RABBITMQ_PROP_NAME = "rabbitMQ.json";
 
@@ -521,11 +521,11 @@ public enum OperatorConfig {
         private String username;
         private String password;
 
-        protected MqWorkSpaceConfig() {
+        protected RabbitMQConfig() {
         }
 
-        public MqWorkSpaceConfig(int port, String host, String vHost, String exchangeName, String username,
-                                 String password) {
+        public RabbitMQConfig(int port, String host, String vHost, String exchangeName, String username,
+                              String password) {
             this.port = port;
             this.host = host;
             this.vHost = vHost;
@@ -582,13 +582,13 @@ public enum OperatorConfig {
             this.password = password;
         }
 
-        public static MqWorkSpaceConfigBuilder builder() {
-            return new MqWorkSpaceConfigBuilder();
+        public static RabbitMQConfigBuilder builder() {
+            return new RabbitMQConfigBuilder();
         }
 
         @Override
         public String toString() {
-            return "MqWorkSpaceConfig{" + "port=" + port + ", host='" + host + '\'' +
+            return "RabbitMQConfig{" + "port=" + port + ", host='" + host + '\'' +
                 ", vHost='" + vHost + '\'' + ", exchangeName='" + exchangeName + '\'' +
                 ", username='" + username + '\'' + ", password='" + password + '\'' + '}';
         }
@@ -596,8 +596,8 @@ public enum OperatorConfig {
         @Override
         public boolean equals(Object o) {
             if (this == o) return true;
-            if (!(o instanceof MqWorkSpaceConfig)) return false;
-            MqWorkSpaceConfig that = (MqWorkSpaceConfig) o;
+            if (!(o instanceof RabbitMQConfig)) return false;
+            RabbitMQConfig that = (RabbitMQConfig) o;
             return getPort() == that.getPort() &&
                 Objects.equals(getHost(), that.getHost()) &&
                 Objects.equals(vHost, that.vHost) &&
@@ -611,7 +611,7 @@ public enum OperatorConfig {
             return Objects.hash(getPort(), getHost(), vHost, getExchangeName(), getUsername(), getPassword());
         }
 
-        public static class MqWorkSpaceConfigBuilder {
+        public static class RabbitMQConfigBuilder {
 
             private int port;
             private String host;
@@ -620,41 +620,41 @@ public enum OperatorConfig {
             private String username;
             private String password;
 
-            MqWorkSpaceConfigBuilder() {
+            RabbitMQConfigBuilder() {
             }
 
-            public MqWorkSpaceConfigBuilder port(int port) {
+            public RabbitMQConfigBuilder port(int port) {
                 this.port = port;
                 return this;
             }
 
-            public MqWorkSpaceConfigBuilder host(String host) {
+            public RabbitMQConfigBuilder host(String host) {
                 this.host = host;
                 return this;
             }
 
-            public MqWorkSpaceConfigBuilder vHost(String vHost) {
+            public RabbitMQConfigBuilder vHost(String vHost) {
                 this.vHost = vHost;
                 return this;
             }
 
-            public MqWorkSpaceConfigBuilder exchangeName(String exchangeName) {
+            public RabbitMQConfigBuilder exchangeName(String exchangeName) {
                 this.exchangeName = exchangeName;
                 return this;
             }
 
-            public MqWorkSpaceConfigBuilder username(String username) {
+            public RabbitMQConfigBuilder username(String username) {
                 this.username = username;
                 return this;
             }
 
-            public MqWorkSpaceConfigBuilder password(String password) {
+            public RabbitMQConfigBuilder password(String password) {
                 this.password = password;
                 return this;
             }
 
-            public MqWorkSpaceConfig build() {
-                return new MqWorkSpaceConfig(port, host, vHost, exchangeName, username, password);
+            public RabbitMQConfig build() {
+                return new RabbitMQConfig(port, host, vHost, exchangeName, username, password);
             }
         }
     }
