@@ -14,6 +14,7 @@
 package com.exactpro.th2.infraoperator.fabric8.operator.manager.impl;
 
 import com.exactpro.th2.infraoperator.fabric8.configuration.OperatorConfig;
+import com.exactpro.th2.infraoperator.fabric8.configuration.RabbitMQConfig;
 import com.exactpro.th2.infraoperator.fabric8.model.box.configuration.dictionary.factory.impl.DefaultDictionaryFactory;
 import com.exactpro.th2.infraoperator.fabric8.model.box.configuration.dictionary.factory.impl.EmptyDictionaryFactory;
 import com.exactpro.th2.infraoperator.fabric8.model.box.configuration.grpc.factory.impl.DefaultGrpcRouterConfigFactory;
@@ -61,7 +62,7 @@ import java.util.function.Supplier;
 import java.util.stream.Collectors;
 
 import static com.exactpro.th2.infraoperator.fabric8.configuration.OperatorConfig.MQ_CONFIG_MAP_NAME;
-import static com.exactpro.th2.infraoperator.fabric8.configuration.OperatorConfig.RabbitMQConfig.CONFIG_MAP_RABBITMQ_PROP_NAME;
+import static com.exactpro.th2.infraoperator.fabric8.configuration.RabbitMQConfig.CONFIG_MAP_RABBITMQ_PROP_NAME;
 import static com.exactpro.th2.infraoperator.fabric8.operator.AbstractTh2Operator.REFRESH_TOKEN_ALIAS;
 import static com.exactpro.th2.infraoperator.fabric8.util.ExtractUtils.extractName;
 import static com.exactpro.th2.infraoperator.fabric8.util.ExtractUtils.extractNamespace;
@@ -430,7 +431,7 @@ public class DefaultWatchManager {
                 if (configMapName.equals(MQ_CONFIG_MAP_NAME)) {
                     synchronized (LinkSingleton.INSTANCE.getLock(namespace)) {
                         OperatorConfig opConfig = OperatorConfig.INSTANCE;
-                        OperatorConfig.RabbitMQConfig mqWsConfig = opConfig.getRabbitMQConfigNamespace(namespace);
+                        RabbitMQConfig mqWsConfig = opConfig.getRabbitMQConfigNamespace(namespace);
 
                         String configContent = configMap.getData().get(CONFIG_MAP_RABBITMQ_PROP_NAME);
                         if (Strings.isNullOrEmpty(configContent)) {
@@ -438,7 +439,7 @@ public class DefaultWatchManager {
                             return;
                         }
 
-                        OperatorConfig.RabbitMQConfig newMqWsConfig = JSON_READER.readValue(configContent, OperatorConfig.RabbitMQConfig.class);
+                        RabbitMQConfig newMqWsConfig = JSON_READER.readValue(configContent, RabbitMQConfig.class);
                         newMqWsConfig.setPassword(readRabbitMQPasswordForSchema(client, namespace, opConfig.getRabbitMQSecretName()));
 
                         if (!Objects.equals(mqWsConfig, newMqWsConfig)) {
