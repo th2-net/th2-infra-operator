@@ -14,11 +14,8 @@
 package com.exactpro.th2.infraoperator.fabric8.spec;
 
 import com.exactpro.th2.infraoperator.fabric8.configuration.OperatorConfig;
-import com.exactpro.th2.infraoperator.fabric8.spec.shared.ParamSpec;
-import com.exactpro.th2.infraoperator.fabric8.spec.shared.PinSpec;
 import com.exactpro.th2.infraoperator.fabric8.operator.StoreHelmTh2Op;
-import com.exactpro.th2.infraoperator.fabric8.spec.shared.DirectionAttribute;
-import com.exactpro.th2.infraoperator.fabric8.spec.shared.SchemaConnectionType;
+import com.exactpro.th2.infraoperator.fabric8.spec.shared.*;
 import com.exactpro.th2.infraoperator.fabric8.util.JsonUtils;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonInclude;
@@ -51,6 +48,9 @@ public abstract class Th2Spec implements KubernetesResource {
 
     @JsonProperty("custom-config")
     protected Map<String, Object> customConfig = new HashMap<>();
+
+    @JsonProperty("prometheus")
+    protected PrometheusConfiguration prometheusConfiguration;
 
     protected List<ParamSpec> params = new ArrayList<>();
 
