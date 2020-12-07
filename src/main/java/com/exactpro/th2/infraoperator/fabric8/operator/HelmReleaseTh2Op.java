@@ -162,19 +162,20 @@ public abstract class HelmReleaseTh2Op<CR extends Th2CustomResource> extends Abs
         MessageRouterConfiguration mqConfig = mqConfigFactory.createConfig(resource);
         GrpcRouterConfiguration grpcConfig = grpcConfigFactory.createConfig(resource, grpcActiveLinks);
         List<RawDictionary> dictionaries = dictionaryFactory.create(resource, dictionaryActiveLinks);
-        PrometheusConfiguration prometheusConfig = resource.getSpec().getPrometheusConfiguration();
-        if (prometheusConfig == null)
-            prometheusConfig = new PrometheusConfiguration();
 
         helmRelease.putSpecProp(RELEASE_NAME_ALIAS, extractNamespace(helmRelease) + "-" + extractName(helmRelease));
         helmRelease.mergeValue(PROPERTIES_MERGE_DEPTH, ROOT_PROPERTIES_ALIAS, Map.of(
                 DOCKER_IMAGE_ALIAS, resSpec.getImageName() + ":" + resSpec.getImageVersion(),
                 COMPONENT_NAME_ALIAS, resource.getMetadata().getName(),
                 CUSTOM_CONFIG_ALIAS, resource.getSpec().getCustomConfig(),
-                PROMETHEUS_CONFIG_ALIAS, prometheusConfig,
                 MQ_CONFIG_ALIAS, writeValueAsDeepMap(mqConfig),
                 GRPC_CONFIG_ALIAS, writeValueAsDeepMap(grpcConfig)
         ));
+
+        PrometheusConfiguration prometheusConfig = resource.getSpec().getPrometheusConfiguration();
+        if (prometheusConfig != null)
+            helmRelease.mergeValue(PROPERTIES_MERGE_DEPTH, ROOT_PROPERTIES_ALIAS,
+                    Map.of(PROMETHEUS_CONFIG_ALIAS, prometheusConfig));
 
         if (!dictionaries.isEmpty())
             helmRelease.mergeValue(PROPERTIES_MERGE_DEPTH, ROOT_PROPERTIES_ALIAS, Map.of(

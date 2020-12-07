@@ -1,8 +1,10 @@
 package com.exactpro.th2.infraoperator.fabric8.spec.shared;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+import com.fasterxml.jackson.annotation.JsonInclude;
 
 @JsonIgnoreProperties(ignoreUnknown = true)
+@JsonInclude(JsonInclude.Include.NON_NULL)
 public class PrometheusConfiguration {
     private String host;
     private String port;
