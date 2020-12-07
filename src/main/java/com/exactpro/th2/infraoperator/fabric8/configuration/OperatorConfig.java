@@ -169,7 +169,7 @@ public enum OperatorConfig {
 
         @JsonProperty("configMaps")
         public void setRabbitMQConfigMapName(Map<String, String> configMaps) {
-            if (configMaps.get("rabbitMQ") != null)
+            if (configMaps != null && configMaps.get("rabbitMQ") != null)
                 this.rabbitMQConfigMapName = configMaps.get("rabbitMQ");
         }
 
