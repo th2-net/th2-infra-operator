@@ -199,12 +199,12 @@ public class BindQueueLinkResolver implements QueueLinkResolver {
 
     private QueueBunch createQueueBunch(String namespace, BoxMq fromBoxMq, BoxMq toBoxMq) {
 
-        var mqWsConfig = RabbitMqStaticContext.getWsConfig(namespace);
+        var rabbitMQConfig = RabbitMqStaticContext.getRabbitMQConfig(namespace);
 
         return new QueueBunch(
                 OperatorConfig.QUEUE_PREFIX + namespace + "_" + toBoxMq,
                 OperatorConfig.ROUTING_KEY_PREFIX + namespace + "_" + fromBoxMq,
-                mqWsConfig.getExchangeName()
+                rabbitMQConfig.getExchangeName()
         );
     }
 

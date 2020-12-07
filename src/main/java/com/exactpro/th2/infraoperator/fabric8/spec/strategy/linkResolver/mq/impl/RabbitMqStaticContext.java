@@ -44,30 +44,30 @@ public class RabbitMqStaticContext {
             OperatorConfig.MqGlobalConfig mqGlobalConfig,
             ConnectionFactory connectionFactory) {
 
-        RabbitMQConfig mqWsConfig = getWsConfig(namespace);
+        RabbitMQConfig rabbitMQConfig = getRabbitMQConfig(namespace);
 
         ChannelBunch channelBunch = mqChannels.get(namespace);
 
-        if (channelBunch == null || !channelBunch.getConfig().equals(mqWsConfig)) {
+        if (channelBunch == null || !channelBunch.getConfig().equals(rabbitMQConfig)) {
 
-            connectionFactory.setHost(mqWsConfig.getHost());
-            connectionFactory.setPort(mqWsConfig.getPort());
-            connectionFactory.setVirtualHost(mqWsConfig.getVHost());
+            connectionFactory.setHost(rabbitMQConfig.getHost());
+            connectionFactory.setPort(rabbitMQConfig.getPort());
+            connectionFactory.setVirtualHost(rabbitMQConfig.getVHost());
             connectionFactory.setUsername(mqGlobalConfig.getUsername());
             connectionFactory.setPassword(mqGlobalConfig.getPassword());
 
             var channel = connectionFactory.newConnection().createChannel();
 
-            mqChannels.put(namespace, new ChannelBunch(channel, mqWsConfig));
+            mqChannels.put(namespace, new ChannelBunch(channel, rabbitMQConfig));
         }
 
     }
 
-    public static RabbitMQConfig getWsConfig(String namespace) throws ConfigNotFoundException {
+    public static RabbitMQConfig getRabbitMQConfig(String namespace) throws ConfigNotFoundException {
 
-        RabbitMQConfig mqWsConfig = OperatorConfig.INSTANCE.getRabbitMQConfigNamespace(namespace);
+        RabbitMQConfig rabbitMQConfig = OperatorConfig.INSTANCE.getRabbitMQConfigNamespace(namespace);
 
-        if (mqWsConfig == null) {
+        if (rabbitMQConfig == null) {
 
             String message = String.format(
                     "Cannot find vHost and exchange in namespace '%s'. " +
@@ -78,7 +78,7 @@ public class RabbitMqStaticContext {
 
             throw new ConfigNotFoundException(message);
         }
-        return mqWsConfig;
+        return rabbitMQConfig;
     }
 
 
