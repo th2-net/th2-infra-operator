@@ -46,7 +46,7 @@ public enum OperatorConfig {
 
     private Configuration configuration;
 
-    private Map<String, RabbitMQConfig> rabbitMQConfigNamespace = new HashMap<>();
+    private Map<String, RabbitMQConfig> rabbitMQConfigs = new HashMap<>();
 
     public String getRabbitMQConfigMapName() {
         return getFullConfig().getRabbitMQConfigMapName();
@@ -69,12 +69,12 @@ public enum OperatorConfig {
     }
 
     @Nullable
-    public synchronized RabbitMQConfig getRabbitMQConfigNamespace(String namespace) {
-        return rabbitMQConfigNamespace.get(namespace);
+    public synchronized RabbitMQConfig getRabbitMQConfig4Namespace(String namespace) {
+        return rabbitMQConfigs.get(namespace);
     }
 
-    public synchronized void setRabbitMQConfigNamespace(String namespace, RabbitMQConfig config) {
-        rabbitMQConfigNamespace.put(namespace, config);
+    public synchronized void setRabbitMQConfig4Namespace(String namespace, RabbitMQConfig config) {
+        rabbitMQConfigs.put(namespace, config);
     }
 
     public ChartConfig getChartConfig() {

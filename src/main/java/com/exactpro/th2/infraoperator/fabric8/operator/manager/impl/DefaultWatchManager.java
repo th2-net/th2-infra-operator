@@ -430,7 +430,7 @@ public class DefaultWatchManager {
                 if (configMapName.equals(OperatorConfig.INSTANCE.getRabbitMQConfigMapName())) {
                     synchronized (LinkSingleton.INSTANCE.getLock(namespace)) {
                         OperatorConfig opConfig = OperatorConfig.INSTANCE;
-                        RabbitMQConfig rabbitMQConfig = opConfig.getRabbitMQConfigNamespace(namespace);
+                        RabbitMQConfig rabbitMQConfig = opConfig.getRabbitMQConfig4Namespace(namespace);
 
                         String configContent = configMap.getData().get(CONFIG_MAP_RABBITMQ_PROP_NAME);
                         if (Strings.isNullOrEmpty(configContent)) {
@@ -442,7 +442,7 @@ public class DefaultWatchManager {
                         newRabbitMQConfig.setPassword(readRabbitMQPasswordForSchema(client, namespace, opConfig.getRabbitMQSecretName()));
 
                         if (!Objects.equals(rabbitMQConfig, newRabbitMQConfig)) {
-                            opConfig.setRabbitMQConfigNamespace(namespace, newRabbitMQConfig);
+                            opConfig.setRabbitMQConfig4Namespace(namespace, newRabbitMQConfig);
                             MqVHostUtils.createVHostIfAbsent(namespace, opConfig.getMqAuthConfig());
                             logger.info("RabbitMQ ConfigMap has been updated in namespace \"%s\". Updating all boxes", namespace);
                             int refreshedBoxesCount = refreshBoxes(namespace);

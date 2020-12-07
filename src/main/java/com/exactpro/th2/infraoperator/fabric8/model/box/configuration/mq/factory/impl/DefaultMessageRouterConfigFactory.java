@@ -21,13 +21,16 @@ import com.exactpro.th2.infraoperator.fabric8.model.box.configuration.mq.factory
 import com.exactpro.th2.infraoperator.fabric8.model.box.schema.link.QueueBunch;
 import com.exactpro.th2.infraoperator.fabric8.spec.Th2CustomResource;
 import com.exactpro.th2.infraoperator.fabric8.spec.link.relation.boxes.box.impl.BoxMq;
-import com.exactpro.th2.infraoperator.fabric8.spec.shared.FilterSpec;
 import com.exactpro.th2.infraoperator.fabric8.spec.shared.DirectionAttribute;
+import com.exactpro.th2.infraoperator.fabric8.spec.shared.FilterSpec;
 import com.exactpro.th2.infraoperator.fabric8.util.ExtractUtils;
 import com.exactpro.th2.infraoperator.fabric8.util.SchemeMappingUtils;
 import org.jetbrains.annotations.Nullable;
 
-import java.util.*;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.Objects;
+import java.util.Set;
 import java.util.stream.Collectors;
 
 
@@ -95,7 +98,7 @@ public class DefaultMessageRouterConfigFactory implements MessageRouterConfigFac
     @Nullable
     private QueueBunch createQueueBunch(String namespace, String queue, String routingKey) {
 
-        var rabbitMQConfig = OperatorConfig.INSTANCE.getRabbitMQConfigNamespace(namespace);
+        var rabbitMQConfig = OperatorConfig.INSTANCE.getRabbitMQConfig4Namespace(namespace);
 
         if (Objects.isNull(rabbitMQConfig)) {
             return null;

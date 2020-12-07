@@ -65,7 +65,7 @@ public class RabbitMqStaticContext {
 
     public static RabbitMQConfig getRabbitMQConfig(String namespace) throws ConfigNotFoundException {
 
-        RabbitMQConfig rabbitMQConfig = OperatorConfig.INSTANCE.getRabbitMQConfigNamespace(namespace);
+        RabbitMQConfig rabbitMQConfig = OperatorConfig.INSTANCE.getRabbitMQConfig4Namespace(namespace);
 
         if (rabbitMQConfig == null) {
 
