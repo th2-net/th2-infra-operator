@@ -47,7 +47,8 @@ public class MqVHostUtils {
             throw new ConfigNotFoundException(String.format(
                     "Exception setting up RabbitMQ for namespace \"%s\". Check if \"%s\" is configured properly"
                     , namespace
-                    , CustomResourceUtils.annotationFor(namespace, "ConfigMap", OperatorConfig.MQ_CONFIG_MAP_NAME)));
+                    , CustomResourceUtils.annotationFor(
+                        namespace, "ConfigMap", OperatorConfig.INSTANCE.getRabbitMQConfigMapName())));
 
         String vHostName = rabbitMQConfig.getVHost();
         String username = rabbitMQConfig.getUsername();
@@ -100,7 +101,8 @@ public class MqVHostUtils {
             throw new ConfigNotFoundException(String.format(
                     "Exception cleaning up RabbitMQ for namespace \"%s\". Check if \"%s\" is configured properly"
                     , namespace
-                    , CustomResourceUtils.annotationFor(namespace, "ConfigMap", OperatorConfig.MQ_CONFIG_MAP_NAME)));
+                    , CustomResourceUtils.annotationFor(
+                        namespace, "ConfigMap", OperatorConfig.INSTANCE.getRabbitMQConfigMapName())));
 
         String vHostName = rabbitMQConfig.getVHost();
         String username = rabbitMQConfig.getUsername();

@@ -73,7 +73,7 @@ public class RabbitMqStaticContext {
                     "Cannot find vHost and exchange in namespace '%s'. " +
                             "Perhaps config map '%s.%s' does not exist or " +
                             "is not watching yet, or property '%s' is not set",
-                    namespace, namespace, OperatorConfig.MQ_CONFIG_MAP_NAME, RabbitMQConfig.CONFIG_MAP_RABBITMQ_PROP_NAME);
+                    namespace, namespace, OperatorConfig.INSTANCE.getRabbitMQConfigMapName(), RabbitMQConfig.CONFIG_MAP_RABBITMQ_PROP_NAME);
             logger.warn(message);
 
             throw new ConfigNotFoundException(message);

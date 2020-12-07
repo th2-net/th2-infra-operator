@@ -35,18 +35,22 @@ public enum OperatorConfig {
 
     public static final String QUEUE_PREFIX = "queue_";
     public static final String ROUTING_KEY_PREFIX = "routing-key_";
-    public static final String MQ_CONFIG_MAP_NAME = "rabbit-mq-app-config";
     public static final String DEFAULT_RABBITMQ_SECRET = "rabbitmq";
     public static final String DEFAULT_CASSANDRA_SECRET = "cassandra";
     public static final String RABBITMQ_SECRET_PASSWORD_KEY = "rabbitmq-password";
     public static final String RABBITMQ_SECRET_USERNAME_KEY = "rabbitmq-username";
+    public static final String CONFIG_FILE_SYSTEM_PROPERTY = "infra.operator.config";
 
     private static final String CONFIG_FILE = "/var/th2/config/infra-operator.yml";
-    public static final String CONFIG_FILE_SYSTEM_PROPERTY = "infra.operator.config";
+    private static final String MQ_CONFIG_MAP_NAME = "rabbit-mq-app-config";
 
     private Configuration configuration;
 
     private Map<String, RabbitMQConfig> rabbitMQConfigNamespace = new HashMap<>();
+
+    public String getRabbitMQConfigMapName() {
+        return getFullConfig().getRabbitMQConfigMapName();
+    }
 
     public List<String> getNamespacePrefixes() {
         return getFullConfig().getNamespacePrefixes();

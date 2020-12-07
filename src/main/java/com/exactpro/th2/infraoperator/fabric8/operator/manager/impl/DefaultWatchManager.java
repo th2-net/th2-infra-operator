@@ -61,7 +61,6 @@ import java.util.function.Function;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
 
-import static com.exactpro.th2.infraoperator.fabric8.configuration.OperatorConfig.MQ_CONFIG_MAP_NAME;
 import static com.exactpro.th2.infraoperator.fabric8.configuration.RabbitMQConfig.CONFIG_MAP_RABBITMQ_PROP_NAME;
 import static com.exactpro.th2.infraoperator.fabric8.operator.AbstractTh2Operator.REFRESH_TOKEN_ALIAS;
 import static com.exactpro.th2.infraoperator.fabric8.util.ExtractUtils.extractName;
@@ -354,7 +353,7 @@ public class DefaultWatchManager {
     }
 
     /**
-     * Designed only to watch one config map - {@link OperatorConfig#MQ_CONFIG_MAP_NAME}
+     * Designed only to watch one config map - {@link OperatorConfig#getRabbitMQConfigMapName()}
      */
     private class ConfigMapWatcher implements Watcher<ConfigMap> {
         protected KubernetesClient client;
@@ -406,7 +405,7 @@ public class DefaultWatchManager {
 
             String configMapName = configMap.getMetadata().getName();
 
-            if (!(configMapName.equals(MQ_CONFIG_MAP_NAME) || configMapName.equals(ConfigMaps.PROMETHEUS_CONFIGMAP_NAME)))
+            if (!(configMapName.equals(OperatorConfig.INSTANCE.getRabbitMQConfigMapName()) || configMapName.equals(ConfigMaps.PROMETHEUS_CONFIGMAP_NAME)))
                 return;
 
             try {
@@ -428,7 +427,7 @@ public class DefaultWatchManager {
                     }
                 }
 
-                if (configMapName.equals(MQ_CONFIG_MAP_NAME)) {
+                if (configMapName.equals(OperatorConfig.INSTANCE.getRabbitMQConfigMapName())) {
                     synchronized (LinkSingleton.INSTANCE.getLock(namespace)) {
                         OperatorConfig opConfig = OperatorConfig.INSTANCE;
                         RabbitMQConfig rabbitMQConfig = opConfig.getRabbitMQConfigNamespace(namespace);
