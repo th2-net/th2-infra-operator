@@ -21,7 +21,6 @@ import com.exactpro.th2.infraoperator.fabric8.model.box.configuration.grpc.facto
 import com.exactpro.th2.infraoperator.fabric8.model.box.configuration.mq.MessageRouterConfiguration;
 import com.exactpro.th2.infraoperator.fabric8.model.box.configuration.mq.factory.MessageRouterConfigFactory;
 import com.exactpro.th2.infraoperator.fabric8.model.box.schema.link.QueueLinkBunch;
-import com.exactpro.th2.infraoperator.fabric8.model.kubernetes.configmaps.ConfigMaps;
 import com.exactpro.th2.infraoperator.fabric8.operator.context.HelmOperatorContext;
 import com.exactpro.th2.infraoperator.fabric8.spec.Th2CustomResource;
 import com.exactpro.th2.infraoperator.fabric8.spec.Th2Spec;
@@ -37,6 +36,7 @@ import com.exactpro.th2.infraoperator.fabric8.spec.link.relation.dictionaries.bu
 import com.exactpro.th2.infraoperator.fabric8.spec.link.singleton.LinkSingleton;
 import com.exactpro.th2.infraoperator.fabric8.spec.shared.DirectionAttribute;
 import com.exactpro.th2.infraoperator.fabric8.spec.shared.PinSpec;
+import com.exactpro.th2.infraoperator.fabric8.spec.shared.PrometheusConfiguration;
 import com.exactpro.th2.infraoperator.fabric8.spec.strategy.linkResolver.dictionary.DictionaryLinkResolver;
 import com.exactpro.th2.infraoperator.fabric8.spec.strategy.linkResolver.grpc.GrpcLinkResolver;
 import com.exactpro.th2.infraoperator.fabric8.spec.strategy.linkResolver.mq.QueueLinkResolver;
@@ -83,9 +83,7 @@ public abstract class HelmReleaseTh2Op<CR extends Th2CustomResource> extends Abs
     public static final String COMPONENT_NAME_ALIAS = "name";
     public static final String RELEASE_NAME_ALIAS = "releaseName";
     public static final String MONITORING_ALIAS = "monitoring";
-    public static final String PROMETHEUS_ALIAS = "prometheus";
     public static final String HELM_RELEASE_CRD_NAME = "helmreleases.helm.fluxcd.io";
-    public static final String PROMETHEUS_ENABLED_DEFAULT_VALUE = "true";
 
     protected final BoxResourceFinder resourceFinder;
     protected final GrpcLinkResolver grpcLinkResolver;
@@ -168,40 +166,26 @@ public abstract class HelmReleaseTh2Op<CR extends Th2CustomResource> extends Abs
         helmRelease.putSpecProp(RELEASE_NAME_ALIAS, extractNamespace(helmRelease) + "-" + extractName(helmRelease));
         helmRelease.mergeValue(PROPERTIES_MERGE_DEPTH, ROOT_PROPERTIES_ALIAS, Map.of(
                 DOCKER_IMAGE_ALIAS, resSpec.getImageName() + ":" + resSpec.getImageVersion(),
-                COMPONENT_NAME_ALIAS, extractName(resource),
+                COMPONENT_NAME_ALIAS, resource.getMetadata().getName(),
                 CUSTOM_CONFIG_ALIAS, resource.getSpec().getCustomConfig(),
                 MQ_CONFIG_ALIAS, writeValueAsDeepMap(mqConfig),
                 GRPC_CONFIG_ALIAS, writeValueAsDeepMap(grpcConfig)
         ));
 
-        if (!dictionaries.isEmpty()) {
+        PrometheusConfiguration prometheusConfig = resource.getSpec().getPrometheusConfiguration();
+        if (prometheusConfig != null)
+            helmRelease.mergeValue(PROPERTIES_MERGE_DEPTH, ROOT_PROPERTIES_ALIAS,
+                    Map.of(PROMETHEUS_CONFIG_ALIAS, prometheusConfig));
+
+        if (!dictionaries.isEmpty())
             helmRelease.mergeValue(PROPERTIES_MERGE_DEPTH, ROOT_PROPERTIES_ALIAS, Map.of(
                     DICTIONARIES_ALIAS, dictionaries
             ));
-        }
 
-        Map<String, Object> prometheusConfig = ConfigMaps.getPrometheusParams();
         Map<String, Object> extendedSettings = resSpec.getExtendedSettings();
-
-        String prometheusEnabled = PROMETHEUS_ENABLED_DEFAULT_VALUE;
-        if (extendedSettings != null) {
-            helmRelease.mergeValue(PROPERTIES_MERGE_DEPTH, ROOT_PROPERTIES_ALIAS, Map.of(
-                    EXTENDED_SETTINGS_ALIAS, extendedSettings
-            ));
-
-            // extract prometheus monitoring parameter
-            var monitoring = extendedSettings.get(MONITORING_ALIAS);
-            if (monitoring != null && monitoring instanceof Map) {
-                var prometheus = ((Map) monitoring).get(PROMETHEUS_ALIAS);
-                if (prometheus != null)
-                    prometheusEnabled = prometheus.toString();
-            }
-        }
-
-        prometheusConfig.put(ConfigMaps.PROMETHEUS_JSON_ENABLED_PROPERTY, prometheusEnabled);
-        helmRelease.mergeValue(PROPERTIES_MERGE_DEPTH, ROOT_PROPERTIES_ALIAS, Map.of(
-                PROMETHEUS_CONFIG_ALIAS, prometheusConfig
-        ));
+        if (extendedSettings != null)
+            helmRelease.mergeValue(PROPERTIES_MERGE_DEPTH, ROOT_PROPERTIES_ALIAS
+                    , Map.of(EXTENDED_SETTINGS_ALIAS, extendedSettings));
 
         var defaultChartConfig = OperatorConfig.INSTANCE.getChartConfig();
         var chartConfig = resSpec.getChartConfig();
