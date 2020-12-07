@@ -42,7 +42,7 @@ public enum OperatorConfig {
     public static final String CONFIG_FILE_SYSTEM_PROPERTY = "infra.operator.config";
 
     private static final String CONFIG_FILE = "/var/th2/config/infra-operator.yml";
-    private static final String DEFAULT_RABBITMQ_CONFIGMAP_NAME = "rabbit-mq-app-config";
+    static final String DEFAULT_RABBITMQ_CONFIGMAP_NAME = "rabbit-mq-app-config";
 
     private Configuration configuration;
 
