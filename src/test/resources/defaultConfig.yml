@@ -1,0 +1,5 @@
+namespacePrefixes:
+chart:
+rabbitMQManagement:
+configMaps:
+schemaSecrets:
