@@ -14,6 +14,7 @@
 package com.exactpro.th2.infraoperator.fabric8.operator.manager.impl;
 
 import com.exactpro.th2.infraoperator.fabric8.configuration.OperatorConfig;
+import com.exactpro.th2.infraoperator.fabric8.configuration.RabbitMQConfig;
 import com.exactpro.th2.infraoperator.fabric8.model.box.configuration.dictionary.factory.impl.DefaultDictionaryFactory;
 import com.exactpro.th2.infraoperator.fabric8.model.box.configuration.dictionary.factory.impl.EmptyDictionaryFactory;
 import com.exactpro.th2.infraoperator.fabric8.model.box.configuration.grpc.factory.impl.DefaultGrpcRouterConfigFactory;
@@ -59,8 +60,7 @@ import java.util.function.Function;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
 
-import static com.exactpro.th2.infraoperator.fabric8.configuration.OperatorConfig.MQ_CONFIG_MAP_NAME;
-import static com.exactpro.th2.infraoperator.fabric8.configuration.OperatorConfig.MqWorkSpaceConfig.CONFIG_MAP_RABBITMQ_PROP_NAME;
+import static com.exactpro.th2.infraoperator.fabric8.configuration.RabbitMQConfig.CONFIG_MAP_RABBITMQ_PROP_NAME;
 import static com.exactpro.th2.infraoperator.fabric8.operator.AbstractTh2Operator.REFRESH_TOKEN_ALIAS;
 import static com.exactpro.th2.infraoperator.fabric8.util.ExtractUtils.extractName;
 import static com.exactpro.th2.infraoperator.fabric8.util.ExtractUtils.extractNamespace;
@@ -352,7 +352,7 @@ public class DefaultWatchManager {
     }
 
     /**
-     * Designed only to watch one config map - {@link OperatorConfig#MQ_CONFIG_MAP_NAME}
+     * Designed only to watch one config map - {@link OperatorConfig#getRabbitMQConfigMapName()}
      */
     private class ConfigMapWatcher implements Watcher<ConfigMap> {
         protected KubernetesClient client;
@@ -404,16 +404,16 @@ public class DefaultWatchManager {
 
             String configMapName = configMap.getMetadata().getName();
 
-            if (!(configMapName.equals(MQ_CONFIG_MAP_NAME)))
+            if (!(configMapName.equals(OperatorConfig.INSTANCE.getRabbitMQConfigMapName())))
                 return;
 
             try {
                 logger.info("Processing {} event for \"{}\"", action, resourceLabel);
 
-                if (configMapName.equals(MQ_CONFIG_MAP_NAME)) {
+                if (configMapName.equals(OperatorConfig.INSTANCE.getRabbitMQConfigMapName())) {
                     synchronized (LinkSingleton.INSTANCE.getLock(namespace)) {
                         OperatorConfig opConfig = OperatorConfig.INSTANCE;
-                        OperatorConfig.MqWorkSpaceConfig mqWsConfig = opConfig.getMqWorkSpaceConfig(namespace);
+                        RabbitMQConfig rabbitMQConfig = opConfig.getRabbitMQConfig4Namespace(namespace);
 
                         String configContent = configMap.getData().get(CONFIG_MAP_RABBITMQ_PROP_NAME);
                         if (Strings.isNullOrEmpty(configContent)) {
@@ -421,11 +421,11 @@ public class DefaultWatchManager {
                             return;
                         }
 
-                        OperatorConfig.MqWorkSpaceConfig newMqWsConfig = JSON_READER.readValue(configContent, OperatorConfig.MqWorkSpaceConfig.class);
-                        newMqWsConfig.setPassword(readRabbitMQPasswordForSchema(client, namespace, opConfig.getRabbitMQSecretName()));
+                        RabbitMQConfig newRabbitMQConfig = JSON_READER.readValue(configContent, RabbitMQConfig.class);
+                        newRabbitMQConfig.setPassword(readRabbitMQPasswordForSchema(client, namespace, opConfig.getRabbitMQSecretName()));
 
-                        if (!Objects.equals(mqWsConfig, newMqWsConfig)) {
-                            opConfig.setMqWorkSpaceConfig(namespace, newMqWsConfig);
+                        if (!Objects.equals(rabbitMQConfig, newRabbitMQConfig)) {
+                            opConfig.setRabbitMQConfig4Namespace(namespace, newRabbitMQConfig);
                             MqVHostUtils.createVHostIfAbsent(namespace, opConfig.getMqAuthConfig());
                             logger.info("RabbitMQ ConfigMap has been updated in namespace \"%s\". Updating all boxes", namespace);
                             int refreshedBoxesCount = refreshBoxes(namespace);

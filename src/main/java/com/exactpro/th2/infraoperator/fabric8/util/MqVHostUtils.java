@@ -14,6 +14,7 @@
 package com.exactpro.th2.infraoperator.fabric8.util;
 
 import com.exactpro.th2.infraoperator.fabric8.configuration.OperatorConfig;
+import com.exactpro.th2.infraoperator.fabric8.configuration.RabbitMQConfig;
 import com.exactpro.th2.infraoperator.fabric8.spec.strategy.linkResolver.ConfigNotFoundException;
 import com.exactpro.th2.infraoperator.fabric8.spec.strategy.linkResolver.VHostCreateException;
 import com.rabbitmq.http.client.Client;
@@ -40,23 +41,24 @@ public class MqVHostUtils {
 
     public static void createVHostIfAbsent(String namespace, OperatorConfig.MqGlobalConfig mqGlobalConfig) throws VHostCreateException {
 
-        OperatorConfig.MqWorkSpaceConfig mqSchemaConfig = OperatorConfig.INSTANCE.getMqWorkSpaceConfig(namespace);
+        RabbitMQConfig rabbitMQConfig = OperatorConfig.INSTANCE.getRabbitMQConfig4Namespace(namespace);
 
-        if (mqSchemaConfig == null)
+        if (rabbitMQConfig == null)
             throw new ConfigNotFoundException(String.format(
                     "Exception setting up RabbitMQ for namespace \"%s\". Check if \"%s\" is configured properly"
                     , namespace
-                    , CustomResourceUtils.annotationFor(namespace, "ConfigMap", OperatorConfig.MQ_CONFIG_MAP_NAME)));
+                    , CustomResourceUtils.annotationFor(
+                        namespace, "ConfigMap", OperatorConfig.INSTANCE.getRabbitMQConfigMapName())));
 
-        String vHostName = mqSchemaConfig.getVHost();
-        String username = mqSchemaConfig.getUsername();
+        String vHostName = rabbitMQConfig.getVHost();
+        String username = rabbitMQConfig.getUsername();
 
         if (Strings.isNullOrEmpty(username))
             return;
 
         try {
             Client rmqClient = getClient(
-                    String.format("http://%s:%s/api", mqSchemaConfig.getHost(), mqGlobalConfig.getPort())
+                    String.format("http://%s:%s/api", rabbitMQConfig.getHost(), mqGlobalConfig.getPort())
                     , mqGlobalConfig.getUsername()
                     , mqGlobalConfig.getPassword()
             );
@@ -70,7 +72,7 @@ public class MqVHostUtils {
 
             // check user
 //            if (rmqClient.getUser(username) == null) {
-                rmqClient.createUser(username, mqSchemaConfig.getPassword().toCharArray(), new ArrayList<>());
+                rmqClient.createUser(username, rabbitMQConfig.getPassword().toCharArray(), new ArrayList<>());
                 logger.info("Created user \"{}\" in RabbitMQ for namespace \"{}\"", username, namespace);
 
                 // set permissions
@@ -93,20 +95,21 @@ public class MqVHostUtils {
 
     public static void cleanupVHost(String namespace, OperatorConfig.MqGlobalConfig mqGlobalConfig) throws VHostCreateException {
 
-        OperatorConfig.MqWorkSpaceConfig mqSchemaConfig = OperatorConfig.INSTANCE.getMqWorkSpaceConfig(namespace);
+        RabbitMQConfig rabbitMQConfig = OperatorConfig.INSTANCE.getRabbitMQConfig4Namespace(namespace);
 
-        if (mqSchemaConfig == null)
+        if (rabbitMQConfig == null)
             throw new ConfigNotFoundException(String.format(
                     "Exception cleaning up RabbitMQ for namespace \"%s\". Check if \"%s\" is configured properly"
                     , namespace
-                    , CustomResourceUtils.annotationFor(namespace, "ConfigMap", OperatorConfig.MQ_CONFIG_MAP_NAME)));
+                    , CustomResourceUtils.annotationFor(
+                        namespace, "ConfigMap", OperatorConfig.INSTANCE.getRabbitMQConfigMapName())));
 
-        String vHostName = mqSchemaConfig.getVHost();
-        String username = mqSchemaConfig.getUsername();
+        String vHostName = rabbitMQConfig.getVHost();
+        String username = rabbitMQConfig.getUsername();
 
         try {
             Client rmqClient = getClient(
-                    String.format("http://%s:%s/api", mqSchemaConfig.getHost(), mqGlobalConfig.getPort())
+                    String.format("http://%s:%s/api", rabbitMQConfig.getHost(), mqGlobalConfig.getPort())
                     , mqGlobalConfig.getUsername()
                     , mqGlobalConfig.getPassword()
             );

@@ -35,18 +35,22 @@ public enum OperatorConfig {
 
     public static final String QUEUE_PREFIX = "queue_";
     public static final String ROUTING_KEY_PREFIX = "routing-key_";
-    public static final String MQ_CONFIG_MAP_NAME = "rabbit-mq-app-config";
     public static final String DEFAULT_RABBITMQ_SECRET = "rabbitmq";
     public static final String DEFAULT_CASSANDRA_SECRET = "cassandra";
     public static final String RABBITMQ_SECRET_PASSWORD_KEY = "rabbitmq-password";
     public static final String RABBITMQ_SECRET_USERNAME_KEY = "rabbitmq-username";
+    public static final String CONFIG_FILE_SYSTEM_PROPERTY = "infra.operator.config";
 
     private static final String CONFIG_FILE = "/var/th2/config/infra-operator.yml";
-    public static final String CONFIG_FILE_SYSTEM_PROPERTY = "infra.operator.config";
+    static final String DEFAULT_RABBITMQ_CONFIGMAP_NAME = "rabbit-mq-app-config";
 
     private Configuration configuration;
 
-    private Map<String, MqWorkSpaceConfig> mqWorkSpaceConfigPerNamespace = new HashMap<>();
+    private Map<String, RabbitMQConfig> rabbitMQConfigs = new HashMap<>();
+
+    public String getRabbitMQConfigMapName() {
+        return getFullConfig().getRabbitMQConfigMapName();
+    }
 
     public List<String> getNamespacePrefixes() {
         return getFullConfig().getNamespacePrefixes();
@@ -65,12 +69,12 @@ public enum OperatorConfig {
     }
 
     @Nullable
-    public synchronized MqWorkSpaceConfig getMqWorkSpaceConfig(String namespace) {
-        return mqWorkSpaceConfigPerNamespace.get(namespace);
+    public synchronized RabbitMQConfig getRabbitMQConfig4Namespace(String namespace) {
+        return rabbitMQConfigs.get(namespace);
     }
 
-    public synchronized void setMqWorkSpaceConfig(String namespace, MqWorkSpaceConfig config) {
-        mqWorkSpaceConfigPerNamespace.put(namespace, config);
+    public synchronized void setRabbitMQConfig4Namespace(String namespace, RabbitMQConfig config) {
+        rabbitMQConfigs.put(namespace, config);
     }
 
     public ChartConfig getChartConfig() {
@@ -108,12 +112,14 @@ public enum OperatorConfig {
         private MqGlobalConfig mqGlobalConfig;
         private SchemaSecrets schemaSecrets;
         private List<String> namespacePrefixes;
+        private String rabbitMQConfigMapName;
 
         public Configuration() {
             chartConfig = new ChartConfig();
             mqGlobalConfig = new MqGlobalConfig();
             schemaSecrets = new SchemaSecrets();
             namespacePrefixes = new ArrayList<>();
+            rabbitMQConfigMapName = DEFAULT_RABBITMQ_CONFIGMAP_NAME;
         }
 
         public ChartConfig getChartConfig() {
@@ -152,6 +158,21 @@ public enum OperatorConfig {
                 this.namespacePrefixes = namespacePrefixes;
         }
 
+        public String getRabbitMQConfigMapName() {
+            return rabbitMQConfigMapName;
+        }
+
+        public void setRabbitMQConfigMapName(String rabbitMQConfigMapName) {
+            if (rabbitMQConfigMapName != null)
+                this.rabbitMQConfigMapName = rabbitMQConfigMapName;
+        }
+
+        @JsonProperty("configMaps")
+        public void setRabbitMQConfigMapName(Map<String, String> configMaps) {
+            if (configMaps != null && configMaps.get("rabbitMQ") != null)
+                this.rabbitMQConfigMapName = configMaps.get("rabbitMQ");
+        }
+
         @Override
         public boolean equals(Object o) {
             if (this == o) return true;
@@ -160,7 +181,8 @@ public enum OperatorConfig {
             return Objects.equals(getChartConfig(), that.getChartConfig()) &&
                 Objects.equals(getMqGlobalConfig(), that.getMqGlobalConfig()) &&
                 Objects.equals(getSchemaSecrets(), that.getSchemaSecrets()) &&
-                Objects.equals(getNamespacePrefixes(), that.getNamespacePrefixes());
+                Objects.equals(getNamespacePrefixes(), that.getNamespacePrefixes()) &&
+                Objects.equals(getRabbitMQConfigMapName(), that.getRabbitMQConfigMapName());
         }
     }
 
@@ -426,11 +448,18 @@ public enum OperatorConfig {
     @JsonIgnoreProperties(ignoreUnknown = true)
     public static class MqSchemaUserPermissions {
 
-        private String configure = "";
-        private String read = ".*";
-        private String write = ".*";
+        static final String DEFAULT_CONFIGURE_PERMISSION = "";
+        static final String DEFAULT_READ_PERMISSION = ".*";
+        static final String DEFAULT_WRITE_PERMISSION = ".*";
+
+        private String configure;
+        private String read;
+        private String write;
 
         public MqSchemaUserPermissions() {
+            configure = DEFAULT_CONFIGURE_PERMISSION;
+            read = DEFAULT_READ_PERMISSION;
+            write = DEFAULT_WRITE_PERMISSION;
         }
 
         public MqSchemaUserPermissions(String configure, String read, String write) {
@@ -503,158 +532,6 @@ public enum OperatorConfig {
 
             public MqSchemaUserPermissions build() {
                 return new MqSchemaUserPermissions(configure, read, write);
-            }
-        }
-    }
-
-    @JsonIgnoreProperties(ignoreUnknown = true)
-    public static class MqWorkSpaceConfig {
-
-        public static final String CONFIG_MAP_RABBITMQ_PROP_NAME = "rabbitMQ.json";
-
-        private int port;
-        private String host;
-        @JsonProperty("vHost")
-        private String vHost;
-        @JsonProperty("exchangeName")
-        private String exchangeName;
-        private String username;
-        private String password;
-
-        protected MqWorkSpaceConfig() {
-        }
-
-        public MqWorkSpaceConfig(int port, String host, String vHost, String exchangeName, String username,
-                                 String password) {
-            this.port = port;
-            this.host = host;
-            this.vHost = vHost;
-            this.exchangeName = exchangeName;
-            this.username = username;
-            this.password = password;
-        }
-
-        public int getPort() {
-            return port;
-        }
-
-        public void setPort(int port) {
-            this.port = port;
-        }
-
-        public String getHost() {
-            return host;
-        }
-
-        public void setHost(String host) {
-            this.host = host;
-        }
-
-        public String getVHost() {
-            return vHost;
-        }
-
-        public void setVHost(String vHost) {
-            this.vHost = vHost;
-        }
-
-        public String getExchangeName() {
-            return exchangeName;
-        }
-
-        public void setExchangeName(String exchangeName) {
-            this.exchangeName = exchangeName;
-        }
-
-        public String getUsername() {
-            return username;
-        }
-
-        public void setUsername(String username) {
-            this.username = username;
-        }
-
-        public String getPassword() {
-            return password;
-        }
-
-        public void setPassword(String password) {
-            this.password = password;
-        }
-
-        public static MqWorkSpaceConfigBuilder builder() {
-            return new MqWorkSpaceConfigBuilder();
-        }
-
-        @Override
-        public String toString() {
-            return "MqWorkSpaceConfig{" + "port=" + port + ", host='" + host + '\'' +
-                ", vHost='" + vHost + '\'' + ", exchangeName='" + exchangeName + '\'' +
-                ", username='" + username + '\'' + ", password='" + password + '\'' + '}';
-        }
-
-        @Override
-        public boolean equals(Object o) {
-            if (this == o) return true;
-            if (!(o instanceof MqWorkSpaceConfig)) return false;
-            MqWorkSpaceConfig that = (MqWorkSpaceConfig) o;
-            return getPort() == that.getPort() &&
-                Objects.equals(getHost(), that.getHost()) &&
-                Objects.equals(vHost, that.vHost) &&
-                Objects.equals(getExchangeName(), that.getExchangeName()) &&
-                Objects.equals(getUsername(), that.getUsername()) &&
-                Objects.equals(getPassword(), that.getPassword());
-        }
-
-        @Override
-        public int hashCode() {
-            return Objects.hash(getPort(), getHost(), vHost, getExchangeName(), getUsername(), getPassword());
-        }
-
-        public static class MqWorkSpaceConfigBuilder {
-
-            private int port;
-            private String host;
-            private String vHost;
-            private String exchangeName;
-            private String username;
-            private String password;
-
-            MqWorkSpaceConfigBuilder() {
-            }
-
-            public MqWorkSpaceConfigBuilder port(int port) {
-                this.port = port;
-                return this;
-            }
-
-            public MqWorkSpaceConfigBuilder host(String host) {
-                this.host = host;
-                return this;
-            }
-
-            public MqWorkSpaceConfigBuilder vHost(String vHost) {
-                this.vHost = vHost;
-                return this;
-            }
-
-            public MqWorkSpaceConfigBuilder exchangeName(String exchangeName) {
-                this.exchangeName = exchangeName;
-                return this;
-            }
-
-            public MqWorkSpaceConfigBuilder username(String username) {
-                this.username = username;
-                return this;
-            }
-
-            public MqWorkSpaceConfigBuilder password(String password) {
-                this.password = password;
-                return this;
-            }
-
-            public MqWorkSpaceConfig build() {
-                return new MqWorkSpaceConfig(port, host, vHost, exchangeName, username, password);
             }
         }
     }

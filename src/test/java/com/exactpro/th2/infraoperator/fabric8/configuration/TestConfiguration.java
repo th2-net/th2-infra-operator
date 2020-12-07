@@ -21,6 +21,7 @@ import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 
 import java.util.Arrays;
+import java.util.Collections;
 
 public class TestConfiguration {
 
@@ -44,6 +45,7 @@ public class TestConfiguration {
         );
         expected.setSchemaSecrets(SchemaSecrets.builder().rabbitMQ("rabbitMQ").cassandra("cassandra").build());
         expected.setNamespacePrefixes(Arrays.asList("string1", "string2"));
+        expected.setRabbitMQConfigMapName("rabbit-mq-app");
 
         Assertions.assertEquals(expected, OperatorConfig.INSTANCE.getConfig());
     }
@@ -97,5 +99,36 @@ public class TestConfiguration {
             MqSchemaUserPermissions.builder().read("").write("").build()).build());
 
         Assertions.assertEquals(expected, OperatorConfig.INSTANCE.getConfig());
+    }
+
+    @Test
+    void testDefaultConfig() {
+        beforeEach("src/test/resources/defaultConfig.yml");
+
+        Assertions.assertEquals(Collections.emptyList(), OperatorConfig.INSTANCE.getConfig().getNamespacePrefixes());
+
+        Assertions.assertNull(OperatorConfig.INSTANCE.getConfig().getChartConfig().getGit());
+        Assertions.assertNull(OperatorConfig.INSTANCE.getConfig().getChartConfig().getRef());
+        Assertions.assertNull(OperatorConfig.INSTANCE.getConfig().getChartConfig().getPath());
+
+        Assertions.assertNull(OperatorConfig.INSTANCE.getConfig().getMqGlobalConfig().getHost());
+        Assertions.assertEquals(0, OperatorConfig.INSTANCE.getConfig().getMqGlobalConfig().getPort());
+        Assertions.assertNull(OperatorConfig.INSTANCE.getConfig().getMqGlobalConfig().getUsername());
+        Assertions.assertNull(OperatorConfig.INSTANCE.getConfig().getMqGlobalConfig().getPassword());
+        Assertions.assertFalse(OperatorConfig.INSTANCE.getConfig().getMqGlobalConfig().isPersistence());
+        Assertions.assertEquals(MqSchemaUserPermissions.DEFAULT_CONFIGURE_PERMISSION,
+            OperatorConfig.INSTANCE.getConfig().getMqGlobalConfig().getSchemaUserPermissions().getConfigure());
+        Assertions.assertEquals(MqSchemaUserPermissions.DEFAULT_READ_PERMISSION,
+            OperatorConfig.INSTANCE.getConfig().getMqGlobalConfig().getSchemaUserPermissions().getRead());
+        Assertions.assertEquals(MqSchemaUserPermissions.DEFAULT_WRITE_PERMISSION,
+            OperatorConfig.INSTANCE.getConfig().getMqGlobalConfig().getSchemaUserPermissions().getWrite());
+
+        Assertions.assertEquals(OperatorConfig.DEFAULT_RABBITMQ_CONFIGMAP_NAME,
+            OperatorConfig.INSTANCE.getConfig().getRabbitMQConfigMapName());
+
+        Assertions.assertEquals(OperatorConfig.DEFAULT_RABBITMQ_SECRET,
+            OperatorConfig.INSTANCE.getConfig().getSchemaSecrets().getRabbitMQ());
+        Assertions.assertEquals(OperatorConfig.DEFAULT_CASSANDRA_SECRET,
+            OperatorConfig.INSTANCE.getConfig().getSchemaSecrets().getCassandra());
     }
 }
