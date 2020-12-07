@@ -108,12 +108,14 @@ public enum OperatorConfig {
         private MqGlobalConfig mqGlobalConfig;
         private SchemaSecrets schemaSecrets;
         private List<String> namespacePrefixes;
+        private String rabbitMQConfigMapName;
 
         public Configuration() {
             chartConfig = new ChartConfig();
             mqGlobalConfig = new MqGlobalConfig();
             schemaSecrets = new SchemaSecrets();
             namespacePrefixes = new ArrayList<>();
+            rabbitMQConfigMapName = MQ_CONFIG_MAP_NAME;
         }
 
         public ChartConfig getChartConfig() {
@@ -152,6 +154,21 @@ public enum OperatorConfig {
                 this.namespacePrefixes = namespacePrefixes;
         }
 
+        public String getRabbitMQConfigMapName() {
+            return rabbitMQConfigMapName;
+        }
+
+        public void setRabbitMQConfigMapName(String rabbitMQConfigMapName) {
+            if (rabbitMQConfigMapName != null)
+                this.rabbitMQConfigMapName = rabbitMQConfigMapName;
+        }
+
+        @JsonProperty("configMaps")
+        public void setRabbitMQConfigMapName(Map<String, String> configMaps) {
+            if (configMaps.get("rabbitMQ") != null)
+                this.rabbitMQConfigMapName = configMaps.get("rabbitMQ");
+        }
+
         @Override
         public boolean equals(Object o) {
             if (this == o) return true;
@@ -160,7 +177,8 @@ public enum OperatorConfig {
             return Objects.equals(getChartConfig(), that.getChartConfig()) &&
                 Objects.equals(getMqGlobalConfig(), that.getMqGlobalConfig()) &&
                 Objects.equals(getSchemaSecrets(), that.getSchemaSecrets()) &&
-                Objects.equals(getNamespacePrefixes(), that.getNamespacePrefixes());
+                Objects.equals(getNamespacePrefixes(), that.getNamespacePrefixes()) &&
+                Objects.equals(getRabbitMQConfigMapName(), that.getRabbitMQConfigMapName());
         }
     }
 

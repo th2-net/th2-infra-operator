@@ -44,6 +44,7 @@ public class TestConfiguration {
         );
         expected.setSchemaSecrets(SchemaSecrets.builder().rabbitMQ("rabbitMQ").cassandra("cassandra").build());
         expected.setNamespacePrefixes(Arrays.asList("string1", "string2"));
+        expected.setRabbitMQConfigMapName("rabbit-mq-app");
 
         Assertions.assertEquals(expected, OperatorConfig.INSTANCE.getConfig());
     }
