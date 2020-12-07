@@ -116,11 +116,11 @@ public class TestConfiguration {
         Assertions.assertNull(OperatorConfig.INSTANCE.getConfig().getMqGlobalConfig().getUsername());
         Assertions.assertNull(OperatorConfig.INSTANCE.getConfig().getMqGlobalConfig().getPassword());
         Assertions.assertFalse(OperatorConfig.INSTANCE.getConfig().getMqGlobalConfig().isPersistence());
-        Assertions.assertEquals("",
+        Assertions.assertEquals(MqSchemaUserPermissions.DEFAULT_CONFIGURE_PERMISSION,
             OperatorConfig.INSTANCE.getConfig().getMqGlobalConfig().getSchemaUserPermissions().getConfigure());
-        Assertions.assertEquals(".*",
+        Assertions.assertEquals(MqSchemaUserPermissions.DEFAULT_READ_PERMISSION,
             OperatorConfig.INSTANCE.getConfig().getMqGlobalConfig().getSchemaUserPermissions().getRead());
-        Assertions.assertEquals(".*",
+        Assertions.assertEquals(MqSchemaUserPermissions.DEFAULT_WRITE_PERMISSION,
             OperatorConfig.INSTANCE.getConfig().getMqGlobalConfig().getSchemaUserPermissions().getWrite());
 
         Assertions.assertEquals(OperatorConfig.DEFAULT_RABBITMQ_CONFIGMAP_NAME,

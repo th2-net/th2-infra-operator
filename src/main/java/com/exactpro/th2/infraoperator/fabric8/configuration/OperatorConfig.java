@@ -448,11 +448,18 @@ public enum OperatorConfig {
     @JsonIgnoreProperties(ignoreUnknown = true)
     public static class MqSchemaUserPermissions {
 
-        private String configure = "";
-        private String read = ".*";
-        private String write = ".*";
+        static final String DEFAULT_CONFIGURE_PERMISSION = "";
+        static final String DEFAULT_READ_PERMISSION = ".*";
+        static final String DEFAULT_WRITE_PERMISSION = ".*";
+
+        private String configure;
+        private String read;
+        private String write;
 
         public MqSchemaUserPermissions() {
+            configure = DEFAULT_CONFIGURE_PERMISSION;
+            read = DEFAULT_READ_PERMISSION;
+            write = DEFAULT_WRITE_PERMISSION;
         }
 
         public MqSchemaUserPermissions(String configure, String read, String write) {
