@@ -95,9 +95,9 @@ public class DefaultMessageRouterConfigFactory implements MessageRouterConfigFac
     @Nullable
     private QueueBunch createQueueBunch(String namespace, String queue, String routingKey) {
 
-        var mqWsConfig = OperatorConfig.INSTANCE.getRabbitMQConfigNamespace(namespace);
+        var rabbitMQConfig = OperatorConfig.INSTANCE.getRabbitMQConfigNamespace(namespace);
 
-        if (Objects.isNull(mqWsConfig)) {
+        if (Objects.isNull(rabbitMQConfig)) {
             return null;
         }
 
@@ -108,7 +108,7 @@ public class DefaultMessageRouterConfigFactory implements MessageRouterConfigFac
         return new QueueBunch(
                 fullQueue,
                 fullRoutingKey,
-                mqWsConfig.getExchangeName()
+                rabbitMQConfig.getExchangeName()
         );
     }
 
