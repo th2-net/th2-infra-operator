@@ -21,7 +21,6 @@ import com.exactpro.th2.infraoperator.fabric8.model.box.configuration.grpc.facto
 import com.exactpro.th2.infraoperator.fabric8.model.kubernetes.client.ResourceClient;
 import com.exactpro.th2.infraoperator.fabric8.model.kubernetes.client.ipml.DictionaryClient;
 import com.exactpro.th2.infraoperator.fabric8.model.kubernetes.client.ipml.LinkClient;
-import com.exactpro.th2.infraoperator.fabric8.model.kubernetes.configmaps.ConfigMaps;
 import com.exactpro.th2.infraoperator.fabric8.operator.HelmReleaseTh2Op;
 import com.exactpro.th2.infraoperator.fabric8.operator.context.HelmOperatorContext;
 import com.exactpro.th2.infraoperator.fabric8.spec.Th2CustomResource;
@@ -405,27 +404,11 @@ public class DefaultWatchManager {
 
             String configMapName = configMap.getMetadata().getName();
 
-            if (!(configMapName.equals(MQ_CONFIG_MAP_NAME) || configMapName.equals(ConfigMaps.PROMETHEUS_CONFIGMAP_NAME)))
+            if (!(configMapName.equals(MQ_CONFIG_MAP_NAME)))
                 return;
 
             try {
                 logger.info("Processing {} event for \"{}\"", action, resourceLabel);
-
-                if (configMapName.equals(ConfigMaps.PROMETHEUS_CONFIGMAP_NAME)) {
-                    String configContent = configMap.getData().get(ConfigMaps.PROMETHEUS_JSON_KEY);
-                    if (Strings.isNullOrEmpty(configContent)) {
-                        logger.error("Key \"{}\" not found in \"{}\"", ConfigMaps.PROMETHEUS_JSON_KEY, resourceLabel);
-                        return;
-                    }
-
-                    Map<String, Object> map = JSON_READER.readValue(configContent, Map.class);
-                    if (!ConfigMaps.getPrometheusParams().equals(map)) {
-                        logger.info("Prometheus ConfigMap has been changed in namespace \"%s\" has. Updating all boxes", namespace);
-                        ConfigMaps.setPrometheusParams(map);
-                        int refreshedBoxesCount = refreshBoxes(namespace);
-                        logger.info("{} box-definition(s) have been updated", refreshedBoxesCount);
-                    }
-                }
 
                 if (configMapName.equals(MQ_CONFIG_MAP_NAME)) {
                     synchronized (LinkSingleton.INSTANCE.getLock(namespace)) {
