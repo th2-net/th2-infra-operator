@@ -324,21 +324,21 @@ public enum OperatorConfig {
         private String host;
         private boolean persistence;
         @JsonProperty("schemaPermissions")
-        private MqSchemaUserPermissions schemaUserPermissions;
+        private RabbitMQNamespacePermissions rabbitMQNamespacePermissions;
 
         protected RabbitMQManagementConfig() {
-            schemaUserPermissions = new MqSchemaUserPermissions();
+            rabbitMQNamespacePermissions = new RabbitMQNamespacePermissions();
         }
 
         protected RabbitMQManagementConfig(String username, String password, int port, String host, boolean persistence,
-                                           MqSchemaUserPermissions schemaUserPermissions) {
+                                           RabbitMQNamespacePermissions rabbitMQNamespacePermissions) {
             this.username = username;
             this.password = password;
             this.port = port;
             this.host = host;
             this.persistence = persistence;
-            this.schemaUserPermissions =
-                    schemaUserPermissions != null ? schemaUserPermissions : new MqSchemaUserPermissions();
+            this.rabbitMQNamespacePermissions =
+                    rabbitMQNamespacePermissions != null ? rabbitMQNamespacePermissions : new RabbitMQNamespacePermissions();
         }
 
         @JsonIgnore
@@ -386,13 +386,13 @@ public enum OperatorConfig {
             this.persistence = persistence;
         }
 
-        public MqSchemaUserPermissions getSchemaUserPermissions() {
-            return schemaUserPermissions;
+        public RabbitMQNamespacePermissions getRabbitMQNamespacePermissions() {
+            return rabbitMQNamespacePermissions;
         }
 
-        public void setSchemaUserPermissions(MqSchemaUserPermissions schemaUserPermissions) {
-            if (schemaUserPermissions != null)
-                this.schemaUserPermissions = schemaUserPermissions;
+        public void setRabbitMQNamespacePermissions(RabbitMQNamespacePermissions rabbitMQNamespacePermissions) {
+            if (rabbitMQNamespacePermissions != null)
+                this.rabbitMQNamespacePermissions = rabbitMQNamespacePermissions;
         }
 
         public static RabbitMQManagementConfigBuilder builder() {
@@ -409,7 +409,7 @@ public enum OperatorConfig {
                     Objects.equals(getUsername(), that.getUsername()) &&
                     Objects.equals(getPassword(), that.getPassword()) &&
                     Objects.equals(getHost(), that.getHost()) &&
-                    Objects.equals(getSchemaUserPermissions(), that.getSchemaUserPermissions());
+                    Objects.equals(getRabbitMQNamespacePermissions(), that.getRabbitMQNamespacePermissions());
         }
 
         public static class RabbitMQManagementConfigBuilder {
@@ -419,7 +419,7 @@ public enum OperatorConfig {
             private int port;
             private String host;
             private boolean persistence;
-            private MqSchemaUserPermissions schemaUserPermissions;
+            private RabbitMQNamespacePermissions rabbitMQNamespacePermissions;
 
             RabbitMQManagementConfigBuilder() {
             }
@@ -449,19 +449,19 @@ public enum OperatorConfig {
                 return this;
             }
 
-            public RabbitMQManagementConfigBuilder schemaUserPermissions(MqSchemaUserPermissions schemaUserPermissions) {
-                this.schemaUserPermissions = schemaUserPermissions;
+            public RabbitMQManagementConfigBuilder rabbitMQNamespacePermissions(RabbitMQNamespacePermissions rabbitMQNamespacePermissions) {
+                this.rabbitMQNamespacePermissions = rabbitMQNamespacePermissions;
                 return this;
             }
 
             public RabbitMQManagementConfig build() {
-                return new RabbitMQManagementConfig(username, password, port, host, persistence, schemaUserPermissions);
+                return new RabbitMQManagementConfig(username, password, port, host, persistence, rabbitMQNamespacePermissions);
             }
         }
     }
 
     @JsonIgnoreProperties(ignoreUnknown = true)
-    public static class MqSchemaUserPermissions {
+    public static class RabbitMQNamespacePermissions {
 
         static final String DEFAULT_CONFIGURE_PERMISSION = "";
         static final String DEFAULT_READ_PERMISSION = ".*";
@@ -471,13 +471,13 @@ public enum OperatorConfig {
         private String read;
         private String write;
 
-        public MqSchemaUserPermissions() {
+        public RabbitMQNamespacePermissions() {
             configure = DEFAULT_CONFIGURE_PERMISSION;
             read = DEFAULT_READ_PERMISSION;
             write = DEFAULT_WRITE_PERMISSION;
         }
 
-        public MqSchemaUserPermissions(String configure, String read, String write) {
+        public RabbitMQNamespacePermissions(String configure, String read, String write) {
             setConfigure(configure);
             setRead(read);
             setWrite(write);
@@ -507,46 +507,46 @@ public enum OperatorConfig {
             this.write = (write == null) ? "" : write;
         }
 
-        public static MqSchemaUserPermissionsBuilder builder() {
-            return new MqSchemaUserPermissionsBuilder();
+        public static RabbitMQNamespacePermissionsBuilder builder() {
+            return new RabbitMQNamespacePermissionsBuilder();
         }
 
         @Override
         public boolean equals(Object o) {
             if (this == o) return true;
-            if (!(o instanceof MqSchemaUserPermissions)) return false;
-            MqSchemaUserPermissions that = (MqSchemaUserPermissions) o;
+            if (!(o instanceof RabbitMQNamespacePermissions)) return false;
+            RabbitMQNamespacePermissions that = (RabbitMQNamespacePermissions) o;
             return Objects.equals(getConfigure(), that.getConfigure()) &&
                     Objects.equals(getRead(), that.getRead()) &&
                     Objects.equals(getWrite(), that.getWrite());
         }
 
-        public static class MqSchemaUserPermissionsBuilder {
+        public static class RabbitMQNamespacePermissionsBuilder {
 
             private String configure;
             private String read;
             private String write;
 
-            MqSchemaUserPermissionsBuilder() {
+            RabbitMQNamespacePermissionsBuilder() {
             }
 
-            public MqSchemaUserPermissionsBuilder configure(String configure) {
+            public RabbitMQNamespacePermissionsBuilder configure(String configure) {
                 this.configure = configure;
                 return this;
             }
 
-            public MqSchemaUserPermissionsBuilder read(String read) {
+            public RabbitMQNamespacePermissionsBuilder read(String read) {
                 this.read = read;
                 return this;
             }
 
-            public MqSchemaUserPermissionsBuilder write(String write) {
+            public RabbitMQNamespacePermissionsBuilder write(String write) {
                 this.write = write;
                 return this;
             }
 
-            public MqSchemaUserPermissions build() {
-                return new MqSchemaUserPermissions(configure, read, write);
+            public RabbitMQNamespacePermissions build() {
+                return new RabbitMQNamespacePermissions(configure, read, write);
             }
         }
     }

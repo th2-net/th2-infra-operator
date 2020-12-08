@@ -76,11 +76,11 @@ public class MqVHostUtils {
                 logger.info("Created user \"{}\" in RabbitMQ for namespace \"{}\"", username, namespace);
 
                 // set permissions
-                OperatorConfig.MqSchemaUserPermissions schemaUserPermissions = rabbitMQManagementConfig.getSchemaUserPermissions();
+                OperatorConfig.RabbitMQNamespacePermissions rabbitMQNamespacePermissions = rabbitMQManagementConfig.getRabbitMQNamespacePermissions();
                 UserPermissions permissions = new UserPermissions();
-                permissions.setConfigure(schemaUserPermissions.getConfigure());
-                permissions.setRead(schemaUserPermissions.getRead());
-                permissions.setWrite(schemaUserPermissions.getWrite());
+                permissions.setConfigure(rabbitMQNamespacePermissions.getConfigure());
+                permissions.setRead(rabbitMQNamespacePermissions.getRead());
+                permissions.setWrite(rabbitMQNamespacePermissions.getWrite());
 
                 rmqClient.updatePermissions(vHostName, username, permissions);
                 logger.info("User \"{}\" permissions set in RabbitMQ", username);
