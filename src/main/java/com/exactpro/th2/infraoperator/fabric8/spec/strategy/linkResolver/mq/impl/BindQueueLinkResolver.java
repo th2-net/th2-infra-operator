@@ -56,11 +56,11 @@ public class BindQueueLinkResolver implements QueueLinkResolver {
 
     private final BoxResourceFinder resourceFinder;
 
-    private final OperatorConfig.MqGlobalConfig mqGlobalConfig;
+    private final OperatorConfig.RabbitMQManagementConfig rabbitMQManagementConfig;
 
     @SneakyThrows
     public BindQueueLinkResolver(BoxResourceFinder resourceFinder) {
-        this.mqGlobalConfig = OperatorConfig.INSTANCE.getMqAuthConfig();
+        this.rabbitMQManagementConfig = OperatorConfig.INSTANCE.getRabbitMQManagementConfig();
         this.resourceFinder = resourceFinder;
         this.connectionFactory = new ConnectionFactory();
     }
@@ -134,13 +134,13 @@ public class BindQueueLinkResolver implements QueueLinkResolver {
         if (!channel.isOpen()) {
             logger.warn("RMQ connection is broken, trying to reconnect...");
             channelBunchMap.remove(namespace);
-            RabbitMqStaticContext.createChannelIfAbsent(namespace, mqGlobalConfig, connectionFactory);
+            RabbitMqStaticContext.createChannelIfAbsent(namespace, rabbitMQManagementConfig, connectionFactory);
             channel = channelBunchMap.get(namespace).getChannel();
             logger.info("RMQ connection has been restored");
         }
 
         PinSettings pinSettings = resource.getSpec().getPin(boxMq.getPin()).getSettings();
-        channel.queueDeclare(queueBunch.getQueue(), mqGlobalConfig.isPersistence(), false, false, generateQueueArguments(pinSettings));
+        channel.queueDeclare(queueBunch.getQueue(), rabbitMQManagementConfig.isPersistence(), false, false, generateQueueArguments(pinSettings));
         channel.queueBind(queueBunch.getQueue(), queueBunch.getExchange(), queueBunch.getRoutingKey());
 
     }

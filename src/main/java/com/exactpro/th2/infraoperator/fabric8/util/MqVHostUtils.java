@@ -39,7 +39,7 @@ public class MqVHostUtils {
         );
     }
 
-    public static void createVHostIfAbsent(String namespace, OperatorConfig.MqGlobalConfig mqGlobalConfig) throws VHostCreateException {
+    public static void createVHostIfAbsent(String namespace, OperatorConfig.RabbitMQManagementConfig rabbitMQManagementConfig) throws VHostCreateException {
 
         RabbitMQConfig rabbitMQConfig = OperatorConfig.INSTANCE.getRabbitMQConfig4Namespace(namespace);
 
@@ -58,9 +58,9 @@ public class MqVHostUtils {
 
         try {
             Client rmqClient = getClient(
-                    String.format("http://%s:%s/api", rabbitMQConfig.getHost(), mqGlobalConfig.getPort())
-                    , mqGlobalConfig.getUsername()
-                    , mqGlobalConfig.getPassword()
+                    String.format("http://%s:%s/api", rabbitMQConfig.getHost(), rabbitMQManagementConfig.getPort())
+                    , rabbitMQManagementConfig.getUsername()
+                    , rabbitMQManagementConfig.getPassword()
             );
 
             // check vhost
@@ -76,7 +76,7 @@ public class MqVHostUtils {
                 logger.info("Created user \"{}\" in RabbitMQ for namespace \"{}\"", username, namespace);
 
                 // set permissions
-                OperatorConfig.MqSchemaUserPermissions schemaUserPermissions = mqGlobalConfig.getSchemaUserPermissions();
+                OperatorConfig.MqSchemaUserPermissions schemaUserPermissions = rabbitMQManagementConfig.getSchemaUserPermissions();
                 UserPermissions permissions = new UserPermissions();
                 permissions.setConfigure(schemaUserPermissions.getConfigure());
                 permissions.setRead(schemaUserPermissions.getRead());
@@ -93,7 +93,7 @@ public class MqVHostUtils {
     }
 
 
-    public static void cleanupVHost(String namespace, OperatorConfig.MqGlobalConfig mqGlobalConfig) throws VHostCreateException {
+    public static void cleanupVHost(String namespace, OperatorConfig.RabbitMQManagementConfig rabbitMQManagementConfig) throws VHostCreateException {
 
         RabbitMQConfig rabbitMQConfig = OperatorConfig.INSTANCE.getRabbitMQConfig4Namespace(namespace);
 
@@ -109,9 +109,9 @@ public class MqVHostUtils {
 
         try {
             Client rmqClient = getClient(
-                    String.format("http://%s:%s/api", rabbitMQConfig.getHost(), mqGlobalConfig.getPort())
-                    , mqGlobalConfig.getUsername()
-                    , mqGlobalConfig.getPassword()
+                    String.format("http://%s:%s/api", rabbitMQConfig.getHost(), rabbitMQManagementConfig.getPort())
+                    , rabbitMQManagementConfig.getUsername()
+                    , rabbitMQManagementConfig.getPassword()
             );
 
             // delete user

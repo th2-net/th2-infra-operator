@@ -35,7 +35,7 @@ public class Th2CrdController {
 
         OperatorConfig.INSTANCE.getChartConfig();
 
-        OperatorConfig.INSTANCE.getMqAuthConfig();
+        OperatorConfig.INSTANCE.getRabbitMQManagementConfig();
 
 
         var client = new DefaultKubernetesClient();

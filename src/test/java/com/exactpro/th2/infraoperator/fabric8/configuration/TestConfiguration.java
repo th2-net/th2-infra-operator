@@ -15,7 +15,7 @@ package com.exactpro.th2.infraoperator.fabric8.configuration;
 
 import com.exactpro.th2.infraoperator.fabric8.configuration.OperatorConfig.ChartConfig;
 import com.exactpro.th2.infraoperator.fabric8.configuration.OperatorConfig.Configuration;
-import com.exactpro.th2.infraoperator.fabric8.configuration.OperatorConfig.MqGlobalConfig;
+import com.exactpro.th2.infraoperator.fabric8.configuration.OperatorConfig.RabbitMQManagementConfig;
 import com.exactpro.th2.infraoperator.fabric8.configuration.OperatorConfig.MqSchemaUserPermissions;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
@@ -37,8 +37,8 @@ public class TestConfiguration {
         beforeEach("src/test/resources/fullConfig.yml");
 
         expected.setChartConfig(ChartConfig.builder().git("git").path("path").ref("ref").build());
-        expected.setMqGlobalConfig(
-            MqGlobalConfig.builder().host("host").port(8080).username("username").password("password")
+        expected.setRabbitMQManagementConfig(
+            RabbitMQManagementConfig.builder().host("host").port(8080).username("username").password("password")
                 .persistence(true).schemaUserPermissions(
                 MqSchemaUserPermissions.builder().configure("configure").read("read").write("write").build())
                 .build()
@@ -69,11 +69,11 @@ public class TestConfiguration {
     }
 
     @Test
-    void testMqGlobalConfig() {
-        beforeEach("src/test/resources/mqGlobalConfig.yml");
+    void testRabbitMQManagementConfig() {
+        beforeEach("src/test/resources/rabbitMQManagementConfig.yml");
 
-        expected.setMqGlobalConfig(
-            MqGlobalConfig.builder().host("host").port(8080).username("username").password("password")
+        expected.setRabbitMQManagementConfig(
+            RabbitMQManagementConfig.builder().host("host").port(8080).username("username").password("password")
                 .persistence(true).schemaUserPermissions(
                 MqSchemaUserPermissions.builder().configure("configure").read("read").write("write").build())
                 .build()
@@ -95,7 +95,7 @@ public class TestConfiguration {
     void testEmptyConfig() {
         beforeEach("src/test/resources/emptyConfig.yml");
 
-        expected.setMqGlobalConfig(MqGlobalConfig.builder().schemaUserPermissions(
+        expected.setRabbitMQManagementConfig(RabbitMQManagementConfig.builder().schemaUserPermissions(
             MqSchemaUserPermissions.builder().read("").write("").build()).build());
 
         Assertions.assertEquals(expected, OperatorConfig.INSTANCE.getConfig());
@@ -111,17 +111,17 @@ public class TestConfiguration {
         Assertions.assertNull(OperatorConfig.INSTANCE.getConfig().getChartConfig().getRef());
         Assertions.assertNull(OperatorConfig.INSTANCE.getConfig().getChartConfig().getPath());
 
-        Assertions.assertNull(OperatorConfig.INSTANCE.getConfig().getMqGlobalConfig().getHost());
-        Assertions.assertEquals(0, OperatorConfig.INSTANCE.getConfig().getMqGlobalConfig().getPort());
-        Assertions.assertNull(OperatorConfig.INSTANCE.getConfig().getMqGlobalConfig().getUsername());
-        Assertions.assertNull(OperatorConfig.INSTANCE.getConfig().getMqGlobalConfig().getPassword());
-        Assertions.assertFalse(OperatorConfig.INSTANCE.getConfig().getMqGlobalConfig().isPersistence());
+        Assertions.assertNull(OperatorConfig.INSTANCE.getConfig().getRabbitMQManagementConfig().getHost());
+        Assertions.assertEquals(0, OperatorConfig.INSTANCE.getConfig().getRabbitMQManagementConfig().getPort());
+        Assertions.assertNull(OperatorConfig.INSTANCE.getConfig().getRabbitMQManagementConfig().getUsername());
+        Assertions.assertNull(OperatorConfig.INSTANCE.getConfig().getRabbitMQManagementConfig().getPassword());
+        Assertions.assertFalse(OperatorConfig.INSTANCE.getConfig().getRabbitMQManagementConfig().isPersistence());
         Assertions.assertEquals(MqSchemaUserPermissions.DEFAULT_CONFIGURE_PERMISSION,
-            OperatorConfig.INSTANCE.getConfig().getMqGlobalConfig().getSchemaUserPermissions().getConfigure());
+            OperatorConfig.INSTANCE.getConfig().getRabbitMQManagementConfig().getSchemaUserPermissions().getConfigure());
         Assertions.assertEquals(MqSchemaUserPermissions.DEFAULT_READ_PERMISSION,
-            OperatorConfig.INSTANCE.getConfig().getMqGlobalConfig().getSchemaUserPermissions().getRead());
+            OperatorConfig.INSTANCE.getConfig().getRabbitMQManagementConfig().getSchemaUserPermissions().getRead());
         Assertions.assertEquals(MqSchemaUserPermissions.DEFAULT_WRITE_PERMISSION,
-            OperatorConfig.INSTANCE.getConfig().getMqGlobalConfig().getSchemaUserPermissions().getWrite());
+            OperatorConfig.INSTANCE.getConfig().getRabbitMQManagementConfig().getSchemaUserPermissions().getWrite());
 
         Assertions.assertEquals(OperatorConfig.DEFAULT_RABBITMQ_CONFIGMAP_NAME,
             OperatorConfig.INSTANCE.getConfig().getRabbitMQConfigMapName());

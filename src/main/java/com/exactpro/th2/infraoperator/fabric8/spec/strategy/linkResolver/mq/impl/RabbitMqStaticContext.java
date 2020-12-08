@@ -41,7 +41,7 @@ public class RabbitMqStaticContext {
     @SneakyThrows
     public static void createChannelIfAbsent(
             String namespace,
-            OperatorConfig.MqGlobalConfig mqGlobalConfig,
+            OperatorConfig.RabbitMQManagementConfig rabbitMQManagementConfig,
             ConnectionFactory connectionFactory) {
 
         RabbitMQConfig rabbitMQConfig = getRabbitMQConfig(namespace);
@@ -53,8 +53,8 @@ public class RabbitMqStaticContext {
             connectionFactory.setHost(rabbitMQConfig.getHost());
             connectionFactory.setPort(rabbitMQConfig.getPort());
             connectionFactory.setVirtualHost(rabbitMQConfig.getVHost());
-            connectionFactory.setUsername(mqGlobalConfig.getUsername());
-            connectionFactory.setPassword(mqGlobalConfig.getPassword());
+            connectionFactory.setUsername(rabbitMQManagementConfig.getUsername());
+            connectionFactory.setPassword(rabbitMQManagementConfig.getPassword());
 
             var channel = connectionFactory.newConnection().createChannel();
 

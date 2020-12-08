@@ -426,7 +426,7 @@ public class DefaultWatchManager {
 
                         if (!Objects.equals(rabbitMQConfig, newRabbitMQConfig)) {
                             opConfig.setRabbitMQConfig4Namespace(namespace, newRabbitMQConfig);
-                            MqVHostUtils.createVHostIfAbsent(namespace, opConfig.getMqAuthConfig());
+                            MqVHostUtils.createVHostIfAbsent(namespace, opConfig.getRabbitMQManagementConfig());
                             logger.info("RabbitMQ ConfigMap has been updated in namespace \"%s\". Updating all boxes", namespace);
                             int refreshedBoxesCount = refreshBoxes(namespace);
                             logger.info("{} box-definition(s) have been updated", refreshedBoxesCount);

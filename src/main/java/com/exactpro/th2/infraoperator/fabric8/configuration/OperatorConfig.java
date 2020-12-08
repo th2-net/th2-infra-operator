@@ -85,8 +85,8 @@ public enum OperatorConfig {
         return getFullConfig().getChartConfig();
     }
 
-    public MqGlobalConfig getMqAuthConfig() {
-        return getFullConfig().getMqGlobalConfig();
+    public RabbitMQManagementConfig getRabbitMQManagementConfig() {
+        return getFullConfig().getRabbitMQManagementConfig();
     }
 
     private synchronized Configuration getFullConfig() {
@@ -113,7 +113,7 @@ public enum OperatorConfig {
         @JsonProperty("chart")
         private ChartConfig chartConfig;
         @JsonProperty("rabbitMQManagement")
-        private MqGlobalConfig mqGlobalConfig;
+        private RabbitMQManagementConfig rabbitMQManagementConfig;
         private SchemaSecrets schemaSecrets;
         private List<String> namespacePrefixes;
         private String rabbitMQConfigMapName;
@@ -121,7 +121,7 @@ public enum OperatorConfig {
 
         public Configuration() {
             chartConfig = new ChartConfig();
-            mqGlobalConfig = new MqGlobalConfig();
+            rabbitMQManagementConfig = new RabbitMQManagementConfig();
             schemaSecrets = new SchemaSecrets();
             namespacePrefixes = new ArrayList<>();
             rabbitMQConfigMapName = DEFAULT_RABBITMQ_CONFIGMAP_NAME;
@@ -137,13 +137,13 @@ public enum OperatorConfig {
                 this.chartConfig = chartConfig;
         }
 
-        public MqGlobalConfig getMqGlobalConfig() {
-            return mqGlobalConfig;
+        public RabbitMQManagementConfig getRabbitMQManagementConfig() {
+            return rabbitMQManagementConfig;
         }
 
-        public void setMqGlobalConfig(MqGlobalConfig mqGlobalConfig) {
-            if (mqGlobalConfig != null)
-                this.mqGlobalConfig = mqGlobalConfig;
+        public void setRabbitMQManagementConfig(RabbitMQManagementConfig rabbitMQManagementConfig) {
+            if (rabbitMQManagementConfig != null)
+                this.rabbitMQManagementConfig = rabbitMQManagementConfig;
         }
 
         public SchemaSecrets getSchemaSecrets() {
@@ -193,7 +193,7 @@ public enum OperatorConfig {
             if (!(o instanceof Configuration)) return false;
             Configuration that = (Configuration) o;
             return Objects.equals(getChartConfig(), that.getChartConfig()) &&
-                    Objects.equals(getMqGlobalConfig(), that.getMqGlobalConfig()) &&
+                    Objects.equals(getRabbitMQManagementConfig(), that.getRabbitMQManagementConfig()) &&
                     Objects.equals(getSchemaSecrets(), that.getSchemaSecrets()) &&
                     Objects.equals(getNamespacePrefixes(), that.getNamespacePrefixes()) &&
                     Objects.equals(getRabbitMQConfigMapName(), that.getRabbitMQConfigMapName()) &&
@@ -316,7 +316,7 @@ public enum OperatorConfig {
     }
 
     @JsonIgnoreProperties(ignoreUnknown = true)
-    public static class MqGlobalConfig {
+    public static class RabbitMQManagementConfig {
 
         private String username;
         private String password;
@@ -326,12 +326,12 @@ public enum OperatorConfig {
         @JsonProperty("schemaPermissions")
         private MqSchemaUserPermissions schemaUserPermissions;
 
-        protected MqGlobalConfig() {
+        protected RabbitMQManagementConfig() {
             schemaUserPermissions = new MqSchemaUserPermissions();
         }
 
-        protected MqGlobalConfig(String username, String password, int port, String host, boolean persistence,
-                                 MqSchemaUserPermissions schemaUserPermissions) {
+        protected RabbitMQManagementConfig(String username, String password, int port, String host, boolean persistence,
+                                           MqSchemaUserPermissions schemaUserPermissions) {
             this.username = username;
             this.password = password;
             this.port = port;
@@ -395,15 +395,15 @@ public enum OperatorConfig {
                 this.schemaUserPermissions = schemaUserPermissions;
         }
 
-        public static MqGlobalConfigBuilder builder() {
-            return new MqGlobalConfigBuilder();
+        public static RabbitMQManagementConfigBuilder builder() {
+            return new RabbitMQManagementConfigBuilder();
         }
 
         @Override
         public boolean equals(Object o) {
             if (this == o) return true;
-            if (!(o instanceof MqGlobalConfig)) return false;
-            MqGlobalConfig that = (MqGlobalConfig) o;
+            if (!(o instanceof RabbitMQManagementConfig)) return false;
+            RabbitMQManagementConfig that = (RabbitMQManagementConfig) o;
             return getPort() == that.getPort() &&
                     isPersistence() == that.isPersistence() &&
                     Objects.equals(getUsername(), that.getUsername()) &&
@@ -412,7 +412,7 @@ public enum OperatorConfig {
                     Objects.equals(getSchemaUserPermissions(), that.getSchemaUserPermissions());
         }
 
-        public static class MqGlobalConfigBuilder {
+        public static class RabbitMQManagementConfigBuilder {
 
             private String username;
             private String password;
@@ -421,41 +421,41 @@ public enum OperatorConfig {
             private boolean persistence;
             private MqSchemaUserPermissions schemaUserPermissions;
 
-            MqGlobalConfigBuilder() {
+            RabbitMQManagementConfigBuilder() {
             }
 
-            public MqGlobalConfigBuilder username(String username) {
+            public RabbitMQManagementConfigBuilder username(String username) {
                 this.username = username;
                 return this;
             }
 
-            public MqGlobalConfigBuilder password(String password) {
+            public RabbitMQManagementConfigBuilder password(String password) {
                 this.password = password;
                 return this;
             }
 
-            public MqGlobalConfigBuilder port(int port) {
+            public RabbitMQManagementConfigBuilder port(int port) {
                 this.port = port;
                 return this;
             }
 
-            public MqGlobalConfigBuilder host(String host) {
+            public RabbitMQManagementConfigBuilder host(String host) {
                 this.host = host;
                 return this;
             }
 
-            public MqGlobalConfigBuilder persistence(boolean persistence) {
+            public RabbitMQManagementConfigBuilder persistence(boolean persistence) {
                 this.persistence = persistence;
                 return this;
             }
 
-            public MqGlobalConfigBuilder schemaUserPermissions(MqSchemaUserPermissions schemaUserPermissions) {
+            public RabbitMQManagementConfigBuilder schemaUserPermissions(MqSchemaUserPermissions schemaUserPermissions) {
                 this.schemaUserPermissions = schemaUserPermissions;
                 return this;
             }
 
-            public MqGlobalConfig build() {
-                return new MqGlobalConfig(username, password, port, host, persistence, schemaUserPermissions);
+            public RabbitMQManagementConfig build() {
+                return new RabbitMQManagementConfig(username, password, port, host, persistence, schemaUserPermissions);
             }
         }
     }

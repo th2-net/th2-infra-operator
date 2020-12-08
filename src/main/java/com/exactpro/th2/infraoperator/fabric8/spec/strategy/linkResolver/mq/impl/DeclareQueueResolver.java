@@ -36,11 +36,11 @@ public class DeclareQueueResolver {
 
     private final ConnectionFactory connectionFactory;
 
-    private final OperatorConfig.MqGlobalConfig mqGlobalConfig;
+    private final OperatorConfig.RabbitMQManagementConfig rabbitMQManagementConfig;
 
     @SneakyThrows
     public DeclareQueueResolver() {
-        this.mqGlobalConfig = OperatorConfig.INSTANCE.getMqAuthConfig();
+        this.rabbitMQManagementConfig = OperatorConfig.INSTANCE.getRabbitMQManagementConfig();
         this.connectionFactory = new ConnectionFactory();
     }
 
@@ -48,8 +48,8 @@ public class DeclareQueueResolver {
 
         String namespace = ExtractUtils.extractNamespace(resource);
 
-        MqVHostUtils.createVHostIfAbsent(namespace, mqGlobalConfig);
-        createChannelIfAbsent(namespace, mqGlobalConfig, connectionFactory);
+        MqVHostUtils.createVHostIfAbsent(namespace, rabbitMQManagementConfig);
+        createChannelIfAbsent(namespace, rabbitMQManagementConfig, connectionFactory);
         declareQueueBunch(namespace, resource);
 
     }
@@ -70,7 +70,7 @@ public class DeclareQueueResolver {
         if (!channel.isOpen()) {
             logger.warn("RMQ connection is broken, trying to reconnect...");
             channelBunchMap.remove(namespace);
-            createChannelIfAbsent(namespace, mqGlobalConfig, connectionFactory);
+            createChannelIfAbsent(namespace, rabbitMQManagementConfig, connectionFactory);
             channel = channelBunchMap.get(namespace).getChannel();
             logger.info("RMQ connection has been restored");
         }
@@ -82,7 +82,7 @@ public class DeclareQueueResolver {
             getMqExchangeResets().put(namespace, true);
         }
 
-        channel.exchangeDeclare(rabbitMQConfig.getExchangeName(), "direct", mqGlobalConfig.isPersistence());
+        channel.exchangeDeclare(rabbitMQConfig.getExchangeName(), "direct", rabbitMQManagementConfig.isPersistence());
 
         for (var pin : ExtractUtils.extractMqPins(resource)) {
 
@@ -97,7 +97,7 @@ public class DeclareQueueResolver {
 
             if (!attrs.contains(DirectionAttribute.publish.name())) {
                 String queue = buildQueue(namespace, boxMq);
-                var declareResult = channel.queueDeclare(queue, mqGlobalConfig.isPersistence(), false, false, generateQueueArguments(pin.getSettings()));
+                var declareResult = channel.queueDeclare(queue, rabbitMQManagementConfig.isPersistence(), false, false, generateQueueArguments(pin.getSettings()));
                 logger.info("Queue '{}' of resource {} was successfully declared", declareResult.getQueue(), ExtractUtils.extractName(resource));
             }
         }
