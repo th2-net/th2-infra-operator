@@ -14,7 +14,6 @@
 package com.exactpro.th2.infraoperator.fabric8.configuration;
 
 import com.exactpro.th2.infraoperator.fabric8.util.Strings;
-import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -28,7 +27,6 @@ import java.io.IOException;
 import java.util.*;
 
 import static com.exactpro.th2.infraoperator.fabric8.util.JsonUtils.writeValueAsDeepMap;
-import static java.nio.charset.StandardCharsets.UTF_8;
 
 public enum OperatorConfig {
     INSTANCE;
@@ -311,153 +309,6 @@ public enum OperatorConfig {
 
             public ChartConfig build() {
                 return new ChartConfig(git, ref, path);
-            }
-        }
-    }
-
-    @JsonIgnoreProperties(ignoreUnknown = true)
-    public static class RabbitMQManagementConfig {
-
-        private String username;
-        private String password;
-        private int port;
-        private String host;
-        private boolean persistence;
-        @JsonProperty("schemaPermissions")
-        private RabbitMQNamespacePermissions rabbitMQNamespacePermissions;
-
-        protected RabbitMQManagementConfig() {
-            rabbitMQNamespacePermissions = new RabbitMQNamespacePermissions();
-        }
-
-        protected RabbitMQManagementConfig(String username, String password, int port, String host, boolean persistence,
-                                           RabbitMQNamespacePermissions rabbitMQNamespacePermissions) {
-            this.username = username;
-            this.password = password;
-            this.port = port;
-            this.host = host;
-            this.persistence = persistence;
-            this.rabbitMQNamespacePermissions = rabbitMQNamespacePermissions != null ?
-                rabbitMQNamespacePermissions : new RabbitMQNamespacePermissions();
-        }
-
-        @JsonIgnore
-        public String getEncoded() {
-            return Base64.getEncoder().encodeToString(String.format("%s:%s", username, password).getBytes(UTF_8));
-        }
-
-        public String getUsername() {
-            return username;
-        }
-
-        public void setUsername(String username) {
-            this.username = username;
-        }
-
-        public String getPassword() {
-            return password;
-        }
-
-        public void setPassword(String password) {
-            this.password = password;
-        }
-
-        public int getPort() {
-            return port;
-        }
-
-        public void setPort(int port) {
-            this.port = port;
-        }
-
-        public String getHost() {
-            return host;
-        }
-
-        public void setHost(String host) {
-            this.host = host;
-        }
-
-        public boolean isPersistence() {
-            return persistence;
-        }
-
-        public void setPersistence(boolean persistence) {
-            this.persistence = persistence;
-        }
-
-        public RabbitMQNamespacePermissions getRabbitMQNamespacePermissions() {
-            return rabbitMQNamespacePermissions;
-        }
-
-        public void setRabbitMQNamespacePermissions(RabbitMQNamespacePermissions rabbitMQNamespacePermissions) {
-            if (rabbitMQNamespacePermissions != null)
-                this.rabbitMQNamespacePermissions = rabbitMQNamespacePermissions;
-        }
-
-        public static RabbitMQManagementConfigBuilder builder() {
-            return new RabbitMQManagementConfigBuilder();
-        }
-
-        @Override
-        public boolean equals(Object o) {
-            if (this == o) return true;
-            if (!(o instanceof RabbitMQManagementConfig)) return false;
-            RabbitMQManagementConfig that = (RabbitMQManagementConfig) o;
-            return getPort() == that.getPort() &&
-                isPersistence() == that.isPersistence() &&
-                Objects.equals(getUsername(), that.getUsername()) &&
-                Objects.equals(getPassword(), that.getPassword()) &&
-                Objects.equals(getHost(), that.getHost()) &&
-                Objects.equals(getRabbitMQNamespacePermissions(), that.getRabbitMQNamespacePermissions());
-        }
-
-        public static class RabbitMQManagementConfigBuilder {
-
-            private String username;
-            private String password;
-            private int port;
-            private String host;
-            private boolean persistence;
-            private RabbitMQNamespacePermissions rabbitMQNamespacePermissions;
-
-            RabbitMQManagementConfigBuilder() {
-            }
-
-            public RabbitMQManagementConfigBuilder username(String username) {
-                this.username = username;
-                return this;
-            }
-
-            public RabbitMQManagementConfigBuilder password(String password) {
-                this.password = password;
-                return this;
-            }
-
-            public RabbitMQManagementConfigBuilder port(int port) {
-                this.port = port;
-                return this;
-            }
-
-            public RabbitMQManagementConfigBuilder host(String host) {
-                this.host = host;
-                return this;
-            }
-
-            public RabbitMQManagementConfigBuilder persistence(boolean persistence) {
-                this.persistence = persistence;
-                return this;
-            }
-
-            public RabbitMQManagementConfigBuilder rabbitMQNamespacePermissions(
-                RabbitMQNamespacePermissions rabbitMQNamespacePermissions) {
-                this.rabbitMQNamespacePermissions = rabbitMQNamespacePermissions;
-                return this;
-            }
-
-            public RabbitMQManagementConfig build() {
-                return new RabbitMQManagementConfig(username, password, port, host, persistence,
-                    rabbitMQNamespacePermissions);
             }
         }
     }

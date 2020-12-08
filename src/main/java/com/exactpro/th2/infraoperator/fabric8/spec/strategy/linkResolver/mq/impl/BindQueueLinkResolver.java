@@ -14,6 +14,7 @@
 package com.exactpro.th2.infraoperator.fabric8.spec.strategy.linkResolver.mq.impl;
 
 import com.exactpro.th2.infraoperator.fabric8.configuration.OperatorConfig;
+import com.exactpro.th2.infraoperator.fabric8.configuration.RabbitMQManagementConfig;
 import com.exactpro.th2.infraoperator.fabric8.model.box.schema.link.QueueBunch;
 import com.exactpro.th2.infraoperator.fabric8.model.box.schema.link.QueueLinkBunch;
 import com.exactpro.th2.infraoperator.fabric8.spec.Th2CustomResource;
@@ -28,9 +29,9 @@ import com.exactpro.th2.infraoperator.fabric8.spec.link.validator.chain.impl.Res
 import com.exactpro.th2.infraoperator.fabric8.spec.link.validator.model.DirectionalLinkContext;
 import com.exactpro.th2.infraoperator.fabric8.spec.shared.BoxDirection;
 import com.exactpro.th2.infraoperator.fabric8.spec.shared.PinSettings;
+import com.exactpro.th2.infraoperator.fabric8.spec.shared.SchemaConnectionType;
 import com.exactpro.th2.infraoperator.fabric8.spec.strategy.linkResolver.mq.QueueLinkResolver;
 import com.exactpro.th2.infraoperator.fabric8.spec.strategy.resFinder.box.BoxResourceFinder;
-import com.exactpro.th2.infraoperator.fabric8.spec.shared.SchemaConnectionType;
 import com.exactpro.th2.infraoperator.fabric8.util.ExtractUtils;
 import com.rabbitmq.client.Channel;
 import com.rabbitmq.client.ConnectionFactory;
@@ -56,7 +57,7 @@ public class BindQueueLinkResolver implements QueueLinkResolver {
 
     private final BoxResourceFinder resourceFinder;
 
-    private final OperatorConfig.RabbitMQManagementConfig rabbitMQManagementConfig;
+    private final RabbitMQManagementConfig rabbitMQManagementConfig;
 
     @SneakyThrows
     public BindQueueLinkResolver(BoxResourceFinder resourceFinder) {

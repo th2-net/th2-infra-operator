@@ -15,6 +15,7 @@ package com.exactpro.th2.infraoperator.fabric8.util;
 
 import com.exactpro.th2.infraoperator.fabric8.configuration.OperatorConfig;
 import com.exactpro.th2.infraoperator.fabric8.configuration.RabbitMQConfig;
+import com.exactpro.th2.infraoperator.fabric8.configuration.RabbitMQManagementConfig;
 import com.exactpro.th2.infraoperator.fabric8.configuration.RabbitMQNamespacePermissions;
 import com.exactpro.th2.infraoperator.fabric8.spec.strategy.linkResolver.ConfigNotFoundException;
 import com.exactpro.th2.infraoperator.fabric8.spec.strategy.linkResolver.VHostCreateException;
@@ -40,7 +41,7 @@ public class MqVHostUtils {
         );
     }
 
-    public static void createVHostIfAbsent(String namespace, OperatorConfig.RabbitMQManagementConfig rabbitMQManagementConfig) throws VHostCreateException {
+    public static void createVHostIfAbsent(String namespace, RabbitMQManagementConfig rabbitMQManagementConfig) throws VHostCreateException {
 
         RabbitMQConfig rabbitMQConfig = OperatorConfig.INSTANCE.getRabbitMQConfig4Namespace(namespace);
 
@@ -94,7 +95,7 @@ public class MqVHostUtils {
     }
 
 
-    public static void cleanupVHost(String namespace, OperatorConfig.RabbitMQManagementConfig rabbitMQManagementConfig) throws VHostCreateException {
+    public static void cleanupVHost(String namespace, RabbitMQManagementConfig rabbitMQManagementConfig) throws VHostCreateException {
 
         RabbitMQConfig rabbitMQConfig = OperatorConfig.INSTANCE.getRabbitMQConfig4Namespace(namespace);
 

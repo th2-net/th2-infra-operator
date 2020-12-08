@@ -15,6 +15,7 @@ package com.exactpro.th2.infraoperator.fabric8.spec.strategy.linkResolver.mq.imp
 
 import com.exactpro.th2.infraoperator.fabric8.configuration.OperatorConfig;
 import com.exactpro.th2.infraoperator.fabric8.configuration.RabbitMQConfig;
+import com.exactpro.th2.infraoperator.fabric8.configuration.RabbitMQManagementConfig;
 import com.exactpro.th2.infraoperator.fabric8.spec.Th2CustomResource;
 import com.exactpro.th2.infraoperator.fabric8.spec.link.relation.boxes.box.impl.BoxMq;
 import com.exactpro.th2.infraoperator.fabric8.spec.shared.DirectionAttribute;
@@ -36,7 +37,7 @@ public class DeclareQueueResolver {
 
     private final ConnectionFactory connectionFactory;
 
-    private final OperatorConfig.RabbitMQManagementConfig rabbitMQManagementConfig;
+    private final RabbitMQManagementConfig rabbitMQManagementConfig;
 
     @SneakyThrows
     public DeclareQueueResolver() {
