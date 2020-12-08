@@ -56,6 +56,10 @@ public enum OperatorConfig {
         return getFullConfig().getNamespacePrefixes();
     }
 
+    public String getK8sUrl() {
+        return getFullConfig().getK8sUrl();
+    }
+
     public String getRabbitMQSecretName() {
         return getSchemaSecrets().getRabbitMQ();
     }
@@ -94,12 +98,12 @@ public enum OperatorConfig {
     Configuration getConfig() {
         try (var in = new FileInputStream(System.getProperty(CONFIG_FILE_SYSTEM_PROPERTY, CONFIG_FILE))) {
             StringSubstitutor stringSubstitutor =
-                new StringSubstitutor(StringLookupFactory.INSTANCE.environmentVariableStringLookup());
+                    new StringSubstitutor(StringLookupFactory.INSTANCE.environmentVariableStringLookup());
             String content = stringSubstitutor.replace(new String(in.readAllBytes()));
             return new ObjectMapper(new YAMLFactory()).readValue(content, Configuration.class);
         } catch (IOException e) {
             throw new IllegalStateException(
-                "Exception reading configuration " + Configuration.class.getSimpleName(), e);
+                    "Exception reading configuration " + Configuration.class.getSimpleName(), e);
         }
     }
 
@@ -113,6 +117,7 @@ public enum OperatorConfig {
         private SchemaSecrets schemaSecrets;
         private List<String> namespacePrefixes;
         private String rabbitMQConfigMapName;
+        private String k8sUrl;
 
         public Configuration() {
             chartConfig = new ChartConfig();
@@ -120,6 +125,7 @@ public enum OperatorConfig {
             schemaSecrets = new SchemaSecrets();
             namespacePrefixes = new ArrayList<>();
             rabbitMQConfigMapName = DEFAULT_RABBITMQ_CONFIGMAP_NAME;
+            k8sUrl = "";
         }
 
         public ChartConfig getChartConfig() {
@@ -158,6 +164,14 @@ public enum OperatorConfig {
                 this.namespacePrefixes = namespacePrefixes;
         }
 
+        public String getK8sUrl() {
+            return k8sUrl;
+        }
+
+        public void setK8sUrl(String k8sUrl) {
+            this.k8sUrl = k8sUrl;
+        }
+
         public String getRabbitMQConfigMapName() {
             return rabbitMQConfigMapName;
         }
@@ -179,10 +193,11 @@ public enum OperatorConfig {
             if (!(o instanceof Configuration)) return false;
             Configuration that = (Configuration) o;
             return Objects.equals(getChartConfig(), that.getChartConfig()) &&
-                Objects.equals(getMqGlobalConfig(), that.getMqGlobalConfig()) &&
-                Objects.equals(getSchemaSecrets(), that.getSchemaSecrets()) &&
-                Objects.equals(getNamespacePrefixes(), that.getNamespacePrefixes()) &&
-                Objects.equals(getRabbitMQConfigMapName(), that.getRabbitMQConfigMapName());
+                    Objects.equals(getMqGlobalConfig(), that.getMqGlobalConfig()) &&
+                    Objects.equals(getSchemaSecrets(), that.getSchemaSecrets()) &&
+                    Objects.equals(getNamespacePrefixes(), that.getNamespacePrefixes()) &&
+                    Objects.equals(getRabbitMQConfigMapName(), that.getRabbitMQConfigMapName()) &&
+                    Objects.equals(getK8sUrl(), that.getK8sUrl());
         }
     }
 
@@ -216,10 +231,10 @@ public enum OperatorConfig {
 
         public static ChartConfig newInstance(ChartConfig config) {
             return ChartConfig.builder()
-                .git(config.getGit())
-                .ref(config.getRef())
-                .path(config.getPath())
-                .build();
+                    .git(config.getGit())
+                    .ref(config.getRef())
+                    .path(config.getPath())
+                    .build();
         }
 
         public static ChartConfigBuilder builder() {
@@ -261,8 +276,8 @@ public enum OperatorConfig {
             if (!(o instanceof ChartConfig)) return false;
             ChartConfig that = (ChartConfig) o;
             return Objects.equals(getGit(), that.getGit()) &&
-                Objects.equals(getRef(), that.getRef()) &&
-                Objects.equals(getPath(), that.getPath());
+                    Objects.equals(getRef(), that.getRef()) &&
+                    Objects.equals(getPath(), that.getPath());
         }
 
         @Override
@@ -323,7 +338,7 @@ public enum OperatorConfig {
             this.host = host;
             this.persistence = persistence;
             this.schemaUserPermissions =
-                schemaUserPermissions != null ? schemaUserPermissions : new MqSchemaUserPermissions();
+                    schemaUserPermissions != null ? schemaUserPermissions : new MqSchemaUserPermissions();
         }
 
         @JsonIgnore
@@ -390,11 +405,11 @@ public enum OperatorConfig {
             if (!(o instanceof MqGlobalConfig)) return false;
             MqGlobalConfig that = (MqGlobalConfig) o;
             return getPort() == that.getPort() &&
-                isPersistence() == that.isPersistence() &&
-                Objects.equals(getUsername(), that.getUsername()) &&
-                Objects.equals(getPassword(), that.getPassword()) &&
-                Objects.equals(getHost(), that.getHost()) &&
-                Objects.equals(getSchemaUserPermissions(), that.getSchemaUserPermissions());
+                    isPersistence() == that.isPersistence() &&
+                    Objects.equals(getUsername(), that.getUsername()) &&
+                    Objects.equals(getPassword(), that.getPassword()) &&
+                    Objects.equals(getHost(), that.getHost()) &&
+                    Objects.equals(getSchemaUserPermissions(), that.getSchemaUserPermissions());
         }
 
         public static class MqGlobalConfigBuilder {
@@ -502,8 +517,8 @@ public enum OperatorConfig {
             if (!(o instanceof MqSchemaUserPermissions)) return false;
             MqSchemaUserPermissions that = (MqSchemaUserPermissions) o;
             return Objects.equals(getConfigure(), that.getConfigure()) &&
-                Objects.equals(getRead(), that.getRead()) &&
-                Objects.equals(getWrite(), that.getWrite());
+                    Objects.equals(getRead(), that.getRead()) &&
+                    Objects.equals(getWrite(), that.getWrite());
         }
 
         public static class MqSchemaUserPermissionsBuilder {
