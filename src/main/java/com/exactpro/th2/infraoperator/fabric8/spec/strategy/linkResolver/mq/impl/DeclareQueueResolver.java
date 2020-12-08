@@ -14,6 +14,7 @@
 package com.exactpro.th2.infraoperator.fabric8.spec.strategy.linkResolver.mq.impl;
 
 import com.exactpro.th2.infraoperator.fabric8.configuration.OperatorConfig;
+import com.exactpro.th2.infraoperator.fabric8.configuration.RabbitMQConfig;
 import com.exactpro.th2.infraoperator.fabric8.spec.Th2CustomResource;
 import com.exactpro.th2.infraoperator.fabric8.spec.link.relation.boxes.box.impl.BoxMq;
 import com.exactpro.th2.infraoperator.fabric8.spec.shared.DirectionAttribute;
@@ -60,7 +61,7 @@ public class DeclareQueueResolver {
     @SneakyThrows
     private void declareQueueBunch(String namespace, Th2CustomResource resource) {
 
-        OperatorConfig.MqWorkSpaceConfig wsConfig = getWsConfig(namespace);
+        RabbitMQConfig rabbitMQConfig = getRabbitMQConfig(namespace);
 
         Map<String, RabbitMqStaticContext.ChannelBunch> channelBunchMap = getMqChannels();
 
@@ -77,11 +78,11 @@ public class DeclareQueueResolver {
         var exchangeReset = getMqExchangeResets().get(namespace);
 
         if (exchangeReset == null || !exchangeReset) {
-            channel.exchangeDelete(wsConfig.getExchangeName());
+            channel.exchangeDelete(rabbitMQConfig.getExchangeName());
             getMqExchangeResets().put(namespace, true);
         }
 
-        channel.exchangeDeclare(wsConfig.getExchangeName(), "direct", mqGlobalConfig.isPersistence());
+        channel.exchangeDeclare(rabbitMQConfig.getExchangeName(), "direct", mqGlobalConfig.isPersistence());
 
         for (var pin : ExtractUtils.extractMqPins(resource)) {
 
