@@ -39,7 +39,7 @@ public class BoxHelmTh2Op extends GenericHelmTh2Op<Th2Box> {
 
     @Override
     protected String getKubObjDefPath(Th2Box resource) {
-        return "/cr/helm/th2-box-helm-release-live.yml";
+        return "/Th2Box-HelmRelease.yml";
     }
 
 

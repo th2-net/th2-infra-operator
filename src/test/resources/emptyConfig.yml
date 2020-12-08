@@ -1,0 +1,20 @@
+namespacePrefixes:
+chart:
+  git:
+  path:
+  ref:
+rabbitMQManagement:
+  host:
+  port:
+  username:
+  password:
+  persistence:
+  schemaPermissions:
+    configure:
+    read:
+    write:
+configMaps:
+  rabbitMQ:
+schemaSecrets:
+  rabbitMQ:
+  cassandra:

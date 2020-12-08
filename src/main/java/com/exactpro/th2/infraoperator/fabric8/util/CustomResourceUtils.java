@@ -26,6 +26,7 @@ import io.fabric8.kubernetes.client.dsl.Resource;
 import io.fabric8.kubernetes.internal.KubernetesDeserializer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
 import java.util.List;
 
 
@@ -153,7 +154,10 @@ public final class CustomResourceUtils {
         public void eventReceived(Action action, T resource) {
             String namespace = resource.getMetadata().getNamespace();
             List<String> namespacePrefixes = OperatorConfig.INSTANCE.getNamespacePrefixes();
-            if (namespace != null && namespacePrefixes.stream().noneMatch(namespace::startsWith)) {
+            if (namespace != null
+                    && namespacePrefixes != null
+                    && namespacePrefixes.size() > 0
+                    && namespacePrefixes.stream().noneMatch(namespace::startsWith)) {
                 return;
             }
 
