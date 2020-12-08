@@ -13,7 +13,7 @@
 
 package com.exactpro.th2.infraoperator.fabric8.model.box.configuration.dictionary.factory.impl;
 
-import com.exactpro.th2.infraoperator.fabric8.model.box.configuration.dictionary.Dictionary;
+import com.exactpro.th2.infraoperator.fabric8.model.box.configuration.dictionary.DictionaryEntity;
 import com.exactpro.th2.infraoperator.fabric8.model.box.configuration.dictionary.factory.DictionaryFactory;
 import com.exactpro.th2.infraoperator.fabric8.spec.Th2CustomResource;
 import com.exactpro.th2.infraoperator.fabric8.spec.link.relation.dictionaries.bunch.DictionaryLinkBunch;
@@ -24,7 +24,7 @@ import java.util.List;
 public class EmptyDictionaryFactory implements DictionaryFactory {
 
     @Override
-    public List<Dictionary> create(Th2CustomResource resource, List<DictionaryLinkBunch> activeLinks) {
+    public List<DictionaryEntity> create(Th2CustomResource resource, List<DictionaryLinkBunch> activeLinks) {
         return new ArrayList<>();
     }
 

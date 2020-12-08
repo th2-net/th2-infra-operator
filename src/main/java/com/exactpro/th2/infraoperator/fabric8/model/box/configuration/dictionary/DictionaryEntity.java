@@ -13,13 +13,13 @@
 
 package com.exactpro.th2.infraoperator.fabric8.model.box.configuration.dictionary;
 
-public class Dictionary {
+public class DictionaryEntity {
 
     private String name;
     private String type;
     private String data;
 
-    Dictionary(String name, String type, String data) {
+    DictionaryEntity(String name, String type, String data) {
         this.name = name;
         this.type = type;
         this.data = data;
@@ -37,36 +37,36 @@ public class Dictionary {
         return this.data;
     }
 
-    public static DictionaryBuilder builder() {
-        return new DictionaryBuilder();
+    public static Builder builder() {
+        return new Builder();
     }
 
 
-    public static class DictionaryBuilder {
+    public static class Builder {
         private String name;
         private String type;
         private String data;
 
-        public DictionaryBuilder() {
+        public Builder() {
         }
 
-        public DictionaryBuilder name(String name) {
+        public Builder name(String name) {
             this.name = name;
             return this;
         }
 
-        public DictionaryBuilder type(String type) {
+        public Builder type(String type) {
             this.type = type;
             return this;
         }
 
-        public DictionaryBuilder data(String data) {
+        public Builder data(String data) {
             this.data = data;
             return this;
         }
 
-        public Dictionary build() {
-            return new Dictionary(name, type, data);
+        public DictionaryEntity build() {
+            return new DictionaryEntity(name, type, data);
         }
     }
 }

@@ -13,7 +13,7 @@
 
 package com.exactpro.th2.infraoperator.fabric8.model.box.configuration.dictionary.factory.impl;
 
-import com.exactpro.th2.infraoperator.fabric8.model.box.configuration.dictionary.Dictionary;
+import com.exactpro.th2.infraoperator.fabric8.model.box.configuration.dictionary.DictionaryEntity;
 import com.exactpro.th2.infraoperator.fabric8.model.box.configuration.dictionary.factory.DictionaryFactory;
 import com.exactpro.th2.infraoperator.fabric8.spec.Th2CustomResource;
 import com.exactpro.th2.infraoperator.fabric8.spec.dictionary.Th2Dictionary;
@@ -33,9 +33,9 @@ public class DefaultDictionaryFactory implements DictionaryFactory {
     }
 
     @Override
-    public List<Dictionary> create(Th2CustomResource resource, List<DictionaryLinkBunch> activeLinks) {
+    public List<DictionaryEntity> create(Th2CustomResource resource, List<DictionaryLinkBunch> activeLinks) {
 
-        List<Dictionary> dictionaries = new ArrayList<>();
+        List<DictionaryEntity> dictionaries = new ArrayList<>();
 
         activeLinks.forEach(link -> {
             try {
@@ -47,7 +47,7 @@ public class DefaultDictionaryFactory implements DictionaryFactory {
                     Th2Dictionary res = resourceFinder.getResource(name, resource.getMetadata().getNamespace());
                     String encodedData = new String(ArchiveUtils.getGZIPBase64Encoder().encodeString(res.getSpec().getData()));
 
-                    dictionaries.add(Dictionary.builder()
+                    dictionaries.add(DictionaryEntity.builder()
                             .name(name)
                             .type(type)
                             .data(encodedData)
