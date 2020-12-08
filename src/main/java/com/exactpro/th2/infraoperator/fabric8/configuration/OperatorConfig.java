@@ -98,12 +98,12 @@ public enum OperatorConfig {
     Configuration getConfig() {
         try (var in = new FileInputStream(System.getProperty(CONFIG_FILE_SYSTEM_PROPERTY, CONFIG_FILE))) {
             StringSubstitutor stringSubstitutor =
-                    new StringSubstitutor(StringLookupFactory.INSTANCE.environmentVariableStringLookup());
+                new StringSubstitutor(StringLookupFactory.INSTANCE.environmentVariableStringLookup());
             String content = stringSubstitutor.replace(new String(in.readAllBytes()));
             return new ObjectMapper(new YAMLFactory()).readValue(content, Configuration.class);
         } catch (IOException e) {
             throw new IllegalStateException(
-                    "Exception reading configuration " + Configuration.class.getSimpleName(), e);
+                "Exception reading configuration " + Configuration.class.getSimpleName(), e);
         }
     }
 
@@ -193,11 +193,11 @@ public enum OperatorConfig {
             if (!(o instanceof Configuration)) return false;
             Configuration that = (Configuration) o;
             return Objects.equals(getChartConfig(), that.getChartConfig()) &&
-                    Objects.equals(getRabbitMQManagementConfig(), that.getRabbitMQManagementConfig()) &&
-                    Objects.equals(getSchemaSecrets(), that.getSchemaSecrets()) &&
-                    Objects.equals(getNamespacePrefixes(), that.getNamespacePrefixes()) &&
-                    Objects.equals(getRabbitMQConfigMapName(), that.getRabbitMQConfigMapName()) &&
-                    Objects.equals(getK8sUrl(), that.getK8sUrl());
+                Objects.equals(getRabbitMQManagementConfig(), that.getRabbitMQManagementConfig()) &&
+                Objects.equals(getSchemaSecrets(), that.getSchemaSecrets()) &&
+                Objects.equals(getNamespacePrefixes(), that.getNamespacePrefixes()) &&
+                Objects.equals(getRabbitMQConfigMapName(), that.getRabbitMQConfigMapName()) &&
+                Objects.equals(getK8sUrl(), that.getK8sUrl());
         }
     }
 
@@ -231,10 +231,10 @@ public enum OperatorConfig {
 
         public static ChartConfig newInstance(ChartConfig config) {
             return ChartConfig.builder()
-                    .git(config.getGit())
-                    .ref(config.getRef())
-                    .path(config.getPath())
-                    .build();
+                .git(config.getGit())
+                .ref(config.getRef())
+                .path(config.getPath())
+                .build();
         }
 
         public static ChartConfigBuilder builder() {
@@ -276,8 +276,8 @@ public enum OperatorConfig {
             if (!(o instanceof ChartConfig)) return false;
             ChartConfig that = (ChartConfig) o;
             return Objects.equals(getGit(), that.getGit()) &&
-                    Objects.equals(getRef(), that.getRef()) &&
-                    Objects.equals(getPath(), that.getPath());
+                Objects.equals(getRef(), that.getRef()) &&
+                Objects.equals(getPath(), that.getPath());
         }
 
         @Override
@@ -337,8 +337,8 @@ public enum OperatorConfig {
             this.port = port;
             this.host = host;
             this.persistence = persistence;
-            this.rabbitMQNamespacePermissions =
-                    rabbitMQNamespacePermissions != null ? rabbitMQNamespacePermissions : new RabbitMQNamespacePermissions();
+            this.rabbitMQNamespacePermissions = rabbitMQNamespacePermissions != null ?
+                rabbitMQNamespacePermissions : new RabbitMQNamespacePermissions();
         }
 
         @JsonIgnore
@@ -405,11 +405,11 @@ public enum OperatorConfig {
             if (!(o instanceof RabbitMQManagementConfig)) return false;
             RabbitMQManagementConfig that = (RabbitMQManagementConfig) o;
             return getPort() == that.getPort() &&
-                    isPersistence() == that.isPersistence() &&
-                    Objects.equals(getUsername(), that.getUsername()) &&
-                    Objects.equals(getPassword(), that.getPassword()) &&
-                    Objects.equals(getHost(), that.getHost()) &&
-                    Objects.equals(getRabbitMQNamespacePermissions(), that.getRabbitMQNamespacePermissions());
+                isPersistence() == that.isPersistence() &&
+                Objects.equals(getUsername(), that.getUsername()) &&
+                Objects.equals(getPassword(), that.getPassword()) &&
+                Objects.equals(getHost(), that.getHost()) &&
+                Objects.equals(getRabbitMQNamespacePermissions(), that.getRabbitMQNamespacePermissions());
         }
 
         public static class RabbitMQManagementConfigBuilder {
@@ -449,104 +449,15 @@ public enum OperatorConfig {
                 return this;
             }
 
-            public RabbitMQManagementConfigBuilder rabbitMQNamespacePermissions(RabbitMQNamespacePermissions rabbitMQNamespacePermissions) {
+            public RabbitMQManagementConfigBuilder rabbitMQNamespacePermissions(
+                RabbitMQNamespacePermissions rabbitMQNamespacePermissions) {
                 this.rabbitMQNamespacePermissions = rabbitMQNamespacePermissions;
                 return this;
             }
 
             public RabbitMQManagementConfig build() {
-                return new RabbitMQManagementConfig(username, password, port, host, persistence, rabbitMQNamespacePermissions);
-            }
-        }
-    }
-
-    @JsonIgnoreProperties(ignoreUnknown = true)
-    public static class RabbitMQNamespacePermissions {
-
-        static final String DEFAULT_CONFIGURE_PERMISSION = "";
-        static final String DEFAULT_READ_PERMISSION = ".*";
-        static final String DEFAULT_WRITE_PERMISSION = ".*";
-
-        private String configure;
-        private String read;
-        private String write;
-
-        public RabbitMQNamespacePermissions() {
-            configure = DEFAULT_CONFIGURE_PERMISSION;
-            read = DEFAULT_READ_PERMISSION;
-            write = DEFAULT_WRITE_PERMISSION;
-        }
-
-        public RabbitMQNamespacePermissions(String configure, String read, String write) {
-            setConfigure(configure);
-            setRead(read);
-            setWrite(write);
-        }
-
-        public String getConfigure() {
-            return configure;
-        }
-
-        public void setConfigure(String configure) {
-            this.configure = (configure == null) ? "" : configure;
-        }
-
-        public String getRead() {
-            return read;
-        }
-
-        public void setRead(String read) {
-            this.read = (read == null) ? "" : read;
-        }
-
-        public String getWrite() {
-            return write;
-        }
-
-        public void setWrite(String write) {
-            this.write = (write == null) ? "" : write;
-        }
-
-        public static RabbitMQNamespacePermissionsBuilder builder() {
-            return new RabbitMQNamespacePermissionsBuilder();
-        }
-
-        @Override
-        public boolean equals(Object o) {
-            if (this == o) return true;
-            if (!(o instanceof RabbitMQNamespacePermissions)) return false;
-            RabbitMQNamespacePermissions that = (RabbitMQNamespacePermissions) o;
-            return Objects.equals(getConfigure(), that.getConfigure()) &&
-                    Objects.equals(getRead(), that.getRead()) &&
-                    Objects.equals(getWrite(), that.getWrite());
-        }
-
-        public static class RabbitMQNamespacePermissionsBuilder {
-
-            private String configure;
-            private String read;
-            private String write;
-
-            RabbitMQNamespacePermissionsBuilder() {
-            }
-
-            public RabbitMQNamespacePermissionsBuilder configure(String configure) {
-                this.configure = configure;
-                return this;
-            }
-
-            public RabbitMQNamespacePermissionsBuilder read(String read) {
-                this.read = read;
-                return this;
-            }
-
-            public RabbitMQNamespacePermissionsBuilder write(String write) {
-                this.write = write;
-                return this;
-            }
-
-            public RabbitMQNamespacePermissions build() {
-                return new RabbitMQNamespacePermissions(configure, read, write);
+                return new RabbitMQManagementConfig(username, password, port, host, persistence,
+                    rabbitMQNamespacePermissions);
             }
         }
     }

@@ -16,7 +16,6 @@ package com.exactpro.th2.infraoperator.fabric8.configuration;
 import com.exactpro.th2.infraoperator.fabric8.configuration.OperatorConfig.ChartConfig;
 import com.exactpro.th2.infraoperator.fabric8.configuration.OperatorConfig.Configuration;
 import com.exactpro.th2.infraoperator.fabric8.configuration.OperatorConfig.RabbitMQManagementConfig;
-import com.exactpro.th2.infraoperator.fabric8.configuration.OperatorConfig.RabbitMQNamespacePermissions;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 
@@ -112,16 +111,17 @@ public class TestConfiguration {
         Assertions.assertNull(OperatorConfig.INSTANCE.getConfig().getChartConfig().getPath());
 
         Assertions.assertNull(OperatorConfig.INSTANCE.getConfig().getRabbitMQManagementConfig().getHost());
-        Assertions.assertEquals(0, OperatorConfig.INSTANCE.getConfig().getRabbitMQManagementConfig().getPort());
+        Assertions.assertEquals(0,
+            OperatorConfig.INSTANCE.getConfig().getRabbitMQManagementConfig().getPort());
         Assertions.assertNull(OperatorConfig.INSTANCE.getConfig().getRabbitMQManagementConfig().getUsername());
         Assertions.assertNull(OperatorConfig.INSTANCE.getConfig().getRabbitMQManagementConfig().getPassword());
         Assertions.assertFalse(OperatorConfig.INSTANCE.getConfig().getRabbitMQManagementConfig().isPersistence());
-        Assertions.assertEquals(RabbitMQNamespacePermissions.DEFAULT_CONFIGURE_PERMISSION,
-            OperatorConfig.INSTANCE.getConfig().getRabbitMQManagementConfig().getRabbitMQNamespacePermissions().getConfigure());
-        Assertions.assertEquals(RabbitMQNamespacePermissions.DEFAULT_READ_PERMISSION,
-            OperatorConfig.INSTANCE.getConfig().getRabbitMQManagementConfig().getRabbitMQNamespacePermissions().getRead());
-        Assertions.assertEquals(RabbitMQNamespacePermissions.DEFAULT_WRITE_PERMISSION,
-            OperatorConfig.INSTANCE.getConfig().getRabbitMQManagementConfig().getRabbitMQNamespacePermissions().getWrite());
+        Assertions.assertEquals(RabbitMQNamespacePermissions.DEFAULT_CONFIGURE_PERMISSION, OperatorConfig.INSTANCE
+            .getConfig().getRabbitMQManagementConfig().getRabbitMQNamespacePermissions().getConfigure());
+        Assertions.assertEquals(RabbitMQNamespacePermissions.DEFAULT_READ_PERMISSION, OperatorConfig.INSTANCE
+            .getConfig().getRabbitMQManagementConfig().getRabbitMQNamespacePermissions().getRead());
+        Assertions.assertEquals(RabbitMQNamespacePermissions.DEFAULT_WRITE_PERMISSION, OperatorConfig.INSTANCE
+            .getConfig().getRabbitMQManagementConfig().getRabbitMQNamespacePermissions().getWrite());
 
         Assertions.assertEquals(OperatorConfig.DEFAULT_RABBITMQ_CONFIGMAP_NAME,
             OperatorConfig.INSTANCE.getConfig().getRabbitMQConfigMapName());

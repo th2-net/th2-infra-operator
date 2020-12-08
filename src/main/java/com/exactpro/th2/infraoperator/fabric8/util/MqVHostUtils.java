@@ -15,6 +15,7 @@ package com.exactpro.th2.infraoperator.fabric8.util;
 
 import com.exactpro.th2.infraoperator.fabric8.configuration.OperatorConfig;
 import com.exactpro.th2.infraoperator.fabric8.configuration.RabbitMQConfig;
+import com.exactpro.th2.infraoperator.fabric8.configuration.RabbitMQNamespacePermissions;
 import com.exactpro.th2.infraoperator.fabric8.spec.strategy.linkResolver.ConfigNotFoundException;
 import com.exactpro.th2.infraoperator.fabric8.spec.strategy.linkResolver.VHostCreateException;
 import com.rabbitmq.http.client.Client;
@@ -76,7 +77,7 @@ public class MqVHostUtils {
                 logger.info("Created user \"{}\" in RabbitMQ for namespace \"{}\"", username, namespace);
 
                 // set permissions
-                OperatorConfig.RabbitMQNamespacePermissions rabbitMQNamespacePermissions = rabbitMQManagementConfig.getRabbitMQNamespacePermissions();
+                RabbitMQNamespacePermissions rabbitMQNamespacePermissions = rabbitMQManagementConfig.getRabbitMQNamespacePermissions();
                 UserPermissions permissions = new UserPermissions();
                 permissions.setConfigure(rabbitMQNamespacePermissions.getConfigure());
                 permissions.setRead(rabbitMQNamespacePermissions.getRead());
