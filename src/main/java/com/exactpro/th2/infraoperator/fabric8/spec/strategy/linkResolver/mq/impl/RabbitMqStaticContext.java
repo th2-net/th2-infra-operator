@@ -16,6 +16,7 @@ package com.exactpro.th2.infraoperator.fabric8.spec.strategy.linkResolver.mq.imp
 import com.exactpro.th2.infraoperator.fabric8.configuration.OperatorConfig;
 import com.exactpro.th2.infraoperator.fabric8.configuration.RabbitMQConfig;
 import com.exactpro.th2.infraoperator.fabric8.configuration.RabbitMQManagementConfig;
+import com.exactpro.th2.infraoperator.fabric8.model.kubernetes.configmaps.ConfigMaps;
 import com.exactpro.th2.infraoperator.fabric8.spec.shared.PinSettings;
 import com.exactpro.th2.infraoperator.fabric8.spec.strategy.linkResolver.ConfigNotFoundException;
 import com.rabbitmq.client.Channel;
@@ -66,7 +67,7 @@ public class RabbitMqStaticContext {
 
     public static RabbitMQConfig getRabbitMQConfig(String namespace) throws ConfigNotFoundException {
 
-        RabbitMQConfig rabbitMQConfig = OperatorConfig.INSTANCE.getRabbitMQConfig4Namespace(namespace);
+        RabbitMQConfig rabbitMQConfig = ConfigMaps.INSTANCE.getRabbitMQConfig4Namespace(namespace);
 
         if (rabbitMQConfig == null) {
 

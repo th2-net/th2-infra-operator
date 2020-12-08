@@ -22,6 +22,7 @@ import com.exactpro.th2.infraoperator.fabric8.model.box.configuration.grpc.facto
 import com.exactpro.th2.infraoperator.fabric8.model.kubernetes.client.ResourceClient;
 import com.exactpro.th2.infraoperator.fabric8.model.kubernetes.client.ipml.DictionaryClient;
 import com.exactpro.th2.infraoperator.fabric8.model.kubernetes.client.ipml.LinkClient;
+import com.exactpro.th2.infraoperator.fabric8.model.kubernetes.configmaps.ConfigMaps;
 import com.exactpro.th2.infraoperator.fabric8.operator.HelmReleaseTh2Op;
 import com.exactpro.th2.infraoperator.fabric8.operator.context.HelmOperatorContext;
 import com.exactpro.th2.infraoperator.fabric8.spec.Th2CustomResource;
@@ -413,7 +414,8 @@ public class DefaultWatchManager {
                 if (configMapName.equals(OperatorConfig.INSTANCE.getRabbitMQConfigMapName())) {
                     synchronized (LinkSingleton.INSTANCE.getLock(namespace)) {
                         OperatorConfig opConfig = OperatorConfig.INSTANCE;
-                        RabbitMQConfig rabbitMQConfig = opConfig.getRabbitMQConfig4Namespace(namespace);
+                        ConfigMaps configMaps = ConfigMaps.INSTANCE;
+                        RabbitMQConfig rabbitMQConfig = configMaps.getRabbitMQConfig4Namespace(namespace);
 
                         String configContent = configMap.getData().get(CONFIG_MAP_RABBITMQ_PROP_NAME);
                         if (Strings.isNullOrEmpty(configContent)) {
@@ -425,7 +427,7 @@ public class DefaultWatchManager {
                         newRabbitMQConfig.setPassword(readRabbitMQPasswordForSchema(client, namespace, opConfig.getRabbitMQSecretName()));
 
                         if (!Objects.equals(rabbitMQConfig, newRabbitMQConfig)) {
-                            opConfig.setRabbitMQConfig4Namespace(namespace, newRabbitMQConfig);
+                            configMaps.setRabbitMQConfig4Namespace(namespace, newRabbitMQConfig);
                             MqVHostUtils.createVHostIfAbsent(namespace, opConfig.getRabbitMQManagementConfig());
                             logger.info("RabbitMQ ConfigMap has been updated in namespace \"%s\". Updating all boxes", namespace);
                             int refreshedBoxesCount = refreshBoxes(namespace);
