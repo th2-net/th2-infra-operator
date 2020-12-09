@@ -25,9 +25,9 @@ public class RabbitMQNamespacePermissions {
     }
 
     public RabbitMQNamespacePermissions(String configure, String read, String write) {
-        this.configure = configure == null ? "" : configure;
-        this.read = read == null ? "" : read;
-        this.write = write == null ? "" : write;
+        this.configure = configure != null ? configure : DEFAULT_CONFIGURE_PERMISSION;
+        this.read = read != null ? read : DEFAULT_READ_PERMISSION;
+        this.write = write != null ? write : DEFAULT_WRITE_PERMISSION;
     }
 
     public String getConfigure() {
