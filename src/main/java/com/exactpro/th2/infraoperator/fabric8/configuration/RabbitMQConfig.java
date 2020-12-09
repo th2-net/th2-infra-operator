@@ -49,40 +49,20 @@ public class RabbitMQConfig {
         return port;
     }
 
-    public void setPort(int port) {
-        this.port = port;
-    }
-
     public String getHost() {
         return host;
-    }
-
-    public void setHost(String host) {
-        this.host = host;
     }
 
     public String getVHost() {
         return vHost;
     }
 
-    public void setVHost(String vHost) {
-        this.vHost = vHost;
-    }
-
     public String getExchangeName() {
         return exchangeName;
     }
 
-    public void setExchangeName(String exchangeName) {
-        this.exchangeName = exchangeName;
-    }
-
     public String getUsername() {
         return username;
-    }
-
-    public void setUsername(String username) {
-        this.username = username;
     }
 
     public String getPassword() {
