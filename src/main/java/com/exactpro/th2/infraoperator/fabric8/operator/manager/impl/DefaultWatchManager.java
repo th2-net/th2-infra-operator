@@ -424,7 +424,7 @@ public class DefaultWatchManager {
                         }
 
                         RabbitMQConfig newRabbitMQConfig = JSON_READER.readValue(configContent, RabbitMQConfig.class);
-                        newRabbitMQConfig.setPassword(readRabbitMQPasswordForSchema(client, namespace, opConfig.getRabbitMQSecretName()));
+                        newRabbitMQConfig.setPassword(readRabbitMQPasswordForSchema(client, namespace, opConfig.getSchemaSecrets().getRabbitMQ()));
 
                         if (!Objects.equals(rabbitMQConfig, newRabbitMQConfig)) {
                             configMaps.setRabbitMQConfig4Namespace(namespace, newRabbitMQConfig);
