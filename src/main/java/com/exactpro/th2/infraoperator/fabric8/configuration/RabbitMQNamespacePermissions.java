@@ -1,9 +1,12 @@
 package com.exactpro.th2.infraoperator.fabric8.configuration;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
+import com.fasterxml.jackson.databind.annotation.JsonPOJOBuilder;
 
 import java.util.Objects;
 
+@JsonDeserialize(builder = RabbitMQNamespacePermissions.RabbitMQNamespacePermissionsBuilder.class)
 @JsonIgnoreProperties(ignoreUnknown = true)
 public class RabbitMQNamespacePermissions {
 
@@ -22,33 +25,21 @@ public class RabbitMQNamespacePermissions {
     }
 
     public RabbitMQNamespacePermissions(String configure, String read, String write) {
-        setConfigure(configure);
-        setRead(read);
-        setWrite(write);
+        this.configure = configure == null ? "" : configure;
+        this.read = read == null ? "" : read;
+        this.write = write == null ? "" : write;
     }
 
     public String getConfigure() {
         return configure;
     }
 
-    public void setConfigure(String configure) {
-        this.configure = (configure == null) ? "" : configure;
-    }
-
     public String getRead() {
         return read;
     }
 
-    public void setRead(String read) {
-        this.read = (read == null) ? "" : read;
-    }
-
     public String getWrite() {
         return write;
-    }
-
-    public void setWrite(String write) {
-        this.write = (write == null) ? "" : write;
     }
 
     public static RabbitMQNamespacePermissionsBuilder builder() {
@@ -65,6 +56,7 @@ public class RabbitMQNamespacePermissions {
             Objects.equals(getWrite(), that.getWrite());
     }
 
+    @JsonPOJOBuilder(withPrefix = "")
     public static class RabbitMQNamespacePermissionsBuilder {
 
         private String configure;
