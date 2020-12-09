@@ -44,49 +44,24 @@ public class RabbitMQManagementConfig {
         return username;
     }
 
-    public void setUsername(String username) {
-        this.username = username;
-    }
-
     public String getPassword() {
         return password;
-    }
-
-    public void setPassword(String password) {
-        this.password = password;
     }
 
     public int getPort() {
         return port;
     }
 
-    public void setPort(int port) {
-        this.port = port;
-    }
-
     public String getHost() {
         return host;
-    }
-
-    public void setHost(String host) {
-        this.host = host;
     }
 
     public boolean isPersistence() {
         return persistence;
     }
 
-    public void setPersistence(boolean persistence) {
-        this.persistence = persistence;
-    }
-
     public RabbitMQNamespacePermissions getRabbitMQNamespacePermissions() {
         return rabbitMQNamespacePermissions;
-    }
-
-    public void setRabbitMQNamespacePermissions(RabbitMQNamespacePermissions rabbitMQNamespacePermissions) {
-        if (rabbitMQNamespacePermissions != null)
-            this.rabbitMQNamespacePermissions = rabbitMQNamespacePermissions;
     }
 
     public static RabbitMQManagementConfigBuilder builder() {
