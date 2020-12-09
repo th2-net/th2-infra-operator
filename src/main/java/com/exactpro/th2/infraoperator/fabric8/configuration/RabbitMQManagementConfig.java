@@ -3,12 +3,15 @@ package com.exactpro.th2.infraoperator.fabric8.configuration;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonProperty;
+import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
+import com.fasterxml.jackson.databind.annotation.JsonPOJOBuilder;
 
 import java.util.Base64;
 import java.util.Objects;
 
 import static java.nio.charset.StandardCharsets.UTF_8;
 
+@JsonDeserialize(builder = RabbitMQManagementConfig.RabbitMQManagementConfigBuilder.class)
 @JsonIgnoreProperties(ignoreUnknown = true)
 public class RabbitMQManagementConfig {
 
@@ -17,7 +20,6 @@ public class RabbitMQManagementConfig {
     private int port;
     private String host;
     private boolean persistence;
-    @JsonProperty("schemaPermissions")
     private RabbitMQNamespacePermissions rabbitMQNamespacePermissions;
 
     protected RabbitMQManagementConfig() {
@@ -81,6 +83,7 @@ public class RabbitMQManagementConfig {
             Objects.equals(getRabbitMQNamespacePermissions(), that.getRabbitMQNamespacePermissions());
     }
 
+    @JsonPOJOBuilder(withPrefix = "")
     public static class RabbitMQManagementConfigBuilder {
 
         private String username;
@@ -88,6 +91,7 @@ public class RabbitMQManagementConfig {
         private int port;
         private String host;
         private boolean persistence;
+        @JsonProperty("schemaPermissions")
         private RabbitMQNamespacePermissions rabbitMQNamespacePermissions;
 
         RabbitMQManagementConfigBuilder() {
