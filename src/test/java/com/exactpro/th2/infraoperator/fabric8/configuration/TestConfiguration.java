@@ -92,9 +92,6 @@ public class TestConfiguration {
     void testEmptyConfig() {
         beforeEach("src/test/resources/emptyConfig.yml");
 
-        expected.setRabbitMQManagementConfig(RabbitMQManagementConfig.builder().rabbitMQNamespacePermissions(
-            RabbitMQNamespacePermissions.builder().read("").write("").build()).build());
-
         Assertions.assertEquals(expected, OperatorConfig.INSTANCE.getConfig());
     }
 
