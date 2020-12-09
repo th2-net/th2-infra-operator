@@ -125,9 +125,9 @@ public class TestConfiguration {
         Assertions.assertEquals(OperatorConfig.DEFAULT_RABBITMQ_CONFIGMAP_NAME,
             OperatorConfig.INSTANCE.getConfig().getRabbitMQConfigMapName());
 
-        Assertions.assertEquals(OperatorConfig.DEFAULT_RABBITMQ_SECRET,
+        Assertions.assertEquals(SchemaSecrets.DEFAULT_RABBITMQ_SECRET,
             OperatorConfig.INSTANCE.getConfig().getSchemaSecrets().getRabbitMQ());
-        Assertions.assertEquals(OperatorConfig.DEFAULT_CASSANDRA_SECRET,
+        Assertions.assertEquals(SchemaSecrets.DEFAULT_CASSANDRA_SECRET,
             OperatorConfig.INSTANCE.getConfig().getSchemaSecrets().getCassandra());
     }
 }

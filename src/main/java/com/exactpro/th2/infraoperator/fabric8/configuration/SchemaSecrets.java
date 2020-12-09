@@ -17,11 +17,11 @@ import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 
 import java.util.Objects;
 
-import static com.exactpro.th2.infraoperator.fabric8.configuration.OperatorConfig.DEFAULT_CASSANDRA_SECRET;
-import static com.exactpro.th2.infraoperator.fabric8.configuration.OperatorConfig.DEFAULT_RABBITMQ_SECRET;
-
 @JsonIgnoreProperties(ignoreUnknown = true)
 public class SchemaSecrets {
+
+    public static final String DEFAULT_RABBITMQ_SECRET = "rabbitmq";
+    public static final String DEFAULT_CASSANDRA_SECRET = "cassandra";
 
     private String rabbitMQ;
     private String cassandra;

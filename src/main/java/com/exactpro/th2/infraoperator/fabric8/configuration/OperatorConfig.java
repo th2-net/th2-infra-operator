@@ -20,11 +20,13 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.dataformat.yaml.YAMLFactory;
 import org.apache.commons.text.StringSubstitutor;
 import org.apache.commons.text.lookup.StringLookupFactory;
-import org.jetbrains.annotations.Nullable;
 
 import java.io.FileInputStream;
 import java.io.IOException;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Map;
+import java.util.Objects;
 
 import static com.exactpro.th2.infraoperator.fabric8.util.JsonUtils.writeValueAsDeepMap;
 
@@ -33,8 +35,6 @@ public enum OperatorConfig {
 
     public static final String QUEUE_PREFIX = "queue_";
     public static final String ROUTING_KEY_PREFIX = "routing-key_";
-    public static final String DEFAULT_RABBITMQ_SECRET = "rabbitmq";
-    public static final String DEFAULT_CASSANDRA_SECRET = "cassandra";
     public static final String RABBITMQ_SECRET_PASSWORD_KEY = "rabbitmq-password";
     public static final String RABBITMQ_SECRET_USERNAME_KEY = "rabbitmq-username";
     public static final String CONFIG_FILE_SYSTEM_PROPERTY = "infra.operator.config";
