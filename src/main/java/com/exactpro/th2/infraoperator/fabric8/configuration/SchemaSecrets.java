@@ -14,9 +14,12 @@
 package com.exactpro.th2.infraoperator.fabric8.configuration;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
+import com.fasterxml.jackson.databind.annotation.JsonPOJOBuilder;
 
 import java.util.Objects;
 
+@JsonDeserialize(builder = SchemaSecrets.SchemaSecretsBuilder.class)
 @JsonIgnoreProperties(ignoreUnknown = true)
 public class SchemaSecrets {
 
@@ -31,24 +34,16 @@ public class SchemaSecrets {
     }
 
     public SchemaSecrets(String rabbitMQ, String cassandra) {
-        setRabbitMQ(rabbitMQ);
-        setCassandra(cassandra);
+        this.rabbitMQ = rabbitMQ != null ? rabbitMQ : DEFAULT_RABBITMQ_SECRET;
+        this.cassandra = cassandra != null ? cassandra : DEFAULT_CASSANDRA_SECRET;
     }
 
     public String getRabbitMQ() {
         return rabbitMQ;
     }
 
-    public void setRabbitMQ(String rabbitMQ) {
-        this.rabbitMQ = rabbitMQ != null ? rabbitMQ : DEFAULT_RABBITMQ_SECRET;
-    }
-
     public String getCassandra() {
         return cassandra;
-    }
-
-    public void setCassandra(String cassandra) {
-        this.cassandra = cassandra != null ? cassandra : DEFAULT_CASSANDRA_SECRET;
     }
 
     public static SchemaSecretsBuilder builder() {
@@ -64,6 +59,7 @@ public class SchemaSecrets {
             Objects.equals(getCassandra(), that.getCassandra());
     }
 
+    @JsonPOJOBuilder(withPrefix = "")
     public static class SchemaSecretsBuilder {
 
         private String rabbitMQ;
