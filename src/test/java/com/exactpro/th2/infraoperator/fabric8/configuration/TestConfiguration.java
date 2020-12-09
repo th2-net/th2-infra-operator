@@ -13,7 +13,6 @@
 
 package com.exactpro.th2.infraoperator.fabric8.configuration;
 
-import com.exactpro.th2.infraoperator.fabric8.configuration.OperatorConfig.ChartConfig;
 import com.exactpro.th2.infraoperator.fabric8.configuration.OperatorConfig.Configuration;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;

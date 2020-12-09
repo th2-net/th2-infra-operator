@@ -13,7 +13,6 @@
 
 package com.exactpro.th2.infraoperator.fabric8.configuration;
 
-import com.exactpro.th2.infraoperator.fabric8.util.Strings;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -27,8 +26,6 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
-
-import static com.exactpro.th2.infraoperator.fabric8.util.JsonUtils.writeValueAsDeepMap;
 
 public enum OperatorConfig {
     INSTANCE;
@@ -185,120 +182,6 @@ public enum OperatorConfig {
                 Objects.equals(getNamespacePrefixes(), that.getNamespacePrefixes()) &&
                 Objects.equals(getRabbitMQConfigMapName(), that.getRabbitMQConfigMapName()) &&
                 Objects.equals(getK8sUrl(), that.getK8sUrl());
-        }
-    }
-
-    @JsonIgnoreProperties(ignoreUnknown = true)
-    public static class ChartConfig {
-
-        private String git;
-        private String ref;
-        private String path;
-
-        protected ChartConfig() {
-        }
-
-        protected ChartConfig(String git, String ref, String path) {
-            this.git = git;
-            this.ref = ref;
-            this.path = path;
-        }
-
-        public String getGit() {
-            return git;
-        }
-
-        public String getRef() {
-            return ref;
-        }
-
-        public String getPath() {
-            return path;
-        }
-
-        public static ChartConfig newInstance(ChartConfig config) {
-            return ChartConfig.builder()
-                .git(config.getGit())
-                .ref(config.getRef())
-                .path(config.getPath())
-                .build();
-        }
-
-        public static ChartConfigBuilder builder() {
-            return new ChartConfigBuilder();
-        }
-
-        public ChartConfig updateWithAndCreate(ChartConfig chartConfig) {
-
-            var config = ChartConfig.newInstance(this);
-
-            if (!Strings.isNullOrEmpty(chartConfig.getGit()))
-                config.git = chartConfig.getGit();
-
-            if (!Strings.isNullOrEmpty(chartConfig.getRef()))
-                config.ref = chartConfig.getRef();
-
-            if (!Strings.isNullOrEmpty(chartConfig.getPath()))
-                config.path = chartConfig.getPath();
-
-            return config;
-        }
-
-        public Map<String, Object> toMap() {
-            try {
-                return writeValueAsDeepMap(this);
-            } catch (IllegalArgumentException e) {
-                throw new IllegalArgumentException("Exception converting object", e);
-            }
-        }
-
-        @Override
-        public String toString() {
-            return "ChartConfig{" + "git='" + git + '\'' + ", ref='" + ref + '\'' + ", path='" + path + '\'' + '}';
-        }
-
-        @Override
-        public boolean equals(Object o) {
-            if (this == o) return true;
-            if (!(o instanceof ChartConfig)) return false;
-            ChartConfig that = (ChartConfig) o;
-            return Objects.equals(getGit(), that.getGit()) &&
-                Objects.equals(getRef(), that.getRef()) &&
-                Objects.equals(getPath(), that.getPath());
-        }
-
-        @Override
-        public int hashCode() {
-            return Objects.hash(getGit(), getRef(), getPath());
-        }
-
-        public static class ChartConfigBuilder {
-
-            private String git;
-            private String ref;
-            private String path;
-
-            ChartConfigBuilder() {
-            }
-
-            public ChartConfigBuilder git(String git) {
-                this.git = git;
-                return this;
-            }
-
-            public ChartConfigBuilder ref(String ref) {
-                this.ref = ref;
-                return this;
-            }
-
-            public ChartConfigBuilder path(String path) {
-                this.path = path;
-                return this;
-            }
-
-            public ChartConfig build() {
-                return new ChartConfig(git, ref, path);
-            }
         }
     }
 }
