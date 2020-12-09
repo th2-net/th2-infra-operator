@@ -129,4 +129,12 @@ public class TestConfiguration {
         Assertions.assertEquals(SchemaSecrets.DEFAULT_CASSANDRA_SECRET,
             OperatorConfig.INSTANCE.getConfig().getSchemaSecrets().getCassandra());
     }
+
+    @Test
+    void testSchemaPermissionsDefaultConfig() {
+        beforeEach("src/test/resources/schemaPermissionsDefaultConfig.yml");
+
+        Assertions.assertEquals(new RabbitMQNamespacePermissions(),
+            OperatorConfig.INSTANCE.getConfig().getRabbitMQManagementConfig().getRabbitMQNamespacePermissions());
+    }
 }
