@@ -89,11 +89,6 @@ public class ChartConfig implements Cloneable {
             Objects.equals(getPath(), that.getPath());
     }
 
-    @Override
-    public int hashCode() {
-        return Objects.hash(getGit(), getRef(), getPath());
-    }
-
     public static class ChartConfigBuilder {
 
         private String git;
