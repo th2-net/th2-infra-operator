@@ -53,7 +53,6 @@ public class ChartConfig implements Cloneable {
     }
 
     public ChartConfig overrideWith(ChartConfig chartConfig) {
-
         try {
             ChartConfig overriddenConfig = (ChartConfig) super.clone();
 
@@ -78,11 +77,6 @@ public class ChartConfig implements Cloneable {
         } catch (IllegalArgumentException e) {
             throw new IllegalArgumentException("Exception converting object", e);
         }
-    }
-
-    @Override
-    public String toString() {
-        return "ChartConfig{" + "git='" + git + '\'' + ", ref='" + ref + '\'' + ", path='" + path + '\'' + '}';
     }
 
     @Override
