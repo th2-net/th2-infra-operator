@@ -1,15 +1,11 @@
 package com.exactpro.th2.infraoperator.fabric8.configuration;
 
-import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import com.fasterxml.jackson.databind.annotation.JsonPOJOBuilder;
 
-import java.util.Base64;
 import java.util.Objects;
-
-import static java.nio.charset.StandardCharsets.UTF_8;
 
 @JsonDeserialize(builder = RabbitMQManagementConfig.RabbitMQManagementConfigBuilder.class)
 @JsonIgnoreProperties(ignoreUnknown = true)
@@ -35,11 +31,6 @@ public class RabbitMQManagementConfig {
         this.persistence = persistence;
         this.rabbitMQNamespacePermissions = rabbitMQNamespacePermissions != null ?
             rabbitMQNamespacePermissions : new RabbitMQNamespacePermissions();
-    }
-
-    @JsonIgnore
-    public String getEncoded() {
-        return Base64.getEncoder().encodeToString(String.format("%s:%s", username, password).getBytes(UTF_8));
     }
 
     public String getUsername() {
