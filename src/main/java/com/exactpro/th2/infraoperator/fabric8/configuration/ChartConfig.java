@@ -20,9 +20,8 @@ import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import java.util.Map;
 import java.util.Objects;
 
-
 @JsonIgnoreProperties(ignoreUnknown = true)
-public class ChartConfig {
+public class ChartConfig implements Cloneable {
 
     private String git;
     private String ref;
@@ -49,33 +48,28 @@ public class ChartConfig {
         return path;
     }
 
-    public static ChartConfig newInstance(ChartConfig config) {
-        return ChartConfig.builder()
-            .git(config.getGit())
-            .ref(config.getRef())
-            .path(config.getPath())
-            .build();
-    }
-
     public static ChartConfigBuilder builder() {
         return new ChartConfigBuilder();
     }
 
-
     public ChartConfig overrideWith(ChartConfig chartConfig) {
 
-        ChartConfig overridenConfig = ChartConfig.newInstance(this);
+        try {
+            ChartConfig overridenConfig = (ChartConfig) super.clone();
 
-        if (!Strings.isNullOrEmpty(chartConfig.getGit()))
-            overridenConfig.git = chartConfig.getGit();
+            if (!Strings.isNullOrEmpty(chartConfig.getGit()))
+                overridenConfig.git = chartConfig.getGit();
 
-        if (!Strings.isNullOrEmpty(chartConfig.getRef()))
-            overridenConfig.ref = chartConfig.getRef();
+            if (!Strings.isNullOrEmpty(chartConfig.getRef()))
+                overridenConfig.ref = chartConfig.getRef();
 
-        if (!Strings.isNullOrEmpty(chartConfig.getPath()))
-            overridenConfig.path = chartConfig.getPath();
+            if (!Strings.isNullOrEmpty(chartConfig.getPath()))
+                overridenConfig.path = chartConfig.getPath();
 
-        return overridenConfig;
+            return overridenConfig;
+        } catch (CloneNotSupportedException e) {
+            throw new InternalError("Exception cloning " + ChartConfig.class.getSimpleName(), e);
+        }
     }
 
     public Map<String, Object> toMap() {
