@@ -55,18 +55,18 @@ public class ChartConfig implements Cloneable {
     public ChartConfig overrideWith(ChartConfig chartConfig) {
 
         try {
-            ChartConfig overridenConfig = (ChartConfig) super.clone();
+            ChartConfig overriddenConfig = (ChartConfig) super.clone();
 
             if (!Strings.isNullOrEmpty(chartConfig.getGit()))
-                overridenConfig.git = chartConfig.getGit();
+                overriddenConfig.git = chartConfig.getGit();
 
             if (!Strings.isNullOrEmpty(chartConfig.getRef()))
-                overridenConfig.ref = chartConfig.getRef();
+                overriddenConfig.ref = chartConfig.getRef();
 
             if (!Strings.isNullOrEmpty(chartConfig.getPath()))
-                overridenConfig.path = chartConfig.getPath();
+                overriddenConfig.path = chartConfig.getPath();
 
-            return overridenConfig;
+            return overriddenConfig;
         } catch (CloneNotSupportedException e) {
             throw new InternalError("Exception cloning " + ChartConfig.class.getSimpleName(), e);
         }
