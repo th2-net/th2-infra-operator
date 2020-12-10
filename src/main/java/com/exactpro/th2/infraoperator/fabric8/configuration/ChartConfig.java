@@ -13,13 +13,13 @@
 
 package com.exactpro.th2.infraoperator.fabric8.configuration;
 
+import com.exactpro.th2.infraoperator.fabric8.util.JsonUtils;
 import com.exactpro.th2.infraoperator.fabric8.util.Strings;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 
 import java.util.Map;
 import java.util.Objects;
 
-import static com.exactpro.th2.infraoperator.fabric8.util.JsonUtils.writeValueAsDeepMap;
 
 @JsonIgnoreProperties(ignoreUnknown = true)
 public class ChartConfig {
@@ -28,10 +28,10 @@ public class ChartConfig {
     private String ref;
     private String path;
 
-    protected ChartConfig() {
+    ChartConfig() {
     }
 
-    protected ChartConfig(String git, String ref, String path) {
+    ChartConfig(String git, String ref, String path) {
         this.git = git;
         this.ref = ref;
         this.path = path;
@@ -61,25 +61,26 @@ public class ChartConfig {
         return new ChartConfigBuilder();
     }
 
-    public ChartConfig updateWithAndCreate(ChartConfig chartConfig) {
 
-        var config = ChartConfig.newInstance(this);
+    public ChartConfig overrideWith(ChartConfig chartConfig) {
+
+        ChartConfig overridenConfig = ChartConfig.newInstance(this);
 
         if (!Strings.isNullOrEmpty(chartConfig.getGit()))
-            config.git = chartConfig.getGit();
+            overridenConfig.git = chartConfig.getGit();
 
         if (!Strings.isNullOrEmpty(chartConfig.getRef()))
-            config.ref = chartConfig.getRef();
+            overridenConfig.ref = chartConfig.getRef();
 
         if (!Strings.isNullOrEmpty(chartConfig.getPath()))
-            config.path = chartConfig.getPath();
+            overridenConfig.path = chartConfig.getPath();
 
-        return config;
+        return overridenConfig;
     }
 
     public Map<String, Object> toMap() {
         try {
-            return writeValueAsDeepMap(this);
+            return JsonUtils.writeValueAsDeepMap(this);
         } catch (IllegalArgumentException e) {
             throw new IllegalArgumentException("Exception converting object", e);
         }
