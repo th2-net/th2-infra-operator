@@ -3,7 +3,6 @@ package com.exactpro.th2.infraoperator.fabric8.configuration;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
-import com.fasterxml.jackson.databind.annotation.JsonPOJOBuilder;
 
 import java.util.Objects;
 
@@ -74,7 +73,6 @@ public class RabbitMQManagementConfig {
             Objects.equals(getRabbitMQNamespacePermissions(), that.getRabbitMQNamespacePermissions());
     }
 
-    @JsonPOJOBuilder(withPrefix = "")
     public static class RabbitMQManagementConfigBuilder {
 
         private String username;
@@ -88,32 +86,32 @@ public class RabbitMQManagementConfig {
         RabbitMQManagementConfigBuilder() {
         }
 
-        public RabbitMQManagementConfigBuilder username(String username) {
+        public RabbitMQManagementConfigBuilder withUsername(String username) {
             this.username = username;
             return this;
         }
 
-        public RabbitMQManagementConfigBuilder password(String password) {
+        public RabbitMQManagementConfigBuilder withPassword(String password) {
             this.password = password;
             return this;
         }
 
-        public RabbitMQManagementConfigBuilder port(int port) {
+        public RabbitMQManagementConfigBuilder withPort(int port) {
             this.port = port;
             return this;
         }
 
-        public RabbitMQManagementConfigBuilder host(String host) {
+        public RabbitMQManagementConfigBuilder withHost(String host) {
             this.host = host;
             return this;
         }
 
-        public RabbitMQManagementConfigBuilder persistence(boolean persistence) {
+        public RabbitMQManagementConfigBuilder withPersistence(boolean persistence) {
             this.persistence = persistence;
             return this;
         }
 
-        public RabbitMQManagementConfigBuilder rabbitMQNamespacePermissions(
+        public RabbitMQManagementConfigBuilder withRabbitMQNamespacePermissions(
             RabbitMQNamespacePermissions rabbitMQNamespacePermissions) {
             this.rabbitMQNamespacePermissions = rabbitMQNamespacePermissions;
             return this;

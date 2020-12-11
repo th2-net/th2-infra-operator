@@ -33,14 +33,15 @@ public class TestConfiguration {
     void testFullConfig() {
         beforeEach("src/test/resources/fullConfig.yml");
 
-        expected.setChartConfig(ChartConfig.builder().git("git").path("path").ref("ref").build());
+        expected.setChartConfig(ChartConfig.builder().withGit("git").withPath("path").withRef("ref").build());
         expected.setRabbitMQManagementConfig(
-            RabbitMQManagementConfig.builder().host("host").port(8080).username("username").password("password")
-                .persistence(true).rabbitMQNamespacePermissions(
-                RabbitMQNamespacePermissions.builder().configure("configure").read("read").write("write").build())
+            RabbitMQManagementConfig.builder().withHost("host").withPort(8080)
+                .withUsername("username").withPassword("password").withPersistence(true)
+                .withRabbitMQNamespacePermissions(RabbitMQNamespacePermissions.builder()
+                    .withConfigure("configure").withRead("read").withWrite("write").build())
                 .build()
         );
-        expected.setSchemaSecrets(SchemaSecrets.builder().rabbitMQ("rabbitMQ").cassandra("cassandra").build());
+        expected.setSchemaSecrets(SchemaSecrets.builder().withRabbitMQ("rabbitMQ").withCassandra("cassandra").build());
         expected.setNamespacePrefixes(Arrays.asList("string1", "string2"));
         expected.setRabbitMQConfigMapName("rabbit-mq-app");
 
@@ -60,7 +61,7 @@ public class TestConfiguration {
     void testChartConfig() {
         beforeEach("src/test/resources/chartConfig.yml");
 
-        expected.setChartConfig(ChartConfig.builder().git("git").path("path").ref("ref").build());
+        expected.setChartConfig(ChartConfig.builder().withGit("git").withPath("path").withRef("ref").build());
 
         Assertions.assertEquals(expected, OperatorConfig.INSTANCE.getConfig());
     }
@@ -70,9 +71,10 @@ public class TestConfiguration {
         beforeEach("src/test/resources/rabbitMQManagementConfig.yml");
 
         expected.setRabbitMQManagementConfig(
-            RabbitMQManagementConfig.builder().host("host").port(8080).username("username").password("password")
-                .persistence(true).rabbitMQNamespacePermissions(
-                RabbitMQNamespacePermissions.builder().configure("configure").read("read").write("write").build())
+            RabbitMQManagementConfig.builder().withHost("host").withPort(8080)
+                .withUsername("username").withPassword("password").withPersistence(true)
+                .withRabbitMQNamespacePermissions(RabbitMQNamespacePermissions.builder()
+                    .withConfigure("configure").withRead("read").withWrite("write").build())
                 .build()
         );
 
@@ -83,7 +85,7 @@ public class TestConfiguration {
     void testSchemaSecretsConfig() {
         beforeEach("src/test/resources/schemaSecretsConfig.yml");
 
-        expected.setSchemaSecrets(SchemaSecrets.builder().rabbitMQ("rabbitMQ").cassandra("cassandra").build());
+        expected.setSchemaSecrets(SchemaSecrets.builder().withRabbitMQ("rabbitMQ").withCassandra("cassandra").build());
 
         Assertions.assertEquals(expected, OperatorConfig.INSTANCE.getConfig());
     }

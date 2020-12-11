@@ -16,10 +16,12 @@ package com.exactpro.th2.infraoperator.fabric8.configuration;
 import com.exactpro.th2.infraoperator.fabric8.util.JsonUtils;
 import com.exactpro.th2.infraoperator.fabric8.util.Strings;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 
 import java.util.Map;
 import java.util.Objects;
 
+@JsonDeserialize(builder = ChartConfig.ChartConfigBuilder.class)
 @JsonIgnoreProperties(ignoreUnknown = true)
 public class ChartConfig implements Cloneable {
 
@@ -98,17 +100,17 @@ public class ChartConfig implements Cloneable {
         ChartConfigBuilder() {
         }
 
-        public ChartConfigBuilder git(String git) {
+        public ChartConfigBuilder withGit(String git) {
             this.git = git;
             return this;
         }
 
-        public ChartConfigBuilder ref(String ref) {
+        public ChartConfigBuilder withRef(String ref) {
             this.ref = ref;
             return this;
         }
 
-        public ChartConfigBuilder path(String path) {
+        public ChartConfigBuilder withPath(String path) {
             this.path = path;
             return this;
         }
