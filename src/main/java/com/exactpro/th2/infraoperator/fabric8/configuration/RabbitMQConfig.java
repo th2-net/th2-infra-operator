@@ -29,7 +29,6 @@ public class RabbitMQConfig {
     private String host;
     @JsonProperty("vHost")
     private String vHost;
-    @JsonProperty("exchangeName")
     private String exchangeName;
     private String username;
     private String password;
@@ -126,6 +125,7 @@ public class RabbitMQConfig {
             return this;
         }
 
+        @JsonProperty("vHost")
         public RabbitMQConfigBuilder withVHost(String vHost) {
             this.vHost = vHost;
             return this;
