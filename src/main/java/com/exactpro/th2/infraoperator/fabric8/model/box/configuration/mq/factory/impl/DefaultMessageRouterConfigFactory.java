@@ -19,6 +19,7 @@ import com.exactpro.th2.infraoperator.fabric8.model.box.configuration.mq.QueueCo
 import com.exactpro.th2.infraoperator.fabric8.model.box.configuration.mq.RouterFilterConfiguration;
 import com.exactpro.th2.infraoperator.fabric8.model.box.configuration.mq.factory.MessageRouterConfigFactory;
 import com.exactpro.th2.infraoperator.fabric8.model.box.schema.link.QueueBunch;
+import com.exactpro.th2.infraoperator.fabric8.model.kubernetes.configmaps.ConfigMaps;
 import com.exactpro.th2.infraoperator.fabric8.spec.Th2CustomResource;
 import com.exactpro.th2.infraoperator.fabric8.spec.link.relation.boxes.box.impl.BoxMq;
 import com.exactpro.th2.infraoperator.fabric8.spec.shared.DirectionAttribute;
@@ -98,7 +99,7 @@ public class DefaultMessageRouterConfigFactory implements MessageRouterConfigFac
     @Nullable
     private QueueBunch createQueueBunch(String namespace, String queue, String routingKey) {
 
-        var rabbitMQConfig = OperatorConfig.INSTANCE.getRabbitMQConfig4Namespace(namespace);
+        var rabbitMQConfig = ConfigMaps.INSTANCE.getRabbitMQConfig4Namespace(namespace);
 
         if (Objects.isNull(rabbitMQConfig)) {
             return null;

@@ -15,6 +15,8 @@ package com.exactpro.th2.infraoperator.fabric8.spec.strategy.linkResolver.mq.imp
 
 import com.exactpro.th2.infraoperator.fabric8.configuration.OperatorConfig;
 import com.exactpro.th2.infraoperator.fabric8.configuration.RabbitMQConfig;
+import com.exactpro.th2.infraoperator.fabric8.configuration.RabbitMQManagementConfig;
+import com.exactpro.th2.infraoperator.fabric8.model.kubernetes.configmaps.ConfigMaps;
 import com.exactpro.th2.infraoperator.fabric8.spec.shared.PinSettings;
 import com.exactpro.th2.infraoperator.fabric8.spec.strategy.linkResolver.ConfigNotFoundException;
 import com.rabbitmq.client.Channel;
@@ -41,7 +43,7 @@ public class RabbitMqStaticContext {
     @SneakyThrows
     public static void createChannelIfAbsent(
             String namespace,
-            OperatorConfig.MqGlobalConfig mqGlobalConfig,
+            RabbitMQManagementConfig rabbitMQManagementConfig,
             ConnectionFactory connectionFactory) {
 
         RabbitMQConfig rabbitMQConfig = getRabbitMQConfig(namespace);
@@ -53,8 +55,8 @@ public class RabbitMqStaticContext {
             connectionFactory.setHost(rabbitMQConfig.getHost());
             connectionFactory.setPort(rabbitMQConfig.getPort());
             connectionFactory.setVirtualHost(rabbitMQConfig.getVHost());
-            connectionFactory.setUsername(mqGlobalConfig.getUsername());
-            connectionFactory.setPassword(mqGlobalConfig.getPassword());
+            connectionFactory.setUsername(rabbitMQManagementConfig.getUsername());
+            connectionFactory.setPassword(rabbitMQManagementConfig.getPassword());
 
             var channel = connectionFactory.newConnection().createChannel();
 
@@ -65,7 +67,7 @@ public class RabbitMqStaticContext {
 
     public static RabbitMQConfig getRabbitMQConfig(String namespace) throws ConfigNotFoundException {
 
-        RabbitMQConfig rabbitMQConfig = OperatorConfig.INSTANCE.getRabbitMQConfig4Namespace(namespace);
+        RabbitMQConfig rabbitMQConfig = ConfigMaps.INSTANCE.getRabbitMQConfig4Namespace(namespace);
 
         if (rabbitMQConfig == null) {
 

@@ -15,9 +15,11 @@ package com.exactpro.th2.infraoperator.fabric8.configuration;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonProperty;
+import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 
 import java.util.Objects;
 
+@JsonDeserialize(builder = RabbitMQConfig.RabbitMQConfigBuilder.class)
 @JsonIgnoreProperties(ignoreUnknown = true)
 public class RabbitMQConfig {
 
@@ -27,7 +29,6 @@ public class RabbitMQConfig {
     private String host;
     @JsonProperty("vHost")
     private String vHost;
-    @JsonProperty("exchangeName")
     private String exchangeName;
     private String username;
     private String password;
@@ -49,40 +50,20 @@ public class RabbitMQConfig {
         return port;
     }
 
-    public void setPort(int port) {
-        this.port = port;
-    }
-
     public String getHost() {
         return host;
-    }
-
-    public void setHost(String host) {
-        this.host = host;
     }
 
     public String getVHost() {
         return vHost;
     }
 
-    public void setVHost(String vHost) {
-        this.vHost = vHost;
-    }
-
     public String getExchangeName() {
         return exchangeName;
     }
 
-    public void setExchangeName(String exchangeName) {
-        this.exchangeName = exchangeName;
-    }
-
     public String getUsername() {
         return username;
-    }
-
-    public void setUsername(String username) {
-        this.username = username;
     }
 
     public String getPassword() {
@@ -134,32 +115,33 @@ public class RabbitMQConfig {
         RabbitMQConfigBuilder() {
         }
 
-        public RabbitMQConfigBuilder port(int port) {
+        public RabbitMQConfigBuilder withPort(int port) {
             this.port = port;
             return this;
         }
 
-        public RabbitMQConfigBuilder host(String host) {
+        public RabbitMQConfigBuilder withHost(String host) {
             this.host = host;
             return this;
         }
 
-        public RabbitMQConfigBuilder vHost(String vHost) {
+        @JsonProperty("vHost")
+        public RabbitMQConfigBuilder withVHost(String vHost) {
             this.vHost = vHost;
             return this;
         }
 
-        public RabbitMQConfigBuilder exchangeName(String exchangeName) {
+        public RabbitMQConfigBuilder withExchangeName(String exchangeName) {
             this.exchangeName = exchangeName;
             return this;
         }
 
-        public RabbitMQConfigBuilder username(String username) {
+        public RabbitMQConfigBuilder withUsername(String username) {
             this.username = username;
             return this;
         }
 
-        public RabbitMQConfigBuilder password(String password) {
+        public RabbitMQConfigBuilder withPassword(String password) {
             this.password = password;
             return this;
         }
