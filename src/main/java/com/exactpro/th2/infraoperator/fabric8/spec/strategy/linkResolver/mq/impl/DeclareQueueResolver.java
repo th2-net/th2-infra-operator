@@ -20,7 +20,6 @@ import com.exactpro.th2.infraoperator.fabric8.spec.Th2CustomResource;
 import com.exactpro.th2.infraoperator.fabric8.spec.link.relation.boxes.box.impl.BoxMq;
 import com.exactpro.th2.infraoperator.fabric8.spec.shared.DirectionAttribute;
 import com.exactpro.th2.infraoperator.fabric8.util.ExtractUtils;
-import com.exactpro.th2.infraoperator.fabric8.util.MqVHostUtils;
 import com.rabbitmq.client.Channel;
 import com.rabbitmq.client.ConnectionFactory;
 import lombok.SneakyThrows;
@@ -49,10 +48,9 @@ public class DeclareQueueResolver {
 
         String namespace = ExtractUtils.extractNamespace(resource);
 
-        MqVHostUtils.createVHostIfAbsent(namespace, rabbitMQManagementConfig);
+        RabbitMqStaticContext.createVHostIfAbsent(namespace, rabbitMQManagementConfig);
         createChannelIfAbsent(namespace, rabbitMQManagementConfig, connectionFactory);
         declareQueueBunch(namespace, resource);
-
     }
 
     public void resolveDelete(Th2CustomResource resource) {
@@ -66,7 +64,7 @@ public class DeclareQueueResolver {
 
         Map<String, RabbitMqStaticContext.ChannelBunch> channelBunchMap = getMqChannels();
 
-        Channel channel =  channelBunchMap.get(namespace).getChannel();
+        Channel channel = channelBunchMap.get(namespace).getChannel();
 
         if (!channel.isOpen()) {
             logger.warn("RMQ connection is broken, trying to reconnect...");
@@ -92,14 +90,16 @@ public class DeclareQueueResolver {
             String boxName = ExtractUtils.extractName(resource);
 
             BoxMq boxMq = BoxMq.builder()
-                    .box(boxName)
-                    .pin(pin.getName())
-                    .build();
+                .box(boxName)
+                .pin(pin.getName())
+                .build();
 
             if (!attrs.contains(DirectionAttribute.publish.name())) {
                 String queue = buildQueue(namespace, boxMq);
-                var declareResult = channel.queueDeclare(queue, rabbitMQManagementConfig.isPersistence(), false, false, generateQueueArguments(pin.getSettings()));
-                logger.info("Queue '{}' of resource {} was successfully declared", declareResult.getQueue(), ExtractUtils.extractName(resource));
+                var declareResult = channel.queueDeclare(queue, rabbitMQManagementConfig.isPersistence(),
+                    false, false, generateQueueArguments(pin.getSettings()));
+                logger.info("Queue '{}' of resource {} was successfully declared",
+                    declareResult.getQueue(), ExtractUtils.extractName(resource));
             }
         }
     }
