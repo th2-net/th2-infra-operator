@@ -14,6 +14,7 @@
 package com.exactpro.th2.infraoperator.fabric8.operator;
 
 import com.exactpro.th2.infraoperator.fabric8.configuration.OperatorConfig;
+import com.exactpro.th2.infraoperator.fabric8.configuration.SchemaSecrets;
 import com.exactpro.th2.infraoperator.fabric8.model.box.configuration.dictionary.DictionaryEntity;
 import com.exactpro.th2.infraoperator.fabric8.model.box.configuration.dictionary.factory.DictionaryFactory;
 import com.exactpro.th2.infraoperator.fabric8.model.box.configuration.grpc.GrpcRouterConfiguration;
@@ -76,6 +77,7 @@ public abstract class HelmReleaseTh2Op<CR extends Th2CustomResource> extends Abs
     public static final String MQ_CONFIG_ALIAS = "routerMq";
     public static final String CUSTOM_CONFIG_ALIAS = "custom";
     public static final String PROMETHEUS_CONFIG_ALIAS = "prometheus";
+    public static final String SCHEMA_SECRETS_ALIAS = "secrets";
     public static final String GRPC_CONFIG_ALIAS = "grpcRouter";
     public static final String DICTIONARIES_ALIAS = "dictionaries";
     public static final String ANNOTATIONS_ALIAS = "annotations";
@@ -186,6 +188,11 @@ public abstract class HelmReleaseTh2Op<CR extends Th2CustomResource> extends Abs
         if (extendedSettings != null)
             helmRelease.mergeValue(PROPERTIES_MERGE_DEPTH, ROOT_PROPERTIES_ALIAS
                     , Map.of(EXTENDED_SETTINGS_ALIAS, extendedSettings));
+
+        SchemaSecrets schemaSecrets = resSpec.getSchemaSecrets();
+        if (schemaSecrets != null)
+            helmRelease.mergeValue(PROPERTIES_MERGE_DEPTH, ROOT_PROPERTIES_ALIAS,
+                Map.of(SCHEMA_SECRETS_ALIAS, schemaSecrets));
 
         var defaultChartConfig = OperatorConfig.INSTANCE.getChartConfig();
         var chartConfig = resSpec.getChartConfig();
