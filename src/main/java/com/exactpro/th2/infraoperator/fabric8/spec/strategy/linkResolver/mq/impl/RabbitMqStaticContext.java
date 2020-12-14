@@ -14,6 +14,9 @@
 package com.exactpro.th2.infraoperator.fabric8.spec.strategy.linkResolver.mq.impl;
 
 import com.exactpro.th2.infraoperator.fabric8.configuration.OperatorConfig;
+import com.exactpro.th2.infraoperator.fabric8.configuration.RabbitMQConfig;
+import com.exactpro.th2.infraoperator.fabric8.configuration.RabbitMQManagementConfig;
+import com.exactpro.th2.infraoperator.fabric8.model.kubernetes.configmaps.ConfigMaps;
 import com.exactpro.th2.infraoperator.fabric8.spec.shared.PinSettings;
 import com.exactpro.th2.infraoperator.fabric8.spec.strategy.linkResolver.ConfigNotFoundException;
 import com.rabbitmq.client.Channel;
@@ -40,44 +43,44 @@ public class RabbitMqStaticContext {
     @SneakyThrows
     public static void createChannelIfAbsent(
             String namespace,
-            OperatorConfig.MqGlobalConfig mqGlobalConfig,
+            RabbitMQManagementConfig rabbitMQManagementConfig,
             ConnectionFactory connectionFactory) {
 
-        OperatorConfig.MqWorkSpaceConfig mqWsConfig = getWsConfig(namespace);
+        RabbitMQConfig rabbitMQConfig = getRabbitMQConfig(namespace);
 
         ChannelBunch channelBunch = mqChannels.get(namespace);
 
-        if (channelBunch == null || !channelBunch.getConfig().equals(mqWsConfig)) {
+        if (channelBunch == null || !channelBunch.getConfig().equals(rabbitMQConfig)) {
 
-            connectionFactory.setHost(mqWsConfig.getHost());
-            connectionFactory.setPort(mqWsConfig.getPort());
-            connectionFactory.setVirtualHost(mqWsConfig.getVHost());
-            connectionFactory.setUsername(mqGlobalConfig.getUsername());
-            connectionFactory.setPassword(mqGlobalConfig.getPassword());
+            connectionFactory.setHost(rabbitMQConfig.getHost());
+            connectionFactory.setPort(rabbitMQConfig.getPort());
+            connectionFactory.setVirtualHost(rabbitMQConfig.getVHost());
+            connectionFactory.setUsername(rabbitMQManagementConfig.getUsername());
+            connectionFactory.setPassword(rabbitMQManagementConfig.getPassword());
 
             var channel = connectionFactory.newConnection().createChannel();
 
-            mqChannels.put(namespace, new ChannelBunch(channel, mqWsConfig));
+            mqChannels.put(namespace, new ChannelBunch(channel, rabbitMQConfig));
         }
 
     }
 
-    public static OperatorConfig.MqWorkSpaceConfig getWsConfig(String namespace) throws ConfigNotFoundException {
+    public static RabbitMQConfig getRabbitMQConfig(String namespace) throws ConfigNotFoundException {
 
-        OperatorConfig.MqWorkSpaceConfig mqWsConfig = OperatorConfig.INSTANCE.getMqWorkSpaceConfig(namespace);
+        RabbitMQConfig rabbitMQConfig = ConfigMaps.INSTANCE.getRabbitMQConfig4Namespace(namespace);
 
-        if (mqWsConfig == null) {
+        if (rabbitMQConfig == null) {
 
             String message = String.format(
                     "Cannot find vHost and exchange in namespace '%s'. " +
                             "Perhaps config map '%s.%s' does not exist or " +
                             "is not watching yet, or property '%s' is not set",
-                    namespace, namespace, OperatorConfig.MQ_CONFIG_MAP_NAME, OperatorConfig.MqWorkSpaceConfig.CONFIG_MAP_RABBITMQ_PROP_NAME);
+                    namespace, namespace, OperatorConfig.INSTANCE.getRabbitMQConfigMapName(), RabbitMQConfig.CONFIG_MAP_RABBITMQ_PROP_NAME);
             logger.warn(message);
 
             throw new ConfigNotFoundException(message);
         }
-        return mqWsConfig;
+        return rabbitMQConfig;
     }
 
 
@@ -85,7 +88,7 @@ public class RabbitMqStaticContext {
     @AllArgsConstructor
     public static class ChannelBunch {
         private final Channel channel;
-        private final OperatorConfig.MqWorkSpaceConfig config;
+        private final RabbitMQConfig config;
     }
 
     public static Map<String, ChannelBunch> getMqChannels() {

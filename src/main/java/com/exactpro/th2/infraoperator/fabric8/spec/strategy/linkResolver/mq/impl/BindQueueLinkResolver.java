@@ -14,6 +14,7 @@
 package com.exactpro.th2.infraoperator.fabric8.spec.strategy.linkResolver.mq.impl;
 
 import com.exactpro.th2.infraoperator.fabric8.configuration.OperatorConfig;
+import com.exactpro.th2.infraoperator.fabric8.configuration.RabbitMQManagementConfig;
 import com.exactpro.th2.infraoperator.fabric8.model.box.schema.link.QueueBunch;
 import com.exactpro.th2.infraoperator.fabric8.model.box.schema.link.QueueLinkBunch;
 import com.exactpro.th2.infraoperator.fabric8.spec.Th2CustomResource;
@@ -28,9 +29,9 @@ import com.exactpro.th2.infraoperator.fabric8.spec.link.validator.chain.impl.Res
 import com.exactpro.th2.infraoperator.fabric8.spec.link.validator.model.DirectionalLinkContext;
 import com.exactpro.th2.infraoperator.fabric8.spec.shared.BoxDirection;
 import com.exactpro.th2.infraoperator.fabric8.spec.shared.PinSettings;
+import com.exactpro.th2.infraoperator.fabric8.spec.shared.SchemaConnectionType;
 import com.exactpro.th2.infraoperator.fabric8.spec.strategy.linkResolver.mq.QueueLinkResolver;
 import com.exactpro.th2.infraoperator.fabric8.spec.strategy.resFinder.box.BoxResourceFinder;
-import com.exactpro.th2.infraoperator.fabric8.spec.shared.SchemaConnectionType;
 import com.exactpro.th2.infraoperator.fabric8.util.ExtractUtils;
 import com.rabbitmq.client.Channel;
 import com.rabbitmq.client.ConnectionFactory;
@@ -56,11 +57,11 @@ public class BindQueueLinkResolver implements QueueLinkResolver {
 
     private final BoxResourceFinder resourceFinder;
 
-    private final OperatorConfig.MqGlobalConfig mqGlobalConfig;
+    private final RabbitMQManagementConfig rabbitMQManagementConfig;
 
     @SneakyThrows
     public BindQueueLinkResolver(BoxResourceFinder resourceFinder) {
-        this.mqGlobalConfig = OperatorConfig.INSTANCE.getMqAuthConfig();
+        this.rabbitMQManagementConfig = OperatorConfig.INSTANCE.getRabbitMQManagementConfig();
         this.resourceFinder = resourceFinder;
         this.connectionFactory = new ConnectionFactory();
     }
@@ -134,13 +135,13 @@ public class BindQueueLinkResolver implements QueueLinkResolver {
         if (!channel.isOpen()) {
             logger.warn("RMQ connection is broken, trying to reconnect...");
             channelBunchMap.remove(namespace);
-            RabbitMqStaticContext.createChannelIfAbsent(namespace, mqGlobalConfig, connectionFactory);
+            RabbitMqStaticContext.createChannelIfAbsent(namespace, rabbitMQManagementConfig, connectionFactory);
             channel = channelBunchMap.get(namespace).getChannel();
             logger.info("RMQ connection has been restored");
         }
 
         PinSettings pinSettings = resource.getSpec().getPin(boxMq.getPin()).getSettings();
-        channel.queueDeclare(queueBunch.getQueue(), mqGlobalConfig.isPersistence(), false, false, generateQueueArguments(pinSettings));
+        channel.queueDeclare(queueBunch.getQueue(), rabbitMQManagementConfig.isPersistence(), false, false, generateQueueArguments(pinSettings));
         channel.queueBind(queueBunch.getQueue(), queueBunch.getExchange(), queueBunch.getRoutingKey());
 
     }
@@ -199,12 +200,12 @@ public class BindQueueLinkResolver implements QueueLinkResolver {
 
     private QueueBunch createQueueBunch(String namespace, BoxMq fromBoxMq, BoxMq toBoxMq) {
 
-        var mqWsConfig = RabbitMqStaticContext.getWsConfig(namespace);
+        var rabbitMQConfig = RabbitMqStaticContext.getRabbitMQConfig(namespace);
 
         return new QueueBunch(
                 OperatorConfig.QUEUE_PREFIX + namespace + "_" + toBoxMq,
                 OperatorConfig.ROUTING_KEY_PREFIX + namespace + "_" + fromBoxMq,
-                mqWsConfig.getExchangeName()
+                rabbitMQConfig.getExchangeName()
         );
     }
 

@@ -13,6 +13,8 @@ rabbitMQManagement:
     configure:
     read:
     write:
+configMaps:
+  rabbitMQ:
 schemaSecrets:
   rabbitMQ:
   cassandra:

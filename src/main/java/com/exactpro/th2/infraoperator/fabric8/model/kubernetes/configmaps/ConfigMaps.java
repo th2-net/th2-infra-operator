@@ -1,25 +1,22 @@
 package com.exactpro.th2.infraoperator.fabric8.model.kubernetes.configmaps;
 
+import com.exactpro.th2.infraoperator.fabric8.configuration.RabbitMQConfig;
+import org.jetbrains.annotations.Nullable;
+
 import java.util.HashMap;
 import java.util.Map;
 
 public enum ConfigMaps {
     INSTANCE;
 
-    public static final String PROMETHEUS_CONFIGMAP_NAME = "prometheus-app-config";
-    public static final String PROMETHEUS_JSON_KEY = "prometheus.json";
-    public static final String PROMETHEUS_JSON_ENABLED_PROPERTY = "enabled";
-    private static Map<String, Object> prometheus;
+    private Map<String, RabbitMQConfig> rabbitMQConfigs = new HashMap<>();
 
-    public static synchronized Map<String, Object> getPrometheusParams() {
-        Map<String, Object> copy = new HashMap<>();
-        if (prometheus != null)
-            copy.putAll(prometheus);
-        return copy;
+    @Nullable
+    public synchronized RabbitMQConfig getRabbitMQConfig4Namespace(String namespace) {
+        return rabbitMQConfigs.get(namespace);
     }
 
-    public static synchronized void setPrometheusParams(Map<String, Object> params) {
-        ConfigMaps.prometheus = params;
+    public synchronized void setRabbitMQConfig4Namespace(String namespace, RabbitMQConfig config) {
+        rabbitMQConfigs.put(namespace, config);
     }
-
 }

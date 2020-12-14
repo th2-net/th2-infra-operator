@@ -13,12 +13,9 @@
 
 package com.exactpro.th2.infraoperator.fabric8.spec;
 
-import com.exactpro.th2.infraoperator.fabric8.configuration.OperatorConfig;
-import com.exactpro.th2.infraoperator.fabric8.spec.shared.ParamSpec;
-import com.exactpro.th2.infraoperator.fabric8.spec.shared.PinSpec;
+import com.exactpro.th2.infraoperator.fabric8.configuration.ChartConfig;
 import com.exactpro.th2.infraoperator.fabric8.operator.StoreHelmTh2Op;
-import com.exactpro.th2.infraoperator.fabric8.spec.shared.DirectionAttribute;
-import com.exactpro.th2.infraoperator.fabric8.spec.shared.SchemaConnectionType;
+import com.exactpro.th2.infraoperator.fabric8.spec.shared.*;
 import com.exactpro.th2.infraoperator.fabric8.util.JsonUtils;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonInclude;
@@ -37,7 +34,6 @@ public abstract class Th2Spec implements KubernetesResource {
 
     private static final String CHART_CFG_ALIAS = "chart-cfg";
 
-
     @JsonProperty("image-name")
     protected String imageName;
 
@@ -52,10 +48,12 @@ public abstract class Th2Spec implements KubernetesResource {
     @JsonProperty("custom-config")
     protected Map<String, Object> customConfig = new HashMap<>();
 
+    @JsonProperty("prometheus")
+    protected PrometheusConfiguration prometheusConfiguration;
+
     protected List<ParamSpec> params = new ArrayList<>();
 
     protected List<PinSpec> pins = new ArrayList<>();
-
 
     public void setPins(List<PinSpec> pins) {
         this.pins = pins;
@@ -69,9 +67,7 @@ public abstract class Th2Spec implements KubernetesResource {
 
             getPins().add(pin);
         }
-
     }
-
 
     public Map<String, Object> getExtendedSettingsOrigin() {
         return extendedSettings;
@@ -83,15 +79,14 @@ public abstract class Th2Spec implements KubernetesResource {
         return copy;
     }
 
-    public OperatorConfig.ChartConfig getChartConfig() {
-        return JsonUtils.JSON_READER.convertValue(extendedSettings.get(CHART_CFG_ALIAS), OperatorConfig.ChartConfig.class);
+    public ChartConfig getChartConfig() {
+        return JsonUtils.JSON_READER.convertValue(extendedSettings.get(CHART_CFG_ALIAS), ChartConfig.class);
     }
 
     public PinSpec getPin(String name) {
         return getPins().stream()
-                .filter(p -> p.getName().equals(name))
-                .findFirst()
-                .orElse(null);
+            .filter(p -> p.getName().equals(name))
+            .findFirst()
+            .orElse(null);
     }
-
 }

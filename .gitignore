@@ -84,3 +84,5 @@ nb-configuration.xml
 
 # logfile
 operator.log
+/infra-operator.yml
+/log4j.properties

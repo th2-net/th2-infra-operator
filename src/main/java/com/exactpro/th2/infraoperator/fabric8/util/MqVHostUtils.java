@@ -14,6 +14,10 @@
 package com.exactpro.th2.infraoperator.fabric8.util;
 
 import com.exactpro.th2.infraoperator.fabric8.configuration.OperatorConfig;
+import com.exactpro.th2.infraoperator.fabric8.configuration.RabbitMQConfig;
+import com.exactpro.th2.infraoperator.fabric8.configuration.RabbitMQManagementConfig;
+import com.exactpro.th2.infraoperator.fabric8.configuration.RabbitMQNamespacePermissions;
+import com.exactpro.th2.infraoperator.fabric8.model.kubernetes.configmaps.ConfigMaps;
 import com.exactpro.th2.infraoperator.fabric8.spec.strategy.linkResolver.ConfigNotFoundException;
 import com.exactpro.th2.infraoperator.fabric8.spec.strategy.linkResolver.VHostCreateException;
 import com.rabbitmq.http.client.Client;
@@ -38,27 +42,28 @@ public class MqVHostUtils {
         );
     }
 
-    public static void createVHostIfAbsent(String namespace, OperatorConfig.MqGlobalConfig mqGlobalConfig) throws VHostCreateException {
+    public static void createVHostIfAbsent(String namespace, RabbitMQManagementConfig rabbitMQManagementConfig) throws VHostCreateException {
 
-        OperatorConfig.MqWorkSpaceConfig mqSchemaConfig = OperatorConfig.INSTANCE.getMqWorkSpaceConfig(namespace);
+        RabbitMQConfig rabbitMQConfig = ConfigMaps.INSTANCE.getRabbitMQConfig4Namespace(namespace);
 
-        if (mqSchemaConfig == null)
+        if (rabbitMQConfig == null)
             throw new ConfigNotFoundException(String.format(
                     "Exception setting up RabbitMQ for namespace \"%s\". Check if \"%s\" is configured properly"
                     , namespace
-                    , CustomResourceUtils.annotationFor(namespace, "ConfigMap", OperatorConfig.MQ_CONFIG_MAP_NAME)));
+                    , CustomResourceUtils.annotationFor(
+                        namespace, "ConfigMap", OperatorConfig.INSTANCE.getRabbitMQConfigMapName())));
 
-        String vHostName = mqSchemaConfig.getVHost();
-        String username = mqSchemaConfig.getUsername();
+        String vHostName = rabbitMQConfig.getVHost();
+        String username = rabbitMQConfig.getUsername();
 
         if (Strings.isNullOrEmpty(username))
             return;
 
         try {
             Client rmqClient = getClient(
-                    String.format("http://%s:%s/api", mqSchemaConfig.getHost(), mqGlobalConfig.getPort())
-                    , mqGlobalConfig.getUsername()
-                    , mqGlobalConfig.getPassword()
+                    String.format("http://%s:%s/api", rabbitMQConfig.getHost(), rabbitMQManagementConfig.getPort())
+                    , rabbitMQManagementConfig.getUsername()
+                    , rabbitMQManagementConfig.getPassword()
             );
 
             // check vhost
@@ -70,15 +75,15 @@ public class MqVHostUtils {
 
             // check user
 //            if (rmqClient.getUser(username) == null) {
-                rmqClient.createUser(username, mqSchemaConfig.getPassword().toCharArray(), new ArrayList<>());
+                rmqClient.createUser(username, rabbitMQConfig.getPassword().toCharArray(), new ArrayList<>());
                 logger.info("Created user \"{}\" in RabbitMQ for namespace \"{}\"", username, namespace);
 
                 // set permissions
-                OperatorConfig.MqSchemaUserPermissions schemaUserPermissions = mqGlobalConfig.getSchemaUserPermissions();
+                RabbitMQNamespacePermissions rabbitMQNamespacePermissions = rabbitMQManagementConfig.getRabbitMQNamespacePermissions();
                 UserPermissions permissions = new UserPermissions();
-                permissions.setConfigure(schemaUserPermissions.getConfigure());
-                permissions.setRead(schemaUserPermissions.getRead());
-                permissions.setWrite(schemaUserPermissions.getWrite());
+                permissions.setConfigure(rabbitMQNamespacePermissions.getConfigure());
+                permissions.setRead(rabbitMQNamespacePermissions.getRead());
+                permissions.setWrite(rabbitMQNamespacePermissions.getWrite());
 
                 rmqClient.updatePermissions(vHostName, username, permissions);
                 logger.info("User \"{}\" permissions set in RabbitMQ", username);
@@ -91,24 +96,25 @@ public class MqVHostUtils {
     }
 
 
-    public static void cleanupVHost(String namespace, OperatorConfig.MqGlobalConfig mqGlobalConfig) throws VHostCreateException {
+    public static void cleanupVHost(String namespace, RabbitMQManagementConfig rabbitMQManagementConfig) throws VHostCreateException {
 
-        OperatorConfig.MqWorkSpaceConfig mqSchemaConfig = OperatorConfig.INSTANCE.getMqWorkSpaceConfig(namespace);
+        RabbitMQConfig rabbitMQConfig = ConfigMaps.INSTANCE.getRabbitMQConfig4Namespace(namespace);
 
-        if (mqSchemaConfig == null)
+        if (rabbitMQConfig == null)
             throw new ConfigNotFoundException(String.format(
                     "Exception cleaning up RabbitMQ for namespace \"%s\". Check if \"%s\" is configured properly"
                     , namespace
-                    , CustomResourceUtils.annotationFor(namespace, "ConfigMap", OperatorConfig.MQ_CONFIG_MAP_NAME)));
+                    , CustomResourceUtils.annotationFor(
+                        namespace, "ConfigMap", OperatorConfig.INSTANCE.getRabbitMQConfigMapName())));
 
-        String vHostName = mqSchemaConfig.getVHost();
-        String username = mqSchemaConfig.getUsername();
+        String vHostName = rabbitMQConfig.getVHost();
+        String username = rabbitMQConfig.getUsername();
 
         try {
             Client rmqClient = getClient(
-                    String.format("http://%s:%s/api", mqSchemaConfig.getHost(), mqGlobalConfig.getPort())
-                    , mqGlobalConfig.getUsername()
-                    , mqGlobalConfig.getPassword()
+                    String.format("http://%s:%s/api", rabbitMQConfig.getHost(), rabbitMQManagementConfig.getPort())
+                    , rabbitMQManagementConfig.getUsername()
+                    , rabbitMQManagementConfig.getPassword()
             );
 
             // delete user
