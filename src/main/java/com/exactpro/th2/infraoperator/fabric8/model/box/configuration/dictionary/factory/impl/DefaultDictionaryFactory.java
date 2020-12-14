@@ -48,9 +48,9 @@ public class DefaultDictionaryFactory implements DictionaryFactory {
                     String encodedData = new String(ArchiveUtils.getGZIPBase64Encoder().encodeString(res.getSpec().getData()));
 
                     dictionaries.add(DictionaryEntity.builder()
-                            .name(name)
-                            .type(type)
-                            .data(encodedData)
+                            .setName(name)
+                            .setType(type)
+                            .setData(encodedData)
                             .build());
                 }
             } catch (Exception e) {

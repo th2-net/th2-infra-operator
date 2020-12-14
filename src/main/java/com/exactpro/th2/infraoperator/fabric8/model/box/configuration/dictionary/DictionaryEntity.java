@@ -50,17 +50,17 @@ public class DictionaryEntity {
         public Builder() {
         }
 
-        public Builder name(String name) {
+        public Builder setName(String name) {
             this.name = name;
             return this;
         }
 
-        public Builder type(String type) {
+        public Builder setType(String type) {
             this.type = type;
             return this;
         }
 
-        public Builder data(String data) {
+        public Builder setData(String data) {
             this.data = data;
             return this;
         }
