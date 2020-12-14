@@ -14,7 +14,7 @@
 package com.exactpro.th2.infraoperator.fabric8.operator;
 
 import com.exactpro.th2.infraoperator.fabric8.configuration.OperatorConfig;
-import com.exactpro.th2.infraoperator.fabric8.model.box.configuration.dictionary.RawDictionary;
+import com.exactpro.th2.infraoperator.fabric8.model.box.configuration.dictionary.DictionaryEntity;
 import com.exactpro.th2.infraoperator.fabric8.model.box.configuration.dictionary.factory.DictionaryFactory;
 import com.exactpro.th2.infraoperator.fabric8.model.box.configuration.grpc.GrpcRouterConfiguration;
 import com.exactpro.th2.infraoperator.fabric8.model.box.configuration.grpc.factory.GrpcRouterConfigFactory;
@@ -161,7 +161,7 @@ public abstract class HelmReleaseTh2Op<CR extends Th2CustomResource> extends Abs
 
         MessageRouterConfiguration mqConfig = mqConfigFactory.createConfig(resource);
         GrpcRouterConfiguration grpcConfig = grpcConfigFactory.createConfig(resource, grpcActiveLinks);
-        List<RawDictionary> dictionaries = dictionaryFactory.create(resource, dictionaryActiveLinks);
+        List<DictionaryEntity> dictionaries = dictionaryFactory.create(resource, dictionaryActiveLinks);
 
         helmRelease.putSpecProp(RELEASE_NAME_ALIAS, extractNamespace(helmRelease) + "-" + extractName(helmRelease));
         helmRelease.mergeValue(PROPERTIES_MERGE_DEPTH, ROOT_PROPERTIES_ALIAS, Map.of(
