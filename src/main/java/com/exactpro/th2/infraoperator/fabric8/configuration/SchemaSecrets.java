@@ -14,14 +14,16 @@
 package com.exactpro.th2.infraoperator.fabric8.configuration;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 
 import java.util.Objects;
 
-import static com.exactpro.th2.infraoperator.fabric8.configuration.OperatorConfig.DEFAULT_CASSANDRA_SECRET;
-import static com.exactpro.th2.infraoperator.fabric8.configuration.OperatorConfig.DEFAULT_RABBITMQ_SECRET;
-
+@JsonDeserialize(builder = SchemaSecrets.SchemaSecretsBuilder.class)
 @JsonIgnoreProperties(ignoreUnknown = true)
 public class SchemaSecrets {
+
+    public static final String DEFAULT_RABBITMQ_SECRET = "rabbitmq";
+    public static final String DEFAULT_CASSANDRA_SECRET = "cassandra";
 
     private String rabbitMQ;
     private String cassandra;
@@ -31,24 +33,16 @@ public class SchemaSecrets {
     }
 
     public SchemaSecrets(String rabbitMQ, String cassandra) {
-        setRabbitMQ(rabbitMQ);
-        setCassandra(cassandra);
+        this.rabbitMQ = rabbitMQ != null ? rabbitMQ : DEFAULT_RABBITMQ_SECRET;
+        this.cassandra = cassandra != null ? cassandra : DEFAULT_CASSANDRA_SECRET;
     }
 
     public String getRabbitMQ() {
         return rabbitMQ;
     }
 
-    public void setRabbitMQ(String rabbitMQ) {
-        this.rabbitMQ = rabbitMQ != null ? rabbitMQ : DEFAULT_RABBITMQ_SECRET;
-    }
-
     public String getCassandra() {
         return cassandra;
-    }
-
-    public void setCassandra(String cassandra) {
-        this.cassandra = cassandra != null ? cassandra : DEFAULT_CASSANDRA_SECRET;
     }
 
     public static SchemaSecretsBuilder builder() {
@@ -72,12 +66,12 @@ public class SchemaSecrets {
         SchemaSecretsBuilder() {
         }
 
-        public SchemaSecretsBuilder rabbitMQ(String rabbitMQ) {
+        public SchemaSecretsBuilder withRabbitMQ(String rabbitMQ) {
             this.rabbitMQ = rabbitMQ;
             return this;
         }
 
-        public SchemaSecretsBuilder cassandra(String cassandra) {
+        public SchemaSecretsBuilder withCassandra(String cassandra) {
             this.cassandra = cassandra;
             return this;
         }
