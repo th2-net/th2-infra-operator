@@ -15,6 +15,9 @@ package com.exactpro.th2.infraoperator.fabric8.util;
 
 import com.exactpro.th2.infraoperator.fabric8.configuration.OperatorConfig;
 import com.exactpro.th2.infraoperator.fabric8.configuration.RabbitMQConfig;
+import com.exactpro.th2.infraoperator.fabric8.configuration.RabbitMQManagementConfig;
+import com.exactpro.th2.infraoperator.fabric8.configuration.RabbitMQNamespacePermissions;
+import com.exactpro.th2.infraoperator.fabric8.model.kubernetes.configmaps.ConfigMaps;
 import com.exactpro.th2.infraoperator.fabric8.spec.strategy.linkResolver.ConfigNotFoundException;
 import com.exactpro.th2.infraoperator.fabric8.spec.strategy.linkResolver.VHostCreateException;
 import com.rabbitmq.http.client.Client;
@@ -39,9 +42,9 @@ public class MqVHostUtils {
         );
     }
 
-    public static void createVHostIfAbsent(String namespace, OperatorConfig.MqGlobalConfig mqGlobalConfig) throws VHostCreateException {
+    public static void createVHostIfAbsent(String namespace, RabbitMQManagementConfig rabbitMQManagementConfig) throws VHostCreateException {
 
-        RabbitMQConfig rabbitMQConfig = OperatorConfig.INSTANCE.getRabbitMQConfig4Namespace(namespace);
+        RabbitMQConfig rabbitMQConfig = ConfigMaps.INSTANCE.getRabbitMQConfig4Namespace(namespace);
 
         if (rabbitMQConfig == null)
             throw new ConfigNotFoundException(String.format(
@@ -58,9 +61,9 @@ public class MqVHostUtils {
 
         try {
             Client rmqClient = getClient(
-                    String.format("http://%s:%s/api", rabbitMQConfig.getHost(), mqGlobalConfig.getPort())
-                    , mqGlobalConfig.getUsername()
-                    , mqGlobalConfig.getPassword()
+                    String.format("http://%s:%s/api", rabbitMQConfig.getHost(), rabbitMQManagementConfig.getPort())
+                    , rabbitMQManagementConfig.getUsername()
+                    , rabbitMQManagementConfig.getPassword()
             );
 
             // check vhost
@@ -76,11 +79,11 @@ public class MqVHostUtils {
                 logger.info("Created user \"{}\" in RabbitMQ for namespace \"{}\"", username, namespace);
 
                 // set permissions
-                OperatorConfig.MqSchemaUserPermissions schemaUserPermissions = mqGlobalConfig.getSchemaUserPermissions();
+                RabbitMQNamespacePermissions rabbitMQNamespacePermissions = rabbitMQManagementConfig.getRabbitMQNamespacePermissions();
                 UserPermissions permissions = new UserPermissions();
-                permissions.setConfigure(schemaUserPermissions.getConfigure());
-                permissions.setRead(schemaUserPermissions.getRead());
-                permissions.setWrite(schemaUserPermissions.getWrite());
+                permissions.setConfigure(rabbitMQNamespacePermissions.getConfigure());
+                permissions.setRead(rabbitMQNamespacePermissions.getRead());
+                permissions.setWrite(rabbitMQNamespacePermissions.getWrite());
 
                 rmqClient.updatePermissions(vHostName, username, permissions);
                 logger.info("User \"{}\" permissions set in RabbitMQ", username);
@@ -93,9 +96,9 @@ public class MqVHostUtils {
     }
 
 
-    public static void cleanupVHost(String namespace, OperatorConfig.MqGlobalConfig mqGlobalConfig) throws VHostCreateException {
+    public static void cleanupVHost(String namespace, RabbitMQManagementConfig rabbitMQManagementConfig) throws VHostCreateException {
 
-        RabbitMQConfig rabbitMQConfig = OperatorConfig.INSTANCE.getRabbitMQConfig4Namespace(namespace);
+        RabbitMQConfig rabbitMQConfig = ConfigMaps.INSTANCE.getRabbitMQConfig4Namespace(namespace);
 
         if (rabbitMQConfig == null)
             throw new ConfigNotFoundException(String.format(
@@ -109,9 +112,9 @@ public class MqVHostUtils {
 
         try {
             Client rmqClient = getClient(
-                    String.format("http://%s:%s/api", rabbitMQConfig.getHost(), mqGlobalConfig.getPort())
-                    , mqGlobalConfig.getUsername()
-                    , mqGlobalConfig.getPassword()
+                    String.format("http://%s:%s/api", rabbitMQConfig.getHost(), rabbitMQManagementConfig.getPort())
+                    , rabbitMQManagementConfig.getUsername()
+                    , rabbitMQManagementConfig.getPassword()
             );
 
             // delete user

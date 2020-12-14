@@ -30,7 +30,11 @@ public class BoxGrpc extends BoxMq {
 
     private String strategy;
 
-    private boolean isAccessedExternally;
+    private boolean hostNetwork;
+
+    private boolean externalBox;
+
+    private String externalHost;
 
     private int port;
 

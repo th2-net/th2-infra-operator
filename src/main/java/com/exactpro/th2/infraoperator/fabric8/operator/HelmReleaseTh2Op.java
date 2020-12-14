@@ -198,7 +198,7 @@ public abstract class HelmReleaseTh2Op<CR extends Th2CustomResource> extends Abs
         var defaultChartConfig = OperatorConfig.INSTANCE.getChartConfig();
         var chartConfig = resSpec.getChartConfig();
         if (chartConfig != null) {
-            defaultChartConfig = defaultChartConfig.updateWithAndCreate(chartConfig);
+            defaultChartConfig = defaultChartConfig.overrideWith(chartConfig);
         }
 
         helmRelease.mergeSpecProp(CHART_PROPERTIES_ALIAS, defaultChartConfig.toMap());
