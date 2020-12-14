@@ -19,7 +19,6 @@ import lombok.Data;
 import lombok.EqualsAndHashCode;
 import lombok.ToString;
 
-
 @Data
 @ToString(callSuper = true)
 @EqualsAndHashCode(callSuper = true)
@@ -27,8 +26,6 @@ public abstract class Th2CustomResource extends CustomResource {
 
     protected StatusSpec status = new StatusSpec();
 
-
     public abstract Th2Spec getSpec();
 
 }
-
