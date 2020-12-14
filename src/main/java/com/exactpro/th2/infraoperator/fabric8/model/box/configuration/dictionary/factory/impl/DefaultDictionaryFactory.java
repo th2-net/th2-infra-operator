@@ -13,51 +13,51 @@
 
 package com.exactpro.th2.infraoperator.fabric8.model.box.configuration.dictionary.factory.impl;
 
-import com.exactpro.th2.infraoperator.fabric8.model.box.configuration.dictionary.RawDictionary;
+import com.exactpro.th2.infraoperator.fabric8.model.box.configuration.dictionary.DictionaryEntity;
 import com.exactpro.th2.infraoperator.fabric8.model.box.configuration.dictionary.factory.DictionaryFactory;
 import com.exactpro.th2.infraoperator.fabric8.spec.Th2CustomResource;
+import com.exactpro.th2.infraoperator.fabric8.spec.dictionary.Th2Dictionary;
 import com.exactpro.th2.infraoperator.fabric8.spec.link.relation.dictionaries.bunch.DictionaryLinkBunch;
+import com.exactpro.th2.infraoperator.fabric8.spec.link.relation.dictionaries.dictionary.DictionarySpec;
 import com.exactpro.th2.infraoperator.fabric8.spec.strategy.resFinder.dictionary.DictionaryResourceFinder;
 import com.exactpro.th2.infraoperator.fabric8.util.ArchiveUtils;
-import com.exactpro.th2.infraoperator.fabric8.util.ExtractUtils;
-import lombok.SneakyThrows;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import java.util.ArrayList;
 import java.util.List;
 
 public class DefaultDictionaryFactory implements DictionaryFactory {
 
-    private static final Logger logger = LoggerFactory.getLogger(DefaultDictionaryFactory.class);
-
-
     private DictionaryResourceFinder resourceFinder;
-
-
     public DefaultDictionaryFactory(DictionaryResourceFinder resourceFinder) {
         this.resourceFinder = resourceFinder;
     }
 
-
     @Override
-    @SneakyThrows
-    public List<RawDictionary> create(Th2CustomResource resource, List<DictionaryLinkBunch> activeLinks) {
+    public List<DictionaryEntity> create(Th2CustomResource resource, List<DictionaryLinkBunch> activeLinks) {
 
-        List<RawDictionary> dictionaries = new ArrayList<>();
+        List<DictionaryEntity> dictionaries = new ArrayList<>();
 
-        for (var link : activeLinks) {
-            if (link.getBox().equals(ExtractUtils.extractName(resource))) {
-                var dic = link.getDictionary();
-                var dicName = dic.getName();
-                var dicType = dic.getType();
-                var data = resourceFinder.getResource(dicName, ExtractUtils.extractNamespace(resource)).getSpec().getData();
-                var encodedData = new String(ArchiveUtils.getGZIPBase64Encoder().encodeString(data));
-                dictionaries.add(RawDictionary.builder().name(dicName).type(dicType).data(encodedData).build());
+        activeLinks.forEach(link -> {
+            try {
+                if (link.getBox().equals(resource.getMetadata().getName())) {
+                    DictionarySpec dict = link.getDictionary();
+                    String name = dict.getName();
+                    String type = dict.getType();
+
+                    Th2Dictionary res = resourceFinder.getResource(name, resource.getMetadata().getNamespace());
+                    String encodedData = new String(ArchiveUtils.getGZIPBase64Encoder().encodeString(res.getSpec().getData()));
+
+                    dictionaries.add(DictionaryEntity.builder()
+                            .setName(name)
+                            .setType(type)
+                            .setData(encodedData)
+                            .build());
+                }
+            } catch (Exception e) {
+                throw new RuntimeException(e);
             }
-        }
+        });
 
         return dictionaries;
     }
-
 }
