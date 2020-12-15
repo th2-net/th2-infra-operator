@@ -36,7 +36,7 @@ import com.exactpro.th2.infraoperator.fabric8.spec.strategy.linkResolver.grpc.im
 import com.exactpro.th2.infraoperator.fabric8.spec.strategy.linkResolver.grpc.impl.EmptyGrpcLinkResolver;
 import com.exactpro.th2.infraoperator.fabric8.spec.strategy.linkResolver.mq.impl.BindQueueLinkResolver;
 import com.exactpro.th2.infraoperator.fabric8.spec.strategy.linkResolver.mq.impl.EmptyQueueLinkResolver;
-import com.exactpro.th2.infraoperator.fabric8.spec.strategy.linkResolver.mq.impl.RabbitMqStaticContext;
+import com.exactpro.th2.infraoperator.fabric8.spec.strategy.linkResolver.mq.impl.RabbitMQContext;
 import com.exactpro.th2.infraoperator.fabric8.spec.strategy.resFinder.box.EmptyBoxResourceFinder;
 import com.exactpro.th2.infraoperator.fabric8.spec.strategy.resFinder.box.impl.DefaultBoxResourceFinder;
 import com.exactpro.th2.infraoperator.fabric8.spec.strategy.resFinder.box.impl.StoreDependentBoxResourceFinder;
@@ -417,7 +417,7 @@ public class DefaultWatchManager {
 
                         if (!Objects.equals(rabbitMQConfig, newRabbitMQConfig)) {
                             configMaps.setRabbitMQConfig4Namespace(namespace, newRabbitMQConfig);
-                            RabbitMqStaticContext.createVHostIfAbsent(
+                            RabbitMQContext.createVHostIfAbsent(
                                 namespace, opConfig.getRabbitMQManagementConfig());
                             logger.info("RabbitMQ ConfigMap has been updated in namespace \"%s\". Updating all boxes",
                                 namespace);

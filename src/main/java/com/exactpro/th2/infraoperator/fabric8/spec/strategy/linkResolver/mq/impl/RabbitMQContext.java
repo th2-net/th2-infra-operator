@@ -29,8 +29,6 @@ import com.rabbitmq.http.client.Client;
 import com.rabbitmq.http.client.ClientParameters;
 import com.rabbitmq.http.client.OkHttpRestTemplateConfigurator;
 import com.rabbitmq.http.client.domain.UserPermissions;
-import lombok.AllArgsConstructor;
-import lombok.Getter;
 import lombok.SneakyThrows;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -41,21 +39,22 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
-public class RabbitMqStaticContext {
+public class RabbitMQContext {
 
-    private static final Logger logger = LoggerFactory.getLogger(RabbitMqStaticContext.class);
+    private static final Logger logger = LoggerFactory.getLogger(RabbitMQContext.class);
 
-    private static final Map<String, ChannelBunch> mqChannels = new ConcurrentHashMap<>();
-    private static final Map<String, Boolean> mqExchangeResets = new ConcurrentHashMap<>();
+    private static final Map<String, ChannelContext> channels = new ConcurrentHashMap<>();
+    private static final Map<String, Boolean> exchangeResets = new ConcurrentHashMap<>();
 
     @SneakyThrows
-    public static void createChannelIfAbsent(String namespace, RabbitMQManagementConfig rabbitMQManagementConfig,
-                                             ConnectionFactory connectionFactory) {
+    public static Channel createChannelIfAbsent(String namespace
+            , RabbitMQManagementConfig rabbitMQManagementConfig
+            , ConnectionFactory connectionFactory) {
 
         RabbitMQConfig rabbitMQConfig = getRabbitMQConfig(namespace);
-        ChannelBunch channelBunch = mqChannels.get(namespace);
+        ChannelContext channelContext = channels.get(namespace);
 
-        if (channelBunch == null || !channelBunch.getConfig().equals(rabbitMQConfig)) {
+        if (channelContext == null || !channelContext.config.equals(rabbitMQConfig)) {
 
             connectionFactory.setHost(rabbitMQConfig.getHost());
             connectionFactory.setPort(rabbitMQConfig.getPort());
@@ -63,46 +62,58 @@ public class RabbitMqStaticContext {
             connectionFactory.setUsername(rabbitMQManagementConfig.getUsername());
             connectionFactory.setPassword(rabbitMQManagementConfig.getPassword());
 
-            var channel = connectionFactory.newConnection().createChannel();
-
-            mqChannels.put(namespace, new ChannelBunch(channel, rabbitMQConfig));
+            channelContext = new ChannelContext(connectionFactory.newConnection().createChannel(), rabbitMQConfig);
+            channels.put(namespace, channelContext);
         }
+
+        return channelContext.channel;
     }
+
 
     public static RabbitMQConfig getRabbitMQConfig(String namespace) throws ConfigNotFoundException {
 
         RabbitMQConfig rabbitMQConfig = ConfigMaps.INSTANCE.getRabbitMQConfig4Namespace(namespace);
-
         if (rabbitMQConfig == null) {
-
-            String message = String.format(
-                "Cannot find vHost and exchange in namespace '%s'. " +
-                    "Perhaps config map '%s.%s' does not exist or " +
-                    "is not watching yet, or property '%s' is not set",
-                namespace, namespace, OperatorConfig.INSTANCE.getRabbitMQConfigMapName(),
-                RabbitMQConfig.CONFIG_MAP_RABBITMQ_PROP_NAME);
-            logger.warn(message);
+            String message = String.format("RabbitMQ configuration for namespace \"{}\" is not available", namespace);
+            logger.error(message);
 
             throw new ConfigNotFoundException(message);
         }
         return rabbitMQConfig;
     }
 
-    @Getter
-    @AllArgsConstructor
-    public static class ChannelBunch {
 
-        private final Channel channel;
-        private final RabbitMQConfig config;
+    public static Channel getChannel(String namespace) {
+        var cb = channels.get(namespace);
+        return cb == null ? null : cb.channel;
     }
 
-    public static Map<String, ChannelBunch> getMqChannels() {
-        return mqChannels;
+
+    public static void closeChannel(String namespace) {
+
+        Channel channel = getChannel(namespace);
+        if (channel != null) {
+            try {
+                if (channel.isOpen())
+                    channel.close();
+            } catch (Exception e) {
+                logger.error("Exception closing RabbitMQ channel for namespace \"{}\"", namespace);
+            }
+            channels.remove(namespace);
+        }
     }
 
-    public static Map<String, Boolean> getMqExchangeResets() {
-        return mqExchangeResets;
+
+    public static boolean isExchangeReset(String namespace) {
+        Boolean reset = exchangeResets.get(namespace);
+        return (reset != null) && reset;
     }
+
+
+    public static void markExchangeReset(String namespace) {
+        exchangeResets.put(namespace, Boolean.TRUE);
+    }
+
 
     public static Map<String, Object> generateQueueArguments(PinSettings pinSettings) throws NumberFormatException {
 
@@ -116,7 +127,7 @@ public class RabbitMqStaticContext {
         }
     }
 
-    // MqVHostUtils
+
     private static Client getClient(String apiUrl, String username, String password) throws Exception {
         return new Client(new ClientParameters()
             .url(apiUrl)
@@ -125,6 +136,7 @@ public class RabbitMqStaticContext {
             .restTemplateConfigurator(new OkHttpRestTemplateConfigurator())
         );
     }
+
 
     public static void createVHostIfAbsent(String namespace, RabbitMQManagementConfig rabbitMQManagementConfig)
         throws VHostCreateException {
@@ -217,6 +229,17 @@ public class RabbitMqStaticContext {
         } catch (Exception e) {
             logger.error("Exception cleaning up vHost  \"{}\"", vHostName, e);
             throw new VHostCreateException(e);
+        }
+    }
+
+    private static class ChannelContext {
+
+        private final Channel channel;
+        private final RabbitMQConfig config;
+
+        public ChannelContext(Channel channel, RabbitMQConfig config) {
+            this.channel = channel;
+            this.config = config;
         }
     }
 }

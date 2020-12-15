@@ -43,10 +43,9 @@ import org.slf4j.LoggerFactory;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Map;
 import java.util.Objects;
 
-import static com.exactpro.th2.infraoperator.fabric8.spec.strategy.linkResolver.mq.impl.RabbitMqStaticContext.generateQueueArguments;
+import static com.exactpro.th2.infraoperator.fabric8.spec.strategy.linkResolver.mq.impl.RabbitMQContext.generateQueueArguments;
 
 
 public class BindQueueLinkResolver implements QueueLinkResolver {
@@ -128,15 +127,13 @@ public class BindQueueLinkResolver implements QueueLinkResolver {
     @SneakyThrows
     private void bindQueues(String namespace, QueueBunch queueBunch, Th2CustomResource resource, BoxMq boxMq) {
 
-        Map<String, RabbitMqStaticContext.ChannelBunch> channelBunchMap = RabbitMqStaticContext.getMqChannels();
 
-        Channel channel = channelBunchMap.get(namespace).getChannel();
+        Channel channel = RabbitMQContext.getChannel(namespace);
 
-        if (!channel.isOpen()) {
+        if (channel == null || !channel.isOpen()) {
             logger.warn("RMQ connection is broken, trying to reconnect...");
-            channelBunchMap.remove(namespace);
-            RabbitMqStaticContext.createChannelIfAbsent(namespace, rabbitMQManagementConfig, connectionFactory);
-            channel = channelBunchMap.get(namespace).getChannel();
+            RabbitMQContext.closeChannel(namespace);
+            channel = RabbitMQContext.createChannelIfAbsent(namespace, rabbitMQManagementConfig, connectionFactory);
             logger.info("RMQ connection has been restored");
         }
 
@@ -166,7 +163,7 @@ public class BindQueueLinkResolver implements QueueLinkResolver {
 
             var routingKey = queueBunch.getRoutingKey();
 
-            var channel = RabbitMqStaticContext.getMqChannels().get(namespace).getChannel();
+            var channel = RabbitMQContext.getChannel(namespace);
 
             channel.queueUnbind(queue, queueBunch.getExchange(), routingKey);
 
@@ -200,7 +197,7 @@ public class BindQueueLinkResolver implements QueueLinkResolver {
 
     private QueueBunch createQueueBunch(String namespace, BoxMq fromBoxMq, BoxMq toBoxMq) {
 
-        var rabbitMQConfig = RabbitMqStaticContext.getRabbitMQConfig(namespace);
+        var rabbitMQConfig = RabbitMQContext.getRabbitMQConfig(namespace);
 
         return new QueueBunch(
                 OperatorConfig.QUEUE_PREFIX + namespace + "_" + toBoxMq,

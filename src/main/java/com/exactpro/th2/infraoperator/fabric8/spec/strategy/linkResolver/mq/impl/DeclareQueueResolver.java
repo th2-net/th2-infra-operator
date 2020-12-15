@@ -26,10 +26,6 @@ import lombok.SneakyThrows;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.Map;
-
-import static com.exactpro.th2.infraoperator.fabric8.spec.strategy.linkResolver.mq.impl.RabbitMqStaticContext.*;
-
 public class DeclareQueueResolver {
 
     private static final Logger logger = LoggerFactory.getLogger(DeclareQueueResolver.class);
@@ -48,8 +44,7 @@ public class DeclareQueueResolver {
 
         String namespace = ExtractUtils.extractNamespace(resource);
 
-        RabbitMqStaticContext.createVHostIfAbsent(namespace, rabbitMQManagementConfig);
-        createChannelIfAbsent(namespace, rabbitMQManagementConfig, connectionFactory);
+        RabbitMQContext.createVHostIfAbsent(namespace, rabbitMQManagementConfig);
         declareQueueBunch(namespace, resource);
     }
 
@@ -60,25 +55,19 @@ public class DeclareQueueResolver {
     @SneakyThrows
     private void declareQueueBunch(String namespace, Th2CustomResource resource) {
 
-        RabbitMQConfig rabbitMQConfig = getRabbitMQConfig(namespace);
+        RabbitMQConfig rabbitMQConfig = RabbitMQContext.getRabbitMQConfig(namespace);
+        Channel channel = RabbitMQContext.getChannel(namespace);
 
-        Map<String, RabbitMqStaticContext.ChannelBunch> channelBunchMap = getMqChannels();
-
-        Channel channel = channelBunchMap.get(namespace).getChannel();
-
-        if (!channel.isOpen()) {
+        if (channel == null || !channel.isOpen()) {
             logger.warn("RMQ connection is broken, trying to reconnect...");
-            channelBunchMap.remove(namespace);
-            createChannelIfAbsent(namespace, rabbitMQManagementConfig, connectionFactory);
-            channel = channelBunchMap.get(namespace).getChannel();
+            RabbitMQContext.closeChannel(namespace);
+            channel = RabbitMQContext.createChannelIfAbsent(namespace, rabbitMQManagementConfig, connectionFactory);
             logger.info("RMQ connection has been restored");
         }
 
-        var exchangeReset = getMqExchangeResets().get(namespace);
-
-        if (exchangeReset == null || !exchangeReset) {
+        if (!RabbitMQContext.isExchangeReset(namespace)) {
             channel.exchangeDelete(rabbitMQConfig.getExchangeName());
-            getMqExchangeResets().put(namespace, true);
+            RabbitMQContext.markExchangeReset(namespace);
         }
 
         channel.exchangeDeclare(rabbitMQConfig.getExchangeName(), "direct", rabbitMQManagementConfig.isPersistence());
@@ -97,7 +86,7 @@ public class DeclareQueueResolver {
             if (!attrs.contains(DirectionAttribute.publish.name())) {
                 String queue = buildQueue(namespace, boxMq);
                 var declareResult = channel.queueDeclare(queue, rabbitMQManagementConfig.isPersistence(),
-                    false, false, generateQueueArguments(pin.getSettings()));
+                    false, false, RabbitMQContext.generateQueueArguments(pin.getSettings()));
                 logger.info("Queue '{}' of resource {} was successfully declared",
                     declareResult.getQueue(), ExtractUtils.extractName(resource));
             }
