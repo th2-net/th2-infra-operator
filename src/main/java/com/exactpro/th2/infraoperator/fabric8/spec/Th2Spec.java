@@ -14,7 +14,6 @@
 package com.exactpro.th2.infraoperator.fabric8.spec;
 
 import com.exactpro.th2.infraoperator.fabric8.configuration.ChartConfig;
-import com.exactpro.th2.infraoperator.fabric8.configuration.SchemaSecrets;
 import com.exactpro.th2.infraoperator.fabric8.operator.StoreHelmTh2Op;
 import com.exactpro.th2.infraoperator.fabric8.spec.shared.*;
 import com.exactpro.th2.infraoperator.fabric8.util.JsonUtils;
@@ -51,9 +50,6 @@ public abstract class Th2Spec implements KubernetesResource {
 
     @JsonProperty("prometheus")
     protected PrometheusConfiguration prometheusConfiguration;
-
-    @JsonProperty("secrets")
-    protected SchemaSecrets schemaSecrets;
 
     protected List<ParamSpec> params = new ArrayList<>();
 

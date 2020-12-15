@@ -187,7 +187,7 @@ public abstract class HelmReleaseTh2Op<CR extends Th2CustomResource> extends Abs
             helmRelease.mergeValue(PROPERTIES_MERGE_DEPTH, ROOT_PROPERTIES_ALIAS,
                 Map.of(EXTENDED_SETTINGS_ALIAS, extendedSettings));
 
-        SchemaSecrets schemaSecrets = resSpec.getSchemaSecrets();
+        SchemaSecrets schemaSecrets = OperatorConfig.INSTANCE.getSchemaSecrets();
         if (schemaSecrets != null)
             helmRelease.mergeValue(PROPERTIES_MERGE_DEPTH, ROOT_PROPERTIES_ALIAS,
                 Map.of(SCHEMA_SECRETS_ALIAS, schemaSecrets));
