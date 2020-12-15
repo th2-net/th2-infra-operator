@@ -44,11 +44,12 @@ import com.exactpro.th2.infraoperator.fabric8.spec.strategy.linkResolver.mq.Queu
 import com.exactpro.th2.infraoperator.fabric8.spec.strategy.linkResolver.mq.impl.DeclareQueueResolver;
 import com.exactpro.th2.infraoperator.fabric8.spec.strategy.resFinder.box.BoxResourceFinder;
 import com.exactpro.th2.infraoperator.fabric8.util.CustomResourceUtils;
-import io.fabric8.kubernetes.api.model.apiextensions.CustomResourceDefinition;
+import io.fabric8.kubernetes.api.model.apiextensions.v1.CustomResourceDefinition;
 import io.fabric8.kubernetes.client.Watch;
 import io.fabric8.kubernetes.client.Watcher;
 import io.fabric8.kubernetes.client.dsl.MixedOperation;
 import io.fabric8.kubernetes.client.dsl.Resource;
+import io.fabric8.kubernetes.client.dsl.base.CustomResourceDefinitionContext;
 import lombok.Getter;
 import lombok.SneakyThrows;
 import lombok.experimental.SuperBuilder;
@@ -121,11 +122,18 @@ public abstract class HelmReleaseTh2Op<CR extends Th2CustomResource> extends Abs
 
         helmReleaseCrd = getResourceCrd(kubClient, HELM_RELEASE_CRD_NAME);
 
+        CustomResourceDefinitionContext crdContext = new CustomResourceDefinitionContext.Builder()
+                .withGroup(helmReleaseCrd.getSpec().getGroup())
+                .withVersion(helmReleaseCrd.getSpec().getVersions().get(0).getName())
+                .withScope(helmReleaseCrd.getSpec().getScope())
+                .withPlural(helmReleaseCrd.getSpec().getNames().getPlural())
+                .build();
+
         helmReleaseClient = kubClient.customResources(
-            helmReleaseCrd,
-            HelmRelease.class,
-            HelmReleaseList.class,
-            DoneableHelmRelease.class
+                crdContext,
+                HelmRelease.class,
+                HelmReleaseList.class,
+                DoneableHelmRelease.class
         );
 
         var msgStContext = MsgStorageContext.builder()
