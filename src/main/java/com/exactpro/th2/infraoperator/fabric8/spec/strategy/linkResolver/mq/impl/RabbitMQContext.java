@@ -21,15 +21,14 @@ import com.exactpro.th2.infraoperator.fabric8.model.kubernetes.configmaps.Config
 import com.exactpro.th2.infraoperator.fabric8.spec.shared.PinSettings;
 import com.exactpro.th2.infraoperator.fabric8.spec.strategy.linkResolver.ConfigNotFoundException;
 import com.exactpro.th2.infraoperator.fabric8.spec.strategy.linkResolver.VHostCreateException;
-import com.exactpro.th2.infraoperator.fabric8.util.CustomResourceUtils;
 import com.exactpro.th2.infraoperator.fabric8.util.Strings;
 import com.rabbitmq.client.Channel;
+import com.rabbitmq.client.Connection;
 import com.rabbitmq.client.ConnectionFactory;
 import com.rabbitmq.http.client.Client;
 import com.rabbitmq.http.client.ClientParameters;
 import com.rabbitmq.http.client.OkHttpRestTemplateConfigurator;
 import com.rabbitmq.http.client.domain.UserPermissions;
-import lombok.SneakyThrows;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -43,63 +42,55 @@ public class RabbitMQContext {
 
     private static final Logger logger = LoggerFactory.getLogger(RabbitMQContext.class);
 
-    private static final Map<String, ChannelContext> channels = new ConcurrentHashMap<>();
+    private static final Map<String, ChannelContext> channelContextes = new ConcurrentHashMap<>();
+    private static final Map<String, ConnectionFactory> connectionFactories = new ConcurrentHashMap<>();
     private static final Map<String, Boolean> exchangeResets = new ConcurrentHashMap<>();
 
-    @SneakyThrows
-    public static Channel createChannelIfAbsent(String namespace
-            , RabbitMQManagementConfig rabbitMQManagementConfig
-            , ConnectionFactory connectionFactory) {
 
-        RabbitMQConfig rabbitMQConfig = getRabbitMQConfig(namespace);
-        ChannelContext channelContext = channels.get(namespace);
+    // call to this method should be synchronized externally per namespace
+    public static Channel getChannel(String namespace) {
 
-        if (channelContext == null || !channelContext.config.equals(rabbitMQConfig)) {
+        var rabbitMQManagementConfig = OperatorConfig.INSTANCE.getRabbitMQManagementConfig();
+        var rabbitMQConfig = getRabbitMQConfig(namespace);
 
-            connectionFactory.setHost(rabbitMQConfig.getHost());
-            connectionFactory.setPort(rabbitMQConfig.getPort());
-            connectionFactory.setVirtualHost(rabbitMQConfig.getVHost());
-            connectionFactory.setUsername(rabbitMQManagementConfig.getUsername());
-            connectionFactory.setPassword(rabbitMQManagementConfig.getPassword());
+        String signature = ChannelContext.signatureFor(rabbitMQManagementConfig, rabbitMQConfig);
 
-            channelContext = new ChannelContext(connectionFactory.newConnection().createChannel(), rabbitMQConfig);
-            channels.put(namespace, channelContext);
+        var context = channelContextes.computeIfAbsent(namespace
+                , k -> ChannelContext.contextFor(rabbitMQManagementConfig, rabbitMQConfig));
+
+        // check if we need to recreate channel for this namespace
+        // due to configuration change
+        if (!context.signature.equals(signature)) {
+            context = ChannelContext.contextFor(rabbitMQManagementConfig, rabbitMQConfig);
+            channelContextes.put(namespace, context);
         }
 
-        return channelContext.channel;
+        return context.channel;
     }
 
 
     public static RabbitMQConfig getRabbitMQConfig(String namespace) throws ConfigNotFoundException {
 
         RabbitMQConfig rabbitMQConfig = ConfigMaps.INSTANCE.getRabbitMQConfig4Namespace(namespace);
-        if (rabbitMQConfig == null) {
-            String message = String.format("RabbitMQ configuration for namespace \"{}\" is not available", namespace);
-            logger.error(message);
-
-            throw new ConfigNotFoundException(message);
-        }
+        if (rabbitMQConfig == null)
+            throw new ConfigNotFoundException(String.format("RabbitMQ configuration for namespace \"{}\" is not available", namespace));
         return rabbitMQConfig;
     }
 
 
-    public static Channel getChannel(String namespace) {
-        var cb = channels.get(namespace);
-        return cb == null ? null : cb.channel;
+    public static String getExchangeName(String namespace) {
+
+        return getRabbitMQConfig(namespace).getExchangeName();
     }
 
 
+    // call to this method should be synchronized externally per namespace
     public static void closeChannel(String namespace) {
 
-        Channel channel = getChannel(namespace);
-        if (channel != null) {
-            try {
-                if (channel.isOpen())
-                    channel.close();
-            } catch (Exception e) {
-                logger.error("Exception closing RabbitMQ channel for namespace \"{}\"", namespace);
-            }
-            channels.remove(namespace);
+        var context = channelContextes.get(namespace);
+        if (context != null) {
+            context.close();
+            channelContextes.remove(namespace);
         }
     }
 
@@ -141,14 +132,7 @@ public class RabbitMQContext {
     public static void createVHostIfAbsent(String namespace, RabbitMQManagementConfig rabbitMQManagementConfig)
         throws VHostCreateException {
 
-        RabbitMQConfig rabbitMQConfig = ConfigMaps.INSTANCE.getRabbitMQConfig4Namespace(namespace);
-
-        if (rabbitMQConfig == null)
-            throw new ConfigNotFoundException(String.format(
-                "Exception setting up RabbitMQ for namespace \"%s\". Check if \"%s\" is configured properly"
-                , namespace
-                , CustomResourceUtils.annotationFor(
-                    namespace, "ConfigMap", OperatorConfig.INSTANCE.getRabbitMQConfigMapName())));
+        RabbitMQConfig rabbitMQConfig = getRabbitMQConfig(namespace);
 
         String vHostName = rabbitMQConfig.getVHost();
         String username = rabbitMQConfig.getUsername();
@@ -196,14 +180,7 @@ public class RabbitMQContext {
     public static void cleanupVHost(String namespace, RabbitMQManagementConfig rabbitMQManagementConfig)
         throws VHostCreateException {
 
-        RabbitMQConfig rabbitMQConfig = ConfigMaps.INSTANCE.getRabbitMQConfig4Namespace(namespace);
-
-        if (rabbitMQConfig == null)
-            throw new ConfigNotFoundException(String.format(
-                "Exception cleaning up RabbitMQ for namespace \"%s\". Check if \"%s\" is configured properly"
-                , namespace
-                , CustomResourceUtils.annotationFor(
-                    namespace, "ConfigMap", OperatorConfig.INSTANCE.getRabbitMQConfigMapName())));
+        RabbitMQConfig rabbitMQConfig = getRabbitMQConfig(namespace);
 
         String vHostName = rabbitMQConfig.getVHost();
         String username = rabbitMQConfig.getUsername();
@@ -232,14 +209,74 @@ public class RabbitMQContext {
         }
     }
 
-    private static class ChannelContext {
 
-        private final Channel channel;
-        private final RabbitMQConfig config;
+    static class ChannelContext {
 
-        public ChannelContext(Channel channel, RabbitMQConfig config) {
-            this.channel = channel;
-            this.config = config;
+        private Connection connection;
+
+        private Channel channel;
+        private String signature;
+
+        ChannelContext(ConnectionFactory factory, String signature) {
+            this.signature = signature;
+            try {
+                this.connection = factory.newConnection();
+                this.channel = connection.createChannel();
+            } catch (Exception e) {
+                close();
+                throw new RuntimeException(e);
+            }
         }
+
+        public static ChannelContext contextFor(RabbitMQManagementConfig managementConfig, RabbitMQConfig namespaceConfig) {
+
+            String signature = ChannelContext.signatureFor(managementConfig, namespaceConfig);
+            var connectionFactory = getConnectionFactory(managementConfig, namespaceConfig);
+            return new ChannelContext(connectionFactory, signature);
+        }
+
+
+        private static ConnectionFactory getConnectionFactory(RabbitMQManagementConfig managementConfig, RabbitMQConfig rabbitMQConfig) {
+
+            String signature = ChannelContext.signatureFor(managementConfig, rabbitMQConfig);
+            var result = connectionFactories.computeIfAbsent(signature, k -> {
+                var connectionFactory = new ConnectionFactory();
+                connectionFactory.setHost(rabbitMQConfig.getHost());
+                connectionFactory.setPort(rabbitMQConfig.getPort());
+                connectionFactory.setVirtualHost(rabbitMQConfig.getVHost());
+                connectionFactory.setUsername(managementConfig.getUsername());
+                connectionFactory.setPassword(managementConfig.getPassword());
+                return connectionFactory;
+            });
+
+            return result;
+        }
+
+        public synchronized void close() {
+            try {
+                if (channel != null && channel.isOpen())
+                    channel.close();
+                channel = null;
+            } catch (Exception e) {
+                logger.error("Exception closing RabbitMQ channel for \"{}\"", signature, e);
+            }
+            try {
+                if (connection != null && connection.isOpen())
+                    connection.close();
+                connection = null;
+            } catch (Exception e) {
+                logger.error("Exception closing RabbitMQ connection for \"{}\"", signature, e);
+            }
+        }
+
+
+        public static String signatureFor(RabbitMQManagementConfig managementConfig, RabbitMQConfig rabbitMQConfig) {
+            return
+                    rabbitMQConfig.getHost()
+                            + ":" +rabbitMQConfig.getPort()
+                            + ":" + rabbitMQConfig.getVHost()
+                            + ":" + managementConfig.getUsername();
+        }
+
     }
 }

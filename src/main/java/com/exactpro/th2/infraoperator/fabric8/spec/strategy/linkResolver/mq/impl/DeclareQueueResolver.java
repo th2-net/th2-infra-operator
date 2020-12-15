@@ -14,14 +14,12 @@
 package com.exactpro.th2.infraoperator.fabric8.spec.strategy.linkResolver.mq.impl;
 
 import com.exactpro.th2.infraoperator.fabric8.configuration.OperatorConfig;
-import com.exactpro.th2.infraoperator.fabric8.configuration.RabbitMQConfig;
 import com.exactpro.th2.infraoperator.fabric8.configuration.RabbitMQManagementConfig;
 import com.exactpro.th2.infraoperator.fabric8.spec.Th2CustomResource;
 import com.exactpro.th2.infraoperator.fabric8.spec.link.relation.boxes.box.impl.BoxMq;
 import com.exactpro.th2.infraoperator.fabric8.spec.shared.DirectionAttribute;
 import com.exactpro.th2.infraoperator.fabric8.util.ExtractUtils;
 import com.rabbitmq.client.Channel;
-import com.rabbitmq.client.ConnectionFactory;
 import lombok.SneakyThrows;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -29,15 +27,11 @@ import org.slf4j.LoggerFactory;
 public class DeclareQueueResolver {
 
     private static final Logger logger = LoggerFactory.getLogger(DeclareQueueResolver.class);
-
-    private final ConnectionFactory connectionFactory;
-
     private final RabbitMQManagementConfig rabbitMQManagementConfig;
 
     @SneakyThrows
     public DeclareQueueResolver() {
         this.rabbitMQManagementConfig = OperatorConfig.INSTANCE.getRabbitMQManagementConfig();
-        this.connectionFactory = new ConnectionFactory();
     }
 
     public void resolveAdd(Th2CustomResource resource) {
@@ -55,22 +49,22 @@ public class DeclareQueueResolver {
     @SneakyThrows
     private void declareQueueBunch(String namespace, Th2CustomResource resource) {
 
-        RabbitMQConfig rabbitMQConfig = RabbitMQContext.getRabbitMQConfig(namespace);
         Channel channel = RabbitMQContext.getChannel(namespace);
 
-        if (channel == null || !channel.isOpen()) {
-            logger.warn("RMQ connection is broken, trying to reconnect...");
+        if (!channel.isOpen()) {
+            logger.warn("RabbitMQ connection is broken, trying to reconnect...");
             RabbitMQContext.closeChannel(namespace);
-            channel = RabbitMQContext.createChannelIfAbsent(namespace, rabbitMQManagementConfig, connectionFactory);
-            logger.info("RMQ connection has been restored");
+            channel = RabbitMQContext.getChannel(namespace);
+            logger.info("RabbitMQ connection has been restored");
         }
 
+        String exchangeName = RabbitMQContext.getExchangeName(namespace);
         if (!RabbitMQContext.isExchangeReset(namespace)) {
-            channel.exchangeDelete(rabbitMQConfig.getExchangeName());
+            channel.exchangeDelete(exchangeName);
             RabbitMQContext.markExchangeReset(namespace);
         }
 
-        channel.exchangeDeclare(rabbitMQConfig.getExchangeName(), "direct", rabbitMQManagementConfig.isPersistence());
+        channel.exchangeDeclare(exchangeName, "direct", rabbitMQManagementConfig.isPersistence());
 
         for (var pin : ExtractUtils.extractMqPins(resource)) {
 

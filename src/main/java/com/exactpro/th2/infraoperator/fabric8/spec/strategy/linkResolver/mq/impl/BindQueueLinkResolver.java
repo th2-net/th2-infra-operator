@@ -34,7 +34,6 @@ import com.exactpro.th2.infraoperator.fabric8.spec.strategy.linkResolver.mq.Queu
 import com.exactpro.th2.infraoperator.fabric8.spec.strategy.resFinder.box.BoxResourceFinder;
 import com.exactpro.th2.infraoperator.fabric8.util.ExtractUtils;
 import com.rabbitmq.client.Channel;
-import com.rabbitmq.client.ConnectionFactory;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.SneakyThrows;
@@ -51,18 +50,13 @@ import static com.exactpro.th2.infraoperator.fabric8.spec.strategy.linkResolver.
 public class BindQueueLinkResolver implements QueueLinkResolver {
 
     private static final Logger logger = LoggerFactory.getLogger(BindQueueLinkResolver.class);
-
-    private final ConnectionFactory connectionFactory;
-
     private final BoxResourceFinder resourceFinder;
-
     private final RabbitMQManagementConfig rabbitMQManagementConfig;
 
     @SneakyThrows
     public BindQueueLinkResolver(BoxResourceFinder resourceFinder) {
         this.rabbitMQManagementConfig = OperatorConfig.INSTANCE.getRabbitMQManagementConfig();
         this.resourceFinder = resourceFinder;
-        this.connectionFactory = new ConnectionFactory();
     }
 
 
@@ -130,11 +124,11 @@ public class BindQueueLinkResolver implements QueueLinkResolver {
 
         Channel channel = RabbitMQContext.getChannel(namespace);
 
-        if (channel == null || !channel.isOpen()) {
-            logger.warn("RMQ connection is broken, trying to reconnect...");
+        if (!channel.isOpen()) {
+            logger.warn("RabbitMQ connection is broken, trying to reconnect...");
             RabbitMQContext.closeChannel(namespace);
-            channel = RabbitMQContext.createChannelIfAbsent(namespace, rabbitMQManagementConfig, connectionFactory);
-            logger.info("RMQ connection has been restored");
+            channel = RabbitMQContext.getChannel(namespace);
+            logger.info("RabbitMQ connection has been restored");
         }
 
         PinSettings pinSettings = resource.getSpec().getPin(boxMq.getPin()).getSettings();
@@ -151,19 +145,15 @@ public class BindQueueLinkResolver implements QueueLinkResolver {
                         && qlb.getQueueBunch().getRoutingKey().equals(newQlb.getQueueBunch().getRoutingKey())
         ));
 
+        Channel channel = RabbitMQContext.getChannel(namespace);
+
         for (var extinctLink : oldLinks) {
 
             var fromBox = extinctLink.getFrom();
-
             var toBox = extinctLink.getTo();
-
             var queueBunch = extinctLink.getQueueBunch();
-
             var queue = queueBunch.getQueue();
-
             var routingKey = queueBunch.getRoutingKey();
-
-            var channel = RabbitMQContext.getChannel(namespace);
 
             channel.queueUnbind(queue, queueBunch.getExchange(), routingKey);
 
@@ -176,7 +166,7 @@ public class BindQueueLinkResolver implements QueueLinkResolver {
 
             if (!isQueueUsed(queueBunch, newLinks)) {
                 msgCount = channel.queueDelete(queue).getMessageCount();
-                infoMsg += ". Queue has been deleted because it's not bind for any routing key";
+                infoMsg += ". Queue has been deleted because it's not bound for any routing key";
             }
 
             if (msgCount == 0) {
@@ -197,12 +187,10 @@ public class BindQueueLinkResolver implements QueueLinkResolver {
 
     private QueueBunch createQueueBunch(String namespace, BoxMq fromBoxMq, BoxMq toBoxMq) {
 
-        var rabbitMQConfig = RabbitMQContext.getRabbitMQConfig(namespace);
-
         return new QueueBunch(
                 OperatorConfig.QUEUE_PREFIX + namespace + "_" + toBoxMq,
                 OperatorConfig.ROUTING_KEY_PREFIX + namespace + "_" + fromBoxMq,
-                rabbitMQConfig.getExchangeName()
+                RabbitMQContext.getExchangeName(namespace)
         );
     }
 
