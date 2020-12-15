@@ -33,7 +33,7 @@ public class MqVHostUtils {
 
     private static final Logger logger = LoggerFactory.getLogger(MqVHostUtils.class);
 
-    private static Client getClient(String apiUrl, String username, String password) throws Exception {
+    public static Client getClient(String apiUrl, String username, String password) throws Exception {
         return new Client(new ClientParameters()
                         .url(apiUrl)
                         .username(username)

@@ -325,8 +325,6 @@ public abstract class HelmReleaseTh2Op<CR extends Th2CustomResource> extends Abs
 
         var lSingleton = LinkSingleton.INSTANCE;
 
-        var mqActiveLinks = new ArrayList<>(lSingleton.getMqActiveLinks(namespace));
-
         var grpcActiveLinks = new ArrayList<>(lSingleton.getGrpcActiveLinks(namespace));
 
         var helmReleases = getAllHelmReleases(namespace);
