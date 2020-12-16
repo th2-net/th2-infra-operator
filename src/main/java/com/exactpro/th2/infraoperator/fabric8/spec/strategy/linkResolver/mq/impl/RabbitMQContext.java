@@ -38,12 +38,15 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
-public class RabbitMQContext {
+public final class RabbitMQContext {
 
     private static final Logger logger = LoggerFactory.getLogger(RabbitMQContext.class);
 
     private static final Map<String, ChannelContext> channelContexts = new ConcurrentHashMap<>();
     private static final Map<String, Boolean> exchangeResets = new ConcurrentHashMap<>();
+
+    private RabbitMQContext() {
+    }
 
 
     // call to this method should be synchronized externally per namespace
@@ -72,7 +75,7 @@ public class RabbitMQContext {
 
         RabbitMQConfig rabbitMQConfig = ConfigMaps.INSTANCE.getRabbitMQConfig4Namespace(namespace);
         if (rabbitMQConfig == null)
-            throw new ConfigNotFoundException(String.format("RabbitMQ configuration for namespace \"{}\" is not available", namespace));
+            throw new ConfigNotFoundException(String.format("RabbitMQ configuration for namespace \"%s\" is not available", namespace));
         return rabbitMQConfig;
     }
 
@@ -213,9 +216,9 @@ public class RabbitMQContext {
 
         private static final Map<String, ConnectionFactory> connectionFactories = new ConcurrentHashMap<>();
 
+        private final String signature;
         private Connection connection;
         private Channel channel;
-        private String signature;
 
 
         ChannelContext(ConnectionFactory factory, String signature) {
