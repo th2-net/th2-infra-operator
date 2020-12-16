@@ -13,8 +13,8 @@
 
 package com.exactpro.th2.infraoperator.fabric8.operator;
 
+import com.exactpro.th2.infraoperator.fabric8.configuration.HelmReleaseSecrets;
 import com.exactpro.th2.infraoperator.fabric8.configuration.OperatorConfig;
-import com.exactpro.th2.infraoperator.fabric8.configuration.SchemaSecrets;
 import com.exactpro.th2.infraoperator.fabric8.model.box.configuration.dictionary.DictionaryEntity;
 import com.exactpro.th2.infraoperator.fabric8.model.box.configuration.dictionary.factory.DictionaryFactory;
 import com.exactpro.th2.infraoperator.fabric8.model.box.configuration.grpc.GrpcRouterConfiguration;
@@ -195,10 +195,9 @@ public abstract class HelmReleaseTh2Op<CR extends Th2CustomResource> extends Abs
             helmRelease.mergeValue(PROPERTIES_MERGE_DEPTH, ROOT_PROPERTIES_ALIAS,
                 Map.of(EXTENDED_SETTINGS_ALIAS, extendedSettings));
 
-        SchemaSecrets schemaSecrets = OperatorConfig.INSTANCE.getSchemaSecrets();
-        if (schemaSecrets != null)
-            helmRelease.mergeValue(PROPERTIES_MERGE_DEPTH, ROOT_PROPERTIES_ALIAS,
-                Map.of(SCHEMA_SECRETS_ALIAS, schemaSecrets));
+        HelmReleaseSecrets secrets = new HelmReleaseSecrets(OperatorConfig.INSTANCE.getSchemaSecrets());
+        helmRelease.mergeValue(PROPERTIES_MERGE_DEPTH, ROOT_PROPERTIES_ALIAS,
+            Map.of(SCHEMA_SECRETS_ALIAS, secrets));
 
         var defaultChartConfig = OperatorConfig.INSTANCE.getChartConfig();
         var chartConfig = resSpec.getChartConfig();
