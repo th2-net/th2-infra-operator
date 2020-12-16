@@ -43,7 +43,6 @@ public class RabbitMQContext {
     private static final Logger logger = LoggerFactory.getLogger(RabbitMQContext.class);
 
     private static final Map<String, ChannelContext> channelContexts = new ConcurrentHashMap<>();
-    private static final Map<String, ConnectionFactory> connectionFactories = new ConcurrentHashMap<>();
     private static final Map<String, Boolean> exchangeResets = new ConcurrentHashMap<>();
 
 
@@ -212,9 +211,12 @@ public class RabbitMQContext {
 
     static class ChannelContext {
 
+        private static final Map<String, ConnectionFactory> connectionFactories = new ConcurrentHashMap<>();
+
         private Connection connection;
         private Channel channel;
         private String signature;
+
 
         ChannelContext(ConnectionFactory factory, String signature) {
             this.signature = signature;
@@ -227,18 +229,20 @@ public class RabbitMQContext {
             }
         }
 
-        public static ChannelContext contextFor(RabbitMQManagementConfig managementConfig, RabbitMQConfig namespaceConfig) {
 
-            String signature = ChannelContext.signatureFor(managementConfig, namespaceConfig);
+        static ChannelContext contextFor(RabbitMQManagementConfig managementConfig, RabbitMQConfig namespaceConfig) {
+
+            String signature = signatureFor(managementConfig, namespaceConfig);
             var connectionFactory = getConnectionFactory(managementConfig, namespaceConfig);
             return new ChannelContext(connectionFactory, signature);
         }
 
 
-        private static ConnectionFactory getConnectionFactory(RabbitMQManagementConfig managementConfig, RabbitMQConfig rabbitMQConfig) {
+        static ConnectionFactory getConnectionFactory(RabbitMQManagementConfig managementConfig, RabbitMQConfig rabbitMQConfig) {
 
             String signature = ChannelContext.signatureFor(managementConfig, rabbitMQConfig);
-            var result = connectionFactories.computeIfAbsent(signature, k -> {
+            return connectionFactories.computeIfAbsent(signature, k -> {
+
                 var connectionFactory = new ConnectionFactory();
                 connectionFactory.setHost(rabbitMQConfig.getHost());
                 connectionFactory.setPort(rabbitMQConfig.getPort());
@@ -247,29 +251,28 @@ public class RabbitMQContext {
                 connectionFactory.setPassword(managementConfig.getPassword());
                 return connectionFactory;
             });
-
-            return result;
         }
 
-        public synchronized void close() {
+
+        synchronized void close() {
             try {
                 if (channel != null && channel.isOpen())
                     channel.close();
-                channel = null;
             } catch (Exception e) {
                 logger.error("Exception closing RabbitMQ channel for \"{}\"", signature, e);
             }
             try {
                 if (connection != null && connection.isOpen())
                     connection.close();
-                connection = null;
             } catch (Exception e) {
                 logger.error("Exception closing RabbitMQ connection for \"{}\"", signature, e);
             }
+            channel = null;
+            connection = null;
         }
 
 
-        public static String signatureFor(RabbitMQManagementConfig managementConfig, RabbitMQConfig rabbitMQConfig) {
+        static String signatureFor(RabbitMQManagementConfig managementConfig, RabbitMQConfig rabbitMQConfig) {
             return
                     rabbitMQConfig.getHost()
                             + ":" +rabbitMQConfig.getPort()
