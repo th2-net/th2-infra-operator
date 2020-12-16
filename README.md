@@ -50,13 +50,13 @@ chart:
   
 rabbitMQManagement:
   host: host
-  # rabbitMQ host used for managing vHosts and users
+  # RabbitMQ host used for managing vHosts and users
   
   port: 8080
-  # rabbitMQ port
+  # RabbitMQ port
   
   username: username
-  # rabbitMQ management username
+  # RabbitMQ management username
   
   password: password
   # password for management user
@@ -77,14 +77,20 @@ rabbitMQManagement:
     write: pattern
     # write permission on resources
     
+configMaps:
+# this section contains names of ConfigMaps
+
+  rabbitMQ: rabbit-mq-config-map
+  # name of a RabbitMQ ConfigMap
+
 schemaSecrets:
-# this section contains passwords for schema
+# this section contains passwords for a schema
 
   rabbitMQ: rabbitmq
-  # rabbitMQ secret name
+  # RabbitMQ secret name
 
   cassandra: cassandra
-  # cassandra secret name
+  # Cassandra secret name
 
   
 ```
