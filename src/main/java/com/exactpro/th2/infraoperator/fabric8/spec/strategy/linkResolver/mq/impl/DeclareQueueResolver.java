@@ -24,7 +24,6 @@ import com.exactpro.th2.infraoperator.fabric8.util.ExtractUtils;
 import com.exactpro.th2.infraoperator.fabric8.util.MqVHostUtils;
 import com.rabbitmq.client.Channel;
 import com.rabbitmq.client.ConnectionFactory;
-import com.rabbitmq.http.client.Client;
 import com.rabbitmq.http.client.domain.QueueInfo;
 import lombok.SneakyThrows;
 import org.slf4j.Logger;
@@ -36,8 +35,10 @@ import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
 
+import static com.exactpro.th2.infraoperator.fabric8.configuration.OperatorConfig.QUEUE_PREFIX;
 import static com.exactpro.th2.infraoperator.fabric8.spec.strategy.linkResolver.mq.impl.RabbitMqStaticContext.*;
-import static com.exactpro.th2.infraoperator.fabric8.util.ExtractUtils.extractName;
+import static com.exactpro.th2.infraoperator.fabric8.util.ExtractUtils.*;
+import static com.exactpro.th2.infraoperator.fabric8.util.MqVHostUtils.getQueues;
 
 public class DeclareQueueResolver {
 
@@ -66,7 +67,7 @@ public class DeclareQueueResolver {
         RabbitMQConfig rabbitMQConfig = getRabbitMQConfig(namespace);
         Channel channel = getChannel(namespace, rabbitMQConfig);
         //get queues that are associated with current box and are not linked through Th2Link resources
-        List<QueueInfo> boxUnlinkedQueues = getBoxUnlinkedQueues(namespace, resource);
+        List<QueueInfo> boxUnlinkedQueues = getBoxUnlinkedQueues(namespace, boxQueuesNoPins(resource));
         removeExtinctQueues(channel, boxUnlinkedQueues);
     }
 
@@ -76,7 +77,7 @@ public class DeclareQueueResolver {
         Channel channel = getChannel(namespace, rabbitMQConfig);
         channel.exchangeDeclare(rabbitMQConfig.getExchangeName(), "direct", rabbitMQManagementConfig.isPersistence());
         //get queues that are associated with current box and are not linked through Th2Link resources
-        List<QueueInfo> boxUnlinkedQueues = getBoxUnlinkedQueues(namespace, resource);
+        List<QueueInfo> boxUnlinkedQueues = getBoxUnlinkedQueues(namespace, boxQueuesNoPins(resource));
 
         for (var pin : ExtractUtils.extractMqPins(resource)) {
             var attrs = pin.getAttributes();
@@ -99,31 +100,19 @@ public class DeclareQueueResolver {
     }
 
 
-    private List<QueueInfo> getBoxUnlinkedQueues(String namespace, Th2CustomResource resource) {
-        List<QueueInfo> boxQueues = getBoxQueues(namespace, resource);
+    private List<QueueInfo> getBoxUnlinkedQueues(String namespace, String boxQueuesFullName) {
+        List<QueueInfo> boxQueues = getBoxQueues(namespace, boxQueuesFullName);
         removeLinkedQueues(boxQueues, namespace);
         return boxQueues;
     }
 
     @SneakyThrows
-    private List<QueueInfo> getBoxQueues(String namespace, Th2CustomResource resource) {
+    private List<QueueInfo> getBoxQueues(String namespace, String boxQueuesFullName) {
         RabbitMQConfig rabbitMQConfig = getRabbitMQConfig(namespace);
-        try {
-            Client rmqMngClient = MqVHostUtils.getClient(
-                    String.format("http://%s:%s/api", rabbitMQManagementConfig.getHost(), rabbitMQManagementConfig.getPort())
-                    , rabbitMQManagementConfig.getUsername()
-                    , rabbitMQManagementConfig.getPassword()
-            );
-
-            List<QueueInfo> queues = rmqMngClient.getQueues(rabbitMQConfig.getVHost());
-
-            return queues.stream()
-                    .filter(queue -> queue.getName().contains(extractName(resource)))
-                    .collect(Collectors.toList());
-        } catch (Exception e) {
-            logger.error("Exception deleting queues for resource \"{}\" in namespace \"{}\"", extractName(resource), namespace, e);
-            throw e;
-        }
+        List<QueueInfo> queues = getQueues(rabbitMQConfig.getVHost(), rabbitMQManagementConfig);
+        return queues.stream()
+                .filter(queue -> queue.getName().contains(boxQueuesFullName))
+                .collect(Collectors.toList());
     }
 
     private void removeLinkedQueues(List<QueueInfo> boxQueues, String namespace) {
@@ -146,6 +135,7 @@ public class DeclareQueueResolver {
         }
         var exchangeReset = getMqExchangeResets().get(namespace);
         if (exchangeReset == null || !exchangeReset) {
+            logger.info("Deleting exchange in vHost: {}", namespace);
             channel.exchangeDelete(rabbitMQConfig.getExchangeName());
             getMqExchangeResets().put(namespace, true);
         }
@@ -170,6 +160,10 @@ public class DeclareQueueResolver {
 
 
     private String buildQueue(String namespace, BoxMq boxMq) {
-        return OperatorConfig.QUEUE_PREFIX + namespace + "_" + boxMq.toString();
+        return QUEUE_PREFIX + namespace + "_" + boxMq.toString();
+    }
+
+    private String boxQueuesNoPins(Th2CustomResource resource) {
+        return QUEUE_PREFIX + extractNamespace(resource) + "_" + extractName(resource);
     }
 }
