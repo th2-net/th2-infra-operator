@@ -42,7 +42,7 @@ public class RabbitMQContext {
 
     private static final Logger logger = LoggerFactory.getLogger(RabbitMQContext.class);
 
-    private static final Map<String, ChannelContext> channelContextes = new ConcurrentHashMap<>();
+    private static final Map<String, ChannelContext> channelContexts = new ConcurrentHashMap<>();
     private static final Map<String, ConnectionFactory> connectionFactories = new ConcurrentHashMap<>();
     private static final Map<String, Boolean> exchangeResets = new ConcurrentHashMap<>();
 
@@ -55,14 +55,14 @@ public class RabbitMQContext {
 
         String signature = ChannelContext.signatureFor(rabbitMQManagementConfig, rabbitMQConfig);
 
-        var context = channelContextes.computeIfAbsent(namespace
+        var context = channelContexts.computeIfAbsent(namespace
                 , k -> ChannelContext.contextFor(rabbitMQManagementConfig, rabbitMQConfig));
 
         // check if we need to recreate channel for this namespace
         // due to configuration change
         if (!context.signature.equals(signature)) {
             context = ChannelContext.contextFor(rabbitMQManagementConfig, rabbitMQConfig);
-            channelContextes.put(namespace, context);
+            channelContexts.put(namespace, context);
         }
 
         return context.channel;
@@ -87,10 +87,10 @@ public class RabbitMQContext {
     // call to this method should be synchronized externally per namespace
     public static void closeChannel(String namespace) {
 
-        var context = channelContextes.get(namespace);
+        var context = channelContexts.get(namespace);
         if (context != null) {
             context.close();
-            channelContextes.remove(namespace);
+            channelContexts.remove(namespace);
         }
     }
 
@@ -213,7 +213,6 @@ public class RabbitMQContext {
     static class ChannelContext {
 
         private Connection connection;
-
         private Channel channel;
         private String signature;
 
