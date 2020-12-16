@@ -13,7 +13,6 @@
 
 package com.exactpro.th2.infraoperator.fabric8.operator;
 
-import com.exactpro.th2.infraoperator.fabric8.configuration.HelmReleaseSecrets;
 import com.exactpro.th2.infraoperator.fabric8.configuration.OperatorConfig;
 import com.exactpro.th2.infraoperator.fabric8.model.box.configuration.dictionary.DictionaryEntity;
 import com.exactpro.th2.infraoperator.fabric8.model.box.configuration.dictionary.factory.DictionaryFactory;
