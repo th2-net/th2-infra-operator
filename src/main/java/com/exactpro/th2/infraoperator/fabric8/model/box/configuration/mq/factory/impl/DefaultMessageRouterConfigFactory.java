@@ -13,7 +13,6 @@
 
 package com.exactpro.th2.infraoperator.fabric8.model.box.configuration.mq.factory.impl;
 
-import com.exactpro.th2.infraoperator.fabric8.configuration.OperatorConfig;
 import com.exactpro.th2.infraoperator.fabric8.model.box.configuration.mq.MessageRouterConfiguration;
 import com.exactpro.th2.infraoperator.fabric8.model.box.configuration.mq.QueueConfiguration;
 import com.exactpro.th2.infraoperator.fabric8.model.box.configuration.mq.RouterFilterConfiguration;
@@ -24,7 +23,8 @@ import com.exactpro.th2.infraoperator.fabric8.spec.Th2CustomResource;
 import com.exactpro.th2.infraoperator.fabric8.spec.link.relation.boxes.box.impl.BoxMq;
 import com.exactpro.th2.infraoperator.fabric8.spec.shared.DirectionAttribute;
 import com.exactpro.th2.infraoperator.fabric8.spec.shared.FilterSpec;
-import com.exactpro.th2.infraoperator.fabric8.spec.strategy.linkResolver.Queue;
+import com.exactpro.th2.infraoperator.fabric8.spec.strategy.linkResolver.queue.QueueName;
+import com.exactpro.th2.infraoperator.fabric8.spec.strategy.linkResolver.queue.RoutingKeyName;
 import com.exactpro.th2.infraoperator.fabric8.util.ExtractUtils;
 import com.exactpro.th2.infraoperator.fabric8.util.SchemeMappingUtils;
 import org.jetbrains.annotations.Nullable;
@@ -106,9 +106,9 @@ public class DefaultMessageRouterConfigFactory implements MessageRouterConfigFac
             return null;
         }
 
-        String fullQueue = toBox == null ? NOT_NECESSARY_STUB : new Queue(toBox, namespace).toQueueString();
+        String fullQueue = toBox == null ? NOT_NECESSARY_STUB : new QueueName(toBox, namespace).toString();
 
-        String fullRoutingKey = fromBox == null ? NOT_NECESSARY_STUB : new Queue(fromBox, namespace).toRoutingKeyString();
+        String fullRoutingKey = fromBox == null ? NOT_NECESSARY_STUB : new RoutingKeyName(fromBox, namespace).toString();
 
         return new QueueBunch(
                 fullQueue,

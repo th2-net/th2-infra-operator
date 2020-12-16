@@ -20,7 +20,7 @@ import com.exactpro.th2.infraoperator.fabric8.spec.Th2CustomResource;
 import com.exactpro.th2.infraoperator.fabric8.spec.link.relation.boxes.box.impl.BoxMq;
 import com.exactpro.th2.infraoperator.fabric8.spec.link.singleton.LinkSingleton;
 import com.exactpro.th2.infraoperator.fabric8.spec.shared.DirectionAttribute;
-import com.exactpro.th2.infraoperator.fabric8.spec.strategy.linkResolver.Queue;
+import com.exactpro.th2.infraoperator.fabric8.spec.strategy.linkResolver.queue.QueueName;
 import com.exactpro.th2.infraoperator.fabric8.util.ExtractUtils;
 import com.exactpro.th2.infraoperator.fabric8.util.MqVHostUtils;
 import com.rabbitmq.client.Channel;
@@ -67,8 +67,8 @@ public class DeclareQueueResolver {
         RabbitMQConfig rabbitMQConfig = getRabbitMQConfig(namespace);
         Channel channel = getChannel(namespace, rabbitMQConfig);
         //get queues that are associated with current box and are not linked through Th2Link resources
-        List<Queue> boxUnlinkedQueues = getBoxUnlinkedQueues(namespace, extractName(resource));
-        removeExtinctQueues(channel, boxUnlinkedQueues);
+        List<QueueName> boxUnlinkedQueueNames = getBoxUnlinkedQueues(namespace, extractName(resource));
+        removeExtinctQueues(channel, boxUnlinkedQueueNames);
     }
 
     @SneakyThrows
@@ -77,7 +77,7 @@ public class DeclareQueueResolver {
         Channel channel = getChannel(namespace, rabbitMQConfig);
         channel.exchangeDeclare(rabbitMQConfig.getExchangeName(), "direct", rabbitMQManagementConfig.isPersistence());
         //get queues that are associated with current box and are not linked through Th2Link resources
-        List<Queue> boxUnlinkedQueues = getBoxUnlinkedQueues(namespace, extractName(resource));
+        List<QueueName> boxUnlinkedQueueNames = getBoxUnlinkedQueues(namespace, extractName(resource));
 
         for (var pin : ExtractUtils.extractMqPins(resource)) {
             var attrs = pin.getAttributes();
@@ -90,41 +90,41 @@ public class DeclareQueueResolver {
             if (!attrs.contains(DirectionAttribute.publish.name())) {
                 String queue = buildQueue(namespace, boxMq);
                 //remove from list if pin for queue still exists.
-                boxUnlinkedQueues.removeIf(oldQueue -> oldQueue.toQueueString().equals(queue));
+                boxUnlinkedQueueNames.removeIf(oldQueueName -> oldQueueName.toString().equals(queue));
                 var declareResult = channel.queueDeclare(queue, rabbitMQManagementConfig.isPersistence(), false, false, generateQueueArguments(pin.getSettings()));
                 logger.info("Queue '{}' of resource {} was successfully declared", declareResult.getQueue(), extractName(resource));
             }
         }
         //remove queues that are left i.e. inactive
-        removeExtinctQueues(channel, boxUnlinkedQueues);
+        removeExtinctQueues(channel, boxUnlinkedQueueNames);
     }
 
 
-    private List<Queue> getBoxUnlinkedQueues(String namespace, String boxQueuesFullName) {
-        List<Queue> boxQueues = getBoxQueues(namespace, boxQueuesFullName);
-        removeLinkedQueues(boxQueues, namespace);
-        return boxQueues;
+    private List<QueueName> getBoxUnlinkedQueues(String namespace, String boxQueuesFullName) {
+        List<QueueName> boxQueueNames = getBoxQueues(namespace, boxQueuesFullName);
+        removeLinkedQueues(boxQueueNames, namespace);
+        return boxQueueNames;
     }
 
     @SneakyThrows
-    private List<Queue> getBoxQueues(String namespace, String boxName) {
+    private List<QueueName> getBoxQueues(String namespace, String boxName) {
         RabbitMQConfig rabbitMQConfig = getRabbitMQConfig(namespace);
         List<QueueInfo> queueInfoList = getQueues(rabbitMQConfig.getVHost(), rabbitMQManagementConfig);
 
-        List<Queue> queues = queueInfoList.stream()
-                .map(queueInfo -> Queue.parseQueue(queueInfo.getName()))
+        List<QueueName> queueNames = queueInfoList.stream()
+                .map(queueInfo -> QueueName.parseQueue(queueInfo.getName()))
                 .collect(Collectors.toList());
 
-        return queues.stream()
-                .filter(queue -> queue.getBox().equals(boxName))
+        return queueNames.stream()
+                .filter(queueName -> queueName.getBox().equals(boxName))
                 .collect(Collectors.toList());
     }
 
-    private void removeLinkedQueues(List<Queue> boxQueues, String namespace) {
+    private void removeLinkedQueues(List<QueueName> boxQueueNames, String namespace) {
         var lSingleton = LinkSingleton.INSTANCE;
         var mqActiveLinks = new ArrayList<>(lSingleton.getMqActiveLinks(namespace));
         //remove queues that appear in links
-        boxQueues.removeIf(boxQueue -> mqActiveLinks.stream().anyMatch(mqActiveLink -> boxQueue.toQueueString().equals(mqActiveLink.getQueueBunch().getQueue())));
+        boxQueueNames.removeIf(boxQueueName -> mqActiveLinks.stream().anyMatch(mqActiveLink -> boxQueueName.toString().equals(mqActiveLink.getQueueBunch().getQueue())));
     }
 
     @SneakyThrows
@@ -148,15 +148,15 @@ public class DeclareQueueResolver {
     }
 
 
-    private void removeExtinctQueues(Channel channel, List<Queue> extinctQueues) {
-        if (!extinctQueues.isEmpty()) {
+    private void removeExtinctQueues(Channel channel, List<QueueName> extinctQueueNames) {
+        if (!extinctQueueNames.isEmpty()) {
             logger.info("Unlinked pin(s) removed from resource. trying to delete queues associated with it");
-            extinctQueues.forEach(queue -> {
+            extinctQueueNames.forEach(queueName -> {
                 try {
-                    channel.queueDelete(queue.toQueueString());
-                    logger.info("Deleted queue: [{}]", queue.toQueueString());
+                    channel.queueDelete(queueName.toString());
+                    logger.info("Deleted queue: [{}]", queueName.toString());
                 } catch (IOException e) {
-                    logger.error("Exception deleting queue: [{}]", queue.toQueueString(), e);
+                    logger.error("Exception deleting queue: [{}]", queueName.toString(), e);
                 }
             });
         }
@@ -165,6 +165,6 @@ public class DeclareQueueResolver {
 
 
     private String buildQueue(String namespace, BoxMq boxMq) {
-        return new Queue(boxMq, namespace).toQueueString();
+        return new QueueName(boxMq, namespace).toString();
     }
 }
