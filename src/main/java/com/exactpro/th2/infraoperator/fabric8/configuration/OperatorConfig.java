@@ -30,8 +30,8 @@ import java.util.Objects;
 public enum OperatorConfig {
     INSTANCE;
 
-    public static final String QUEUE_PREFIX = "queue_";
-    public static final String ROUTING_KEY_PREFIX = "routing-key_";
+    public static final String QUEUE_PREFIX = "link";
+    public static final String ROUTING_KEY_PREFIX = "key";
     public static final String RABBITMQ_SECRET_PASSWORD_KEY = "rabbitmq-password";
     public static final String RABBITMQ_SECRET_USERNAME_KEY = "rabbitmq-username";
     public static final String CONFIG_FILE_SYSTEM_PROPERTY = "infra.operator.config";

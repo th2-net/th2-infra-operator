@@ -30,11 +30,13 @@ import com.exactpro.th2.infraoperator.fabric8.spec.link.validator.model.Directio
 import com.exactpro.th2.infraoperator.fabric8.spec.shared.BoxDirection;
 import com.exactpro.th2.infraoperator.fabric8.spec.shared.PinSettings;
 import com.exactpro.th2.infraoperator.fabric8.spec.shared.SchemaConnectionType;
+import com.exactpro.th2.infraoperator.fabric8.spec.strategy.linkResolver.Queue;
 import com.exactpro.th2.infraoperator.fabric8.spec.strategy.linkResolver.mq.QueueLinkResolver;
 import com.exactpro.th2.infraoperator.fabric8.spec.strategy.resFinder.box.BoxResourceFinder;
 import com.exactpro.th2.infraoperator.fabric8.util.ExtractUtils;
 import com.rabbitmq.client.Channel;
 import com.rabbitmq.client.ConnectionFactory;
+import com.rabbitmq.http.client.domain.QueueInfo;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.SneakyThrows;
@@ -201,10 +203,9 @@ public class BindQueueLinkResolver implements QueueLinkResolver {
     private QueueBunch createQueueBunch(String namespace, BoxMq fromBoxMq, BoxMq toBoxMq) {
 
         var rabbitMQConfig = RabbitMqStaticContext.getRabbitMQConfig(namespace);
-
         return new QueueBunch(
-                OperatorConfig.QUEUE_PREFIX + namespace + "_" + toBoxMq,
-                OperatorConfig.ROUTING_KEY_PREFIX + namespace + "_" + fromBoxMq,
+                new Queue(toBoxMq, namespace).toQueueString(),
+                new Queue(fromBoxMq, namespace).toRoutingKeyString(),
                 rabbitMQConfig.getExchangeName()
         );
     }
