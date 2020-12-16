@@ -65,8 +65,9 @@ rabbitMQManagement:
   # determines if the RabbitMQ resources are persistent or not
   
   schemaPermissions:
-    # this section describes what permissions will have schema RabbitMQ user on its own resouces
-    # see RabbitMQ documentation to find out how permissions are described
+  # this section describes what permissions schema RabbitMQ user will have on its own resources
+  # see RabbitMQ documentation to find out how permissions are described
+
     configure: pattern
     # configuration permissions on resources
     
@@ -76,6 +77,15 @@ rabbitMQManagement:
     write: pattern
     # write permission on resources
     
+schemaSecrets:
+# this section contains passwords for schema
+
+  rabbitMQ: rabbitmq
+  # rabbitMQ secret name
+
+  cassandra: cassandra
+  # cassandra secret name
+
   
 ```
 
