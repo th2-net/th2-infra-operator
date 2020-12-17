@@ -14,9 +14,13 @@
 package com.exactpro.th2.infraoperator.fabric8.spec.strategy.linkResolver.queue;
 
 import com.exactpro.th2.infraoperator.fabric8.spec.link.relation.boxes.box.impl.BoxMq;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 
-public class QueueName extends LinkComponents{
+public class QueueName extends LinkComponents {
+
+    private static final Logger logger = LoggerFactory.getLogger(QueueName.class);
 
     private static final String QUEUE_PREFIX = "link";
 
@@ -33,9 +37,18 @@ public class QueueName extends LinkComponents{
         return String.format("%s[%s:%s:%s]", QUEUE_PREFIX, namespace, box, pin);
     }
 
-    public static QueueName parseQueue(String queueStr) throws IndexOutOfBoundsException {
-        String queueBody = queueStr.substring(QUEUE_PREFIX.length() + 1, queueStr.length() - 1);
-        String[] queueParts = queueBody.split(":");
-        return new QueueName(queueParts[0], queueParts[1], queueParts[2]);
+    public static QueueName parseQueue(String queueStr) {
+        if (queueStr.startsWith(QUEUE_PREFIX)) {
+            try {
+                String queueBody = queueStr.substring(QUEUE_PREFIX.length() + 1, queueStr.length() - 1);
+                String[] queueParts = queueBody.split(":");
+                return new QueueName(queueParts[0], queueParts[1], queueParts[2]);
+            } catch (IndexOutOfBoundsException e) {
+                logger.warn("Could not parse queue: {}", queueStr, e);
+                return null;
+            }
+        }
+        logger.warn("Could not parse queue: {}", queueStr);
+        return null;
     }
 }

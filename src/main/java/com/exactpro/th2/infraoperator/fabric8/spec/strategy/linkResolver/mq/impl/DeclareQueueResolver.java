@@ -34,6 +34,7 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.stream.Collectors;
 
 import static com.exactpro.th2.infraoperator.fabric8.spec.strategy.linkResolver.mq.impl.RabbitMqStaticContext.*;
@@ -67,7 +68,7 @@ public class DeclareQueueResolver {
         RabbitMQConfig rabbitMQConfig = getRabbitMQConfig(namespace);
         Channel channel = getChannel(namespace, rabbitMQConfig);
         //get queues that are associated with current box and are not linked through Th2Link resources
-        List<QueueName> boxUnlinkedQueueNames = getBoxUnlinkedQueues(namespace, extractName(resource));
+        Set<String> boxUnlinkedQueueNames = getBoxUnlinkedQueues(namespace, extractName(resource));
         removeExtinctQueues(channel, boxUnlinkedQueueNames);
     }
 
@@ -77,7 +78,7 @@ public class DeclareQueueResolver {
         Channel channel = getChannel(namespace, rabbitMQConfig);
         channel.exchangeDeclare(rabbitMQConfig.getExchangeName(), "direct", rabbitMQManagementConfig.isPersistence());
         //get queues that are associated with current box and are not linked through Th2Link resources
-        List<QueueName> boxUnlinkedQueueNames = getBoxUnlinkedQueues(namespace, extractName(resource));
+        Set<String> boxUnlinkedQueueNames = getBoxUnlinkedQueues(namespace, extractName(resource));
 
         for (var pin : ExtractUtils.extractMqPins(resource)) {
             var attrs = pin.getAttributes();
@@ -89,25 +90,25 @@ public class DeclareQueueResolver {
 
             if (!attrs.contains(DirectionAttribute.publish.name())) {
                 String queue = buildQueue(namespace, boxMq);
-                //remove from list if pin for queue still exists.
-                boxUnlinkedQueueNames.removeIf(oldQueueName -> oldQueueName.toString().equals(queue));
+                //remove from set if pin for queue still exists.
+                boxUnlinkedQueueNames.remove(queue);
                 var declareResult = channel.queueDeclare(queue, rabbitMQManagementConfig.isPersistence(), false, false, generateQueueArguments(pin.getSettings()));
                 logger.info("Queue '{}' of resource {} was successfully declared", declareResult.getQueue(), extractName(resource));
             }
         }
-        //remove queues that are left i.e. inactive
+        //remove from rabbit queues that are left i.e. inactive
         removeExtinctQueues(channel, boxUnlinkedQueueNames);
     }
 
 
-    private List<QueueName> getBoxUnlinkedQueues(String namespace, String boxQueuesFullName) {
-        List<QueueName> boxQueueNames = getBoxQueues(namespace, boxQueuesFullName);
+    private Set<String> getBoxUnlinkedQueues(String namespace, String boxQueuesFullName) {
+        Set<String> boxQueueNames = getBoxQueues(namespace, boxQueuesFullName);
         removeLinkedQueues(boxQueueNames, namespace);
         return boxQueueNames;
     }
 
     @SneakyThrows
-    private List<QueueName> getBoxQueues(String namespace, String boxName) {
+    private Set<String> getBoxQueues(String namespace, String boxName) {
         RabbitMQConfig rabbitMQConfig = getRabbitMQConfig(namespace);
         List<QueueInfo> queueInfoList = getQueues(rabbitMQConfig.getVHost(), rabbitMQManagementConfig);
 
@@ -116,20 +117,24 @@ public class DeclareQueueResolver {
                 .collect(Collectors.toList());
 
         return queueNames.stream()
-                .filter(queueName -> queueName.getBox().equals(boxName))
-                .collect(Collectors.toList());
+                .filter(queueName -> queueName != null && queueName.getBox().equals(boxName))
+                .map(QueueName::toString)
+                .collect(Collectors.toSet());
     }
 
-    private void removeLinkedQueues(List<QueueName> boxQueueNames, String namespace) {
+    private void removeLinkedQueues(Set<String> boxQueueNames, String namespace) {
         var lSingleton = LinkSingleton.INSTANCE;
         var mqActiveLinks = new ArrayList<>(lSingleton.getMqActiveLinks(namespace));
-        //remove queues that appear in links
-        boxQueueNames.removeIf(boxQueueName -> mqActiveLinks.stream().anyMatch(mqActiveLink -> boxQueueName.toString().equals(mqActiveLink.getQueueBunch().getQueue())));
+        //remove queues that appear in active links
+        Set<String> activeQueueNames = mqActiveLinks.stream()
+                .map(mqActiveLink -> mqActiveLink.getQueueBunch().getQueue())
+                .collect(Collectors.toSet());
+        boxQueueNames.removeAll(activeQueueNames);
     }
 
     @SneakyThrows
     private Channel getChannel(String namespace, RabbitMQConfig rabbitMQConfig) {
-        Map<String, RabbitMqStaticContext.ChannelBunch> channelBunchMap = getMqChannels();
+        Map<String, ChannelBunch> channelBunchMap = getMqChannels();
         Channel channel = channelBunchMap.get(namespace).getChannel();
         if (!channel.isOpen()) {
             logger.warn("RMQ connection is broken, trying to reconnect...");
@@ -148,15 +153,15 @@ public class DeclareQueueResolver {
     }
 
 
-    private void removeExtinctQueues(Channel channel, List<QueueName> extinctQueueNames) {
+    private void removeExtinctQueues(Channel channel, Set<String> extinctQueueNames) {
         if (!extinctQueueNames.isEmpty()) {
             logger.info("Unlinked pin(s) removed from resource. trying to delete queues associated with it");
             extinctQueueNames.forEach(queueName -> {
                 try {
-                    channel.queueDelete(queueName.toString());
-                    logger.info("Deleted queue: [{}]", queueName.toString());
+                    channel.queueDelete(queueName);
+                    logger.info("Deleted queue: [{}]", queueName);
                 } catch (IOException e) {
-                    logger.error("Exception deleting queue: [{}]", queueName.toString(), e);
+                    logger.error("Exception deleting queue: [{}]", queueName, e);
                 }
             });
         }

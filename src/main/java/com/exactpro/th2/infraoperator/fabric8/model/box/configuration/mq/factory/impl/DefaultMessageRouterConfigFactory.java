@@ -38,7 +38,7 @@ import java.util.stream.Collectors;
 
 public class DefaultMessageRouterConfigFactory implements MessageRouterConfigFactory {
 
-    private static final String NOT_NECESSARY_STUB = "not_necessary";
+    private static final String EMPTY_STRING_ALIAS = "";
 
 
     @Override
@@ -106,9 +106,9 @@ public class DefaultMessageRouterConfigFactory implements MessageRouterConfigFac
             return null;
         }
 
-        String fullQueue = toBox == null ? NOT_NECESSARY_STUB : new QueueName(toBox, namespace).toString();
+        String fullQueue = toBox == null ? EMPTY_STRING_ALIAS : new QueueName(toBox, namespace).toString();
 
-        String fullRoutingKey = fromBox == null ? NOT_NECESSARY_STUB : new RoutingKeyName(fromBox, namespace).toString();
+        String fullRoutingKey = fromBox == null ? EMPTY_STRING_ALIAS : new RoutingKeyName(fromBox, namespace).toString();
 
         return new QueueBunch(
                 fullQueue,
