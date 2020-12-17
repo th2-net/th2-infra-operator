@@ -29,13 +29,20 @@ public class ChartConfig implements Cloneable {
     private String ref;
     private String path;
 
+    private String repository;
+    private String name;
+    private String version;
+
     ChartConfig() {
     }
 
-    ChartConfig(String git, String ref, String path) {
+    public ChartConfig(String git, String ref, String path, String repository, String name, String version) {
         this.git = git;
         this.ref = ref;
         this.path = path;
+        this.repository = repository;
+        this.name = name;
+        this.version = version;
     }
 
     public String getGit() {
@@ -48,6 +55,18 @@ public class ChartConfig implements Cloneable {
 
     public String getPath() {
         return path;
+    }
+
+    public String getRepository() {
+        return repository;
+    }
+
+    public String getName() {
+        return name;
+    }
+
+    public String getVersion() {
+        return version;
     }
 
     public static ChartConfigBuilder builder() {
@@ -88,7 +107,10 @@ public class ChartConfig implements Cloneable {
         ChartConfig that = (ChartConfig) o;
         return Objects.equals(getGit(), that.getGit()) &&
             Objects.equals(getRef(), that.getRef()) &&
-            Objects.equals(getPath(), that.getPath());
+            Objects.equals(getPath(), that.getPath()) &&
+            Objects.equals(getRepository(), that.getRepository()) &&
+            Objects.equals(getName(), that.getName()) &&
+            Objects.equals(getVersion(), that.getVersion());
     }
 
     public static class ChartConfigBuilder {
@@ -96,6 +118,9 @@ public class ChartConfig implements Cloneable {
         private String git;
         private String ref;
         private String path;
+        private String repository;
+        private String name;
+        private String version;
 
         ChartConfigBuilder() {
         }
@@ -115,8 +140,23 @@ public class ChartConfig implements Cloneable {
             return this;
         }
 
+        public ChartConfigBuilder withRepository(String repository) {
+            this.repository = repository;
+            return this;
+        }
+
+        public ChartConfigBuilder withName(String name) {
+            this.name = name;
+            return this;
+        }
+
+        public ChartConfigBuilder withVersion(String version) {
+            this.version = version;
+            return this;
+        }
+
         public ChartConfig build() {
-            return new ChartConfig(git, ref, path);
+            return new ChartConfig(git, ref, path, repository, name, version);
         }
     }
 }
