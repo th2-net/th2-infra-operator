@@ -15,20 +15,28 @@ package com.exactpro.th2.infraoperator.fabric8.spec.strategy.linkResolver.queue;
 
 import com.exactpro.th2.infraoperator.fabric8.spec.link.relation.boxes.box.impl.BoxMq;
 
-public class RoutingKeyName extends LinkComponents {
+public class RoutingKeyName extends AbstractName {
 
     public static final String ROUTING_KEY_PREFIX = "key";
 
-    public RoutingKeyName(BoxMq boxMq, String namespace) {
-        super(boxMq, namespace);
+
+    public RoutingKeyName(String namespace, BoxMq boxMq) {
+        super(namespace, boxMq);
     }
 
-    public RoutingKeyName(String namespace, String box, String pin) {
-        super(namespace, box, pin);
+
+    public RoutingKeyName(String namespace, String boxName, String pinName) {
+        super(namespace, boxName, pinName);
     }
+
+
+    public static String format(String namespace, String boxName, String pinName) {
+        return String.format("%s[%s:%s:%s]", ROUTING_KEY_PREFIX, namespace, boxName, pinName);
+    }
+
 
     @Override
     public String toString() {
-        return String.format("%s[%s:%s:%s]", ROUTING_KEY_PREFIX, namespace, box, pin);
+        return RoutingKeyName.format(namespace, boxName, pinName);
     }
 }

@@ -106,9 +106,9 @@ public class DefaultMessageRouterConfigFactory implements MessageRouterConfigFac
             return null;
         }
 
-        String fullQueue = toBox == null ? EMPTY_STRING_ALIAS : new QueueName(toBox, namespace).toString();
+        String fullQueue = toBox == null ? EMPTY_STRING_ALIAS : new QueueName(namespace, toBox).toString();
 
-        String fullRoutingKey = fromBox == null ? EMPTY_STRING_ALIAS : new RoutingKeyName(fromBox, namespace).toString();
+        String fullRoutingKey = fromBox == null ? EMPTY_STRING_ALIAS : new RoutingKeyName(namespace, fromBox).toString();
 
         return new QueueBunch(
                 fullQueue,

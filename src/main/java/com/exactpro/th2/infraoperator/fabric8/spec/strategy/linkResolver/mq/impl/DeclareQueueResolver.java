@@ -38,7 +38,7 @@ import java.util.Set;
 import java.util.stream.Collectors;
 
 import static com.exactpro.th2.infraoperator.fabric8.spec.strategy.linkResolver.mq.impl.RabbitMqStaticContext.*;
-import static com.exactpro.th2.infraoperator.fabric8.util.ExtractUtils.*;
+import static com.exactpro.th2.infraoperator.fabric8.util.ExtractUtils.extractName;
 import static com.exactpro.th2.infraoperator.fabric8.util.MqVHostUtils.getQueues;
 
 public class DeclareQueueResolver {
@@ -113,11 +113,11 @@ public class DeclareQueueResolver {
         List<QueueInfo> queueInfoList = getQueues(rabbitMQConfig.getVHost(), rabbitMQManagementConfig);
 
         List<QueueName> queueNames = queueInfoList.stream()
-                .map(queueInfo -> QueueName.parseQueue(queueInfo.getName()))
+                .map(queueInfo -> QueueName.fromString(queueInfo.getName()))
                 .collect(Collectors.toList());
 
         return queueNames.stream()
-                .filter(queueName -> queueName != null && queueName.getBox().equals(boxName))
+                .filter(queueName -> queueName != null && queueName.getBoxName().equals(boxName))
                 .map(QueueName::toString)
                 .collect(Collectors.toSet());
     }
@@ -170,6 +170,6 @@ public class DeclareQueueResolver {
 
 
     private String buildQueue(String namespace, BoxMq boxMq) {
-        return new QueueName(boxMq, namespace).toString();
+        return new QueueName(namespace, boxMq).toString();
     }
 }

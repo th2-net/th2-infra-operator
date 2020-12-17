@@ -18,37 +18,49 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 
-public class QueueName extends LinkComponents {
+public class QueueName extends AbstractName {
+
+    private static final String QUEUE_NAME_PREFIX = "link";
+    private static final String NAMESPACE_REGEXP = "[a-z0-9]([-a-z0-9]*[a-z0-9])?";
+    private static final String BOX_NAME_REGEXP = "[a-z0-9]([-a-z0-9]*[a-z0-9])?";
+    private static final String PIN_NAME_REGEXP = "[a-z0-9]([-_a-z0-9]*[a-z0-9])?";
+    private static final String QUEUE_NAME_REGEXP = QUEUE_NAME_PREFIX + "\\[" + NAMESPACE_REGEXP + ":" + BOX_NAME_REGEXP + ":" + PIN_NAME_REGEXP + "\\]";
 
     private static final Logger logger = LoggerFactory.getLogger(QueueName.class);
 
-    private static final String QUEUE_PREFIX = "link";
-
-    public QueueName(BoxMq boxMq, String namespace) {
-        super(boxMq, namespace);
+    public QueueName(String namespace, BoxMq boxMq) {
+        super(namespace, boxMq);
     }
 
-    public QueueName(String namespace, String box, String pin) {
-        super(namespace, box, pin);
+
+    public QueueName(String namespace, String boxName, String pinName) {
+        super(namespace, boxName, pinName);
     }
+
 
     @Override
     public String toString() {
-        return String.format("%s[%s:%s:%s]", QUEUE_PREFIX, namespace, box, pin);
+        return QueueName.format(namespace, boxName, pinName);
     }
 
-    public static QueueName parseQueue(String queueStr) {
-        if (queueStr.startsWith(QUEUE_PREFIX)) {
+
+    public static String format(String namespace, String boxName, String pinName) {
+        return String.format("%s[%s:%s:%s]", QUEUE_NAME_PREFIX, namespace, boxName, pinName);
+    }
+
+
+    public static QueueName fromString(String str) {
+
+        if (str.matches(QUEUE_NAME_REGEXP)) {
             try {
-                String queueBody = queueStr.substring(QUEUE_PREFIX.length() + 1, queueStr.length() - 1);
-                String[] queueParts = queueBody.split(":");
-                return new QueueName(queueParts[0], queueParts[1], queueParts[2]);
-            } catch (IndexOutOfBoundsException e) {
-                logger.warn("Could not parse queue: {}", queueStr, e);
-                return null;
+                String enclosedStr = str.substring(QUEUE_NAME_PREFIX.length() + 1, str.length() - 1);
+                String[] tokens = enclosedStr.split(":");
+                return new QueueName(tokens[0], tokens[1], tokens[2]);
+            } catch (Exception ignored) {
             }
         }
-        logger.warn("Could not parse queue: {}", queueStr);
+        logger.warn("Queue name \"{}\" does not match expected pattern \"{}\"", str
+                , QueueName.format("namespace", "box", "pin"));
         return null;
     }
 }

@@ -204,8 +204,8 @@ public class BindQueueLinkResolver implements QueueLinkResolver {
 
         var rabbitMQConfig = RabbitMqStaticContext.getRabbitMQConfig(namespace);
         return new QueueBunch(
-                new QueueName(toBoxMq, namespace).toString(),
-                new RoutingKeyName(fromBoxMq, namespace).toString(),
+                new QueueName(namespace, toBoxMq).toString(),
+                new RoutingKeyName(namespace, fromBoxMq).toString(),
                 rabbitMQConfig.getExchangeName()
         );
     }

@@ -16,29 +16,29 @@ package com.exactpro.th2.infraoperator.fabric8.spec.strategy.linkResolver.queue;
 import com.exactpro.th2.infraoperator.fabric8.spec.link.relation.boxes.box.impl.BoxMq;
 
 
-abstract public class LinkComponents {
-    protected final String box;
-    protected final String pin;
+abstract class AbstractName {
+    protected final String boxName;
+    protected final String pinName;
     protected final String namespace;
 
-    public LinkComponents(BoxMq boxMq, String namespace) {
-        this.box = boxMq.getBox();
-        this.pin = boxMq.getPin();
+    protected AbstractName(String namespace, BoxMq boxMq) {
+        this.boxName = boxMq.getBox();
+        this.pinName = boxMq.getPin();
         this.namespace = namespace;
     }
 
-    public LinkComponents(String namespace, String box, String pin) {
-        this.box = box;
-        this.pin = pin;
+    protected AbstractName(String namespace, String boxName, String pinName) {
+        this.boxName = boxName;
+        this.pinName = pinName;
         this.namespace = namespace;
     }
 
-    public String getBox() {
-        return box;
+    public String getBoxName() {
+        return boxName;
     }
 
-    public String getPin() {
-        return pin;
+    public String getPinName() {
+        return pinName;
     }
 
     public String getNamespace() {
