@@ -50,13 +50,13 @@ chart:
   
 rabbitMQManagement:
   host: host
-  # rabbitMQ host used for managing vHosts and users
+  # RabbitMQ host used for managing vHosts and users
   
   port: 8080
-  # rabbitMQ port
+  # RabbitMQ port
   
   username: username
-  # rabbitMQ management username
+  # RabbitMQ management username
   
   password: password
   # password for management user
@@ -65,8 +65,9 @@ rabbitMQManagement:
   # determines if the RabbitMQ resources are persistent or not
   
   schemaPermissions:
-    # this section describes what permissions will have schema RabbitMQ user on its own resouces
-    # see RabbitMQ documentation to find out how permissions are described
+  # this section describes what permissions schema RabbitMQ user will have on its own resources
+  # see RabbitMQ documentation to find out how permissions are described
+
     configure: pattern
     # configuration permissions on resources
     
@@ -76,6 +77,21 @@ rabbitMQManagement:
     write: pattern
     # write permission on resources
     
+configMaps:
+# this section contains names of the ConfigMaps that are mounted in the boxes
+
+  rabbitMQ: rabbit-mq-config-map
+  # RabbitMQ server connectivity ConfigMap
+
+schemaSecrets:
+# this section contains secret names that are mounted in the boxes
+
+  rabbitMQ: rabbitmq
+  # secret name to connect to RabbitMQ server
+
+  cassandra: cassandra
+  # secret name to connect to cassandra database
+
   
 ```
 
