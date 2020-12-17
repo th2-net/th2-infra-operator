@@ -92,6 +92,24 @@ public class ChartConfig implements Cloneable {
         }
     }
 
+    private static boolean isValid(ChartConfig config) {
+        if (!Strings.isNullOrEmpty(config.getGit()) && !Strings.isNullOrEmpty(config.getRef())
+            && !Strings.isNullOrEmpty(config.getPath()))
+
+            return Strings.isNullOrEmpty(config.getRepository()) && Strings.isNullOrEmpty(config.getName())
+                && Strings.isNullOrEmpty(config.getVersion());
+
+        if (Strings.isNullOrEmpty(config.getGit()) && Strings.isNullOrEmpty(config.getRef())
+            && Strings.isNullOrEmpty(config.getPath()))
+
+            return (Strings.isNullOrEmpty(config.getRepository()) && Strings.isNullOrEmpty(config.getName())
+                && Strings.isNullOrEmpty(config.getVersion()))
+                || (!Strings.isNullOrEmpty(config.getRepository()) && !Strings.isNullOrEmpty(config.getName())
+                && !Strings.isNullOrEmpty(config.getVersion()));
+
+        return false;
+    }
+
     public Map<String, Object> toMap() {
         try {
             return JsonUtils.writeValueAsDeepMap(this);
