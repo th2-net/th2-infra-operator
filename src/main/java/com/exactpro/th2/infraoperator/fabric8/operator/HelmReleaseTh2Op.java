@@ -83,7 +83,6 @@ public abstract class HelmReleaseTh2Op<CR extends Th2CustomResource> extends Abs
     public static final String DOCKER_IMAGE_ALIAS = "image";
     public static final String COMPONENT_NAME_ALIAS = "name";
     public static final String RELEASE_NAME_ALIAS = "releaseName";
-    public static final String MONITORING_ALIAS = "monitoring";
     public static final String HELM_RELEASE_CRD_NAME = "helmreleases.helm.fluxcd.io";
 
     protected final BoxResourceFinder resourceFinder;
@@ -324,8 +323,6 @@ public abstract class HelmReleaseTh2Op<CR extends Th2CustomResource> extends Abs
         logger.info("Updating all linked boxes of '{}.{}' resource...", namespace, currentResName);
 
         var lSingleton = LinkSingleton.INSTANCE;
-
-        var mqActiveLinks = new ArrayList<>(lSingleton.getMqActiveLinks(namespace));
 
         var grpcActiveLinks = new ArrayList<>(lSingleton.getGrpcActiveLinks(namespace));
 

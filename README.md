@@ -78,19 +78,19 @@ rabbitMQManagement:
     # write permission on resources
     
 configMaps:
-# this section contains names of ConfigMaps
+# this section contains names of the ConfigMaps that are mounted in the boxes
 
   rabbitMQ: rabbit-mq-config-map
-  # name of a RabbitMQ ConfigMap
+  # RabbitMQ server connectivity ConfigMap
 
 schemaSecrets:
-# this section contains passwords for a schema
+# this section contains secret names that are mounted in the boxes
 
   rabbitMQ: rabbitmq
-  # RabbitMQ secret name
+  # secret name to connect to RabbitMQ server
 
   cassandra: cassandra
-  # Cassandra secret name
+  # secret name to connect to cassandra database
 
   
 ```
