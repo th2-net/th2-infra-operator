@@ -83,6 +83,10 @@ configMaps:
   rabbitMQ: rabbit-mq-config-map
   # RabbitMQ server connectivity ConfigMap
 
+k8sUrl: kubernetes-address
+# address for kubernetes cluster. 
+# this will be used as host in gRPC config for boxes that are running in node network or externally
+
 schemaSecrets:
 # this section contains secret names that are mounted in the boxes
 
