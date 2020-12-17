@@ -96,7 +96,7 @@ public class ChartConfig implements Cloneable {
                 overriddenConfig.version = chartConfig.getVersion();
 
             if (!isValid(overriddenConfig))
-                throw new IllegalArgumentException("Exception overriding ChartConfig");
+                throw new IllegalArgumentException("Exception overriding " + ChartConfig.class.getSimpleName());
 
             return overriddenConfig;
         } catch (CloneNotSupportedException e) {
