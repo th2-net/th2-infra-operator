@@ -11,7 +11,7 @@
  * limitations under the License.
  */
 
-package com.exactpro.th2.infraoperator.fabric8.operator;
+package com.exactpro.th2.infraoperator.fabric8.spec.helmRelease;
 
 import com.exactpro.th2.infraoperator.fabric8.configuration.SchemaSecrets;
 
