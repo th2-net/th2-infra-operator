@@ -3,6 +3,9 @@ chart:
   git:
   path:
   ref:
+  repository:
+  name:
+  version:
 rabbitMQManagement:
   host:
   port:

@@ -58,12 +58,78 @@ public class TestConfiguration {
     }
 
     @Test
-    void testChartConfig() {
-        beforeEach("src/test/resources/chartConfig.yml");
+    void testGitChartConfig() {
+        beforeEach("src/test/resources/gitChartConfig.yml");
 
         expected.setChartConfig(ChartConfig.builder().withGit("git").withPath("path").withRef("ref").build());
 
         Assertions.assertEquals(expected, OperatorConfig.INSTANCE.getConfig());
+    }
+
+    @Test
+    void testHelmChartConfig() {
+        beforeEach("src/test/resources/helmChartConfig.yml");
+
+        expected.setChartConfig(ChartConfig.builder().withRepository("helm").withName("name").withVersion("1.1.0").build());
+
+        Assertions.assertEquals(expected, OperatorConfig.INSTANCE.getConfig());
+    }
+
+    @Test
+    void testChartConfigValidity() {
+        Assertions.assertThrows(IllegalArgumentException.class, () -> {
+            new ChartConfig().overrideWith(ChartConfig.builder().withGit("git").build());
+        });
+
+        Assertions.assertThrows(IllegalArgumentException.class, () -> {
+            new ChartConfig().overrideWith(ChartConfig.builder().withRepository("helm").build());
+        });
+
+        Assertions.assertThrows(IllegalArgumentException.class, () -> {
+            new ChartConfig().overrideWith(ChartConfig.builder().withGit("git").withRef("ref").build());
+        });
+
+        Assertions.assertThrows(IllegalArgumentException.class, () -> {
+            new ChartConfig().overrideWith(ChartConfig.builder().withGit("git").withRef("ref").withPath("").build());
+        });
+
+        Assertions.assertThrows(IllegalArgumentException.class, () -> {
+            new ChartConfig().overrideWith(ChartConfig.builder().withRepository("helm").withName("")
+                .withVersion("1.1.0").build());
+        });
+
+        Assertions.assertThrows(IllegalArgumentException.class, () -> {
+            new ChartConfig().overrideWith(ChartConfig.builder().withGit("git").withRef("ref").withPath("path")
+                .withRepository("helm").build());
+        });
+
+        Assertions.assertThrows(IllegalArgumentException.class, () -> {
+            new ChartConfig().overrideWith(ChartConfig.builder().withGit("git").withRef("ref")
+                .withRepository("helm").withName("name").build());
+        });
+
+        Assertions.assertThrows(IllegalArgumentException.class, () -> {
+            new ChartConfig().overrideWith(ChartConfig.builder().withRef("ref").withPath("path")
+                .withRepository("helm").withName("name").withVersion("1.1.0").build());
+        });
+
+        Assertions.assertThrows(IllegalArgumentException.class, () -> {
+            new ChartConfig().overrideWith(ChartConfig.builder().withGit("git").withRef("ref").withPath("path")
+                .withRepository("helm").withName("name").withVersion("1.1.0").build());
+        });
+
+        Assertions.assertDoesNotThrow(() -> {
+            new ChartConfig().overrideWith(ChartConfig.builder().withGit("git").withRef("ref").withPath("path").build());
+        });
+
+        Assertions.assertDoesNotThrow(() -> {
+            new ChartConfig().overrideWith(ChartConfig.builder().withRepository("helm").withName("name")
+                .withVersion("1.1.0").build());
+        });
+
+        Assertions.assertDoesNotThrow(() -> {
+            new ChartConfig().overrideWith(ChartConfig.builder().build());
+        });
     }
 
     @Test
