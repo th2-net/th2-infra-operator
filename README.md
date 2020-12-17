@@ -39,6 +39,8 @@ namespacePrefixes:
 # these prefixes are used to filter namespaces that infra-operator will manage as a schema
 
 chart:
+# this section includes information about git or helm repository as a source of helm charts
+
   git: git@some.server.com:some/repository
   # git repository URL for helm charts used by Th2 Custom Resources
   
@@ -47,6 +49,15 @@ chart:
 
   path: /path/to/charts
   # repository path for charts
+
+  repository: https://stefanprodan.github.io/podinfo
+  # helm repository URL for helm charts used by Th2 Custom Resources
+
+  name: podinfo
+  # the name of the Helm chart without an alias
+
+  version: 3.2.0
+  # the targeted Helm chart version
   
 rabbitMQManagement:
   host: host
