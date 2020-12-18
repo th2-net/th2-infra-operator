@@ -81,10 +81,10 @@ public class DeclareQueueResolver {
                     .build();
 
             if (!attrs.contains(DirectionAttribute.publish.name())) {
-                String queue = buildQueue(namespace, boxMq);
+                String queueName = new QueueName(namespace, boxMq).toString();
                 //remove from set if pin for queue still exists.
-                boxUnlinkedQueueNames.remove(queue);
-                var declareResult = channel.queueDeclare(queue
+                boxUnlinkedQueueNames.remove(queueName);
+                var declareResult = channel.queueDeclare(queueName
                         , rabbitMQManagementConfig.isPersistence()
                         , false
                         , false
@@ -163,8 +163,4 @@ public class DeclareQueueResolver {
 
     }
 
-
-    private String buildQueue(String namespace, BoxMq boxMq) {
-        return new QueueName(namespace, boxMq).toString();
-    }
 }
