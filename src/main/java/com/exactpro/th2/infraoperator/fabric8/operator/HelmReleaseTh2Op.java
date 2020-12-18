@@ -27,6 +27,7 @@ import com.exactpro.th2.infraoperator.fabric8.spec.Th2Spec;
 import com.exactpro.th2.infraoperator.fabric8.spec.helmRelease.DoneableHelmRelease;
 import com.exactpro.th2.infraoperator.fabric8.spec.helmRelease.HelmRelease;
 import com.exactpro.th2.infraoperator.fabric8.spec.helmRelease.HelmReleaseList;
+import com.exactpro.th2.infraoperator.fabric8.spec.helmRelease.HelmReleaseSecrets;
 import com.exactpro.th2.infraoperator.fabric8.spec.link.Th2Link;
 import com.exactpro.th2.infraoperator.fabric8.spec.link.relation.boxes.box.impl.BoxMq;
 import com.exactpro.th2.infraoperator.fabric8.spec.link.relation.boxes.bunch.BoxLinkBunch;
@@ -43,11 +44,12 @@ import com.exactpro.th2.infraoperator.fabric8.spec.strategy.linkResolver.mq.Queu
 import com.exactpro.th2.infraoperator.fabric8.spec.strategy.linkResolver.mq.impl.DeclareQueueResolver;
 import com.exactpro.th2.infraoperator.fabric8.spec.strategy.resFinder.box.BoxResourceFinder;
 import com.exactpro.th2.infraoperator.fabric8.util.CustomResourceUtils;
-import io.fabric8.kubernetes.api.model.apiextensions.CustomResourceDefinition;
+import io.fabric8.kubernetes.api.model.apiextensions.v1.CustomResourceDefinition;
 import io.fabric8.kubernetes.client.Watch;
 import io.fabric8.kubernetes.client.Watcher;
 import io.fabric8.kubernetes.client.dsl.MixedOperation;
 import io.fabric8.kubernetes.client.dsl.Resource;
+import io.fabric8.kubernetes.client.dsl.base.CustomResourceDefinitionContext;
 import lombok.Getter;
 import lombok.SneakyThrows;
 import lombok.experimental.SuperBuilder;
@@ -63,7 +65,6 @@ import static com.exactpro.th2.infraoperator.fabric8.util.ExtractUtils.*;
 import static com.exactpro.th2.infraoperator.fabric8.util.JsonUtils.JSON_READER;
 import static com.exactpro.th2.infraoperator.fabric8.util.JsonUtils.writeValueAsDeepMap;
 
-
 public abstract class HelmReleaseTh2Op<CR extends Th2CustomResource> extends AbstractTh2Operator<CR, HelmRelease> {
 
     private static final Logger logger = LoggerFactory.getLogger(HelmReleaseTh2Op.class);
@@ -76,13 +77,13 @@ public abstract class HelmReleaseTh2Op<CR extends Th2CustomResource> extends Abs
     public static final String MQ_CONFIG_ALIAS = "routerMq";
     public static final String CUSTOM_CONFIG_ALIAS = "custom";
     public static final String PROMETHEUS_CONFIG_ALIAS = "prometheus";
+    public static final String SCHEMA_SECRETS_ALIAS = "secrets";
     public static final String GRPC_CONFIG_ALIAS = "grpcRouter";
     public static final String DICTIONARIES_ALIAS = "dictionaries";
     public static final String ANNOTATIONS_ALIAS = "annotations";
     public static final String DOCKER_IMAGE_ALIAS = "image";
     public static final String COMPONENT_NAME_ALIAS = "name";
     public static final String RELEASE_NAME_ALIAS = "releaseName";
-    public static final String MONITORING_ALIAS = "monitoring";
     public static final String HELM_RELEASE_CRD_NAME = "helmreleases.helm.fluxcd.io";
 
     protected final BoxResourceFinder resourceFinder;
@@ -95,7 +96,8 @@ public abstract class HelmReleaseTh2Op<CR extends Th2CustomResource> extends Abs
     protected final DictionaryFactory dictionaryFactory;
 
     protected final CustomResourceDefinition helmReleaseCrd;
-    protected final MixedOperation<HelmRelease, HelmReleaseList, DoneableHelmRelease, Resource<HelmRelease, DoneableHelmRelease>> helmReleaseClient;
+    protected final MixedOperation<HelmRelease, HelmReleaseList, DoneableHelmRelease,
+        Resource<HelmRelease, DoneableHelmRelease>> helmReleaseClient;
 
     protected final ActiveLinkUpdater activeLinkUpdaterOnDelete;
     protected final ActiveLinkUpdater activeLinkUpdaterOnAdd;
@@ -119,26 +121,33 @@ public abstract class HelmReleaseTh2Op<CR extends Th2CustomResource> extends Abs
 
         helmReleaseCrd = getResourceCrd(kubClient, HELM_RELEASE_CRD_NAME);
 
+        CustomResourceDefinitionContext crdContext = new CustomResourceDefinitionContext.Builder()
+            .withGroup(helmReleaseCrd.getSpec().getGroup())
+            .withVersion(helmReleaseCrd.getSpec().getVersions().get(0).getName())
+            .withScope(helmReleaseCrd.getSpec().getScope())
+            .withPlural(helmReleaseCrd.getSpec().getNames().getPlural())
+            .build();
+
         helmReleaseClient = kubClient.customResources(
-                helmReleaseCrd,
-                HelmRelease.class,
-                HelmReleaseList.class,
-                DoneableHelmRelease.class
+            crdContext,
+            HelmRelease.class,
+            HelmReleaseList.class,
+            DoneableHelmRelease.class
         );
 
         var msgStContext = MsgStorageContext.builder()
-                .linkResourceName(MSG_ST_LINK_RESOURCE_NAME)
-                .linkNameSuffix(MESSAGE_STORAGE_LINK_NAME_SUFFIX)
-                .boxAlias(MESSAGE_STORAGE_BOX_ALIAS)
-                .pinName(MESSAGE_STORAGE_PIN_ALIAS)
-                .build();
+            .linkResourceName(MSG_ST_LINK_RESOURCE_NAME)
+            .linkNameSuffix(MESSAGE_STORAGE_LINK_NAME_SUFFIX)
+            .boxAlias(MESSAGE_STORAGE_BOX_ALIAS)
+            .pinName(MESSAGE_STORAGE_PIN_ALIAS)
+            .build();
 
         var eventStContext = EventStorageContext.builder()
-                .linkResourceName(EVENT_ST_LINK_RESOURCE_NAME)
-                .linkNameSuffix(EVENT_STORAGE_LINK_NAME_SUFFIX)
-                .boxAlias(EVENT_STORAGE_BOX_ALIAS)
-                .pinName(EVENT_STORAGE_PIN_ALIAS)
-                .build();
+            .linkResourceName(EVENT_ST_LINK_RESOURCE_NAME)
+            .linkNameSuffix(EVENT_STORAGE_LINK_NAME_SUFFIX)
+            .boxAlias(EVENT_STORAGE_BOX_ALIAS)
+            .pinName(EVENT_STORAGE_PIN_ALIAS)
+            .build();
 
         this.msgStLinkUpdaterOnDelete = new StorageTh2LinksCleaner(msgStContext);
         this.msgStLinkUpdaterOnAdd = new StorageTh2LinksUpdater(msgStContext);
@@ -147,7 +156,6 @@ public abstract class HelmReleaseTh2Op<CR extends Th2CustomResource> extends Abs
         this.activeLinkUpdaterOnDelete = new DeletedActiveLinkUpdater();
         this.activeLinkUpdaterOnAdd = new AddedActiveLinkUpdater();
     }
-
 
     @Override
     protected void mapProperties(CR resource, HelmRelease helmRelease) {
@@ -165,27 +173,30 @@ public abstract class HelmReleaseTh2Op<CR extends Th2CustomResource> extends Abs
 
         helmRelease.putSpecProp(RELEASE_NAME_ALIAS, extractNamespace(helmRelease) + "-" + extractName(helmRelease));
         helmRelease.mergeValue(PROPERTIES_MERGE_DEPTH, ROOT_PROPERTIES_ALIAS, Map.of(
-                DOCKER_IMAGE_ALIAS, resSpec.getImageName() + ":" + resSpec.getImageVersion(),
-                COMPONENT_NAME_ALIAS, resource.getMetadata().getName(),
-                CUSTOM_CONFIG_ALIAS, resource.getSpec().getCustomConfig(),
-                MQ_CONFIG_ALIAS, writeValueAsDeepMap(mqConfig),
-                GRPC_CONFIG_ALIAS, writeValueAsDeepMap(grpcConfig)
+            DOCKER_IMAGE_ALIAS, resSpec.getImageName() + ":" + resSpec.getImageVersion(),
+            COMPONENT_NAME_ALIAS, resource.getMetadata().getName(),
+            CUSTOM_CONFIG_ALIAS, resource.getSpec().getCustomConfig(),
+            MQ_CONFIG_ALIAS, writeValueAsDeepMap(mqConfig),
+            GRPC_CONFIG_ALIAS, writeValueAsDeepMap(grpcConfig)
         ));
 
         PrometheusConfiguration prometheusConfig = resource.getSpec().getPrometheusConfiguration();
         if (prometheusConfig != null)
             helmRelease.mergeValue(PROPERTIES_MERGE_DEPTH, ROOT_PROPERTIES_ALIAS,
-                    Map.of(PROMETHEUS_CONFIG_ALIAS, prometheusConfig));
+                Map.of(PROMETHEUS_CONFIG_ALIAS, prometheusConfig));
 
         if (!dictionaries.isEmpty())
-            helmRelease.mergeValue(PROPERTIES_MERGE_DEPTH, ROOT_PROPERTIES_ALIAS, Map.of(
-                    DICTIONARIES_ALIAS, dictionaries
-            ));
+            helmRelease.mergeValue(PROPERTIES_MERGE_DEPTH, ROOT_PROPERTIES_ALIAS,
+                Map.of(DICTIONARIES_ALIAS, dictionaries));
 
         Map<String, Object> extendedSettings = resSpec.getExtendedSettings();
         if (extendedSettings != null)
-            helmRelease.mergeValue(PROPERTIES_MERGE_DEPTH, ROOT_PROPERTIES_ALIAS
-                    , Map.of(EXTENDED_SETTINGS_ALIAS, extendedSettings));
+            helmRelease.mergeValue(PROPERTIES_MERGE_DEPTH, ROOT_PROPERTIES_ALIAS,
+                Map.of(EXTENDED_SETTINGS_ALIAS, extendedSettings));
+
+        HelmReleaseSecrets secrets = new HelmReleaseSecrets(OperatorConfig.INSTANCE.getSchemaSecrets());
+        helmRelease.mergeValue(PROPERTIES_MERGE_DEPTH, ROOT_PROPERTIES_ALIAS,
+            Map.of(SCHEMA_SECRETS_ALIAS, secrets));
 
         var defaultChartConfig = OperatorConfig.INSTANCE.getChartConfig();
         var chartConfig = resSpec.getChartConfig();
@@ -196,7 +207,6 @@ public abstract class HelmReleaseTh2Op<CR extends Th2CustomResource> extends Abs
         helmRelease.mergeSpecProp(CHART_PROPERTIES_ALIAS, defaultChartConfig.toMap());
         helmRelease.mergeValue(Map.of(ANNOTATIONS_ALIAS, extractAnnotations(resource).get(ANTECEDENT_LABEL_KEY_ALIAS)));
     }
-
 
     @Override
     protected void addedEvent(CR resource) {
@@ -281,7 +291,6 @@ public abstract class HelmReleaseTh2Op<CR extends Th2CustomResource> extends Abs
         return helmReleaseClient.load(stream).get();
     }
 
-
     protected List<Th2CustomResource> updateActiveLinksBeforeAdd(CR resource) {
         return activeLinkUpdaterOnAdd.updateLinks(resource);
     }
@@ -314,10 +323,7 @@ public abstract class HelmReleaseTh2Op<CR extends Th2CustomResource> extends Abs
 
         logger.info("Updating all linked boxes of '{}.{}' resource...", namespace, currentResName);
 
-
         var lSingleton = LinkSingleton.INSTANCE;
-
-        var mqActiveLinks = new ArrayList<>(lSingleton.getMqActiveLinks(namespace));
 
         var grpcActiveLinks = new ArrayList<>(lSingleton.getGrpcActiveLinks(namespace));
 
@@ -351,8 +357,8 @@ public abstract class HelmReleaseTh2Op<CR extends Th2CustomResource> extends Abs
                 logger.info("Updating helm release of '{}.{}' resource", namespace, resourceName);
 
                 hr.mergeValue(PROPERTIES_MERGE_DEPTH, ROOT_PROPERTIES_ALIAS, Map.of(
-                        MQ_CONFIG_ALIAS, writeValueAsDeepMap(newResMqConfig),
-                        GRPC_CONFIG_ALIAS, newResRawGrpcConfig
+                    MQ_CONFIG_ALIAS, writeValueAsDeepMap(newResMqConfig),
+                    GRPC_CONFIG_ALIAS, newResRawGrpcConfig
                 ));
 
                 createKubObj(extractNamespace(hr), hr);
@@ -385,7 +391,6 @@ public abstract class HelmReleaseTh2Op<CR extends Th2CustomResource> extends Abs
         return new ArrayList<>(resources.values());
     }
 
-
     private void addResourceIfExist(String name, String namespace, Map<String, Th2CustomResource> resources) {
         var alreadyAddedRes = resources.get(name);
         if (Objects.isNull(alreadyAddedRes)) {
@@ -399,11 +404,11 @@ public abstract class HelmReleaseTh2Op<CR extends Th2CustomResource> extends Abs
     private HelmRelease getHelmRelease(Th2CustomResource resource, List<HelmRelease> helmReleases) {
         var resName = extractFullName(resource);
         return helmReleases.stream()
-                .filter(hr -> {
-                    var owner = extractOwnerFullName(hr);
-                    return Objects.nonNull(owner) && owner.equals(resName);
-                }).findFirst()
-                .orElse(null);
+            .filter(hr -> {
+                var owner = extractOwnerFullName(hr);
+                return Objects.nonNull(owner) && owner.equals(resName);
+            }).findFirst()
+            .orElse(null);
     }
 
     @SuppressWarnings("unchecked")
@@ -425,7 +430,6 @@ public abstract class HelmReleaseTh2Op<CR extends Th2CustomResource> extends Abs
         return helmReleaseClient.inNamespace(namespace).list().getItems();
     }
 
-
     private abstract static class ActiveLinkUpdater {
 
         public List<Th2CustomResource> updateLinks(Th2CustomResource resource) {
@@ -434,21 +438,17 @@ public abstract class HelmReleaseTh2Op<CR extends Th2CustomResource> extends Abs
 
             var resNamespace = extractNamespace(resource);
 
-
             var lSingleton = LinkSingleton.INSTANCE;
 
             var linkResources = lSingleton.getLinkResources(resNamespace);
 
-
             var allActiveLinksOld = new ArrayList<>(lSingleton.getAllBoxesActiveLinks(resNamespace));
-
 
             var mqActiveLinks = new ArrayList<>(lSingleton.getMqActiveLinks(resNamespace));
 
             var grpcActiveLinks = new ArrayList<>(lSingleton.getGrpcActiveLinks(resNamespace));
 
             var dictionaryActiveLinks = new ArrayList<>(lSingleton.getDictionaryActiveLinks(resNamespace));
-
 
             var oldMsgStSize = lSingleton.getMsgStorageActiveLinks(resNamespace).size();
 
@@ -468,13 +468,11 @@ public abstract class HelmReleaseTh2Op<CR extends Th2CustomResource> extends Abs
 
             refreshDictionaryLinks(linkResources, dictionaryActiveLinks, resource);
 
-
             lSingleton.setMqActiveLinks(resNamespace, mqActiveLinks);
 
             lSingleton.setGrpcActiveLinks(resNamespace, grpcActiveLinks);
 
             lSingleton.setDictionaryActiveLinks(resNamespace, dictionaryActiveLinks);
-
 
             var newMsgStSize = lSingleton.getMsgStorageActiveLinks(resNamespace).size();
 
@@ -486,7 +484,6 @@ public abstract class HelmReleaseTh2Op<CR extends Th2CustomResource> extends Abs
 
             var newDicSize = dictionaryActiveLinks.size();
 
-
             var allActiveLinksNew = new ArrayList<>(lSingleton.getAllBoxesActiveLinks(resNamespace));
 
             var hiddenLinks = newMsgStSize + newEventStSize;
@@ -494,20 +491,20 @@ public abstract class HelmReleaseTh2Op<CR extends Th2CustomResource> extends Abs
             var allSize = allActiveLinksNew.size() + newDicSize - hiddenLinks;
 
             logger.info(String.format(
-                    "Updated active links in namespace '%s'. Active links: %s (hidden %s). " +
-                            "Details: %+d mq, %+d grpc, %+d dictionary, %+d hidden[mstore], %+d hidden[estore]",
-                    resNamespace, allSize, hiddenLinks,
-                    newMqSize - oldMqSize,
-                    newGrpcSize - oldGrpcSize,
-                    newDicSize - oldDicSize,
-                    newMsgStSize - oldMsgStSize,
-                    newEventStSize - oldEventStSize
+                "Updated active links in namespace '%s'. Active links: %s (hidden %s). " +
+                    "Details: %+d mq, %+d grpc, %+d dictionary, %+d hidden[mstore], %+d hidden[estore]",
+                resNamespace, allSize, hiddenLinks,
+                newMqSize - oldMqSize,
+                newGrpcSize - oldGrpcSize,
+                newDicSize - oldDicSize,
+                newMsgStSize - oldMsgStSize,
+                newEventStSize - oldEventStSize
             ));
-
 
             var linkedResources = getLinkedResources(resource, allActiveLinksOld, allActiveLinksNew);
 
-            logger.info("Found {} linked resources of '{}.{}' resource", linkedResources.size(), resNamespace, resourceName);
+            logger.info("Found {} linked resources of '{}.{}' resource", linkedResources.size(), resNamespace,
+                resourceName);
 
             return linkedResources;
         }
@@ -515,49 +512,53 @@ public abstract class HelmReleaseTh2Op<CR extends Th2CustomResource> extends Abs
         protected abstract void refreshQueues(Th2CustomResource resource);
 
         protected abstract void refreshMqLinks(
-                List<Th2Link> linkResources,
-                List<QueueLinkBunch> activeLinks,
-                Th2CustomResource... newResources
+            List<Th2Link> linkResources,
+            List<QueueLinkBunch> activeLinks,
+            Th2CustomResource... newResources
         );
 
         protected abstract void refreshGrpcLinks(
-                List<Th2Link> linkResources,
-                List<GrpcLinkBunch> activeLinks,
-                Th2CustomResource... newResources
+            List<Th2Link> linkResources,
+            List<GrpcLinkBunch> activeLinks,
+            Th2CustomResource... newResources
         );
 
         protected abstract void refreshDictionaryLinks(
-                List<Th2Link> linkResources,
-                List<DictionaryLinkBunch> activeLinks,
-                Th2CustomResource... newResources
+            List<Th2Link> linkResources,
+            List<DictionaryLinkBunch> activeLinks,
+            Th2CustomResource... newResources
         );
 
         protected abstract List<Th2CustomResource> getLinkedResources(
-                Th2CustomResource resource,
-                List<BoxLinkBunch> oldLinks,
-                List<BoxLinkBunch> newLinks
+            Th2CustomResource resource,
+            List<BoxLinkBunch> oldLinks,
+            List<BoxLinkBunch> newLinks
         );
     }
 
     private class AddedActiveLinkUpdater extends ActiveLinkUpdater {
 
         @Override
-        protected void refreshGrpcLinks(List<Th2Link> linkResources, List<GrpcLinkBunch> grpcActiveLinks, Th2CustomResource... newResources) {
+        protected void refreshGrpcLinks(List<Th2Link> linkResources, List<GrpcLinkBunch> grpcActiveLinks,
+                                        Th2CustomResource... newResources) {
             grpcLinkResolver.resolve(linkResources, grpcActiveLinks, newResources);
         }
 
         @Override
-        protected void refreshMqLinks(List<Th2Link> linkResources, List<QueueLinkBunch> mqActiveLinks, Th2CustomResource... newResources) {
+        protected void refreshMqLinks(List<Th2Link> linkResources, List<QueueLinkBunch> mqActiveLinks,
+                                      Th2CustomResource... newResources) {
             queueGenLinkResolver.resolve(linkResources, mqActiveLinks, newResources);
         }
 
         @Override
-        protected void refreshDictionaryLinks(List<Th2Link> linkResources, List<DictionaryLinkBunch> dicActiveLinks, Th2CustomResource... newResources) {
+        protected void refreshDictionaryLinks(List<Th2Link> linkResources, List<DictionaryLinkBunch> dicActiveLinks,
+                                              Th2CustomResource... newResources) {
             dictionaryLinkResolver.resolve(linkResources, dicActiveLinks, newResources);
         }
 
         @Override
-        protected List<Th2CustomResource> getLinkedResources(Th2CustomResource resource, List<BoxLinkBunch> oldLinks, List<BoxLinkBunch> newLinks) {
+        protected List<Th2CustomResource> getLinkedResources(Th2CustomResource resource, List<BoxLinkBunch> oldLinks,
+                                                             List<BoxLinkBunch> newLinks) {
             return getAllLinkedResources(resource, newLinks);
         }
 
@@ -570,22 +571,26 @@ public abstract class HelmReleaseTh2Op<CR extends Th2CustomResource> extends Abs
     private class DeletedActiveLinkUpdater extends ActiveLinkUpdater {
 
         @Override
-        protected void refreshGrpcLinks(List<Th2Link> linkResources, List<GrpcLinkBunch> grpcActiveLinks, Th2CustomResource... newResources) {
+        protected void refreshGrpcLinks(List<Th2Link> linkResources, List<GrpcLinkBunch> grpcActiveLinks,
+                                        Th2CustomResource... newResources) {
             grpcLinkResolver.resolve(linkResources, grpcActiveLinks);
         }
 
         @Override
-        protected void refreshMqLinks(List<Th2Link> linkResources, List<QueueLinkBunch> mqActiveLinks, Th2CustomResource... newResources) {
+        protected void refreshMqLinks(List<Th2Link> linkResources, List<QueueLinkBunch> mqActiveLinks,
+                                      Th2CustomResource... newResources) {
             queueGenLinkResolver.resolve(linkResources, mqActiveLinks);
         }
 
         @Override
-        protected void refreshDictionaryLinks(List<Th2Link> linkResources, List<DictionaryLinkBunch> dicActiveLinks, Th2CustomResource... newResources) {
+        protected void refreshDictionaryLinks(List<Th2Link> linkResources, List<DictionaryLinkBunch> dicActiveLinks,
+                                              Th2CustomResource... newResources) {
             dictionaryLinkResolver.resolve(linkResources, dicActiveLinks);
         }
 
         @Override
-        protected List<Th2CustomResource> getLinkedResources(Th2CustomResource resource, List<BoxLinkBunch> oldLinks, List<BoxLinkBunch> newLinks) {
+        protected List<Th2CustomResource> getLinkedResources(Th2CustomResource resource, List<BoxLinkBunch> oldLinks,
+                                                             List<BoxLinkBunch> newLinks) {
             return getAllLinkedResources(resource, oldLinks);
         }
 
@@ -595,16 +600,13 @@ public abstract class HelmReleaseTh2Op<CR extends Th2CustomResource> extends Abs
         }
     }
 
-
     private abstract class StorageTh2LinksRefresher {
 
         private StorageContext context;
 
-
         public StorageTh2LinksRefresher(StorageContext context) {
             this.context = context;
         }
-
 
         public void updateStorageResLinks(CR resource) {
 
@@ -628,10 +630,10 @@ public abstract class HelmReleaseTh2Op<CR extends Th2CustomResource> extends Abs
 
             LinkSingleton.INSTANCE.setLinkResources(resNamespace, linkResources);
 
-            logger.info("{} hidden links has been refreshed successfully with '{}.{}'", context.getBoxAlias(), resNamespace, resName);
+            logger.info("{} hidden links has been refreshed successfully with '{}.{}'", context.getBoxAlias(),
+                resNamespace, resName);
 
         }
-
 
         @SneakyThrows
         protected Th2Link getStLinkResAndCreateIfAbsent(String namespace, List<Th2Link> linkResources) {
@@ -639,9 +641,9 @@ public abstract class HelmReleaseTh2Op<CR extends Th2CustomResource> extends Abs
             var linkResourceName = context.getLinkResourceName();
 
             var hiddenLinksRes = linkResources.stream()
-                    .filter(lr -> extractName(lr).equals(linkResourceName))
-                    .findFirst()
-                    .orElse(null);
+                .filter(lr -> extractName(lr).equals(linkResourceName))
+                .findFirst()
+                .orElse(null);
 
             if (Objects.isNull(hiddenLinksRes)) {
                 hiddenLinksRes = Th2Link.newInstance();
@@ -668,17 +670,17 @@ public abstract class HelmReleaseTh2Op<CR extends Th2CustomResource> extends Abs
             }
 
             return BoxMq.builder()
-                    .box(context.getBoxAlias())
-                    .pin(context.getPinName() + targetAttr)
-                    .build();
+                .box(context.getBoxAlias())
+                .pin(context.getPinName() + targetAttr)
+                .build();
         }
 
         protected MqLinkBunch createHiddenLink(BoxMq fromBox, BoxMq toBox) {
             return MqLinkBunch.builder()
-                    .name(fromBox.toString() + context.getLinkNameSuffix())
-                    .from(fromBox)
-                    .to(toBox)
-                    .build();
+                .name(fromBox.toString() + context.getLinkNameSuffix())
+                .from(fromBox)
+                .to(toBox)
+                .build();
         }
 
         protected List<MqLinkBunch> createHiddenLinks(Th2CustomResource resource) {
@@ -742,7 +744,6 @@ public abstract class HelmReleaseTh2Op<CR extends Th2CustomResource> extends Abs
 
     }
 
-
     @Getter
     @SuperBuilder
     private abstract static class StorageContext {
@@ -755,7 +756,6 @@ public abstract class HelmReleaseTh2Op<CR extends Th2CustomResource> extends Abs
 
         private String pinName;
 
-
         protected abstract boolean checkAttributes(Set<String> attributes);
 
     }
@@ -766,9 +766,11 @@ public abstract class HelmReleaseTh2Op<CR extends Th2CustomResource> extends Abs
 
         @Override
         protected boolean checkAttributes(Set<String> attributes) {
-            return attributes.contains(DirectionAttribute.store.name()) && attributes.contains(DirectionAttribute.publish.name())
-                    && (attributes.contains(DirectionAttribute.parsed.name()) || attributes.contains(DirectionAttribute.raw.name()))
-                    && !attributes.contains(DirectionAttribute.subscribe.name());
+            return attributes.contains(DirectionAttribute.store.name())
+                && attributes.contains(DirectionAttribute.publish.name())
+                && (attributes.contains(DirectionAttribute.parsed.name())
+                || attributes.contains(DirectionAttribute.raw.name()))
+                && !attributes.contains(DirectionAttribute.subscribe.name());
         }
 
     }
@@ -779,8 +781,9 @@ public abstract class HelmReleaseTh2Op<CR extends Th2CustomResource> extends Abs
 
         @Override
         protected boolean checkAttributes(Set<String> attributes) {
-            return attributes.contains(DirectionAttribute.event.name()) && attributes.contains(DirectionAttribute.publish.name())
-                    && !attributes.contains(DirectionAttribute.subscribe.name());
+            return attributes.contains(DirectionAttribute.event.name())
+                && attributes.contains(DirectionAttribute.publish.name())
+                && !attributes.contains(DirectionAttribute.subscribe.name());
         }
 
     }

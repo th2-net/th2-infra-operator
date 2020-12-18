@@ -1,8 +1,8 @@
 variables:
   APP_NAME: "th2-infra-operator"
   MAJOR_VERSION: "2"
-  MINOR_VERSION: "1"
-  MAINTENANCE_VERSION: '3'
+  MINOR_VERSION: "3"
+  MAINTENANCE_VERSION: '0'
   DOCKER_PUBLISH_ENABLED: 'true'
 
 include:

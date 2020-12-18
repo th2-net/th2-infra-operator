@@ -28,14 +28,12 @@ import com.rabbitmq.client.ConnectionFactory;
 import com.rabbitmq.http.client.Client;
 import com.rabbitmq.http.client.ClientParameters;
 import com.rabbitmq.http.client.OkHttpRestTemplateConfigurator;
+import com.rabbitmq.http.client.domain.QueueInfo;
 import com.rabbitmq.http.client.domain.UserPermissions;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.Map;
+import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 
 public final class RabbitMQContext {
@@ -208,6 +206,21 @@ public final class RabbitMQContext {
         } catch (Exception e) {
             logger.error("Exception cleaning up vHost  \"{}\"", vHostName, e);
             throw new VHostCreateException(e);
+        }
+    }
+
+
+    public static List<QueueInfo> getQueues(String vhost, RabbitMQManagementConfig rabbitMQManagementConfig) throws Exception {
+        try {
+            Client rmqClient = getClient(
+                    String.format("http://%s:%s/api", rabbitMQManagementConfig.getHost(), rabbitMQManagementConfig.getPort())
+                    , rabbitMQManagementConfig.getUsername()
+                    , rabbitMQManagementConfig.getPassword()
+            );
+            return rmqClient.getQueues(vhost);
+        } catch (Exception e) {
+            logger.error("Exception while fetching queues for vHost: '{}'", vhost, e);
+            throw e;
         }
     }
 

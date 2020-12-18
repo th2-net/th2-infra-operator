@@ -13,7 +13,6 @@
 
 package com.exactpro.th2.infraoperator.fabric8.model.box.configuration.mq.factory.impl;
 
-import com.exactpro.th2.infraoperator.fabric8.configuration.OperatorConfig;
 import com.exactpro.th2.infraoperator.fabric8.model.box.configuration.mq.MessageRouterConfiguration;
 import com.exactpro.th2.infraoperator.fabric8.model.box.configuration.mq.QueueConfiguration;
 import com.exactpro.th2.infraoperator.fabric8.model.box.configuration.mq.RouterFilterConfiguration;
@@ -24,6 +23,8 @@ import com.exactpro.th2.infraoperator.fabric8.spec.Th2CustomResource;
 import com.exactpro.th2.infraoperator.fabric8.spec.link.relation.boxes.box.impl.BoxMq;
 import com.exactpro.th2.infraoperator.fabric8.spec.shared.DirectionAttribute;
 import com.exactpro.th2.infraoperator.fabric8.spec.shared.FilterSpec;
+import com.exactpro.th2.infraoperator.fabric8.spec.strategy.linkResolver.queue.QueueName;
+import com.exactpro.th2.infraoperator.fabric8.spec.strategy.linkResolver.queue.RoutingKeyName;
 import com.exactpro.th2.infraoperator.fabric8.util.ExtractUtils;
 import com.exactpro.th2.infraoperator.fabric8.util.SchemeMappingUtils;
 import org.jetbrains.annotations.Nullable;
@@ -37,7 +38,7 @@ import java.util.stream.Collectors;
 
 public class DefaultMessageRouterConfigFactory implements MessageRouterConfigFactory {
 
-    private static final String NOT_NECESSARY_STUB = "not_necessary";
+    private static final String EMPTY_STRING_ALIAS = "";
 
 
     @Override
@@ -64,9 +65,9 @@ public class DefaultMessageRouterConfigFactory implements MessageRouterConfigFac
             QueueBunch queueSpec;
 
             if (attrs.contains(DirectionAttribute.publish.name())) {
-                queueSpec = createQueueBunch(ExtractUtils.extractNamespace(resource), NOT_NECESSARY_STUB, boxMq.toString());
+                queueSpec = createQueueBunch(ExtractUtils.extractNamespace(resource), null, boxMq);
             } else {
-                queueSpec = createQueueBunch(ExtractUtils.extractNamespace(resource), boxMq.toString(), NOT_NECESSARY_STUB);
+                queueSpec = createQueueBunch(ExtractUtils.extractNamespace(resource), boxMq, null);
             }
 
             //TODO null check
@@ -97,7 +98,7 @@ public class DefaultMessageRouterConfigFactory implements MessageRouterConfigFac
     }
 
     @Nullable
-    private QueueBunch createQueueBunch(String namespace, String queue, String routingKey) {
+    private QueueBunch createQueueBunch(String namespace, BoxMq toBox, BoxMq fromBox) {
 
         var rabbitMQConfig = ConfigMaps.INSTANCE.getRabbitMQConfig4Namespace(namespace);
 
@@ -105,9 +106,9 @@ public class DefaultMessageRouterConfigFactory implements MessageRouterConfigFac
             return null;
         }
 
-        String fullQueue = queue.equals(NOT_NECESSARY_STUB) ? queue : OperatorConfig.QUEUE_PREFIX + namespace + "_" + queue;
+        String fullQueue = toBox == null ? EMPTY_STRING_ALIAS : new QueueName(namespace, toBox).toString();
 
-        String fullRoutingKey = routingKey.equals(NOT_NECESSARY_STUB) ? routingKey : OperatorConfig.ROUTING_KEY_PREFIX + namespace + "_" + routingKey;
+        String fullRoutingKey = fromBox == null ? EMPTY_STRING_ALIAS : new RoutingKeyName(namespace, fromBox).toString();
 
         return new QueueBunch(
                 fullQueue,
