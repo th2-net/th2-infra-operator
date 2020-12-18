@@ -37,39 +37,39 @@ public enum OperatorConfig {
     private static final String CONFIG_FILE = "/var/th2/config/infra-operator.yml";
     static final String DEFAULT_RABBITMQ_CONFIGMAP_NAME = "rabbit-mq-app-config";
 
-    private Configuration configuration;
+    private static volatile Configuration configuration;
 
     public String getRabbitMQConfigMapName() {
-        return getFullConfig().getRabbitMQConfigMapName();
+        return getConfig().getRabbitMQConfigMapName();
     }
 
     public List<String> getNamespacePrefixes() {
-        return getFullConfig().getNamespacePrefixes();
+        return getConfig().getNamespacePrefixes();
     }
 
     public String getK8sUrl() {
-        return getFullConfig().getK8sUrl();
+        return getConfig().getK8sUrl();
     }
 
     public SchemaSecrets getSchemaSecrets() {
-        return getFullConfig().getSchemaSecrets();
+        return getConfig().getSchemaSecrets();
     }
 
     public ChartConfig getChartConfig() {
-        return getFullConfig().getChartConfig();
+        return getConfig().getChartConfig();
     }
 
     public RabbitMQManagementConfig getRabbitMQManagementConfig() {
-        return getFullConfig().getRabbitMQManagementConfig();
+        return getConfig().getRabbitMQManagementConfig();
     }
 
-    private synchronized Configuration getFullConfig() {
+    private synchronized Configuration getConfig() {
         if (configuration == null)
-            configuration = getConfig();
+            configuration = loadConfiguration();
         return configuration;
     }
 
-    Configuration getConfig() {
+    Configuration loadConfiguration() {
         try (var in = new FileInputStream(System.getProperty(CONFIG_FILE_SYSTEM_PROPERTY, CONFIG_FILE))) {
             StringSubstitutor stringSubstitutor =
                 new StringSubstitutor(StringLookupFactory.INSTANCE.environmentVariableStringLookup());
@@ -163,8 +163,11 @@ public enum OperatorConfig {
 
         @Override
         public boolean equals(Object o) {
-            if (this == o) return true;
-            if (!(o instanceof Configuration)) return false;
+            if (this == o)
+                return true;
+            if (!(o instanceof Configuration))
+                return false;
+
             Configuration that = (Configuration) o;
             return Objects.equals(getChartConfig(), that.getChartConfig()) &&
                 Objects.equals(getRabbitMQManagementConfig(), that.getRabbitMQManagementConfig()) &&

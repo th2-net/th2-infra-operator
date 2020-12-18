@@ -36,6 +36,7 @@ import com.exactpro.th2.infraoperator.fabric8.spec.strategy.linkResolver.grpc.im
 import com.exactpro.th2.infraoperator.fabric8.spec.strategy.linkResolver.grpc.impl.EmptyGrpcLinkResolver;
 import com.exactpro.th2.infraoperator.fabric8.spec.strategy.linkResolver.mq.impl.BindQueueLinkResolver;
 import com.exactpro.th2.infraoperator.fabric8.spec.strategy.linkResolver.mq.impl.EmptyQueueLinkResolver;
+import com.exactpro.th2.infraoperator.fabric8.spec.strategy.linkResolver.mq.impl.RabbitMQContext;
 import com.exactpro.th2.infraoperator.fabric8.spec.strategy.resFinder.box.EmptyBoxResourceFinder;
 import com.exactpro.th2.infraoperator.fabric8.spec.strategy.resFinder.box.impl.DefaultBoxResourceFinder;
 import com.exactpro.th2.infraoperator.fabric8.spec.strategy.resFinder.box.impl.StoreDependentBoxResourceFinder;
@@ -43,7 +44,6 @@ import com.exactpro.th2.infraoperator.fabric8.spec.strategy.resFinder.dictionary
 import com.exactpro.th2.infraoperator.fabric8.spec.strategy.resFinder.dictionary.impl.DefaultDictionaryResourceFinder;
 import com.exactpro.th2.infraoperator.fabric8.spec.strategy.resFinder.dictionary.impl.EmptyDictionaryResourceFinder;
 import com.exactpro.th2.infraoperator.fabric8.util.CustomResourceUtils;
-import com.exactpro.th2.infraoperator.fabric8.util.MqVHostUtils;
 import com.exactpro.th2.infraoperator.fabric8.util.Strings;
 import com.fasterxml.uuid.Generators;
 import io.fabric8.kubernetes.api.model.ConfigMap;
@@ -417,7 +417,7 @@ public class DefaultWatchManager {
 
                         if (!Objects.equals(rabbitMQConfig, newRabbitMQConfig)) {
                             configMaps.setRabbitMQConfig4Namespace(namespace, newRabbitMQConfig);
-                            MqVHostUtils.createVHostIfAbsent(namespace, opConfig.getRabbitMQManagementConfig());
+                            RabbitMQContext.createVHostIfAbsent(namespace);
                             logger.info("RabbitMQ ConfigMap has been updated in namespace \"%s\". Updating all boxes",
                                 namespace);
                             int refreshedBoxesCount = refreshBoxes(namespace);

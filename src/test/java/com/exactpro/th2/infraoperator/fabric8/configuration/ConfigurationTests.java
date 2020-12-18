@@ -45,7 +45,7 @@ public class ConfigurationTests {
         expected.setNamespacePrefixes(Arrays.asList("string1", "string2"));
         expected.setRabbitMQConfigMapName("rabbit-mq-app");
 
-        Assertions.assertEquals(expected, OperatorConfig.INSTANCE.getConfig());
+        Assertions.assertEquals(expected, OperatorConfig.INSTANCE.loadConfiguration());
     }
 
     @Test
@@ -54,7 +54,7 @@ public class ConfigurationTests {
 
         expected.setNamespacePrefixes(Arrays.asList("string1", "string2"));
 
-        Assertions.assertEquals(expected, OperatorConfig.INSTANCE.getConfig());
+        Assertions.assertEquals(expected, OperatorConfig.INSTANCE.loadConfiguration());
     }
 
     @Test
@@ -63,7 +63,7 @@ public class ConfigurationTests {
 
         expected.setChartConfig(ChartConfig.builder().withGit("git").withPath("path").withRef("ref").build());
 
-        Assertions.assertEquals(expected, OperatorConfig.INSTANCE.getConfig());
+        Assertions.assertEquals(expected, OperatorConfig.INSTANCE.loadConfiguration());
     }
 
     @Test
@@ -72,7 +72,7 @@ public class ConfigurationTests {
 
         expected.setChartConfig(ChartConfig.builder().withRepository("helm").withName("name").withVersion("1.1.0").build());
 
-        Assertions.assertEquals(expected, OperatorConfig.INSTANCE.getConfig());
+        Assertions.assertEquals(expected, OperatorConfig.INSTANCE.loadConfiguration());
     }
 
     @Test
@@ -173,7 +173,7 @@ public class ConfigurationTests {
                 .build()
         );
 
-        Assertions.assertEquals(expected, OperatorConfig.INSTANCE.getConfig());
+        Assertions.assertEquals(expected, OperatorConfig.INSTANCE.loadConfiguration());
     }
 
     @Test
@@ -182,46 +182,46 @@ public class ConfigurationTests {
 
         expected.setSchemaSecrets(SchemaSecrets.builder().withRabbitMQ("rabbitMQ").withCassandra("cassandra").build());
 
-        Assertions.assertEquals(expected, OperatorConfig.INSTANCE.getConfig());
+        Assertions.assertEquals(expected, OperatorConfig.INSTANCE.loadConfiguration());
     }
 
     @Test
     void testEmptyConfig() {
         beforeEach("src/test/resources/emptyConfig.yml");
 
-        Assertions.assertEquals(expected, OperatorConfig.INSTANCE.getConfig());
+        Assertions.assertEquals(expected, OperatorConfig.INSTANCE.loadConfiguration());
     }
 
     @Test
     void testDefaultConfig() {
         beforeEach("src/test/resources/defaultConfig.yml");
 
-        Assertions.assertEquals(Collections.emptyList(), OperatorConfig.INSTANCE.getConfig().getNamespacePrefixes());
+        Assertions.assertEquals(Collections.emptyList(), OperatorConfig.INSTANCE.loadConfiguration().getNamespacePrefixes());
 
-        Assertions.assertNull(OperatorConfig.INSTANCE.getConfig().getChartConfig().getGit());
-        Assertions.assertNull(OperatorConfig.INSTANCE.getConfig().getChartConfig().getRef());
-        Assertions.assertNull(OperatorConfig.INSTANCE.getConfig().getChartConfig().getPath());
+        Assertions.assertNull(OperatorConfig.INSTANCE.loadConfiguration().getChartConfig().getGit());
+        Assertions.assertNull(OperatorConfig.INSTANCE.loadConfiguration().getChartConfig().getRef());
+        Assertions.assertNull(OperatorConfig.INSTANCE.loadConfiguration().getChartConfig().getPath());
 
-        Assertions.assertNull(OperatorConfig.INSTANCE.getConfig().getRabbitMQManagementConfig().getHost());
+        Assertions.assertNull(OperatorConfig.INSTANCE.loadConfiguration().getRabbitMQManagementConfig().getHost());
         Assertions.assertEquals(0,
-            OperatorConfig.INSTANCE.getConfig().getRabbitMQManagementConfig().getPort());
-        Assertions.assertNull(OperatorConfig.INSTANCE.getConfig().getRabbitMQManagementConfig().getUsername());
-        Assertions.assertNull(OperatorConfig.INSTANCE.getConfig().getRabbitMQManagementConfig().getPassword());
-        Assertions.assertFalse(OperatorConfig.INSTANCE.getConfig().getRabbitMQManagementConfig().isPersistence());
+            OperatorConfig.INSTANCE.loadConfiguration().getRabbitMQManagementConfig().getPort());
+        Assertions.assertNull(OperatorConfig.INSTANCE.loadConfiguration().getRabbitMQManagementConfig().getUsername());
+        Assertions.assertNull(OperatorConfig.INSTANCE.loadConfiguration().getRabbitMQManagementConfig().getPassword());
+        Assertions.assertFalse(OperatorConfig.INSTANCE.loadConfiguration().getRabbitMQManagementConfig().isPersistence());
         Assertions.assertEquals(RabbitMQNamespacePermissions.DEFAULT_CONFIGURE_PERMISSION, OperatorConfig.INSTANCE
-            .getConfig().getRabbitMQManagementConfig().getRabbitMQNamespacePermissions().getConfigure());
+            .loadConfiguration().getRabbitMQManagementConfig().getRabbitMQNamespacePermissions().getConfigure());
         Assertions.assertEquals(RabbitMQNamespacePermissions.DEFAULT_READ_PERMISSION, OperatorConfig.INSTANCE
-            .getConfig().getRabbitMQManagementConfig().getRabbitMQNamespacePermissions().getRead());
+            .loadConfiguration().getRabbitMQManagementConfig().getRabbitMQNamespacePermissions().getRead());
         Assertions.assertEquals(RabbitMQNamespacePermissions.DEFAULT_WRITE_PERMISSION, OperatorConfig.INSTANCE
-            .getConfig().getRabbitMQManagementConfig().getRabbitMQNamespacePermissions().getWrite());
+            .loadConfiguration().getRabbitMQManagementConfig().getRabbitMQNamespacePermissions().getWrite());
 
         Assertions.assertEquals(OperatorConfig.DEFAULT_RABBITMQ_CONFIGMAP_NAME,
-            OperatorConfig.INSTANCE.getConfig().getRabbitMQConfigMapName());
+            OperatorConfig.INSTANCE.loadConfiguration().getRabbitMQConfigMapName());
 
         Assertions.assertEquals(SchemaSecrets.DEFAULT_RABBITMQ_SECRET,
-            OperatorConfig.INSTANCE.getConfig().getSchemaSecrets().getRabbitMQ());
+            OperatorConfig.INSTANCE.loadConfiguration().getSchemaSecrets().getRabbitMQ());
         Assertions.assertEquals(SchemaSecrets.DEFAULT_CASSANDRA_SECRET,
-            OperatorConfig.INSTANCE.getConfig().getSchemaSecrets().getCassandra());
+            OperatorConfig.INSTANCE.loadConfiguration().getSchemaSecrets().getCassandra());
     }
 
     @Test
@@ -229,6 +229,6 @@ public class ConfigurationTests {
         beforeEach("src/test/resources/schemaPermissionsDefaultConfig.yml");
 
         Assertions.assertEquals(new RabbitMQNamespacePermissions(),
-            OperatorConfig.INSTANCE.getConfig().getRabbitMQManagementConfig().getRabbitMQNamespacePermissions());
+            OperatorConfig.INSTANCE.loadConfiguration().getRabbitMQManagementConfig().getRabbitMQNamespacePermissions());
     }
 }

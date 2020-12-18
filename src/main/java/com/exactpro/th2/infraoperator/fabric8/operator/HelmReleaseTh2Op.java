@@ -27,6 +27,7 @@ import com.exactpro.th2.infraoperator.fabric8.spec.Th2Spec;
 import com.exactpro.th2.infraoperator.fabric8.spec.helmRelease.DoneableHelmRelease;
 import com.exactpro.th2.infraoperator.fabric8.spec.helmRelease.HelmRelease;
 import com.exactpro.th2.infraoperator.fabric8.spec.helmRelease.HelmReleaseList;
+import com.exactpro.th2.infraoperator.fabric8.spec.helmRelease.HelmReleaseSecrets;
 import com.exactpro.th2.infraoperator.fabric8.spec.link.Th2Link;
 import com.exactpro.th2.infraoperator.fabric8.spec.link.relation.boxes.box.impl.BoxMq;
 import com.exactpro.th2.infraoperator.fabric8.spec.link.relation.boxes.bunch.BoxLinkBunch;
@@ -35,7 +36,6 @@ import com.exactpro.th2.infraoperator.fabric8.spec.link.relation.boxes.bunch.imp
 import com.exactpro.th2.infraoperator.fabric8.spec.link.relation.dictionaries.bunch.DictionaryLinkBunch;
 import com.exactpro.th2.infraoperator.fabric8.spec.link.singleton.LinkSingleton;
 import com.exactpro.th2.infraoperator.fabric8.spec.shared.DirectionAttribute;
-import com.exactpro.th2.infraoperator.fabric8.spec.helmRelease.HelmReleaseSecrets;
 import com.exactpro.th2.infraoperator.fabric8.spec.shared.PinSpec;
 import com.exactpro.th2.infraoperator.fabric8.spec.shared.PrometheusConfiguration;
 import com.exactpro.th2.infraoperator.fabric8.spec.strategy.linkResolver.dictionary.DictionaryLinkResolver;

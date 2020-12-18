@@ -22,9 +22,7 @@ import com.exactpro.th2.infraoperator.fabric8.spec.link.singleton.LinkSingleton;
 import com.exactpro.th2.infraoperator.fabric8.spec.shared.DirectionAttribute;
 import com.exactpro.th2.infraoperator.fabric8.spec.strategy.linkResolver.queue.QueueName;
 import com.exactpro.th2.infraoperator.fabric8.util.ExtractUtils;
-import com.exactpro.th2.infraoperator.fabric8.util.MqVHostUtils;
 import com.rabbitmq.client.Channel;
-import com.rabbitmq.client.ConnectionFactory;
 import com.rabbitmq.http.client.domain.QueueInfo;
 import lombok.SneakyThrows;
 import org.slf4j.Logger;
@@ -33,40 +31,32 @@ import org.slf4j.LoggerFactory;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
 
-import static com.exactpro.th2.infraoperator.fabric8.spec.strategy.linkResolver.mq.impl.RabbitMqStaticContext.*;
 import static com.exactpro.th2.infraoperator.fabric8.util.ExtractUtils.extractName;
-import static com.exactpro.th2.infraoperator.fabric8.util.MqVHostUtils.getQueues;
 
 public class DeclareQueueResolver {
 
     private static final Logger logger = LoggerFactory.getLogger(DeclareQueueResolver.class);
-
-    private final ConnectionFactory connectionFactory;
-
     private final RabbitMQManagementConfig rabbitMQManagementConfig;
 
     @SneakyThrows
     public DeclareQueueResolver() {
         this.rabbitMQManagementConfig = OperatorConfig.INSTANCE.getRabbitMQManagementConfig();
-        this.connectionFactory = new ConnectionFactory();
     }
 
     public void resolveAdd(Th2CustomResource resource) {
-        String namespace = ExtractUtils.extractNamespace(resource);
-        MqVHostUtils.createVHostIfAbsent(namespace, rabbitMQManagementConfig);
-        createChannelIfAbsent(namespace, rabbitMQManagementConfig, connectionFactory);
-        declareQueueBunch(namespace, resource);
 
+        String namespace = ExtractUtils.extractNamespace(resource);
+        RabbitMQContext.createVHostIfAbsent(namespace);
+        declareQueueBunch(namespace, resource);
     }
 
     public void resolveDelete(Th2CustomResource resource) {
+
         String namespace = ExtractUtils.extractNamespace(resource);
-        RabbitMQConfig rabbitMQConfig = getRabbitMQConfig(namespace);
-        Channel channel = getChannel(namespace, rabbitMQConfig);
+        Channel channel = getChannel(namespace);
         //get queues that are associated with current box and are not linked through Th2Link resources
         Set<String> boxUnlinkedQueueNames = getBoxUnlinkedQueues(namespace, extractName(resource));
         removeExtinctQueues(channel, boxUnlinkedQueueNames);
@@ -74,9 +64,11 @@ public class DeclareQueueResolver {
 
     @SneakyThrows
     private void declareQueueBunch(String namespace, Th2CustomResource resource) {
-        RabbitMQConfig rabbitMQConfig = getRabbitMQConfig(namespace);
-        Channel channel = getChannel(namespace, rabbitMQConfig);
-        channel.exchangeDeclare(rabbitMQConfig.getExchangeName(), "direct", rabbitMQManagementConfig.isPersistence());
+
+        Channel channel = getChannel(namespace);
+        String exchangeName = RabbitMQContext.getExchangeName(namespace);
+
+        channel.exchangeDeclare(exchangeName, "direct", rabbitMQManagementConfig.isPersistence());
         //get queues that are associated with current box and are not linked through Th2Link resources
         Set<String> boxUnlinkedQueueNames = getBoxUnlinkedQueues(namespace, extractName(resource));
 
@@ -89,10 +81,14 @@ public class DeclareQueueResolver {
                     .build();
 
             if (!attrs.contains(DirectionAttribute.publish.name())) {
-                String queue = buildQueue(namespace, boxMq);
+                String queueName = new QueueName(namespace, boxMq).toString();
                 //remove from set if pin for queue still exists.
-                boxUnlinkedQueueNames.remove(queue);
-                var declareResult = channel.queueDeclare(queue, rabbitMQManagementConfig.isPersistence(), false, false, generateQueueArguments(pin.getSettings()));
+                boxUnlinkedQueueNames.remove(queueName);
+                var declareResult = channel.queueDeclare(queueName
+                        , rabbitMQManagementConfig.isPersistence()
+                        , false
+                        , false
+                        , RabbitMQContext.generateQueueArguments(pin.getSettings()));
                 logger.info("Queue '{}' of resource {} was successfully declared", declareResult.getQueue(), extractName(resource));
             }
         }
@@ -109,8 +105,8 @@ public class DeclareQueueResolver {
 
     @SneakyThrows
     private Set<String> getBoxQueues(String namespace, String boxName) {
-        RabbitMQConfig rabbitMQConfig = getRabbitMQConfig(namespace);
-        List<QueueInfo> queueInfoList = getQueues(rabbitMQConfig.getVHost(), rabbitMQManagementConfig);
+        RabbitMQConfig rabbitMQConfig = RabbitMQContext.getRabbitMQConfig(namespace);
+        List<QueueInfo> queueInfoList = RabbitMQContext.getQueues(rabbitMQConfig.getVHost());
 
         List<QueueName> queueNames = queueInfoList.stream()
                 .map(queueInfo -> QueueName.fromString(queueInfo.getName()))
@@ -133,21 +129,20 @@ public class DeclareQueueResolver {
     }
 
     @SneakyThrows
-    private Channel getChannel(String namespace, RabbitMQConfig rabbitMQConfig) {
-        Map<String, ChannelBunch> channelBunchMap = getMqChannels();
-        Channel channel = channelBunchMap.get(namespace).getChannel();
+    private Channel getChannel(String namespace) {
+        Channel channel = RabbitMQContext.getChannel(namespace);
         if (!channel.isOpen()) {
-            logger.warn("RMQ connection is broken, trying to reconnect...");
-            channelBunchMap.remove(namespace);
-            createChannelIfAbsent(namespace, rabbitMQManagementConfig, connectionFactory);
-            channel = channelBunchMap.get(namespace).getChannel();
-            logger.info("RMQ connection has been restored");
+            logger.warn("RabbitMQ connection is broken, trying to reconnect...");
+            RabbitMQContext.closeChannel(namespace);
+            channel = RabbitMQContext.getChannel(namespace);
+            logger.info("RabbitMQ connection has been restored");
         }
-        var exchangeReset = getMqExchangeResets().get(namespace);
-        if (exchangeReset == null || !exchangeReset) {
+
+        String exchangeName = RabbitMQContext.getExchangeName(namespace);
+        if (!RabbitMQContext.isExchangeReset(namespace)) {
             logger.info("Deleting exchange in vHost: {}", namespace);
-            channel.exchangeDelete(rabbitMQConfig.getExchangeName());
-            getMqExchangeResets().put(namespace, true);
+            channel.exchangeDelete(exchangeName);
+            RabbitMQContext.markExchangeReset(namespace);
         }
         return channel;
     }
@@ -168,8 +163,4 @@ public class DeclareQueueResolver {
 
     }
 
-
-    private String buildQueue(String namespace, BoxMq boxMq) {
-        return new QueueName(namespace, boxMq).toString();
-    }
 }
