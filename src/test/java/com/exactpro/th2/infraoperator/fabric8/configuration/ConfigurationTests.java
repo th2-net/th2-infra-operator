@@ -20,7 +20,7 @@ import org.junit.jupiter.api.Test;
 import java.util.Arrays;
 import java.util.Collections;
 
-public class TestConfiguration {
+public class ConfigurationTests {
 
     private Configuration expected;
 

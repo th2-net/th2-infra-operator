@@ -36,15 +36,6 @@ public class ChartConfig implements Cloneable {
     ChartConfig() {
     }
 
-    public ChartConfig(String git, String ref, String path, String repository, String name, String version) {
-        this.git = git;
-        this.ref = ref;
-        this.path = path;
-        this.repository = repository;
-        this.name = name;
-        this.version = version;
-    }
-
     public String getGit() {
         return git;
     }
@@ -73,44 +64,37 @@ public class ChartConfig implements Cloneable {
         return new ChartConfigBuilder();
     }
 
+
     public ChartConfig overrideWith(ChartConfig chartConfig) {
+
         try {
             ChartConfig overriddenConfig = (ChartConfig) super.clone();
 
             // if chartConfig is nonempty and valid it will replace existing config
             // if chartConfig is empty nothing will change
-            if (isValid(chartConfig)) {
-                if (!isEmpty(chartConfig)) {
-                    overriddenConfig.git = chartConfig.getGit();
-                    overriddenConfig.ref = chartConfig.getRef();
-                    overriddenConfig.path = chartConfig.getPath();
-                    overriddenConfig.repository = chartConfig.getRepository();
-                    overriddenConfig.name = chartConfig.getName();
-                    overriddenConfig.version = chartConfig.getVersion();
-                    return overriddenConfig;
-                }
-            }
+            if (chartConfig.isValid() && !chartConfig.isEmpty())
+                return (ChartConfig) chartConfig.clone();
+
             // if chartConfig is not valid it will be combined with existing config
-            else {
-                if (!Strings.isNullOrEmpty(chartConfig.getGit()))
-                    overriddenConfig.git = chartConfig.getGit();
+            if (!Strings.isNullOrEmpty(chartConfig.getGit()))
+                overriddenConfig.git = chartConfig.getGit();
 
-                if (!Strings.isNullOrEmpty(chartConfig.getRef()))
-                    overriddenConfig.ref = chartConfig.getRef();
+            if (!Strings.isNullOrEmpty(chartConfig.getRef()))
+                overriddenConfig.ref = chartConfig.getRef();
 
-                if (!Strings.isNullOrEmpty(chartConfig.getPath()))
-                    overriddenConfig.path = chartConfig.getPath();
+            if (!Strings.isNullOrEmpty(chartConfig.getPath()))
+                overriddenConfig.path = chartConfig.getPath();
 
-                if (!Strings.isNullOrEmpty(chartConfig.getRepository()))
-                    overriddenConfig.repository = chartConfig.getRepository();
+            if (!Strings.isNullOrEmpty(chartConfig.getRepository()))
+                overriddenConfig.repository = chartConfig.getRepository();
 
-                if (!Strings.isNullOrEmpty(chartConfig.getName()))
-                    overriddenConfig.name = chartConfig.getName();
+            if (!Strings.isNullOrEmpty(chartConfig.getName()))
+                overriddenConfig.name = chartConfig.getName();
 
-                if (!Strings.isNullOrEmpty(chartConfig.getVersion()))
-                    overriddenConfig.version = chartConfig.getVersion();
-            }
-            if (!isValid(overriddenConfig))
+            if (!Strings.isNullOrEmpty(chartConfig.getVersion()))
+                overriddenConfig.version = chartConfig.getVersion();
+
+            if (!overriddenConfig.isValid())
                 throw new IllegalArgumentException("Exception overriding " + ChartConfig.class.getSimpleName());
 
             return overriddenConfig;
@@ -119,35 +103,38 @@ public class ChartConfig implements Cloneable {
         }
     }
 
-    private static boolean isValid(ChartConfig config) {
+
+    private boolean isValid() {
         // check if ALL fields are null or empty
-        if (isEmpty(config))
+        if (this.isEmpty())
             return true;
 
         // check if NONE of GIT fields are null or empty
-        if (!Strings.isNullOrEmpty(config.getGit()) && !Strings.isNullOrEmpty(config.getRef())
-            && !Strings.isNullOrEmpty(config.getPath()))
+        if (!Strings.isNullOrEmpty(this.getGit()) && !Strings.isNullOrEmpty(this.getRef())
+            && !Strings.isNullOrEmpty(this.getPath()))
 
             // check if ALL of HELM fields are null or empty
-            return Strings.isNullOrEmpty(config.getRepository()) && Strings.isNullOrEmpty(config.getName())
-                && Strings.isNullOrEmpty(config.getVersion());
+            return Strings.isNullOrEmpty(this.getRepository()) && Strings.isNullOrEmpty(this.getName())
+                && Strings.isNullOrEmpty(this.getVersion());
 
         // check if ALL of GIT fields are null or empty
-        if (Strings.isNullOrEmpty(config.getGit()) && Strings.isNullOrEmpty(config.getRef())
-            && Strings.isNullOrEmpty(config.getPath()))
+        if (Strings.isNullOrEmpty(this.getGit()) && Strings.isNullOrEmpty(this.getRef())
+            && Strings.isNullOrEmpty(this.getPath()))
 
             // check if NONE of HELM fields are null or empty
-            return !Strings.isNullOrEmpty(config.getRepository()) && !Strings.isNullOrEmpty(config.getName())
-                && !Strings.isNullOrEmpty(config.getVersion());
+            return !Strings.isNullOrEmpty(this.getRepository()) && !Strings.isNullOrEmpty(this.getName())
+                && !Strings.isNullOrEmpty(this.getVersion());
 
         return false;
     }
 
-    private static boolean isEmpty(ChartConfig config) {
-        return Strings.isNullOrEmpty(config.getGit()) && Strings.isNullOrEmpty(config.getRef())
-            && Strings.isNullOrEmpty(config.getPath()) && Strings.isNullOrEmpty(config.getRepository())
-            && Strings.isNullOrEmpty(config.getName()) && Strings.isNullOrEmpty(config.getVersion());
+
+    private boolean isEmpty() {
+        return Strings.isNullOrEmpty(this.getGit()) && Strings.isNullOrEmpty(this.getRef())
+            && Strings.isNullOrEmpty(this.getPath()) && Strings.isNullOrEmpty(this.getRepository())
+            && Strings.isNullOrEmpty(this.getName()) && Strings.isNullOrEmpty(this.getVersion());
     }
+
 
     public Map<String, Object> toMap() {
         try {
@@ -213,7 +200,14 @@ public class ChartConfig implements Cloneable {
         }
 
         public ChartConfig build() {
-            return new ChartConfig(git, ref, path, repository, name, version);
+            ChartConfig config = new ChartConfig();
+            config.git = git;
+            config.ref = ref;
+            config.path = path;
+            config.repository = repository;
+            config.name = name;
+            config.version = version;
+            return config;
         }
     }
 }
