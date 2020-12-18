@@ -47,21 +47,28 @@ public final class RabbitMQContext {
     }
 
 
+    private static volatile RabbitMQManagementConfig managementConfig;
+    private static RabbitMQManagementConfig getManagementConfig() {
+        // we do not need to synchronize as we are assigning immutable object from singleton
+        if (managementConfig == null)
+            managementConfig = OperatorConfig.INSTANCE.getRabbitMQManagementConfig();
+        return managementConfig;
+    }
+
     // call to this method should be synchronized externally per namespace
     public static Channel getChannel(String namespace) {
 
-        var rabbitMQManagementConfig = OperatorConfig.INSTANCE.getRabbitMQManagementConfig();
+        var rabbitMQManagementConfig = getManagementConfig();
         var rabbitMQConfig = getRabbitMQConfig(namespace);
 
         String signature = ChannelContext.signatureFor(rabbitMQManagementConfig, rabbitMQConfig);
 
-        var context = channelContexts.computeIfAbsent(namespace
-                , k -> ChannelContext.contextFor(rabbitMQManagementConfig, rabbitMQConfig));
+        var context = channelContexts.computeIfAbsent(namespace, k -> ChannelContext.contextFor(rabbitMQConfig));
 
         // check if we need to recreate channel for this namespace
         // due to configuration change
         if (!context.signature.equals(signature)) {
-            context = ChannelContext.contextFor(rabbitMQManagementConfig, rabbitMQConfig);
+            context = ChannelContext.contextFor(rabbitMQConfig);
             channelContexts.put(namespace, context);
         }
 
@@ -129,9 +136,10 @@ public final class RabbitMQContext {
     }
 
 
-    public static void createVHostIfAbsent(String namespace, RabbitMQManagementConfig rabbitMQManagementConfig)
+    public static void createVHostIfAbsent(String namespace)
         throws VHostCreateException {
 
+        RabbitMQManagementConfig rabbitMQManagementConfig = getManagementConfig();
         RabbitMQConfig rabbitMQConfig = getRabbitMQConfig(namespace);
 
         String vHostName = rabbitMQConfig.getVHost();
@@ -177,9 +185,10 @@ public final class RabbitMQContext {
         }
     }
 
-    public static void cleanupVHost(String namespace, RabbitMQManagementConfig rabbitMQManagementConfig)
+    public static void cleanupVHost(String namespace)
         throws VHostCreateException {
 
+        RabbitMQManagementConfig rabbitMQManagementConfig = getManagementConfig();
         RabbitMQConfig rabbitMQConfig = getRabbitMQConfig(namespace);
 
         String vHostName = rabbitMQConfig.getVHost();
@@ -210,7 +219,9 @@ public final class RabbitMQContext {
     }
 
 
-    public static List<QueueInfo> getQueues(String vhost, RabbitMQManagementConfig rabbitMQManagementConfig) throws Exception {
+    public static List<QueueInfo> getQueues(String vhost) throws Exception {
+
+        RabbitMQManagementConfig rabbitMQManagementConfig = getManagementConfig();
         try {
             Client rmqClient = getClient(
                     String.format("http://%s:%s/api", rabbitMQManagementConfig.getHost(), rabbitMQManagementConfig.getPort())
@@ -246,25 +257,27 @@ public final class RabbitMQContext {
         }
 
 
-        static ChannelContext contextFor(RabbitMQManagementConfig managementConfig, RabbitMQConfig namespaceConfig) {
+        static ChannelContext contextFor(RabbitMQConfig namespaceConfig) {
 
-            String signature = signatureFor(managementConfig, namespaceConfig);
-            var connectionFactory = getConnectionFactory(managementConfig, namespaceConfig);
+            RabbitMQManagementConfig rabbitMQManagementConfig = getManagementConfig();
+            String signature = signatureFor(rabbitMQManagementConfig, namespaceConfig);
+            var connectionFactory = getConnectionFactory(namespaceConfig);
             return new ChannelContext(connectionFactory, signature);
         }
 
 
-        static ConnectionFactory getConnectionFactory(RabbitMQManagementConfig managementConfig, RabbitMQConfig rabbitMQConfig) {
+        static ConnectionFactory getConnectionFactory(RabbitMQConfig rabbitMQConfig) {
 
-            String signature = ChannelContext.signatureFor(managementConfig, rabbitMQConfig);
+            RabbitMQManagementConfig rabbitMQManagementConfig = getManagementConfig();
+            String signature = ChannelContext.signatureFor(rabbitMQManagementConfig, rabbitMQConfig);
             return connectionFactories.computeIfAbsent(signature, k -> {
 
                 var connectionFactory = new ConnectionFactory();
                 connectionFactory.setHost(rabbitMQConfig.getHost());
                 connectionFactory.setPort(rabbitMQConfig.getPort());
                 connectionFactory.setVirtualHost(rabbitMQConfig.getVHost());
-                connectionFactory.setUsername(managementConfig.getUsername());
-                connectionFactory.setPassword(managementConfig.getPassword());
+                connectionFactory.setUsername(rabbitMQManagementConfig.getUsername());
+                connectionFactory.setPassword(rabbitMQManagementConfig.getPassword());
                 return connectionFactory;
             });
         }

@@ -49,7 +49,7 @@ public class DeclareQueueResolver {
     public void resolveAdd(Th2CustomResource resource) {
 
         String namespace = ExtractUtils.extractNamespace(resource);
-        RabbitMQContext.createVHostIfAbsent(namespace, rabbitMQManagementConfig);
+        RabbitMQContext.createVHostIfAbsent(namespace);
         declareQueueBunch(namespace, resource);
     }
 
@@ -106,7 +106,7 @@ public class DeclareQueueResolver {
     @SneakyThrows
     private Set<String> getBoxQueues(String namespace, String boxName) {
         RabbitMQConfig rabbitMQConfig = RabbitMQContext.getRabbitMQConfig(namespace);
-        List<QueueInfo> queueInfoList = RabbitMQContext.getQueues(rabbitMQConfig.getVHost(), rabbitMQManagementConfig);
+        List<QueueInfo> queueInfoList = RabbitMQContext.getQueues(rabbitMQConfig.getVHost());
 
         List<QueueName> queueNames = queueInfoList.stream()
                 .map(queueInfo -> QueueName.fromString(queueInfo.getName()))

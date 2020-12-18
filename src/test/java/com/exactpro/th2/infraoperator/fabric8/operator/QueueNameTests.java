@@ -1,4 +1,4 @@
-package com.exactpro.th2.infraoperator.fabric8.configuration;
+package com.exactpro.th2.infraoperator.fabric8.operator;
 
 import com.exactpro.th2.infraoperator.fabric8.spec.strategy.linkResolver.queue.QueueName;
 import org.junit.jupiter.api.Test;

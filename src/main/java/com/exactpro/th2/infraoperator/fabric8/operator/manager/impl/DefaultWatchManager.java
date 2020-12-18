@@ -417,8 +417,7 @@ public class DefaultWatchManager {
 
                         if (!Objects.equals(rabbitMQConfig, newRabbitMQConfig)) {
                             configMaps.setRabbitMQConfig4Namespace(namespace, newRabbitMQConfig);
-                            RabbitMQContext.createVHostIfAbsent(
-                                namespace, opConfig.getRabbitMQManagementConfig());
+                            RabbitMQContext.createVHostIfAbsent(namespace);
                             logger.info("RabbitMQ ConfigMap has been updated in namespace \"%s\". Updating all boxes",
                                 namespace);
                             int refreshedBoxesCount = refreshBoxes(namespace);
