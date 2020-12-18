@@ -36,9 +36,4 @@ public class BoxMq implements Box {
         this.pin = pin;
     }
 
-
-    @Override
-    public String toString() {
-        return box + "[" + pin + "]";
-    }
 }
