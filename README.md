@@ -50,7 +50,7 @@ chart:
   path: /path/to/charts
   # repository path for charts
 
-  repository: https://stefanprodan.github.io/podinfo
+  repository: https://some.server.com/some/repository
   # helm repository URL for helm charts used by Th2 Custom Resources
 
   name: podinfo
