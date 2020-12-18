@@ -40,7 +40,9 @@ namespacePrefixes:
 
 chart:
 # this section includes information about git or helm repository as a source of helm charts
+# you can specify either git or helm repository
 
+  # git repository parameters 
   git: git@some.server.com:some/repository
   # git repository URL for helm charts used by Th2 Custom Resources
   
@@ -50,10 +52,11 @@ chart:
   path: /path/to/charts
   # repository path for charts
 
-  repository: https://some.server.com/some/repository
+  # helm repository parameters 
+  repository: https://helm.server.com/some/repository
   # helm repository URL for helm charts used by Th2 Custom Resources
 
-  name: podinfo
+  name: components
   # the name of the Helm chart without an alias
 
   version: 3.2.0
