@@ -11,21 +11,25 @@
  * limitations under the License.
  */
 
-package com.exactpro.th2.infraoperator.fabric8.spec;
+package com.exactpro.th2.infraoperator.fabric8.spec.helmRelease;
 
-import com.exactpro.th2.infraoperator.fabric8.spec.shared.status.StatusSpec;
-import io.fabric8.kubernetes.client.CustomResource;
-import lombok.Data;
-import lombok.EqualsAndHashCode;
-import lombok.ToString;
+import com.exactpro.th2.infraoperator.fabric8.configuration.SchemaSecrets;
 
-@Data
-@ToString(callSuper = true)
-@EqualsAndHashCode(callSuper = true)
-public abstract class Th2CustomResource extends CustomResource {
+public class HelmReleaseSecrets {
 
-    protected StatusSpec status = new StatusSpec();
+    private String rabbitMQ;
+    private String cassandra;
 
-    public abstract Th2Spec getSpec();
+    public HelmReleaseSecrets(SchemaSecrets schemaSecrets) {
+        this.rabbitMQ = schemaSecrets.getRabbitMQ();
+        this.cassandra = schemaSecrets.getCassandra();
+    }
 
+    public String getRabbitMQ() {
+        return rabbitMQ;
+    }
+
+    public String getCassandra() {
+        return cassandra;
+    }
 }
