@@ -29,7 +29,7 @@ import com.exactpro.th2.infraoperator.spec.helmRelease.HelmRelease;
 import com.exactpro.th2.infraoperator.spec.helmRelease.HelmReleaseList;
 import com.exactpro.th2.infraoperator.spec.helmRelease.HelmReleaseSecrets;
 import com.exactpro.th2.infraoperator.spec.link.Th2Link;
-import com.exactpro.th2.infraoperator.spec.link.relation.boxes.box.impl.BoxMq;
+import com.exactpro.th2.infraoperator.spec.link.relation.pins.PinMQ;
 import com.exactpro.th2.infraoperator.spec.link.relation.boxes.bunch.BoxLinkBunch;
 import com.exactpro.th2.infraoperator.spec.link.relation.boxes.bunch.impl.GrpcLinkBunch;
 import com.exactpro.th2.infraoperator.spec.link.relation.boxes.bunch.impl.MqLinkBunch;
@@ -374,8 +374,8 @@ public abstract class HelmReleaseTh2Op<CR extends Th2CustomResource> extends Abs
         var boxNamespace = ExtractUtils.extractNamespace(resource);
 
         for (var link : links) {
-            var fromBoxName = link.getFrom().getBox();
-            var toBoxName = link.getTo().getBox();
+            var fromBoxName = link.getFrom().getBoxName();
+            var toBoxName = link.getTo().getBoxName();
 
             if (fromBoxName.equals(boxName)) {
                 addResourceIfExist(toBoxName, boxNamespace, resources);
@@ -655,7 +655,7 @@ public abstract class HelmReleaseTh2Op<CR extends Th2CustomResource> extends Abs
             return hiddenLinksRes;
         }
 
-        protected BoxMq createToBoxOfHiddenLink(PinSpec pin) {
+        protected PinMQ createToBoxOfHiddenLink(PinSpec pin) {
             var hyphen = "-";
             var targetAttr = "";
 
@@ -665,13 +665,10 @@ public abstract class HelmReleaseTh2Op<CR extends Th2CustomResource> extends Abs
                 targetAttr += hyphen + DirectionAttribute.raw.name();
             }
 
-            return BoxMq.builder()
-                .box(context.getBoxAlias())
-                .pin(context.getPinName() + targetAttr)
-                .build();
+            return new PinMQ(context.getBoxAlias(), context.getPinName() + targetAttr);
         }
 
-        protected MqLinkBunch createHiddenLink(BoxMq fromBox, BoxMq toBox) {
+        protected MqLinkBunch createHiddenLink(PinMQ fromBox, PinMQ toBox) {
             return MqLinkBunch.builder()
                 .name(fromBox.toString() + context.getLinkNameSuffix())
                 .from(fromBox)
@@ -687,7 +684,7 @@ public abstract class HelmReleaseTh2Op<CR extends Th2CustomResource> extends Abs
 
                 if (context.checkAttributes(pin.getAttributes())) {
 
-                    var fromLink = BoxMq.builder().box(ExtractUtils.extractName(resource)).pin(pin.getName()).build();
+                    var fromLink = new PinMQ(ExtractUtils.extractName(resource), pin.getName());
 
                     var toLink = createToBoxOfHiddenLink(pin);
 

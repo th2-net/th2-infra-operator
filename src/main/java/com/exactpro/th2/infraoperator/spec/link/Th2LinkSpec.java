@@ -13,7 +13,7 @@
 
 package com.exactpro.th2.infraoperator.spec.link;
 
-import com.exactpro.th2.infraoperator.spec.link.relation.boxes.BoxesRelation;
+import com.exactpro.th2.infraoperator.spec.link.relation.BoxesRelation;
 import com.exactpro.th2.infraoperator.spec.link.relation.dictionaries.bunch.DictionaryLinkBunch;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;

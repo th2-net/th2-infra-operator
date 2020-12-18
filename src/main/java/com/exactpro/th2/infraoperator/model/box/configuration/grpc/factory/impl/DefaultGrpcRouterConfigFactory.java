@@ -17,7 +17,7 @@ import com.exactpro.th2.infraoperator.configuration.OperatorConfig;
 import com.exactpro.th2.infraoperator.model.box.configuration.grpc.*;
 import com.exactpro.th2.infraoperator.model.box.configuration.grpc.factory.GrpcRouterConfigFactory;
 import com.exactpro.th2.infraoperator.spec.Th2CustomResource;
-import com.exactpro.th2.infraoperator.spec.link.relation.boxes.box.impl.BoxGrpc;
+import com.exactpro.th2.infraoperator.spec.link.relation.pins.PinGRPC;
 import com.exactpro.th2.infraoperator.spec.link.relation.boxes.bunch.impl.GrpcLinkBunch;
 import com.exactpro.th2.infraoperator.spec.shared.FilterSpec;
 import com.exactpro.th2.infraoperator.spec.shared.PinSpec;
@@ -89,11 +89,11 @@ public class DefaultGrpcRouterConfigFactory implements GrpcRouterConfigFactory {
                 var fromLink = link.getFrom();
                 var toLink = link.getTo();
 
-                var fromBoxName = fromLink.getBox();
-                var toBoxName = toLink.getBox();
+                var fromBoxName = fromLink.getBoxName();
+                var toBoxName = toLink.getBoxName();
 
-                var fromPinName = fromLink.getPin();
-                var toPinName = toLink.getPin();
+                var fromPinName = fromLink.getPinName();
+                var toPinName = toLink.getPinName();
 
                 if (fromBoxName.equals(boxName) && fromPinName.equals(pin.getName())) {
                     createService(pin, toPinName, boxNamespace, link, services);
@@ -119,17 +119,17 @@ public class DefaultGrpcRouterConfigFactory implements GrpcRouterConfigFactory {
     ) {
         var naturePinState = getNaturePinState(currentPin.getName(), oppositePinName, link);
 
-        BoxGrpc fromBoxSpec = link.getFrom();
-        String fromBoxName = fromBoxSpec.getBox();
+        PinGRPC fromBoxSpec = link.getFrom();
+        String fromBoxName = fromBoxSpec.getBoxName();
 
-        BoxGrpc toBoxSpec = link.getTo();
-        String toBoxName = toBoxSpec.getBox();
+        PinGRPC toBoxSpec = link.getTo();
+        String toBoxName = toBoxSpec.getBoxName();
 
         Th2CustomResource fromBoxResource = resourceFinder.getResource(fromBoxName, namespace);
         Th2CustomResource toBoxResource = resourceFinder.getResource(toBoxName, namespace);
 
         PinSpec oppositePin;
-        if (fromBoxSpec.getPin().equals(currentPin.getName())) {
+        if (fromBoxSpec.getPinName().equals(currentPin.getName())) {
             oppositePin = toBoxResource.getSpec().getPin(oppositePinName);
         } else {
             oppositePin = fromBoxResource.getSpec().getPin(oppositePinName);
@@ -151,7 +151,7 @@ public class DefaultGrpcRouterConfigFactory implements GrpcRouterConfigFactory {
 
     private void resourceToServiceConfig(
             PinSpec targetPin,
-            BoxGrpc targetBoxSpec,
+            PinGRPC targetBoxSpec,
             Map<String, GrpcServiceConfiguration> services
     ) {
         var targetBoxName = getTargetBoxName(targetBoxSpec);
@@ -218,7 +218,7 @@ public class DefaultGrpcRouterConfigFactory implements GrpcRouterConfigFactory {
     }
 
     private NaturePinState getNaturePinState(String firstPinName, String secondPinName, GrpcLinkBunch link) {
-        if (link.getFrom().getPin().equals(firstPinName)) {
+        if (link.getFrom().getPinName().equals(firstPinName)) {
             return new NaturePinState(firstPinName, secondPinName);
         }
         return new NaturePinState(secondPinName, firstPinName);
@@ -250,23 +250,23 @@ public class DefaultGrpcRouterConfigFactory implements GrpcRouterConfigFactory {
                 .build();
     }
 
-    private String getTargetBoxName(BoxGrpc targetBox) {
+    private String getTargetBoxName(PinGRPC targetBox) {
         if (targetBox.isHostNetwork()) {
             return OperatorConfig.INSTANCE.getK8sUrl();
         } else if (targetBox.isExternalBox()) {
             return targetBox.getExternalHost();
         }
-        return targetBox.getBox();
+        return targetBox.getBoxName();
     }
 
-    private int getTargetBoxPort(BoxGrpc targetBox) {
+    private int getTargetBoxPort(PinGRPC targetBox) {
         if (targetBox.isHostNetwork() || targetBox.isExternalBox()) {
             return targetBox.getPort();
         }
         return DEFAULT_PORT;
     }
 
-    private void checkForExternal(Th2CustomResource fromBox, Th2CustomResource toBox, BoxGrpc targetBox) throws ConfigNotFoundException {
+    private void checkForExternal(Th2CustomResource fromBox, Th2CustomResource toBox, PinGRPC targetBox) throws ConfigNotFoundException {
         Map<String, Object> fromBoxSettings = fromBox.getSpec().getExtendedSettings();
         Map<String, Object> toBoxSettings = toBox.getSpec().getExtendedSettings();
         logger.debug("checking externalBox or hostNetwork flags for a link [from \"{}\" to \"{}\"]", annotationFor(fromBox), annotationFor(toBox));

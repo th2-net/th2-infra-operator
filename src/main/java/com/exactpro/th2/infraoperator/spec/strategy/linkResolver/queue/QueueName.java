@@ -13,7 +13,7 @@
 
 package com.exactpro.th2.infraoperator.spec.strategy.linkResolver.queue;
 
-import com.exactpro.th2.infraoperator.spec.link.relation.boxes.box.impl.BoxMq;
+import com.exactpro.th2.infraoperator.spec.link.relation.pins.PinMQ;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -28,8 +28,8 @@ public class QueueName extends AbstractName {
 
     private static final Logger logger = LoggerFactory.getLogger(QueueName.class);
 
-    public QueueName(String namespace, BoxMq boxMq) {
-        super(namespace, boxMq);
+    public QueueName(String namespace, PinMQ mqPin) {
+        super(namespace, mqPin);
     }
 
 

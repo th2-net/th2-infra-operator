@@ -13,13 +13,13 @@
 
 package com.exactpro.th2.infraoperator.spec.link.relation.boxes.bunch;
 
-import com.exactpro.th2.infraoperator.spec.link.relation.boxes.box.Box;
+import com.exactpro.th2.infraoperator.spec.link.relation.pins.Pin;
 import com.exactpro.th2.infraoperator.spec.shared.Nameable;
 
 public interface BoxLinkBunch extends Nameable {
 
-    Box getFrom();
+    Pin getFrom();
 
-    Box getTo();
+    Pin getTo();
 
 }

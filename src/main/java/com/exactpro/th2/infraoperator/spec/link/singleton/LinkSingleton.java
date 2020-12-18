@@ -87,20 +87,20 @@ public enum LinkSingleton {
 
     public List<QueueLinkBunch> getMsgStorageActiveLinks(String namespace) {
         return getMqActiveLinks(namespace).stream()
-                .filter(queueLinkBunch -> queueLinkBunch.getTo().getBox().equals(MESSAGE_STORAGE_BOX_ALIAS))
+                .filter(queueLinkBunch -> queueLinkBunch.getTo().getBoxName().equals(MESSAGE_STORAGE_BOX_ALIAS))
                 .collect(Collectors.toUnmodifiableList());
     }
 
     public List<QueueLinkBunch> getEventStorageActiveLinks(String namespace) {
         return getMqActiveLinks(namespace).stream()
-                .filter(queueLinkBunch -> queueLinkBunch.getTo().getBox().equals(EVENT_STORAGE_BOX_ALIAS))
+                .filter(queueLinkBunch -> queueLinkBunch.getTo().getBoxName().equals(EVENT_STORAGE_BOX_ALIAS))
                 .collect(Collectors.toUnmodifiableList());
     }
 
     public List<QueueLinkBunch> getGeneralMqActiveLinks(String namespace) {
         return getMqActiveLinks(namespace).stream()
-                .filter(queueLinkBunch -> !queueLinkBunch.getTo().getBox().equals(MESSAGE_STORAGE_BOX_ALIAS)
-                        && !queueLinkBunch.getTo().getBox().equals(EVENT_STORAGE_BOX_ALIAS))
+                .filter(queueLinkBunch -> !queueLinkBunch.getTo().getBoxName().equals(MESSAGE_STORAGE_BOX_ALIAS)
+                        && !queueLinkBunch.getTo().getBoxName().equals(EVENT_STORAGE_BOX_ALIAS))
                 .collect(Collectors.toUnmodifiableList());
     }
 

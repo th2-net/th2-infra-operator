@@ -13,7 +13,7 @@
 
 package com.exactpro.th2.infraoperator.spec.link;
 
-import com.exactpro.th2.infraoperator.spec.link.relation.boxes.BoxesRelation;
+import com.exactpro.th2.infraoperator.spec.link.relation.BoxesRelation;
 import io.fabric8.kubernetes.client.CustomResource;
 import lombok.Getter;
 import lombok.Setter;

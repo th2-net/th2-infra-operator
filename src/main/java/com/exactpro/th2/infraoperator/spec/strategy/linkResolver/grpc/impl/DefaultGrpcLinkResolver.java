@@ -85,12 +85,12 @@ public class DefaultGrpcLinkResolver implements GrpcLinkResolver {
 
         var fromBoxSpec = link.getFrom();
 
-        var fromBoxName = fromBoxSpec.getBox();
+        var fromBoxName = fromBoxSpec.getBoxName();
 
         var fromContext = DirectionalLinkContext.builder()
                 .linkName(link.getName())
                 .boxName(fromBoxName)
-                .boxPinName(fromBoxSpec.getPin())
+                .boxPinName(fromBoxSpec.getPinName())
                 .boxDirection(BoxDirection.from)
                 .linksSectionName("grpc")
                 .connectionType(SchemaConnectionType.grpc)
@@ -102,11 +102,11 @@ public class DefaultGrpcLinkResolver implements GrpcLinkResolver {
 
         var toBoxSpec = link.getTo();
 
-        var toBoxName = toBoxSpec.getBox();
+        var toBoxName = toBoxSpec.getBoxName();
 
         var toContext = fromContext.toBuilder()
                 .boxName(toBoxName)
-                .boxPinName(toBoxSpec.getPin())
+                .boxPinName(toBoxSpec.getPinName())
                 .boxDirection(BoxDirection.to)
                 .routingStrategy(toBoxSpec.getStrategy())
                 .build();

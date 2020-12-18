@@ -13,7 +13,7 @@
 
 package com.exactpro.th2.infraoperator.spec.link.relation.boxes.bunch.impl;
 
-import com.exactpro.th2.infraoperator.spec.link.relation.boxes.box.impl.BoxGrpc;
+import com.exactpro.th2.infraoperator.spec.link.relation.pins.PinGRPC;
 import com.exactpro.th2.infraoperator.spec.link.relation.boxes.bunch.BoxLinkBunch;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import lombok.Builder;
@@ -26,15 +26,15 @@ public class GrpcLinkBunch implements BoxLinkBunch {
 
     protected String name;
 
-    protected BoxGrpc from;
+    protected PinGRPC from;
 
-    protected BoxGrpc to;
+    protected PinGRPC to;
 
 
     protected GrpcLinkBunch() {
     }
 
-    protected GrpcLinkBunch(String name, BoxGrpc from, BoxGrpc to) {
+    protected GrpcLinkBunch(String name, PinGRPC from, PinGRPC to) {
         this.name = name;
         this.from = from;
         this.to = to;

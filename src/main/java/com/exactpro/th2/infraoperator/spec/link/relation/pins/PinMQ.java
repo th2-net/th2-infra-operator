@@ -11,12 +11,15 @@
  * limitations under the License.
  */
 
-package com.exactpro.th2.infraoperator.spec.link.relation.boxes.box;
+package com.exactpro.th2.infraoperator.spec.link.relation.pins;
 
-public interface Box {
+import com.fasterxml.jackson.annotation.JsonProperty;
+import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 
-    String getBox();
-
-    String getPin();
-
+@JsonDeserialize
+public class PinMQ extends AbstractPin {
+    public PinMQ(@JsonProperty("box") String boxName, @JsonProperty("pin") String pinName) {
+        super(boxName, pinName);
+    }
 }
+

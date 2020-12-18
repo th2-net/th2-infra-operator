@@ -19,7 +19,7 @@ import com.exactpro.th2.infraoperator.model.box.schema.link.QueueBunch;
 import com.exactpro.th2.infraoperator.model.box.schema.link.QueueLinkBunch;
 import com.exactpro.th2.infraoperator.spec.Th2CustomResource;
 import com.exactpro.th2.infraoperator.spec.link.Th2Link;
-import com.exactpro.th2.infraoperator.spec.link.relation.boxes.box.impl.BoxMq;
+import com.exactpro.th2.infraoperator.spec.link.relation.pins.PinMQ;
 import com.exactpro.th2.infraoperator.spec.link.relation.boxes.bunch.impl.MqLinkBunch;
 import com.exactpro.th2.infraoperator.spec.link.validator.ValidationStatus;
 import com.exactpro.th2.infraoperator.spec.link.validator.chain.impl.ExpectedPinAttr;
@@ -119,7 +119,7 @@ public class BindQueueLinkResolver implements QueueLinkResolver {
 
 
     @SneakyThrows
-    private void bindQueues(String namespace, QueueBunch queueBunch, Th2CustomResource resource, BoxMq boxMq) {
+    private void bindQueues(String namespace, QueueBunch queueBunch, Th2CustomResource resource, PinMQ mqPin) {
 
 
         Channel channel = RabbitMQContext.getChannel(namespace);
@@ -131,7 +131,7 @@ public class BindQueueLinkResolver implements QueueLinkResolver {
             logger.info("RabbitMQ connection has been restored");
         }
 
-        PinSettings pinSettings = resource.getSpec().getPin(boxMq.getPin()).getSettings();
+        PinSettings pinSettings = resource.getSpec().getPin(mqPin.getPinName()).getSettings();
         channel.queueDeclare(queueBunch.getQueue(), rabbitMQManagementConfig.isPersistence(), false, false, RabbitMQContext.generateQueueArguments(pinSettings));
         channel.queueBind(queueBunch.getQueue(), queueBunch.getExchange(), queueBunch.getRoutingKey());
 
@@ -185,11 +185,11 @@ public class BindQueueLinkResolver implements QueueLinkResolver {
         });
     }
 
-    private QueueBunch createQueueBunch(String namespace, BoxMq fromBoxMq, BoxMq toBoxMq) {
+    private QueueBunch createQueueBunch(String namespace, PinMQ mqPinFrom, PinMQ mqPinTo) {
 
         return new QueueBunch(
-                new QueueName(namespace, toBoxMq).toString(),
-                new RoutingKeyName(namespace, fromBoxMq).toString(),
+                new QueueName(namespace, mqPinTo).toString(),
+                new RoutingKeyName(namespace, mqPinFrom).toString(),
                 RabbitMQContext.getExchangeName(namespace)
         );
 
@@ -202,12 +202,12 @@ public class BindQueueLinkResolver implements QueueLinkResolver {
 
         var fromBoxSpec = link.getFrom();
 
-        var fromBoxName = fromBoxSpec.getBox();
+        var fromBoxName = fromBoxSpec.getBoxName();
 
         var fromContext = DirectionalLinkContext.builder()
                 .linkName(link.getName())
                 .boxName(fromBoxName)
-                .boxPinName(fromBoxSpec.getPin())
+                .boxPinName(fromBoxSpec.getPinName())
                 .boxDirection(BoxDirection.from)
                 .linksSectionName("mq")
                 .connectionType(SchemaConnectionType.mq)
@@ -218,11 +218,11 @@ public class BindQueueLinkResolver implements QueueLinkResolver {
 
         var toBoxSpec = link.getTo();
 
-        var toBoxName = toBoxSpec.getBox();
+        var toBoxName = toBoxSpec.getBoxName();
 
         var toContext = fromContext.toBuilder()
                 .boxName(toBoxName)
-                .boxPinName(toBoxSpec.getPin())
+                .boxPinName(toBoxSpec.getPinName())
                 .boxDirection(BoxDirection.to)
                 .build();
 

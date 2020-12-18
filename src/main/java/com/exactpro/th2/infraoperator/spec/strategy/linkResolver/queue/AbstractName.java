@@ -13,7 +13,7 @@
 
 package com.exactpro.th2.infraoperator.spec.strategy.linkResolver.queue;
 
-import com.exactpro.th2.infraoperator.spec.link.relation.boxes.box.impl.BoxMq;
+import com.exactpro.th2.infraoperator.spec.link.relation.pins.PinMQ;
 
 
 abstract class AbstractName {
@@ -21,9 +21,9 @@ abstract class AbstractName {
     protected final String pinName;
     protected final String namespace;
 
-    protected AbstractName(String namespace, BoxMq boxMq) {
-        this.boxName = boxMq.getBox();
-        this.pinName = boxMq.getPin();
+    protected AbstractName(String namespace, PinMQ mqPin) {
+        this.boxName = mqPin.getBoxName();
+        this.pinName = mqPin.getPinName();
         this.namespace = namespace;
     }
 

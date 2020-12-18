@@ -11,29 +11,11 @@
  * limitations under the License.
  */
 
-package com.exactpro.th2.infraoperator.spec.link.relation.boxes.box.impl;
+package com.exactpro.th2.infraoperator.spec.link.relation.pins;
 
-import com.exactpro.th2.infraoperator.spec.link.relation.boxes.box.Box;
-import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
-import lombok.Data;
-import lombok.experimental.SuperBuilder;
+public interface Pin {
 
-@Data
-@JsonDeserialize
-@SuperBuilder(toBuilder = true)
-public class BoxMq implements Box {
-
-    protected String box;
-
-    protected String pin;
-
-
-    protected BoxMq() {
-    }
-
-    protected BoxMq(String box, String pin) {
-        this.box = box;
-        this.pin = pin;
-    }
+    String getBoxName();
+    String getPinName();
 
 }

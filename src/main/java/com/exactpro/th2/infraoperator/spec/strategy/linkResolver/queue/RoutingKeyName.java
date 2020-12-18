@@ -13,15 +13,15 @@
 
 package com.exactpro.th2.infraoperator.spec.strategy.linkResolver.queue;
 
-import com.exactpro.th2.infraoperator.spec.link.relation.boxes.box.impl.BoxMq;
+import com.exactpro.th2.infraoperator.spec.link.relation.pins.PinMQ;
 
 public class RoutingKeyName extends AbstractName {
 
     public static final String ROUTING_KEY_PREFIX = "key";
 
 
-    public RoutingKeyName(String namespace, BoxMq boxMq) {
-        super(namespace, boxMq);
+    public RoutingKeyName(String namespace, PinMQ mqPin) {
+        super(namespace, mqPin);
     }
 
 

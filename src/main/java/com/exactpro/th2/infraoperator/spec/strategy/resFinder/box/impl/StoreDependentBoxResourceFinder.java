@@ -84,7 +84,7 @@ public class StoreDependentBoxResourceFinder implements BoxResourceFinder {
                 .filter(ExtractUtils::isStorageResource)
                 .flatMap(lr -> lr.getSpec().getBoxesRelation().getRouterMq().stream())
                 .map(l -> {
-                    var toPinName = l.getTo().getPin();
+                    var toPinName = l.getTo().getPinName();
 
                     var pin = new PinSpec();
                     pin.setName(toPinName);

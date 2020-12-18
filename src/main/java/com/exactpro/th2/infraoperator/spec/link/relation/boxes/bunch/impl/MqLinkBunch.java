@@ -13,7 +13,7 @@
 
 package com.exactpro.th2.infraoperator.spec.link.relation.boxes.bunch.impl;
 
-import com.exactpro.th2.infraoperator.spec.link.relation.boxes.box.impl.BoxMq;
+import com.exactpro.th2.infraoperator.spec.link.relation.pins.PinMQ;
 import com.exactpro.th2.infraoperator.spec.link.relation.boxes.bunch.BoxLinkBunch;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import lombok.Builder;
@@ -26,15 +26,15 @@ public class MqLinkBunch implements BoxLinkBunch {
 
     protected String name;
 
-    protected BoxMq from;
+    protected PinMQ from;
 
-    protected BoxMq to;
+    protected PinMQ to;
 
 
     protected MqLinkBunch() {
     }
 
-    protected MqLinkBunch(String name, BoxMq from, BoxMq to) {
+    protected MqLinkBunch(String name, PinMQ from, PinMQ to) {
         this.name = name;
         this.from = from;
         this.to = to;

@@ -11,7 +11,7 @@
  * limitations under the License.
  */
 
-package com.exactpro.th2.infraoperator.spec.link.relation.boxes;
+package com.exactpro.th2.infraoperator.spec.link.relation;
 
 import com.exactpro.th2.infraoperator.spec.link.relation.boxes.bunch.BoxLinkBunch;
 import com.exactpro.th2.infraoperator.spec.link.relation.boxes.bunch.impl.GrpcLinkBunch;

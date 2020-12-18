@@ -13,7 +13,7 @@
 
 package com.exactpro.th2.infraoperator.model.box.schema.link;
 
-import com.exactpro.th2.infraoperator.spec.link.relation.boxes.box.impl.BoxMq;
+import com.exactpro.th2.infraoperator.spec.link.relation.pins.PinMQ;
 import com.exactpro.th2.infraoperator.spec.link.relation.boxes.bunch.impl.MqLinkBunch;
 import com.exactpro.th2.infraoperator.spec.link.relation.boxes.bunch.BoxLinkBunch;
 import lombok.Data;
@@ -40,12 +40,12 @@ public class QueueLinkBunch implements BoxLinkBunch {
 
 
     @Override
-    public BoxMq getFrom(){
+    public PinMQ getFrom(){
         return mqLinkBunch.getFrom();
     }
 
     @Override
-    public BoxMq getTo(){
+    public PinMQ getTo(){
         return mqLinkBunch.getTo();
     }
 
