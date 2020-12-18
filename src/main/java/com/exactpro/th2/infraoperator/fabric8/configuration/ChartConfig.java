@@ -16,6 +16,7 @@ package com.exactpro.th2.infraoperator.fabric8.configuration;
 import com.exactpro.th2.infraoperator.fabric8.util.JsonUtils;
 import com.exactpro.th2.infraoperator.fabric8.util.Strings;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 
 import java.util.Map;
@@ -23,6 +24,7 @@ import java.util.Objects;
 
 @JsonDeserialize(builder = ChartConfig.ChartConfigBuilder.class)
 @JsonIgnoreProperties(ignoreUnknown = true)
+@JsonInclude(JsonInclude.Include.NON_NULL)
 public class ChartConfig implements Cloneable {
 
     private String git;
