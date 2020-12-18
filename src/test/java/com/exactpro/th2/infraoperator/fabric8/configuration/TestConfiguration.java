@@ -77,59 +77,88 @@ public class TestConfiguration {
 
     @Test
     void testChartConfigValidity() {
-        Assertions.assertThrows(IllegalArgumentException.class, () -> {
-            new ChartConfig().overrideWith(ChartConfig.builder().withGit("git").build());
-        });
+        Assertions.assertThrows(IllegalArgumentException.class,
+            () -> new ChartConfig().overrideWith(ChartConfig.builder().withGit("git").build()));
 
-        Assertions.assertThrows(IllegalArgumentException.class, () -> {
-            new ChartConfig().overrideWith(ChartConfig.builder().withRepository("helm").build());
-        });
+        Assertions.assertThrows(IllegalArgumentException.class,
+            () -> new ChartConfig().overrideWith(ChartConfig.builder().withRepository("helm").build()));
 
-        Assertions.assertThrows(IllegalArgumentException.class, () -> {
-            new ChartConfig().overrideWith(ChartConfig.builder().withGit("git").withRef("ref").build());
-        });
+        Assertions.assertThrows(IllegalArgumentException.class,
+            () -> new ChartConfig().overrideWith(ChartConfig.builder().withGit("git").withRef("ref").build()));
 
-        Assertions.assertThrows(IllegalArgumentException.class, () -> {
-            new ChartConfig().overrideWith(ChartConfig.builder().withGit("git").withRef("ref").withPath("").build());
-        });
+        Assertions.assertThrows(IllegalArgumentException.class,
+            () -> new ChartConfig().overrideWith(ChartConfig.builder().withGit("git").withRef("ref").withPath("").build()));
 
-        Assertions.assertThrows(IllegalArgumentException.class, () -> {
-            new ChartConfig().overrideWith(ChartConfig.builder().withRepository("helm").withName("")
-                .withVersion("1.1.0").build());
-        });
+        Assertions.assertThrows(IllegalArgumentException.class,
+            () -> new ChartConfig().overrideWith(ChartConfig.builder().withRepository("helm").withName("")
+                .withVersion("1.1.0").build()));
 
-        Assertions.assertThrows(IllegalArgumentException.class, () -> {
-            new ChartConfig().overrideWith(ChartConfig.builder().withGit("git").withRef("ref").withPath("path")
-                .withRepository("helm").build());
-        });
+        Assertions.assertThrows(IllegalArgumentException.class,
+            () -> new ChartConfig().overrideWith(ChartConfig.builder().withGit("git").withRef("ref").withPath("path")
+                .withRepository("helm").build()));
 
-        Assertions.assertThrows(IllegalArgumentException.class, () -> {
-            new ChartConfig().overrideWith(ChartConfig.builder().withGit("git").withRef("ref")
-                .withRepository("helm").withName("name").build());
-        });
+        Assertions.assertThrows(IllegalArgumentException.class,
+            () -> new ChartConfig().overrideWith(ChartConfig.builder().withGit("git").withRef("ref")
+                .withRepository("helm").withName("name").build()));
 
-        Assertions.assertThrows(IllegalArgumentException.class, () -> {
-            new ChartConfig().overrideWith(ChartConfig.builder().withRef("ref").withPath("path")
-                .withRepository("helm").withName("name").withVersion("1.1.0").build());
-        });
+        Assertions.assertThrows(IllegalArgumentException.class,
+            () -> new ChartConfig().overrideWith(ChartConfig.builder().withRef("ref").withPath("path")
+                .withRepository("helm").withName("name").withVersion("1.1.0").build()));
 
-        Assertions.assertThrows(IllegalArgumentException.class, () -> {
-            new ChartConfig().overrideWith(ChartConfig.builder().withGit("git").withRef("ref").withPath("path")
-                .withRepository("helm").withName("name").withVersion("1.1.0").build());
-        });
+        Assertions.assertThrows(IllegalArgumentException.class,
+            () -> new ChartConfig().overrideWith(ChartConfig.builder().withGit("git").withRef("ref").withPath("path")
+                .withRepository("helm").withName("name").withVersion("1.1.0").build()));
 
-        Assertions.assertDoesNotThrow(() -> {
-            new ChartConfig().overrideWith(ChartConfig.builder().withGit("git").withRef("ref").withPath("path").build());
-        });
+        Assertions.assertThrows(IllegalArgumentException.class,
+            () -> ChartConfig.builder().withRef("ref").withPath("path").build()
+                .overrideWith(ChartConfig.builder().withGit("git").withVersion("1.1.0").build()));
 
-        Assertions.assertDoesNotThrow(() -> {
-            new ChartConfig().overrideWith(ChartConfig.builder().withRepository("helm").withName("name")
-                .withVersion("1.1.0").build());
-        });
+        Assertions.assertDoesNotThrow(() -> new ChartConfig().overrideWith(
+            ChartConfig.builder().withGit("git").withRef("ref").withPath("path").build()));
 
-        Assertions.assertDoesNotThrow(() -> {
-            new ChartConfig().overrideWith(ChartConfig.builder().build());
-        });
+        Assertions.assertDoesNotThrow(() -> new ChartConfig().overrideWith(
+            ChartConfig.builder().withRepository("helm").withName("name").withVersion("1.1.0").build()));
+
+        Assertions.assertDoesNotThrow(() -> new ChartConfig().overrideWith(ChartConfig.builder().build()));
+
+        Assertions.assertDoesNotThrow(() -> new ChartConfig().overrideWith(
+            ChartConfig.builder().withRepository("").withPath("").withName("").build()));
+
+        ChartConfig config = ChartConfig.builder().withGit("git1").withRef("ref1").withPath("path1").build()
+            .overrideWith(ChartConfig.builder().withGit("git2").withRef("ref2").withPath("path2").build());
+        Assertions.assertEquals("git2", config.getGit());
+        Assertions.assertEquals("ref2", config.getRef());
+        Assertions.assertEquals("path2", config.getPath());
+
+        config = ChartConfig.builder().withRepository("helm1").withName("name1").withVersion("1.1.1").build()
+            .overrideWith(ChartConfig.builder().withRepository("helm2").withName("name2").withVersion("1.1.2").build());
+        Assertions.assertEquals("helm2", config.getRepository());
+        Assertions.assertEquals("name2", config.getName());
+        Assertions.assertEquals("1.1.2", config.getVersion());
+
+        config = ChartConfig.builder().withGit("git").withRef("ref").withPath("path").build()
+            .overrideWith(ChartConfig.builder().withRepository("helm").withName("name").withVersion("1.1.0").build());
+        Assertions.assertNull(config.getGit());
+        Assertions.assertNull(config.getRef());
+        Assertions.assertNull(config.getPath());
+        Assertions.assertEquals("helm", config.getRepository());
+        Assertions.assertEquals("name", config.getName());
+        Assertions.assertEquals("1.1.0", config.getVersion());
+
+        config = ChartConfig.builder().withRepository("helm").withName("name").withVersion("1.1.0").build()
+            .overrideWith(ChartConfig.builder().build());
+        Assertions.assertNull(config.getGit());
+        Assertions.assertNull(config.getRef());
+        Assertions.assertNull(config.getPath());
+        Assertions.assertEquals("helm", config.getRepository());
+        Assertions.assertEquals("name", config.getName());
+        Assertions.assertEquals("1.1.0", config.getVersion());
+
+        config = ChartConfig.builder().withRef("ref").withPath("path").build()
+            .overrideWith(ChartConfig.builder().withGit("git").build());
+        Assertions.assertEquals("git", config.getGit());
+        Assertions.assertEquals("ref", config.getRef());
+        Assertions.assertEquals("path", config.getPath());
     }
 
     @Test
