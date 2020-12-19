@@ -42,12 +42,8 @@ public class Th2Link extends CustomResource {
         var th2Link = new Th2Link();
 
         var th2LinkSpec = Th2LinkSpec.builder()
-                .boxesRelation(
-                        BoxesRelation.builder()
-                                .routerGrpc(new ArrayList<>())
-                                .routerMq(new ArrayList<>())
-                                .build()
-                ).dictionariesRelation(new ArrayList<>())
+                .boxesRelation(BoxesRelation.newEmptyRelation())
+                .dictionariesRelation(new ArrayList<>())
                 .build();
 
         th2Link.setSpec(th2LinkSpec);

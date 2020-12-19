@@ -29,10 +29,7 @@ import java.util.List;
 public class Th2LinkSpec implements KubernetesResource {
 
     @JsonProperty("boxes-relation")
-    private BoxesRelation boxesRelation = BoxesRelation.builder()
-            .routerGrpc(new ArrayList<>())
-            .routerMq(new ArrayList<>())
-            .build();
+    private BoxesRelation boxesRelation = BoxesRelation.newEmptyRelation();
 
     @JsonProperty("dictionaries-relation")
     private List<DictionaryLinkBunch> dictionariesRelation = new ArrayList<>();

@@ -18,38 +18,63 @@ import com.exactpro.th2.infraoperator.spec.link.relation.pins.PinsLinkageGRPC;
 import com.exactpro.th2.infraoperator.spec.link.relation.pins.PinsLinkageMQ;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
-import lombok.Builder;
-import lombok.Data;
 
 import java.util.ArrayList;
 import java.util.List;
 
-@Data
 @JsonDeserialize
-public class BoxesRelation {
+public final class BoxesRelation {
 
-    @JsonProperty("router-mq")
-    private List<PinsLinkageMQ> routerMq = new ArrayList<>();
+    private List<PinsLinkageMQ> mqLinks;
+    private List<PinsLinkageGRPC> grpcLinks;
 
 
-    @JsonProperty("router-grpc")
-    private List<PinsLinkageGRPC> routerGrpc = new ArrayList<>();
+    public BoxesRelation(@JsonProperty("router-mq") List<PinsLinkageMQ> mqLinks
+            , @JsonProperty("router-grpc") List<PinsLinkageGRPC> grpcLinks) {
+
+        this.mqLinks = mqLinks == null ? new ArrayList<>() : mqLinks;
+        this.grpcLinks = grpcLinks == null ? new ArrayList<>() : grpcLinks;
+    }
+
+
+    public static BoxesRelation newEmptyRelation() {
+        return new BoxesRelation(null, null);
+    }
+
+
+    public List<PinsLinkageMQ> getRouterMq() {
+        return this.mqLinks;
+    }
+
+
+    public void setRouterMq(List<PinsLinkageMQ> mqLinks) {
+        this.mqLinks = mqLinks;
+    }
+
+
+    public List<PinsLinkageGRPC> getRouterGrpc() {
+        return this.grpcLinks;
+    }
 
 
     public List<PinsLinkage> getAllLinks() {
-        List<PinsLinkage> links = new ArrayList<>(getRouterMq());
-        links.addAll(getRouterGrpc());
+        List<PinsLinkage> links = new ArrayList<>();
+        if (mqLinks != null)
+            links.addAll(mqLinks);
+        if (grpcLinks != null)
+            links.addAll(grpcLinks);
         return links;
     }
 
 
-    protected BoxesRelation() {
+    @Override
+    public boolean equals(final Object o) {
+        throw new AssertionError("method not defined");
     }
 
 
-    @Builder
-    protected BoxesRelation(List<PinsLinkageMQ> routerMq, List<PinsLinkageGRPC> routerGrpc) {
-        this.routerMq = routerMq;
-        this.routerGrpc = routerGrpc;
+    @Override
+    public int hashCode() {
+        throw new AssertionError("method not defined");
     }
 }
