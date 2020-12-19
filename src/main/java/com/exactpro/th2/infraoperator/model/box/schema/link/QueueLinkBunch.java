@@ -14,26 +14,26 @@
 package com.exactpro.th2.infraoperator.model.box.schema.link;
 
 import com.exactpro.th2.infraoperator.spec.link.relation.pins.PinMQ;
-import com.exactpro.th2.infraoperator.spec.link.relation.boxes.bunch.impl.MqLinkBunch;
-import com.exactpro.th2.infraoperator.spec.link.relation.boxes.bunch.BoxLinkBunch;
+import com.exactpro.th2.infraoperator.spec.link.relation.pins.PinsLinkage;
+import com.exactpro.th2.infraoperator.spec.link.relation.pins.PinsLinkageMQ;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
 
 @Data
 @NoArgsConstructor
-public class QueueLinkBunch implements BoxLinkBunch {
+public class QueueLinkBunch implements PinsLinkage {
 
     protected QueueBunch queueBunch;
 
-    protected MqLinkBunch mqLinkBunch;
+    protected PinsLinkageMQ mqLinkBunch;
 
 
-    public QueueLinkBunch(MqLinkBunch mqLinkBunch) {
+    public QueueLinkBunch(PinsLinkageMQ mqLinkBunch) {
         this.mqLinkBunch = mqLinkBunch;
     }
 
-    public QueueLinkBunch(MqLinkBunch mqLinkBunch, QueueBunch queueBunch) {
+    public QueueLinkBunch(PinsLinkageMQ mqLinkBunch, QueueBunch queueBunch) {
         this(mqLinkBunch);
         this.queueBunch = queueBunch;
     }
@@ -53,5 +53,4 @@ public class QueueLinkBunch implements BoxLinkBunch {
     public String getName() {
         return mqLinkBunch.getName();
     }
-
 }

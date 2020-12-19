@@ -15,7 +15,7 @@ package com.exactpro.th2.infraoperator.model.box.configuration.grpc.factory;
 
 import com.exactpro.th2.infraoperator.model.box.configuration.grpc.GrpcRouterConfiguration;
 import com.exactpro.th2.infraoperator.spec.Th2CustomResource;
-import com.exactpro.th2.infraoperator.spec.link.relation.boxes.bunch.impl.GrpcLinkBunch;
+import com.exactpro.th2.infraoperator.spec.link.relation.pins.PinsLinkageGRPC;
 import com.exactpro.th2.infraoperator.spec.shared.PinSpec;
 
 import java.util.List;
@@ -33,6 +33,6 @@ public interface GrpcRouterConfigFactory {
      * @param links    active links
      * @return ready grpc configuration based on active {@code links} and specified links in {@code resource}
      */
-    GrpcRouterConfiguration createConfig(Th2CustomResource resource, List<GrpcLinkBunch> links);
+    GrpcRouterConfiguration createConfig(Th2CustomResource resource, List<PinsLinkageGRPC> links);
 
 }

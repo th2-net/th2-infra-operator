@@ -13,9 +13,9 @@
 
 package com.exactpro.th2.infraoperator.spec.link.relation;
 
-import com.exactpro.th2.infraoperator.spec.link.relation.boxes.bunch.BoxLinkBunch;
-import com.exactpro.th2.infraoperator.spec.link.relation.boxes.bunch.impl.GrpcLinkBunch;
-import com.exactpro.th2.infraoperator.spec.link.relation.boxes.bunch.impl.MqLinkBunch;
+import com.exactpro.th2.infraoperator.spec.link.relation.pins.PinsLinkage;
+import com.exactpro.th2.infraoperator.spec.link.relation.pins.PinsLinkageGRPC;
+import com.exactpro.th2.infraoperator.spec.link.relation.pins.PinsLinkageMQ;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import lombok.Builder;
@@ -29,14 +29,15 @@ import java.util.List;
 public class BoxesRelation {
 
     @JsonProperty("router-mq")
-    private List<MqLinkBunch> routerMq = new ArrayList<>();
+    private List<PinsLinkageMQ> routerMq = new ArrayList<>();
+
 
     @JsonProperty("router-grpc")
-    private List<GrpcLinkBunch> routerGrpc = new ArrayList<>();
+    private List<PinsLinkageGRPC> routerGrpc = new ArrayList<>();
 
 
-    public List<BoxLinkBunch> getAllLinks() {
-        List<BoxLinkBunch> links = new ArrayList<>(getRouterMq());
+    public List<PinsLinkage> getAllLinks() {
+        List<PinsLinkage> links = new ArrayList<>(getRouterMq());
         links.addAll(getRouterGrpc());
         return links;
     }
@@ -45,8 +46,9 @@ public class BoxesRelation {
     protected BoxesRelation() {
     }
 
+
     @Builder
-    protected BoxesRelation(List<MqLinkBunch> routerMq, List<GrpcLinkBunch> routerGrpc) {
+    protected BoxesRelation(List<PinsLinkageMQ> routerMq, List<PinsLinkageGRPC> routerGrpc) {
         this.routerMq = routerMq;
         this.routerGrpc = routerGrpc;
     }

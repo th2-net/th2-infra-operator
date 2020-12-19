@@ -15,7 +15,7 @@ package com.exactpro.th2.infraoperator.spec.strategy.linkResolver.grpc.impl;
 
 import com.exactpro.th2.infraoperator.spec.Th2CustomResource;
 import com.exactpro.th2.infraoperator.spec.link.Th2Link;
-import com.exactpro.th2.infraoperator.spec.link.relation.boxes.bunch.impl.GrpcLinkBunch;
+import com.exactpro.th2.infraoperator.spec.link.relation.pins.PinsLinkageGRPC;
 import com.exactpro.th2.infraoperator.spec.link.validator.ValidationStatus;
 import com.exactpro.th2.infraoperator.spec.link.validator.chain.impl.ExpectedPinType;
 import com.exactpro.th2.infraoperator.spec.link.validator.chain.impl.PinExist;
@@ -48,8 +48,8 @@ public class DefaultGrpcLinkResolver implements GrpcLinkResolver {
 
 
     @Override
-    public List<GrpcLinkBunch> resolve(List<Th2Link> linkResources) {
-        List<GrpcLinkBunch> resolvedLinks = new ArrayList<>();
+    public List<PinsLinkageGRPC> resolve(List<Th2Link> linkResources) {
+        List<PinsLinkageGRPC> resolvedLinks = new ArrayList<>();
 
         resolve(linkResources, resolvedLinks);
 
@@ -57,12 +57,12 @@ public class DefaultGrpcLinkResolver implements GrpcLinkResolver {
     }
 
     @Override
-    public void resolve(List<Th2Link> linkResources, List<GrpcLinkBunch> grpcActiveLinks) {
+    public void resolve(List<Th2Link> linkResources, List<PinsLinkageGRPC> grpcActiveLinks) {
         resolve(linkResources, grpcActiveLinks, new Th2CustomResource[]{});
     }
 
     @Override
-    public void resolve(List<Th2Link> linkResources, List<GrpcLinkBunch> grpcActiveLinks, Th2CustomResource... newResources) {
+    public void resolve(List<Th2Link> linkResources, List<PinsLinkageGRPC> grpcActiveLinks, Th2CustomResource... newResources) {
 
         grpcActiveLinks.clear();
 
@@ -78,7 +78,7 @@ public class DefaultGrpcLinkResolver implements GrpcLinkResolver {
 
     }
 
-    private boolean validateLinks(Th2Link linkRes, GrpcLinkBunch link, Th2CustomResource... additionalSource) {
+    private boolean validateLinks(Th2Link linkRes, PinsLinkageGRPC link, Th2CustomResource... additionalSource) {
 
         var namespace = ExtractUtils.extractNamespace(linkRes);
 

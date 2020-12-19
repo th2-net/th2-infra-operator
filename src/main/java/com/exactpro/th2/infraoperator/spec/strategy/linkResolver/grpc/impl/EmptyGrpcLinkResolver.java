@@ -14,7 +14,7 @@
 package com.exactpro.th2.infraoperator.spec.strategy.linkResolver.grpc.impl;
 
 import com.exactpro.th2.infraoperator.spec.Th2CustomResource;
-import com.exactpro.th2.infraoperator.spec.link.relation.boxes.bunch.impl.GrpcLinkBunch;
+import com.exactpro.th2.infraoperator.spec.link.relation.pins.PinsLinkageGRPC;
 import com.exactpro.th2.infraoperator.spec.link.Th2Link;
 import com.exactpro.th2.infraoperator.spec.strategy.linkResolver.grpc.GrpcLinkResolver;
 
@@ -25,17 +25,17 @@ import java.util.List;
 public class EmptyGrpcLinkResolver implements GrpcLinkResolver {
 
     @Override
-    public List<GrpcLinkBunch> resolve(List<Th2Link> linkResources) {
+    public List<PinsLinkageGRPC> resolve(List<Th2Link> linkResources) {
         return new ArrayList<>();
     }
 
     @Override
-    public void resolve(List<Th2Link> linkResources, List<GrpcLinkBunch> grpcActiveLinks) {
+    public void resolve(List<Th2Link> linkResources, List<PinsLinkageGRPC> grpcActiveLinks) {
 
     }
 
     @Override
-    public void resolve(List<Th2Link> linkResources, List<GrpcLinkBunch> grpcActiveLinks, Th2CustomResource... newResources) {
+    public void resolve(List<Th2Link> linkResources, List<PinsLinkageGRPC> grpcActiveLinks, Th2CustomResource... newResources) {
 
     }
 

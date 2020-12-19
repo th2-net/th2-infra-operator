@@ -11,15 +11,12 @@
  * limitations under the License.
  */
 
-package com.exactpro.th2.infraoperator.spec.link.relation.boxes.bunch;
+package com.exactpro.th2.infraoperator.spec.link.relation.pins;
 
-import com.exactpro.th2.infraoperator.spec.link.relation.pins.Pin;
 import com.exactpro.th2.infraoperator.spec.shared.Nameable;
 
-public interface BoxLinkBunch extends Nameable {
+public interface PinsLinkage extends Nameable {
 
     Pin getFrom();
-
     Pin getTo();
-
 }
