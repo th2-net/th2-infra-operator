@@ -18,29 +18,49 @@ import com.exactpro.th2.infraoperator.spec.link.relation.dictionaries.Dictionary
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import io.fabric8.kubernetes.api.model.KubernetesResource;
-import lombok.Builder;
-import lombok.Data;
 
 import java.util.ArrayList;
 import java.util.List;
 
-@Data
 @JsonDeserialize
-public class Th2LinkSpec implements KubernetesResource {
+public final class Th2LinkSpec implements KubernetesResource {
 
-    @JsonProperty("boxes-relation")
-    private BoxesRelation boxesRelation = BoxesRelation.newEmptyRelation();
-
-    @JsonProperty("dictionaries-relation")
-    private List<DictionaryLinkage> dictionariesRelation = new ArrayList<>();
+    private BoxesRelation boxesRelation;
+    private List<DictionaryLinkage> dictionariesRelation;
 
 
-    protected Th2LinkSpec() {
+    public Th2LinkSpec(@JsonProperty("boxes-relation") BoxesRelation boxesRelation
+            , @JsonProperty("dictionaries-relation") List<DictionaryLinkage> dictionariesRelation) {
+
+        this.boxesRelation = (boxesRelation == null) ? BoxesRelation.newEmptyRelation() : boxesRelation;
+        this.dictionariesRelation = (dictionariesRelation == null) ? new ArrayList<>() : dictionariesRelation;
     }
 
-    @Builder
-    protected Th2LinkSpec(BoxesRelation boxesRelation, List<DictionaryLinkage> dictionariesRelation) {
-        this.boxesRelation = boxesRelation;
-        this.dictionariesRelation = dictionariesRelation;
+
+    public static Th2LinkSpec newEmptySpec() {
+        return new Th2LinkSpec(null, null);
     }
+
+
+    public BoxesRelation getBoxesRelation() {
+        return this.boxesRelation;
+    }
+
+
+    public List<DictionaryLinkage> getDictionariesRelation() {
+        return this.dictionariesRelation;
+    }
+
+
+    @Override
+    public boolean equals(final Object o) {
+        throw new AssertionError("method not defined");
+    }
+
+
+    @Override
+    public int hashCode() {
+        throw new AssertionError("method not defined");
+    }
+
 }
