@@ -33,18 +33,24 @@ public final class PinsLinkageMQ implements PinsLinkage {
         this.to = to;
     }
 
+    @Override
     public String getName() {
         return this.name;
     }
 
+
+    @Override
     public PinMQ getFrom() {
         return this.from;
     }
 
+
+    @Override
     public PinMQ getTo() {
         return this.to;
     }
 
+    
     @Override
     public boolean equals(final Object o) {
         if (o == this)

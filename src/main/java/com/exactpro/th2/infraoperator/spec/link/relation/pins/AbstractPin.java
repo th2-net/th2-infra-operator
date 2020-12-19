@@ -10,10 +10,12 @@ abstract class AbstractPin implements Pin {
         this.pinName = pinName;
     }
 
+    @Override
     public String getBoxName() {
         return this.boxName;
     }
 
+    @Override
     public String getPinName() {
         return this.pinName;
     }

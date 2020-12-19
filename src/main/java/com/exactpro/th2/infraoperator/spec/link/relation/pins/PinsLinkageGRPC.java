@@ -34,16 +34,19 @@ public final class PinsLinkageGRPC implements PinsLinkage {
     }
 
 
+    @Override
     public String getName() {
         return this.name;
     }
 
 
+    @Override
     public PinGRPC getFrom() {
         return this.from;
     }
 
 
+    @Override
     public PinGRPC getTo() {
         return this.to;
     }
