@@ -17,7 +17,7 @@ import com.exactpro.th2.infraoperator.model.box.schema.link.QueueLinkBunch;
 import com.exactpro.th2.infraoperator.spec.link.Th2Link;
 import com.exactpro.th2.infraoperator.spec.link.relation.pins.PinsLinkage;
 import com.exactpro.th2.infraoperator.spec.link.relation.pins.PinsLinkageGRPC;
-import com.exactpro.th2.infraoperator.spec.link.relation.dictionaries.bunch.DictionaryLinkBunch;
+import com.exactpro.th2.infraoperator.spec.link.relation.dictionaries.DictionaryLinkage;
 
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
@@ -49,7 +49,7 @@ public enum LinkSingleton {
         computeIfAbsent(namespace).setGrpcActiveLinks(new ArrayList<>(activeLinks));
     }
 
-    public void setDictionaryActiveLinks(String namespace, List<DictionaryLinkBunch> activeLinks) {
+    public void setDictionaryActiveLinks(String namespace, List<DictionaryLinkage> activeLinks) {
         computeIfAbsent(namespace).setDictionaryActiveLinks(new ArrayList<>(activeLinks));
     }
 
@@ -79,7 +79,7 @@ public enum LinkSingleton {
         return Objects.nonNull(links) ? Collections.unmodifiableList(links.getGrpcActiveLinks()) : List.of();
     }
 
-    public List<DictionaryLinkBunch> getDictionaryActiveLinks(String namespace) {
+    public List<DictionaryLinkage> getDictionaryActiveLinks(String namespace) {
         var links = linksPerNamespace.get(namespace);
         return Objects.nonNull(links) ? Collections.unmodifiableList(links.getDictionaryActiveLinks()) : List.of();
     }

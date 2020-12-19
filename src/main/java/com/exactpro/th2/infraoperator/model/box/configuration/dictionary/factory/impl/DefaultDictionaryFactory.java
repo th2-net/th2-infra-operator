@@ -17,8 +17,8 @@ import com.exactpro.th2.infraoperator.model.box.configuration.dictionary.Diction
 import com.exactpro.th2.infraoperator.model.box.configuration.dictionary.factory.DictionaryFactory;
 import com.exactpro.th2.infraoperator.spec.Th2CustomResource;
 import com.exactpro.th2.infraoperator.spec.dictionary.Th2Dictionary;
-import com.exactpro.th2.infraoperator.spec.link.relation.dictionaries.bunch.DictionaryLinkBunch;
-import com.exactpro.th2.infraoperator.spec.link.relation.dictionaries.dictionary.DictionarySpec;
+import com.exactpro.th2.infraoperator.spec.link.relation.dictionaries.DictionaryLinkage;
+import com.exactpro.th2.infraoperator.spec.link.relation.dictionaries.DictionarySpec;
 import com.exactpro.th2.infraoperator.spec.strategy.resFinder.dictionary.DictionaryResourceFinder;
 import com.exactpro.th2.infraoperator.util.ArchiveUtils;
 
@@ -33,7 +33,7 @@ public class DefaultDictionaryFactory implements DictionaryFactory {
     }
 
     @Override
-    public List<DictionaryEntity> create(Th2CustomResource resource, List<DictionaryLinkBunch> activeLinks) {
+    public List<DictionaryEntity> create(Th2CustomResource resource, List<DictionaryLinkage> activeLinks) {
 
         List<DictionaryEntity> dictionaries = new ArrayList<>();
 
