@@ -18,7 +18,7 @@ import com.exactpro.th2.infraoperator.model.box.configuration.dictionary.factory
 import com.exactpro.th2.infraoperator.spec.Th2CustomResource;
 import com.exactpro.th2.infraoperator.spec.dictionary.Th2Dictionary;
 import com.exactpro.th2.infraoperator.spec.link.relation.dictionaries.DictionaryBinding;
-import com.exactpro.th2.infraoperator.spec.link.relation.dictionaries.DictionarySpec;
+import com.exactpro.th2.infraoperator.spec.link.relation.dictionaries.DictionaryDescription;
 import com.exactpro.th2.infraoperator.spec.strategy.resFinder.dictionary.DictionaryResourceFinder;
 import com.exactpro.th2.infraoperator.util.ArchiveUtils;
 
@@ -40,7 +40,7 @@ public class DefaultDictionaryFactory implements DictionaryFactory {
         activeLinks.forEach(link -> {
             try {
                 if (link.getBox().equals(resource.getMetadata().getName())) {
-                    DictionarySpec dict = link.getDictionary();
+                    DictionaryDescription dict = link.getDictionary();
                     String name = dict.getName();
                     String type = dict.getType();
 

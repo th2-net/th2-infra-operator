@@ -22,10 +22,10 @@ public final class DictionaryBinding implements Nameable {
 
     private final String name;
     private final String box;
-    private final DictionarySpec dictionary;
+    private final DictionaryDescription dictionary;
 
 
-    private DictionaryBinding(String name, String box, DictionarySpec dictionary) {
+    private DictionaryBinding(String name, String box, DictionaryDescription dictionary) {
         this.name = name;
         this.box = box;
         this.dictionary = dictionary;
@@ -47,7 +47,7 @@ public final class DictionaryBinding implements Nameable {
     }
 
 
-    public DictionarySpec getDictionary() {
+    public DictionaryDescription getDictionary() {
         return this.dictionary;
     }
 
@@ -67,7 +67,7 @@ public final class DictionaryBinding implements Nameable {
     public static class Builder {
         private String name;
         private String box;
-        private DictionarySpec dictionary;
+        private DictionaryDescription dictionary;
 
         Builder() {
         }
@@ -87,7 +87,7 @@ public final class DictionaryBinding implements Nameable {
 
 
         @JsonProperty("dictionary")
-        public Builder dictionary(DictionarySpec dictionary) {
+        public Builder dictionary(DictionaryDescription dictionary) {
             this.dictionary = dictionary;
             return this;
         }

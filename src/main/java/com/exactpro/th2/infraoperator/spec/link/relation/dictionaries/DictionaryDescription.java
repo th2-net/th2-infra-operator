@@ -18,7 +18,7 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import java.util.Objects;
 
 
-public final class DictionarySpec {
+public final class DictionaryDescription {
 
     public static final String DEFAULT_DICTIONARY_TYPE = "MAIN";
 
@@ -26,8 +26,8 @@ public final class DictionarySpec {
     private String type;
 
 
-    public DictionarySpec(@JsonProperty("name") String name,
-                          @JsonProperty("type") String type) {
+    public DictionaryDescription(@JsonProperty("name") String name,
+                                 @JsonProperty("type") String type) {
         this.name = name;
         this.type = type == null ? DEFAULT_DICTIONARY_TYPE : type;
     }
@@ -47,10 +47,10 @@ public final class DictionarySpec {
     public boolean equals(final Object o) {
         if (o == this)
             return true;
-        if (!(o instanceof DictionarySpec))
+        if (!(o instanceof DictionaryDescription))
             return false;
-        return Objects.equals(name, ((DictionarySpec) o).name)
-                && Objects.equals(type, ((DictionarySpec) o).type);
+        return Objects.equals(name, ((DictionaryDescription) o).name)
+                && Objects.equals(type, ((DictionaryDescription) o).type);
     }
 
 
