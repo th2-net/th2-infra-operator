@@ -15,8 +15,8 @@ package com.exactpro.th2.infraoperator.spec.link.singleton;
 
 import com.exactpro.th2.infraoperator.model.box.schema.link.QueueLinkBunch;
 import com.exactpro.th2.infraoperator.spec.link.Th2Link;
-import com.exactpro.th2.infraoperator.spec.link.relation.pins.PinsLinkage;
-import com.exactpro.th2.infraoperator.spec.link.relation.pins.PinsLinkageGRPC;
+import com.exactpro.th2.infraoperator.spec.link.relation.pins.PinCoupling;
+import com.exactpro.th2.infraoperator.spec.link.relation.pins.PinCouplingGRPC;
 import com.exactpro.th2.infraoperator.spec.link.relation.dictionaries.DictionaryLinkage;
 
 import java.util.*;
@@ -45,7 +45,7 @@ public enum LinkSingleton {
         computeIfAbsent(namespace).setMqActiveLinks(new ArrayList<>(activeLinks));
     }
 
-    public void setGrpcActiveLinks(String namespace, List<PinsLinkageGRPC> activeLinks) {
+    public void setGrpcActiveLinks(String namespace, List<PinCouplingGRPC> activeLinks) {
         computeIfAbsent(namespace).setGrpcActiveLinks(new ArrayList<>(activeLinks));
     }
 
@@ -59,12 +59,12 @@ public enum LinkSingleton {
         return Objects.nonNull(links) ? Collections.unmodifiableList(links.getLinkResources()) : List.of();
     }
 
-    public List<PinsLinkage> getAllBoxesActiveLinks(String namespace) {
+    public List<PinCoupling> getAllBoxesActiveLinks(String namespace) {
         var links = linksPerNamespace.get(namespace);
         if (Objects.isNull(links)) {
             return List.of();
         }
-        List<PinsLinkage> allLinks = new ArrayList<>(links.getMqActiveLinks());
+        List<PinCoupling> allLinks = new ArrayList<>(links.getMqActiveLinks());
         allLinks.addAll(links.getGrpcActiveLinks());
         return Collections.unmodifiableList(allLinks);
     }
@@ -74,7 +74,7 @@ public enum LinkSingleton {
         return Objects.nonNull(links) ? Collections.unmodifiableList(links.getMqActiveLinks()) : List.of();
     }
 
-    public List<PinsLinkageGRPC> getGrpcActiveLinks(String namespace) {
+    public List<PinCouplingGRPC> getGrpcActiveLinks(String namespace) {
         var links = linksPerNamespace.get(namespace);
         return Objects.nonNull(links) ? Collections.unmodifiableList(links.getGrpcActiveLinks()) : List.of();
     }

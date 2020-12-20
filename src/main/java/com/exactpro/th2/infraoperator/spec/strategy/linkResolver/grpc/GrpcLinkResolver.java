@@ -13,10 +13,10 @@
 
 package com.exactpro.th2.infraoperator.spec.strategy.linkResolver.grpc;
 
-import com.exactpro.th2.infraoperator.spec.link.relation.pins.PinsLinkageGRPC;
+import com.exactpro.th2.infraoperator.spec.link.relation.pins.PinCouplingGRPC;
 import com.exactpro.th2.infraoperator.spec.strategy.linkResolver.LinkResolver;
 
 
-public interface GrpcLinkResolver extends LinkResolver<PinsLinkageGRPC> {
+public interface GrpcLinkResolver extends LinkResolver<PinCouplingGRPC> {
 
 }

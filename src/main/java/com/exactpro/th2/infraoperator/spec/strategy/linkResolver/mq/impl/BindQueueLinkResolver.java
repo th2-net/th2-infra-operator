@@ -20,7 +20,7 @@ import com.exactpro.th2.infraoperator.model.box.schema.link.QueueLinkBunch;
 import com.exactpro.th2.infraoperator.spec.Th2CustomResource;
 import com.exactpro.th2.infraoperator.spec.link.Th2Link;
 import com.exactpro.th2.infraoperator.spec.link.relation.pins.PinMQ;
-import com.exactpro.th2.infraoperator.spec.link.relation.pins.PinsLinkageMQ;
+import com.exactpro.th2.infraoperator.spec.link.relation.pins.PinCouplingMQ;
 import com.exactpro.th2.infraoperator.spec.link.validator.ValidationStatus;
 import com.exactpro.th2.infraoperator.spec.link.validator.chain.impl.ExpectedPinAttr;
 import com.exactpro.th2.infraoperator.spec.link.validator.chain.impl.ExpectedPinType;
@@ -195,7 +195,7 @@ public class BindQueueLinkResolver implements QueueLinkResolver {
 
     }
 
-    private ResourceCouple validateAndReturnRes(Th2Link linkRes, PinsLinkageMQ link, Th2CustomResource... additionalSource) {
+    private ResourceCouple validateAndReturnRes(Th2Link linkRes, PinCouplingMQ link, Th2CustomResource... additionalSource) {
 
         var namespace = ExtractUtils.extractNamespace(linkRes);
 

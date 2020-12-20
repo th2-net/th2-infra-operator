@@ -31,9 +31,9 @@ import com.exactpro.th2.infraoperator.spec.helmRelease.HelmReleaseSecrets;
 import com.exactpro.th2.infraoperator.spec.link.Th2Link;
 import com.exactpro.th2.infraoperator.spec.link.relation.dictionaries.DictionaryLinkage;
 import com.exactpro.th2.infraoperator.spec.link.relation.pins.PinMQ;
-import com.exactpro.th2.infraoperator.spec.link.relation.pins.PinsLinkage;
-import com.exactpro.th2.infraoperator.spec.link.relation.pins.PinsLinkageGRPC;
-import com.exactpro.th2.infraoperator.spec.link.relation.pins.PinsLinkageMQ;
+import com.exactpro.th2.infraoperator.spec.link.relation.pins.PinCoupling;
+import com.exactpro.th2.infraoperator.spec.link.relation.pins.PinCouplingGRPC;
+import com.exactpro.th2.infraoperator.spec.link.relation.pins.PinCouplingMQ;
 import com.exactpro.th2.infraoperator.spec.link.singleton.LinkSingleton;
 import com.exactpro.th2.infraoperator.spec.shared.DirectionAttribute;
 import com.exactpro.th2.infraoperator.spec.shared.PinSpec;
@@ -367,7 +367,7 @@ public abstract class HelmReleaseTh2Op<CR extends Th2CustomResource> extends Abs
         }
     }
 
-    protected List<Th2CustomResource> getAllLinkedResources(Th2CustomResource resource, List<PinsLinkage> links) {
+    protected List<Th2CustomResource> getAllLinkedResources(Th2CustomResource resource, List<PinCoupling> links) {
         Map<String, Th2CustomResource> resources = new HashMap<>();
 
         var boxName = ExtractUtils.extractName(resource);
@@ -515,7 +515,7 @@ public abstract class HelmReleaseTh2Op<CR extends Th2CustomResource> extends Abs
 
         protected abstract void refreshGrpcLinks(
             List<Th2Link> linkResources,
-            List<PinsLinkageGRPC> activeLinks,
+            List<PinCouplingGRPC> activeLinks,
             Th2CustomResource... newResources
         );
 
@@ -527,15 +527,15 @@ public abstract class HelmReleaseTh2Op<CR extends Th2CustomResource> extends Abs
 
         protected abstract List<Th2CustomResource> getLinkedResources(
             Th2CustomResource resource,
-            List<PinsLinkage> oldLinks,
-            List<PinsLinkage> newLinks
+            List<PinCoupling> oldLinks,
+            List<PinCoupling> newLinks
         );
     }
 
     private class AddedActiveLinkUpdater extends ActiveLinkUpdater {
 
         @Override
-        protected void refreshGrpcLinks(List<Th2Link> linkResources, List<PinsLinkageGRPC> grpcActiveLinks,
+        protected void refreshGrpcLinks(List<Th2Link> linkResources, List<PinCouplingGRPC> grpcActiveLinks,
                                         Th2CustomResource... newResources) {
             grpcLinkResolver.resolve(linkResources, grpcActiveLinks, newResources);
         }
@@ -553,8 +553,8 @@ public abstract class HelmReleaseTh2Op<CR extends Th2CustomResource> extends Abs
         }
 
         @Override
-        protected List<Th2CustomResource> getLinkedResources(Th2CustomResource resource, List<PinsLinkage> oldLinks,
-                                                             List<PinsLinkage> newLinks) {
+        protected List<Th2CustomResource> getLinkedResources(Th2CustomResource resource, List<PinCoupling> oldLinks,
+                                                             List<PinCoupling> newLinks) {
             return getAllLinkedResources(resource, newLinks);
         }
 
@@ -567,7 +567,7 @@ public abstract class HelmReleaseTh2Op<CR extends Th2CustomResource> extends Abs
     private class DeletedActiveLinkUpdater extends ActiveLinkUpdater {
 
         @Override
-        protected void refreshGrpcLinks(List<Th2Link> linkResources, List<PinsLinkageGRPC> grpcActiveLinks,
+        protected void refreshGrpcLinks(List<Th2Link> linkResources, List<PinCouplingGRPC> grpcActiveLinks,
                                         Th2CustomResource... newResources) {
             grpcLinkResolver.resolve(linkResources, grpcActiveLinks);
         }
@@ -585,8 +585,8 @@ public abstract class HelmReleaseTh2Op<CR extends Th2CustomResource> extends Abs
         }
 
         @Override
-        protected List<Th2CustomResource> getLinkedResources(Th2CustomResource resource, List<PinsLinkage> oldLinks,
-                                                             List<PinsLinkage> newLinks) {
+        protected List<Th2CustomResource> getLinkedResources(Th2CustomResource resource, List<PinCoupling> oldLinks,
+                                                             List<PinCoupling> newLinks) {
             return getAllLinkedResources(resource, oldLinks);
         }
 
@@ -668,13 +668,13 @@ public abstract class HelmReleaseTh2Op<CR extends Th2CustomResource> extends Abs
             return new PinMQ(context.getBoxAlias(), context.getPinName() + targetAttr);
         }
 
-        protected PinsLinkageMQ createHiddenLink(PinMQ fromBox, PinMQ toBox) {
-            return new PinsLinkageMQ(fromBox.toString() + context.getLinkNameSuffix(), fromBox, toBox);
+        protected PinCouplingMQ createHiddenLink(PinMQ fromBox, PinMQ toBox) {
+            return new PinCouplingMQ(fromBox.toString() + context.getLinkNameSuffix(), fromBox, toBox);
         }
 
-        protected List<PinsLinkageMQ> createHiddenLinks(Th2CustomResource resource) {
+        protected List<PinCouplingMQ> createHiddenLinks(Th2CustomResource resource) {
 
-            List<PinsLinkageMQ> links = new ArrayList<>();
+            List<PinCouplingMQ> links = new ArrayList<>();
 
             for (var pin : resource.getSpec().getPins()) {
 
@@ -693,7 +693,7 @@ public abstract class HelmReleaseTh2Op<CR extends Th2CustomResource> extends Abs
             return links;
         }
 
-        protected abstract List<PinsLinkageMQ> update(List<PinsLinkageMQ> oldHiddenLinks, List<PinsLinkageMQ> newHiddenLinks);
+        protected abstract List<PinCouplingMQ> update(List<PinCouplingMQ> oldHiddenLinks, List<PinCouplingMQ> newHiddenLinks);
 
     }
 
@@ -704,8 +704,8 @@ public abstract class HelmReleaseTh2Op<CR extends Th2CustomResource> extends Abs
         }
 
         @Override
-        protected List<PinsLinkageMQ> update(List<PinsLinkageMQ> oldHiddenLinks, List<PinsLinkageMQ> newHiddenLinks) {
-            List<PinsLinkageMQ> updated = new ArrayList<>(oldHiddenLinks);
+        protected List<PinCouplingMQ> update(List<PinCouplingMQ> oldHiddenLinks, List<PinCouplingMQ> newHiddenLinks) {
+            List<PinCouplingMQ> updated = new ArrayList<>(oldHiddenLinks);
             updated.removeAll(newHiddenLinks);
             return updated;
         }
@@ -719,8 +719,8 @@ public abstract class HelmReleaseTh2Op<CR extends Th2CustomResource> extends Abs
         }
 
         @Override
-        protected List<PinsLinkageMQ> update(List<PinsLinkageMQ> oldHiddenLinks, List<PinsLinkageMQ> newHiddenLinks) {
-            List<PinsLinkageMQ> updated = new ArrayList<>(oldHiddenLinks);
+        protected List<PinCouplingMQ> update(List<PinCouplingMQ> oldHiddenLinks, List<PinCouplingMQ> newHiddenLinks) {
+            List<PinCouplingMQ> updated = new ArrayList<>(oldHiddenLinks);
 
             for (var newLink : newHiddenLinks) {
                 if (!updated.contains(newLink)) {

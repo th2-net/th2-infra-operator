@@ -13,9 +13,9 @@
 
 package com.exactpro.th2.infraoperator.spec.link.relation;
 
-import com.exactpro.th2.infraoperator.spec.link.relation.pins.PinsLinkage;
-import com.exactpro.th2.infraoperator.spec.link.relation.pins.PinsLinkageGRPC;
-import com.exactpro.th2.infraoperator.spec.link.relation.pins.PinsLinkageMQ;
+import com.exactpro.th2.infraoperator.spec.link.relation.pins.PinCoupling;
+import com.exactpro.th2.infraoperator.spec.link.relation.pins.PinCouplingGRPC;
+import com.exactpro.th2.infraoperator.spec.link.relation.pins.PinCouplingMQ;
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
 
@@ -24,11 +24,11 @@ import java.util.List;
 
 public final class BoxesRelation {
 
-    private List<PinsLinkageMQ> mqLinks;
-    private List<PinsLinkageGRPC> grpcLinks;
+    private List<PinCouplingMQ> mqLinks;
+    private List<PinCouplingGRPC> grpcLinks;
 
 
-    private BoxesRelation(List<PinsLinkageMQ> mqLinks, List<PinsLinkageGRPC> grpcLinks) {
+    private BoxesRelation(List<PinCouplingMQ> mqLinks, List<PinCouplingGRPC> grpcLinks) {
 
         this.mqLinks = mqLinks;
         this.grpcLinks = grpcLinks;
@@ -36,8 +36,8 @@ public final class BoxesRelation {
 
 
     @JsonCreator
-    public static BoxesRelation newRelation(@JsonProperty("router-mq") List<PinsLinkageMQ> mqLinks,
-                                            @JsonProperty("router-grpc") List<PinsLinkageGRPC> grpcLinks) {
+    public static BoxesRelation newRelation(@JsonProperty("router-mq") List<PinCouplingMQ> mqLinks,
+                                            @JsonProperty("router-grpc") List<PinCouplingGRPC> grpcLinks) {
 
         return new BoxesRelation(mqLinks == null ? new ArrayList<>() : mqLinks,
                 grpcLinks == null ? new ArrayList<>() : grpcLinks);
@@ -48,23 +48,23 @@ public final class BoxesRelation {
     }
 
 
-    public List<PinsLinkageMQ> getRouterMq() {
+    public List<PinCouplingMQ> getRouterMq() {
         return this.mqLinks;
     }
 
 
-    public void setRouterMq(List<PinsLinkageMQ> mqLinks) {
+    public void setRouterMq(List<PinCouplingMQ> mqLinks) {
         this.mqLinks = mqLinks;
     }
 
 
-    public List<PinsLinkageGRPC> getRouterGrpc() {
+    public List<PinCouplingGRPC> getRouterGrpc() {
         return this.grpcLinks;
     }
 
 
-    public List<PinsLinkage> getAllLinks() {
-        List<PinsLinkage> links = new ArrayList<>();
+    public List<PinCoupling> getAllLinks() {
+        List<PinCoupling> links = new ArrayList<>();
         if (mqLinks != null)
             links.addAll(mqLinks);
         if (grpcLinks != null)

@@ -17,21 +17,20 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 
 import java.util.Objects;
 
-public final class PinsLinkageGRPC implements PinsLinkage {
+public final class PinCouplingMQ implements PinCoupling {
 
     private String name;
-    private PinGRPC from;
-    private PinGRPC to;
+    private PinMQ from;
+    private PinMQ to;
 
 
-    public PinsLinkageGRPC(@JsonProperty("name") String name,
-                           @JsonProperty("from") PinGRPC from,
-                           @JsonProperty("to") PinGRPC to) {
+    public PinCouplingMQ(@JsonProperty("name") String name,
+                         @JsonProperty("from") PinMQ from,
+                         @JsonProperty("to") PinMQ to) {
         this.name = name;
         this.from = from;
         this.to = to;
     }
-
 
     @Override
     public String getName() {
@@ -40,27 +39,26 @@ public final class PinsLinkageGRPC implements PinsLinkage {
 
 
     @Override
-    public PinGRPC getFrom() {
+    public PinMQ getFrom() {
         return this.from;
     }
 
 
     @Override
-    public PinGRPC getTo() {
+    public PinMQ getTo() {
         return this.to;
     }
 
-
+    
     @Override
     public boolean equals(final Object o) {
         if (o == this)
             return true;
-        if (! (o instanceof PinsLinkageGRPC))
+        if (! (o instanceof PinCouplingMQ))
             return false;
-
-        return Objects.equals(name, ((PinsLinkageGRPC) o).name)
-                && Objects.equals(from, ((PinsLinkageGRPC) o).from)
-                && Objects.equals(to, ((PinsLinkageGRPC) o).to);
+        return Objects.equals(name, ((PinCouplingMQ) o).name)
+                && Objects.equals(from, ((PinCouplingMQ) o).from)
+                && Objects.equals(to, ((PinCouplingMQ) o).to);
     }
 
 

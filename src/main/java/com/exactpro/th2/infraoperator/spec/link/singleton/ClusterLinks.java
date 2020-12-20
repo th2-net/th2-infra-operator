@@ -14,7 +14,7 @@
 package com.exactpro.th2.infraoperator.spec.link.singleton;
 
 import com.exactpro.th2.infraoperator.model.box.schema.link.QueueLinkBunch;
-import com.exactpro.th2.infraoperator.spec.link.relation.pins.PinsLinkageGRPC;
+import com.exactpro.th2.infraoperator.spec.link.relation.pins.PinCouplingGRPC;
 import com.exactpro.th2.infraoperator.spec.link.Th2Link;
 import com.exactpro.th2.infraoperator.spec.link.relation.dictionaries.DictionaryLinkage;
 import lombok.AllArgsConstructor;
@@ -32,6 +32,6 @@ public final class ClusterLinks {
 
     private List<Th2Link> linkResources = new ArrayList<>();
     private List<QueueLinkBunch> mqActiveLinks = new ArrayList<>();
-    private List<PinsLinkageGRPC> grpcActiveLinks = new ArrayList<>();
+    private List<PinCouplingGRPC> grpcActiveLinks = new ArrayList<>();
     private List<DictionaryLinkage> dictionaryActiveLinks = new ArrayList<>();
 }

@@ -18,7 +18,7 @@ import com.exactpro.th2.infraoperator.model.box.configuration.grpc.*;
 import com.exactpro.th2.infraoperator.model.box.configuration.grpc.factory.GrpcRouterConfigFactory;
 import com.exactpro.th2.infraoperator.spec.Th2CustomResource;
 import com.exactpro.th2.infraoperator.spec.link.relation.pins.PinGRPC;
-import com.exactpro.th2.infraoperator.spec.link.relation.pins.PinsLinkageGRPC;
+import com.exactpro.th2.infraoperator.spec.link.relation.pins.PinCouplingGRPC;
 import com.exactpro.th2.infraoperator.spec.shared.FilterSpec;
 import com.exactpro.th2.infraoperator.spec.shared.PinSpec;
 import com.exactpro.th2.infraoperator.spec.strategy.linkResolver.ConfigNotFoundException;
@@ -74,7 +74,7 @@ public class DefaultGrpcRouterConfigFactory implements GrpcRouterConfigFactory {
 
 
     @Override
-    public GrpcRouterConfiguration createConfig(Th2CustomResource resource, List<PinsLinkageGRPC> grpcActiveLinks) {
+    public GrpcRouterConfiguration createConfig(Th2CustomResource resource, List<PinCouplingGRPC> grpcActiveLinks) {
 
         var boxName = extractName(resource);
         var boxNamespace = extractNamespace(resource);
@@ -114,7 +114,7 @@ public class DefaultGrpcRouterConfigFactory implements GrpcRouterConfigFactory {
             PinSpec currentPin,
             String oppositePinName,
             String namespace,
-            PinsLinkageGRPC link,
+            PinCouplingGRPC link,
             Map<String, GrpcServiceConfiguration> services
     ) {
         var naturePinState = getNaturePinState(currentPin.getName(), oppositePinName, link);
@@ -217,7 +217,7 @@ public class DefaultGrpcRouterConfigFactory implements GrpcRouterConfigFactory {
         return StringUtils.uncapitalize(classParts[classParts.length - 1]);
     }
 
-    private NaturePinState getNaturePinState(String firstPinName, String secondPinName, PinsLinkageGRPC link) {
+    private NaturePinState getNaturePinState(String firstPinName, String secondPinName, PinCouplingGRPC link) {
         if (link.getFrom().getPinName().equals(firstPinName)) {
             return new NaturePinState(firstPinName, secondPinName);
         }
