@@ -13,21 +13,20 @@
 
 package com.exactpro.th2.infraoperator.spec.link.relation.pins;
 
-import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
+import com.fasterxml.jackson.annotation.JsonProperty;
 
 import java.util.Objects;
 
-@JsonDeserialize
 public final class PinsLinkageMQ implements PinsLinkage {
 
     private String name;
     private PinMQ from;
     private PinMQ to;
 
-    private PinsLinkageMQ() {
-    }
 
-    public PinsLinkageMQ(String name, PinMQ from, PinMQ to) {
+    public PinsLinkageMQ(@JsonProperty("name") String name,
+                         @JsonProperty("from") PinMQ from,
+                         @JsonProperty("to") PinMQ to) {
         this.name = name;
         this.from = from;
         this.to = to;
@@ -61,6 +60,7 @@ public final class PinsLinkageMQ implements PinsLinkage {
                 && Objects.equals(from, ((PinsLinkageMQ) o).from)
                 && Objects.equals(to, ((PinsLinkageMQ) o).to);
     }
+
 
     @Override
     public int hashCode() {

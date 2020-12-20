@@ -13,21 +13,20 @@
 
 package com.exactpro.th2.infraoperator.spec.link.relation.pins;
 
-import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
+import com.fasterxml.jackson.annotation.JsonProperty;
 
 import java.util.Objects;
 
-@JsonDeserialize
 public final class PinsLinkageGRPC implements PinsLinkage {
 
     private String name;
     private PinGRPC from;
     private PinGRPC to;
 
-    private PinsLinkageGRPC() {
-    }
 
-    public PinsLinkageGRPC(String name, PinGRPC from, PinGRPC to) {
+    public PinsLinkageGRPC(@JsonProperty("name") String name,
+                           @JsonProperty("from") PinGRPC from,
+                           @JsonProperty("to") PinGRPC to) {
         this.name = name;
         this.from = from;
         this.to = to;
@@ -51,17 +50,21 @@ public final class PinsLinkageGRPC implements PinsLinkage {
         return this.to;
     }
 
+
+    @Override
     public boolean equals(final Object o) {
         if (o == this)
             return true;
         if (! (o instanceof PinsLinkageGRPC))
             return false;
+
         return Objects.equals(name, ((PinsLinkageGRPC) o).name)
                 && Objects.equals(from, ((PinsLinkageGRPC) o).from)
                 && Objects.equals(to, ((PinsLinkageGRPC) o).to);
     }
 
 
+    @Override
     public int hashCode() {
         throw new AssertionError("method not defined");
     }
