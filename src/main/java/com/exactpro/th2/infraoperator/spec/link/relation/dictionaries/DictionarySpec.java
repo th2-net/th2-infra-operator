@@ -14,11 +14,10 @@
 package com.exactpro.th2.infraoperator.spec.link.relation.dictionaries;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
-import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 
 import java.util.Objects;
 
-@JsonDeserialize
+
 public final class DictionarySpec {
 
     public static final String DEFAULT_DICTIONARY_TYPE = "MAIN";
@@ -27,7 +26,8 @@ public final class DictionarySpec {
     private String type;
 
 
-    public DictionarySpec(@JsonProperty("name") String name, @JsonProperty("type") String type) {
+    public DictionarySpec(@JsonProperty("name") String name,
+                          @JsonProperty("type") String type) {
         this.name = name;
         this.type = type == null ? DEFAULT_DICTIONARY_TYPE : type;
     }
@@ -43,6 +43,7 @@ public final class DictionarySpec {
     }
 
 
+    @Override
     public boolean equals(final Object o) {
         if (o == this)
             return true;
@@ -51,6 +52,7 @@ public final class DictionarySpec {
         return Objects.equals(name, ((DictionarySpec) o).name)
                 && Objects.equals(type, ((DictionarySpec) o).type);
     }
+
 
     @Override
     public int hashCode() {

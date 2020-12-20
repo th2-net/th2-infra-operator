@@ -22,23 +22,17 @@ import io.fabric8.kubernetes.api.model.KubernetesResource;
 import java.util.ArrayList;
 import java.util.List;
 
-@JsonDeserialize
+@JsonDeserialize(builder=Th2LinkSpec.Builder.class)
 public final class Th2LinkSpec implements KubernetesResource {
 
     private BoxesRelation boxesRelation;
     private List<DictionaryLinkage> dictionariesRelation;
 
 
-    public Th2LinkSpec(@JsonProperty("boxes-relation") BoxesRelation boxesRelation
-            , @JsonProperty("dictionaries-relation") List<DictionaryLinkage> dictionariesRelation) {
+    private Th2LinkSpec(BoxesRelation boxesRelation,  List<DictionaryLinkage> dictionariesRelation) {
 
         this.boxesRelation = (boxesRelation == null) ? BoxesRelation.newEmptyRelation() : boxesRelation;
         this.dictionariesRelation = (dictionariesRelation == null) ? new ArrayList<>() : dictionariesRelation;
-    }
-
-
-    public static Th2LinkSpec newEmptySpec() {
-        return new Th2LinkSpec(null, null);
     }
 
 
@@ -63,4 +57,35 @@ public final class Th2LinkSpec implements KubernetesResource {
         throw new AssertionError("method not defined");
     }
 
+
+    public static Builder builder() {
+        return new Builder();
+    }
+
+
+    public static final class Builder {
+        private BoxesRelation boxesRelation;
+        private List<DictionaryLinkage> dictionariesRelation;
+
+        private Builder() {
+        }
+
+
+        @JsonProperty("boxes-relation")
+        public Builder boxesRelation(BoxesRelation boxesRelation) {
+            this.boxesRelation = boxesRelation;
+            return this;
+        }
+
+
+        @JsonProperty("dictionaries-relation")
+        public Builder dictionariesRelation(List<DictionaryLinkage> dictionariesRelation) {
+            this.dictionariesRelation = dictionariesRelation;
+            return this;
+        }
+
+        public Th2LinkSpec build() {
+            return new Th2LinkSpec(boxesRelation, dictionariesRelation);
+        }
+    }
 }

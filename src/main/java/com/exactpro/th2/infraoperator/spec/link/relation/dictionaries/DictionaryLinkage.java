@@ -14,6 +14,7 @@
 package com.exactpro.th2.infraoperator.spec.link.relation.dictionaries;
 
 import com.exactpro.th2.infraoperator.spec.shared.Nameable;
+import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 
 @JsonDeserialize(builder = DictionaryLinkage.Builder.class)
@@ -71,22 +72,27 @@ public final class DictionaryLinkage implements Nameable {
         Builder() {
         }
 
-        public Builder withName(String name) {
+        @JsonProperty("name")
+        public Builder name(String name) {
             this.name = name;
             return this;
         }
 
-        public Builder withBox(String box) {
+
+        @JsonProperty("box")
+        public Builder box(String box) {
             this.box = box;
             return this;
         }
 
-        public Builder withDictionary(DictionarySpec dictionary) {
+
+        @JsonProperty("dictionary")
+        public Builder dictionary(DictionarySpec dictionary) {
             this.dictionary = dictionary;
             return this;
         }
 
-        public DictionaryLinkage build() {
+        private DictionaryLinkage build() {
             return new DictionaryLinkage(name, box, dictionary);
         }
     }
