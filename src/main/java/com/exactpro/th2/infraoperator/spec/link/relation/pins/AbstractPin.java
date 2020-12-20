@@ -11,19 +11,21 @@ abstract class AbstractPin implements Pin {
     }
 
     @Override
-    public String getBoxName() {
+    public final String getBoxName() {
         return this.boxName;
     }
 
     @Override
-    public String getPinName() {
+    public final String getPinName() {
         return this.pinName;
     }
 
+    @Override
     public boolean equals(final Object o) {
         throw new AssertionError("method not defined");
     }
 
+    @Override
     public int hashCode() {
         throw new AssertionError("method not defined");
     }

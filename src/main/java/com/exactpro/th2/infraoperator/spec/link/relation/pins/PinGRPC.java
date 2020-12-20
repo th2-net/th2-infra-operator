@@ -14,9 +14,9 @@
 package com.exactpro.th2.infraoperator.spec.link.relation.pins;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
-import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 
-@JsonDeserialize
+import java.util.Objects;
+
 public class PinGRPC extends AbstractPin {
 
     @JsonProperty("service-class")
@@ -29,7 +29,8 @@ public class PinGRPC extends AbstractPin {
     private int port;
 
 
-    public PinGRPC(@JsonProperty("box") String boxName, @JsonProperty("pin") String pinName) {
+    public PinGRPC(@JsonProperty("box") String boxName,
+                   @JsonProperty("pin") String pinName) {
         super(boxName, pinName);
     }
 
@@ -81,10 +82,18 @@ public class PinGRPC extends AbstractPin {
         this.port = port;
     }
 
+    @Override
     public boolean equals(final Object o) {
-        throw new AssertionError("method not defined");
+        if (this == o)
+            return true;
+        if (! (o instanceof PinGRPC))
+            return false;
+
+        return Objects.equals(getBoxName(), ((PinGRPC) o).getBoxName())
+                && Objects.equals(getPinName(), ((PinGRPC) o).getPinName());
     }
 
+    @Override
     public int hashCode() {
         throw new AssertionError("method not defined");
     }
