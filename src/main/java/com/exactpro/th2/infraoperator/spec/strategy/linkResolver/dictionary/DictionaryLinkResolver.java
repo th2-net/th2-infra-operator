@@ -13,9 +13,9 @@
 
 package com.exactpro.th2.infraoperator.spec.strategy.linkResolver.dictionary;
 
-import com.exactpro.th2.infraoperator.spec.link.relation.dictionaries.DictionaryLinkage;
+import com.exactpro.th2.infraoperator.spec.link.relation.dictionaries.DictionaryBinding;
 import com.exactpro.th2.infraoperator.spec.strategy.linkResolver.LinkResolver;
 
-public interface DictionaryLinkResolver extends LinkResolver<DictionaryLinkage> {
+public interface DictionaryLinkResolver extends LinkResolver<DictionaryBinding> {
 
 }

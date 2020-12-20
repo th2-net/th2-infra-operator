@@ -17,15 +17,15 @@ import com.exactpro.th2.infraoperator.spec.shared.Nameable;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 
-@JsonDeserialize(builder = DictionaryLinkage.Builder.class)
-public final class DictionaryLinkage implements Nameable {
+@JsonDeserialize(builder = DictionaryBinding.Builder.class)
+public final class DictionaryBinding implements Nameable {
 
     private final String name;
     private final String box;
     private final DictionarySpec dictionary;
 
 
-    private DictionaryLinkage(String name, String box, DictionarySpec dictionary) {
+    private DictionaryBinding(String name, String box, DictionarySpec dictionary) {
         this.name = name;
         this.box = box;
         this.dictionary = dictionary;
@@ -92,8 +92,8 @@ public final class DictionaryLinkage implements Nameable {
             return this;
         }
 
-        private DictionaryLinkage build() {
-            return new DictionaryLinkage(name, box, dictionary);
+        private DictionaryBinding build() {
+            return new DictionaryBinding(name, box, dictionary);
         }
     }
 }

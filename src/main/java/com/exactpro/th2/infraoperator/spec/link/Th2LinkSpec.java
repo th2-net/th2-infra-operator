@@ -14,7 +14,7 @@
 package com.exactpro.th2.infraoperator.spec.link;
 
 import com.exactpro.th2.infraoperator.spec.link.relation.BoxesRelation;
-import com.exactpro.th2.infraoperator.spec.link.relation.dictionaries.DictionaryLinkage;
+import com.exactpro.th2.infraoperator.spec.link.relation.dictionaries.DictionaryBinding;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import io.fabric8.kubernetes.api.model.KubernetesResource;
@@ -26,10 +26,10 @@ import java.util.List;
 public final class Th2LinkSpec implements KubernetesResource {
 
     private BoxesRelation boxesRelation;
-    private List<DictionaryLinkage> dictionariesRelation;
+    private List<DictionaryBinding> dictionariesRelation;
 
 
-    private Th2LinkSpec(BoxesRelation boxesRelation,  List<DictionaryLinkage> dictionariesRelation) {
+    private Th2LinkSpec(BoxesRelation boxesRelation,  List<DictionaryBinding> dictionariesRelation) {
 
         this.boxesRelation = (boxesRelation == null) ? BoxesRelation.newEmptyRelation() : boxesRelation;
         this.dictionariesRelation = (dictionariesRelation == null) ? new ArrayList<>() : dictionariesRelation;
@@ -41,7 +41,7 @@ public final class Th2LinkSpec implements KubernetesResource {
     }
 
 
-    public List<DictionaryLinkage> getDictionariesRelation() {
+    public List<DictionaryBinding> getDictionariesRelation() {
         return this.dictionariesRelation;
     }
 
@@ -65,7 +65,7 @@ public final class Th2LinkSpec implements KubernetesResource {
 
     public static final class Builder {
         private BoxesRelation boxesRelation;
-        private List<DictionaryLinkage> dictionariesRelation;
+        private List<DictionaryBinding> dictionariesRelation;
 
         private Builder() {
         }
@@ -79,7 +79,7 @@ public final class Th2LinkSpec implements KubernetesResource {
 
 
         @JsonProperty("dictionaries-relation")
-        public Builder dictionariesRelation(List<DictionaryLinkage> dictionariesRelation) {
+        public Builder dictionariesRelation(List<DictionaryBinding> dictionariesRelation) {
             this.dictionariesRelation = dictionariesRelation;
             return this;
         }

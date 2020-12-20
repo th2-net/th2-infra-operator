@@ -15,7 +15,7 @@ package com.exactpro.th2.infraoperator.model.box.configuration.dictionary.factor
 
 import com.exactpro.th2.infraoperator.model.box.configuration.dictionary.DictionaryEntity;
 import com.exactpro.th2.infraoperator.spec.Th2CustomResource;
-import com.exactpro.th2.infraoperator.spec.link.relation.dictionaries.DictionaryLinkage;
+import com.exactpro.th2.infraoperator.spec.link.relation.dictionaries.DictionaryBinding;
 
 import java.util.List;
 
@@ -32,6 +32,6 @@ public interface DictionaryFactory {
      * @param links    active links
      * @return list of {@link DictionaryEntity} based on provided active {@code activeLinks} and {@code resource}
      */
-    List<DictionaryEntity> create(Th2CustomResource resource, List<DictionaryLinkage> links);
+    List<DictionaryEntity> create(Th2CustomResource resource, List<DictionaryBinding> links);
 
 }

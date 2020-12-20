@@ -29,7 +29,7 @@ import com.exactpro.th2.infraoperator.spec.helmRelease.HelmRelease;
 import com.exactpro.th2.infraoperator.spec.helmRelease.HelmReleaseList;
 import com.exactpro.th2.infraoperator.spec.helmRelease.HelmReleaseSecrets;
 import com.exactpro.th2.infraoperator.spec.link.Th2Link;
-import com.exactpro.th2.infraoperator.spec.link.relation.dictionaries.DictionaryLinkage;
+import com.exactpro.th2.infraoperator.spec.link.relation.dictionaries.DictionaryBinding;
 import com.exactpro.th2.infraoperator.spec.link.relation.pins.PinMQ;
 import com.exactpro.th2.infraoperator.spec.link.relation.pins.PinCoupling;
 import com.exactpro.th2.infraoperator.spec.link.relation.pins.PinCouplingGRPC;
@@ -521,7 +521,7 @@ public abstract class HelmReleaseTh2Op<CR extends Th2CustomResource> extends Abs
 
         protected abstract void refreshDictionaryLinks(
             List<Th2Link> linkResources,
-            List<DictionaryLinkage> activeLinks,
+            List<DictionaryBinding> activeLinks,
             Th2CustomResource... newResources
         );
 
@@ -547,7 +547,7 @@ public abstract class HelmReleaseTh2Op<CR extends Th2CustomResource> extends Abs
         }
 
         @Override
-        protected void refreshDictionaryLinks(List<Th2Link> linkResources, List<DictionaryLinkage> dicActiveLinks,
+        protected void refreshDictionaryLinks(List<Th2Link> linkResources, List<DictionaryBinding> dicActiveLinks,
                                               Th2CustomResource... newResources) {
             dictionaryLinkResolver.resolve(linkResources, dicActiveLinks, newResources);
         }
@@ -579,7 +579,7 @@ public abstract class HelmReleaseTh2Op<CR extends Th2CustomResource> extends Abs
         }
 
         @Override
-        protected void refreshDictionaryLinks(List<Th2Link> linkResources, List<DictionaryLinkage> dicActiveLinks,
+        protected void refreshDictionaryLinks(List<Th2Link> linkResources, List<DictionaryBinding> dicActiveLinks,
                                               Th2CustomResource... newResources) {
             dictionaryLinkResolver.resolve(linkResources, dicActiveLinks);
         }
