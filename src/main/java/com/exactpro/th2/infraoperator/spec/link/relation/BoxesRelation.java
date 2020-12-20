@@ -16,29 +16,35 @@ package com.exactpro.th2.infraoperator.spec.link.relation;
 import com.exactpro.th2.infraoperator.spec.link.relation.pins.PinsLinkage;
 import com.exactpro.th2.infraoperator.spec.link.relation.pins.PinsLinkageGRPC;
 import com.exactpro.th2.infraoperator.spec.link.relation.pins.PinsLinkageMQ;
+import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
-import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 
 import java.util.ArrayList;
 import java.util.List;
 
-@JsonDeserialize
 public final class BoxesRelation {
 
     private List<PinsLinkageMQ> mqLinks;
     private List<PinsLinkageGRPC> grpcLinks;
 
 
-    public BoxesRelation(@JsonProperty("router-mq") List<PinsLinkageMQ> mqLinks
-            , @JsonProperty("router-grpc") List<PinsLinkageGRPC> grpcLinks) {
+    private BoxesRelation(List<PinsLinkageMQ> mqLinks, List<PinsLinkageGRPC> grpcLinks) {
 
-        this.mqLinks = mqLinks == null ? new ArrayList<>() : mqLinks;
-        this.grpcLinks = grpcLinks == null ? new ArrayList<>() : grpcLinks;
+        this.mqLinks = mqLinks;
+        this.grpcLinks = grpcLinks;
     }
 
 
+    @JsonCreator
+    public static BoxesRelation newRelation(@JsonProperty("router-mq") List<PinsLinkageMQ> mqLinks,
+                                            @JsonProperty("router-grpc") List<PinsLinkageGRPC> grpcLinks) {
+
+        return new BoxesRelation(mqLinks == null ? new ArrayList<>() : mqLinks,
+                grpcLinks == null ? new ArrayList<>() : grpcLinks);
+    }
+
     public static BoxesRelation newEmptyRelation() {
-        return new BoxesRelation(null, null);
+        return BoxesRelation.newRelation(null, null);
     }
 
 
