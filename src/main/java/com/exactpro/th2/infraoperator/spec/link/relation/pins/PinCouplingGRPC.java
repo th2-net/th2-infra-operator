@@ -33,7 +33,6 @@ public final class PinCouplingGRPC implements PinCoupling {
     }
 
 
-    @Override
     public String getName() {
         return this.name;
     }
@@ -67,5 +66,10 @@ public final class PinCouplingGRPC implements PinCoupling {
     @Override
     public int hashCode() {
         throw new AssertionError("method not defined");
+    }
+
+    @Override
+    public String getId() {
+        return String.format("%s-%s", from.toString(), to.toString());
     }
 }
