@@ -40,12 +40,12 @@ public class QueueLinkBunch implements PinCoupling {
 
 
     @Override
-    public PinMQ getFrom(){
+    public PinMQ getFrom() {
         return mqLinkBunch.getFrom();
     }
 
     @Override
-    public PinMQ getTo(){
+    public PinMQ getTo() {
         return mqLinkBunch.getTo();
     }
 
@@ -55,6 +55,11 @@ public class QueueLinkBunch implements PinCoupling {
 
     @Override
     public String getId() {
-        return String.format("%s:%s", queueBunch.toString(), mqLinkBunch.getId());
+        return String.format("%s[%s:%s](%s)",
+                queueBunch.getExchange(),
+                queueBunch.getQueue(),
+                queueBunch.getRoutingKey(),
+                mqLinkBunch.getId()
+        );
     }
 }

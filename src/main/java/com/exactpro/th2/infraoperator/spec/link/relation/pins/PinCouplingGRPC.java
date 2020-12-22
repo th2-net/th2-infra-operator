@@ -54,7 +54,7 @@ public final class PinCouplingGRPC implements PinCoupling {
     public boolean equals(final Object o) {
         if (o == this)
             return true;
-        if (! (o instanceof PinCouplingGRPC))
+        if (!(o instanceof PinCouplingGRPC))
             return false;
 
         return Objects.equals(name, ((PinCouplingGRPC) o).name)
@@ -70,6 +70,10 @@ public final class PinCouplingGRPC implements PinCoupling {
 
     @Override
     public String getId() {
-        return String.format("%s-%s", from.toString(), to.toString());
+        return String.format("%s[%s:%s-%s:%s]",
+                this.getClass().getName(),
+                from.getBoxName(), from.getPinName(),
+                to.getBoxName(), to.getPinName()
+        );
     }
 }
