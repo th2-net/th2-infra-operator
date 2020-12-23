@@ -65,7 +65,10 @@ public final class DictionaryBinding implements Identifiable {
 
     @Override
     public String getId() {
-        return String.format("%s:%s%s", this.name, this.box, this.dictionary.getName());
+        return String.format("%s[%s:%s]",
+                this.getClass().getName(),
+                this.box,
+                this.dictionary == null ? "null" : this.dictionary.getName());
     }
 
 
