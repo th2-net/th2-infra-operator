@@ -16,7 +16,7 @@ package com.exactpro.th2.infraoperator.spec.strategy.linkResolver.dictionary.imp
 import com.exactpro.th2.infraoperator.spec.Th2CustomResource;
 import com.exactpro.th2.infraoperator.spec.dictionary.Th2Dictionary;
 import com.exactpro.th2.infraoperator.spec.link.Th2Link;
-import com.exactpro.th2.infraoperator.spec.link.relation.dictionaries.bunch.DictionaryLinkBunch;
+import com.exactpro.th2.infraoperator.spec.link.relation.dictionaries.DictionaryBinding;
 import com.exactpro.th2.infraoperator.spec.link.validator.ValidationStatus;
 import com.exactpro.th2.infraoperator.spec.link.validator.chain.impl.DicBoxResourceExist;
 import com.exactpro.th2.infraoperator.spec.link.validator.chain.impl.DictionaryResourceExist;
@@ -52,8 +52,8 @@ public class DefaultDictionaryLinkResolver implements DictionaryLinkResolver {
 
 
     @Override
-    public List<DictionaryLinkBunch> resolve(List<Th2Link> linkResources) {
-        List<DictionaryLinkBunch> resolvedLinks = new ArrayList<>();
+    public List<DictionaryBinding> resolve(List<Th2Link> linkResources) {
+        List<DictionaryBinding> resolvedLinks = new ArrayList<>();
 
         resolve(linkResources, resolvedLinks);
 
@@ -61,12 +61,12 @@ public class DefaultDictionaryLinkResolver implements DictionaryLinkResolver {
     }
 
     @Override
-    public void resolve(List<Th2Link> linkResources, List<DictionaryLinkBunch> dicActiveLinks) {
+    public void resolve(List<Th2Link> linkResources, List<DictionaryBinding> dicActiveLinks) {
         resolve(linkResources, dicActiveLinks, new Th2CustomResource[]{});
     }
 
     @Override
-    public void resolve(List<Th2Link> linkResources, List<DictionaryLinkBunch> dicActiveLinks, Th2CustomResource... newResources) {
+    public void resolve(List<Th2Link> linkResources, List<DictionaryBinding> dicActiveLinks, Th2CustomResource... newResources) {
         dicActiveLinks.clear();
 
         for (var lRes : linkResources) {
@@ -81,7 +81,7 @@ public class DefaultDictionaryLinkResolver implements DictionaryLinkResolver {
 
     }
 
-    private boolean validateLinks(Th2Link linkRes, DictionaryLinkBunch link, Th2CustomResource... additionalSource) {
+    private boolean validateLinks(Th2Link linkRes, DictionaryBinding link, Th2CustomResource... additionalSource) {
 
         var namespace = ExtractUtils.extractNamespace(linkRes);
 

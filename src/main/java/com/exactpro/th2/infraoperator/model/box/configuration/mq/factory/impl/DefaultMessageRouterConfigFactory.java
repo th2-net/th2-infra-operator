@@ -20,7 +20,7 @@ import com.exactpro.th2.infraoperator.model.box.configuration.mq.factory.Message
 import com.exactpro.th2.infraoperator.model.box.schema.link.QueueBunch;
 import com.exactpro.th2.infraoperator.model.kubernetes.configmaps.ConfigMaps;
 import com.exactpro.th2.infraoperator.spec.Th2CustomResource;
-import com.exactpro.th2.infraoperator.spec.link.relation.boxes.box.impl.BoxMq;
+import com.exactpro.th2.infraoperator.spec.link.relation.pins.PinMQ;
 import com.exactpro.th2.infraoperator.spec.shared.DirectionAttribute;
 import com.exactpro.th2.infraoperator.spec.shared.FilterSpec;
 import com.exactpro.th2.infraoperator.spec.strategy.linkResolver.queue.QueueName;
@@ -57,17 +57,14 @@ public class DefaultMessageRouterConfigFactory implements MessageRouterConfigFac
 
             String boxName = ExtractUtils.extractName(resource);
 
-            BoxMq boxMq = BoxMq.builder()
-                    .box(boxName)
-                    .pin(pin.getName())
-                    .build();
+            PinMQ mqPin = new PinMQ(boxName, pin.getName());
 
             QueueBunch queueSpec;
 
             if (attrs.contains(DirectionAttribute.publish.name())) {
-                queueSpec = createQueueBunch(ExtractUtils.extractNamespace(resource), null, boxMq);
+                queueSpec = createQueueBunch(ExtractUtils.extractNamespace(resource), null, mqPin);
             } else {
-                queueSpec = createQueueBunch(ExtractUtils.extractNamespace(resource), boxMq, null);
+                queueSpec = createQueueBunch(ExtractUtils.extractNamespace(resource), mqPin, null);
             }
 
             //TODO null check
@@ -98,7 +95,7 @@ public class DefaultMessageRouterConfigFactory implements MessageRouterConfigFac
     }
 
     @Nullable
-    private QueueBunch createQueueBunch(String namespace, BoxMq toBox, BoxMq fromBox) {
+    private QueueBunch createQueueBunch(String namespace, PinMQ toBox, PinMQ fromBox) {
 
         var rabbitMQConfig = ConfigMaps.INSTANCE.getRabbitMQConfig4Namespace(namespace);
 

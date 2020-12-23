@@ -17,7 +17,7 @@ import com.exactpro.th2.infraoperator.configuration.OperatorConfig;
 import com.exactpro.th2.infraoperator.configuration.RabbitMQConfig;
 import com.exactpro.th2.infraoperator.configuration.RabbitMQManagementConfig;
 import com.exactpro.th2.infraoperator.spec.Th2CustomResource;
-import com.exactpro.th2.infraoperator.spec.link.relation.boxes.box.impl.BoxMq;
+import com.exactpro.th2.infraoperator.spec.link.relation.pins.PinMQ;
 import com.exactpro.th2.infraoperator.spec.link.singleton.LinkSingleton;
 import com.exactpro.th2.infraoperator.spec.shared.DirectionAttribute;
 import com.exactpro.th2.infraoperator.spec.strategy.linkResolver.queue.QueueName;
@@ -75,13 +75,10 @@ public class DeclareQueueResolver {
         for (var pin : ExtractUtils.extractMqPins(resource)) {
             var attrs = pin.getAttributes();
             String boxName = extractName(resource);
-            BoxMq boxMq = BoxMq.builder()
-                    .box(boxName)
-                    .pin(pin.getName())
-                    .build();
+            PinMQ mqPin = new PinMQ(boxName, pin.getName());
 
             if (!attrs.contains(DirectionAttribute.publish.name())) {
-                String queueName = new QueueName(namespace, boxMq).toString();
+                String queueName = new QueueName(namespace, mqPin).toString();
                 //remove from set if pin for queue still exists.
                 boxUnlinkedQueueNames.remove(queueName);
                 var declareResult = channel.queueDeclare(queueName

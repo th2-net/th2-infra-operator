@@ -13,37 +13,79 @@
 
 package com.exactpro.th2.infraoperator.spec.link;
 
-import com.exactpro.th2.infraoperator.spec.link.relation.boxes.BoxesRelation;
-import com.exactpro.th2.infraoperator.spec.link.relation.dictionaries.bunch.DictionaryLinkBunch;
+import com.exactpro.th2.infraoperator.spec.link.relation.BoxesRelation;
+import com.exactpro.th2.infraoperator.spec.link.relation.dictionaries.DictionaryBinding;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import io.fabric8.kubernetes.api.model.KubernetesResource;
-import lombok.Builder;
-import lombok.Data;
 
 import java.util.ArrayList;
 import java.util.List;
 
-@Data
-@JsonDeserialize
-public class Th2LinkSpec implements KubernetesResource {
+@JsonDeserialize(builder=Th2LinkSpec.Builder.class)
+public final class Th2LinkSpec implements KubernetesResource {
 
-    @JsonProperty("boxes-relation")
-    private BoxesRelation boxesRelation = BoxesRelation.builder()
-            .routerGrpc(new ArrayList<>())
-            .routerMq(new ArrayList<>())
-            .build();
-
-    @JsonProperty("dictionaries-relation")
-    private List<DictionaryLinkBunch> dictionariesRelation = new ArrayList<>();
+    private BoxesRelation boxesRelation;
+    private List<DictionaryBinding> dictionariesRelation;
 
 
-    protected Th2LinkSpec() {
+    private Th2LinkSpec(BoxesRelation boxesRelation,  List<DictionaryBinding> dictionariesRelation) {
+
+        this.boxesRelation = (boxesRelation == null) ? BoxesRelation.newEmptyRelation() : boxesRelation;
+        this.dictionariesRelation = (dictionariesRelation == null) ? new ArrayList<>() : dictionariesRelation;
     }
 
-    @Builder
-    protected Th2LinkSpec(BoxesRelation boxesRelation, List<DictionaryLinkBunch> dictionariesRelation) {
-        this.boxesRelation = boxesRelation;
-        this.dictionariesRelation = dictionariesRelation;
+
+    public BoxesRelation getBoxesRelation() {
+        return this.boxesRelation;
+    }
+
+
+    public List<DictionaryBinding> getDictionariesRelation() {
+        return this.dictionariesRelation;
+    }
+
+
+    @Override
+    public boolean equals(final Object o) {
+        throw new AssertionError("method not defined");
+    }
+
+
+    @Override
+    public int hashCode() {
+        throw new AssertionError("method not defined");
+    }
+
+
+    public static Builder builder() {
+        return new Builder();
+    }
+
+
+    public static final class Builder {
+        private BoxesRelation boxesRelation;
+        private List<DictionaryBinding> dictionariesRelation;
+
+        private Builder() {
+        }
+
+
+        @JsonProperty("boxes-relation")
+        public Builder boxesRelation(BoxesRelation boxesRelation) {
+            this.boxesRelation = boxesRelation;
+            return this;
+        }
+
+
+        @JsonProperty("dictionaries-relation")
+        public Builder dictionariesRelation(List<DictionaryBinding> dictionariesRelation) {
+            this.dictionariesRelation = dictionariesRelation;
+            return this;
+        }
+
+        public Th2LinkSpec build() {
+            return new Th2LinkSpec(boxesRelation, dictionariesRelation);
+        }
     }
 }

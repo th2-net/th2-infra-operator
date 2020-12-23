@@ -15,7 +15,7 @@ package com.exactpro.th2.infraoperator.spec.strategy.linkResolver.grpc.impl;
 
 import com.exactpro.th2.infraoperator.spec.Th2CustomResource;
 import com.exactpro.th2.infraoperator.spec.link.Th2Link;
-import com.exactpro.th2.infraoperator.spec.link.relation.boxes.bunch.impl.GrpcLinkBunch;
+import com.exactpro.th2.infraoperator.spec.link.relation.pins.PinCouplingGRPC;
 import com.exactpro.th2.infraoperator.spec.link.validator.ValidationStatus;
 import com.exactpro.th2.infraoperator.spec.link.validator.chain.impl.ExpectedPinType;
 import com.exactpro.th2.infraoperator.spec.link.validator.chain.impl.PinExist;
@@ -48,8 +48,8 @@ public class DefaultGrpcLinkResolver implements GrpcLinkResolver {
 
 
     @Override
-    public List<GrpcLinkBunch> resolve(List<Th2Link> linkResources) {
-        List<GrpcLinkBunch> resolvedLinks = new ArrayList<>();
+    public List<PinCouplingGRPC> resolve(List<Th2Link> linkResources) {
+        List<PinCouplingGRPC> resolvedLinks = new ArrayList<>();
 
         resolve(linkResources, resolvedLinks);
 
@@ -57,12 +57,12 @@ public class DefaultGrpcLinkResolver implements GrpcLinkResolver {
     }
 
     @Override
-    public void resolve(List<Th2Link> linkResources, List<GrpcLinkBunch> grpcActiveLinks) {
+    public void resolve(List<Th2Link> linkResources, List<PinCouplingGRPC> grpcActiveLinks) {
         resolve(linkResources, grpcActiveLinks, new Th2CustomResource[]{});
     }
 
     @Override
-    public void resolve(List<Th2Link> linkResources, List<GrpcLinkBunch> grpcActiveLinks, Th2CustomResource... newResources) {
+    public void resolve(List<Th2Link> linkResources, List<PinCouplingGRPC> grpcActiveLinks, Th2CustomResource... newResources) {
 
         grpcActiveLinks.clear();
 
@@ -78,19 +78,19 @@ public class DefaultGrpcLinkResolver implements GrpcLinkResolver {
 
     }
 
-    private boolean validateLinks(Th2Link linkRes, GrpcLinkBunch link, Th2CustomResource... additionalSource) {
+    private boolean validateLinks(Th2Link linkRes, PinCouplingGRPC link, Th2CustomResource... additionalSource) {
 
         var namespace = ExtractUtils.extractNamespace(linkRes);
 
 
         var fromBoxSpec = link.getFrom();
 
-        var fromBoxName = fromBoxSpec.getBox();
+        var fromBoxName = fromBoxSpec.getBoxName();
 
         var fromContext = DirectionalLinkContext.builder()
                 .linkName(link.getName())
                 .boxName(fromBoxName)
-                .boxPinName(fromBoxSpec.getPin())
+                .boxPinName(fromBoxSpec.getPinName())
                 .boxDirection(BoxDirection.from)
                 .linksSectionName("grpc")
                 .connectionType(SchemaConnectionType.grpc)
@@ -102,11 +102,11 @@ public class DefaultGrpcLinkResolver implements GrpcLinkResolver {
 
         var toBoxSpec = link.getTo();
 
-        var toBoxName = toBoxSpec.getBox();
+        var toBoxName = toBoxSpec.getBoxName();
 
         var toContext = fromContext.toBuilder()
                 .boxName(toBoxName)
-                .boxPinName(toBoxSpec.getPin())
+                .boxPinName(toBoxSpec.getPinName())
                 .boxDirection(BoxDirection.to)
                 .routingStrategy(toBoxSpec.getStrategy())
                 .build();

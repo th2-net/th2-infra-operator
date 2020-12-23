@@ -15,9 +15,9 @@ package com.exactpro.th2.infraoperator.spec.link.singleton;
 
 import com.exactpro.th2.infraoperator.model.box.schema.link.QueueLinkBunch;
 import com.exactpro.th2.infraoperator.spec.link.Th2Link;
-import com.exactpro.th2.infraoperator.spec.link.relation.boxes.bunch.BoxLinkBunch;
-import com.exactpro.th2.infraoperator.spec.link.relation.boxes.bunch.impl.GrpcLinkBunch;
-import com.exactpro.th2.infraoperator.spec.link.relation.dictionaries.bunch.DictionaryLinkBunch;
+import com.exactpro.th2.infraoperator.spec.link.relation.pins.PinCoupling;
+import com.exactpro.th2.infraoperator.spec.link.relation.pins.PinCouplingGRPC;
+import com.exactpro.th2.infraoperator.spec.link.relation.dictionaries.DictionaryBinding;
 
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
@@ -45,11 +45,11 @@ public enum LinkSingleton {
         computeIfAbsent(namespace).setMqActiveLinks(new ArrayList<>(activeLinks));
     }
 
-    public void setGrpcActiveLinks(String namespace, List<GrpcLinkBunch> activeLinks) {
+    public void setGrpcActiveLinks(String namespace, List<PinCouplingGRPC> activeLinks) {
         computeIfAbsent(namespace).setGrpcActiveLinks(new ArrayList<>(activeLinks));
     }
 
-    public void setDictionaryActiveLinks(String namespace, List<DictionaryLinkBunch> activeLinks) {
+    public void setDictionaryActiveLinks(String namespace, List<DictionaryBinding> activeLinks) {
         computeIfAbsent(namespace).setDictionaryActiveLinks(new ArrayList<>(activeLinks));
     }
 
@@ -59,12 +59,12 @@ public enum LinkSingleton {
         return Objects.nonNull(links) ? Collections.unmodifiableList(links.getLinkResources()) : List.of();
     }
 
-    public List<BoxLinkBunch> getAllBoxesActiveLinks(String namespace) {
+    public List<PinCoupling> getAllBoxesActiveLinks(String namespace) {
         var links = linksPerNamespace.get(namespace);
         if (Objects.isNull(links)) {
             return List.of();
         }
-        List<BoxLinkBunch> allLinks = new ArrayList<>(links.getMqActiveLinks());
+        List<PinCoupling> allLinks = new ArrayList<>(links.getMqActiveLinks());
         allLinks.addAll(links.getGrpcActiveLinks());
         return Collections.unmodifiableList(allLinks);
     }
@@ -74,12 +74,12 @@ public enum LinkSingleton {
         return Objects.nonNull(links) ? Collections.unmodifiableList(links.getMqActiveLinks()) : List.of();
     }
 
-    public List<GrpcLinkBunch> getGrpcActiveLinks(String namespace) {
+    public List<PinCouplingGRPC> getGrpcActiveLinks(String namespace) {
         var links = linksPerNamespace.get(namespace);
         return Objects.nonNull(links) ? Collections.unmodifiableList(links.getGrpcActiveLinks()) : List.of();
     }
 
-    public List<DictionaryLinkBunch> getDictionaryActiveLinks(String namespace) {
+    public List<DictionaryBinding> getDictionaryActiveLinks(String namespace) {
         var links = linksPerNamespace.get(namespace);
         return Objects.nonNull(links) ? Collections.unmodifiableList(links.getDictionaryActiveLinks()) : List.of();
     }
@@ -87,20 +87,20 @@ public enum LinkSingleton {
 
     public List<QueueLinkBunch> getMsgStorageActiveLinks(String namespace) {
         return getMqActiveLinks(namespace).stream()
-                .filter(queueLinkBunch -> queueLinkBunch.getTo().getBox().equals(MESSAGE_STORAGE_BOX_ALIAS))
+                .filter(queueLinkBunch -> queueLinkBunch.getTo().getBoxName().equals(MESSAGE_STORAGE_BOX_ALIAS))
                 .collect(Collectors.toUnmodifiableList());
     }
 
     public List<QueueLinkBunch> getEventStorageActiveLinks(String namespace) {
         return getMqActiveLinks(namespace).stream()
-                .filter(queueLinkBunch -> queueLinkBunch.getTo().getBox().equals(EVENT_STORAGE_BOX_ALIAS))
+                .filter(queueLinkBunch -> queueLinkBunch.getTo().getBoxName().equals(EVENT_STORAGE_BOX_ALIAS))
                 .collect(Collectors.toUnmodifiableList());
     }
 
     public List<QueueLinkBunch> getGeneralMqActiveLinks(String namespace) {
         return getMqActiveLinks(namespace).stream()
-                .filter(queueLinkBunch -> !queueLinkBunch.getTo().getBox().equals(MESSAGE_STORAGE_BOX_ALIAS)
-                        && !queueLinkBunch.getTo().getBox().equals(EVENT_STORAGE_BOX_ALIAS))
+                .filter(queueLinkBunch -> !queueLinkBunch.getTo().getBoxName().equals(MESSAGE_STORAGE_BOX_ALIAS)
+                        && !queueLinkBunch.getTo().getBoxName().equals(EVENT_STORAGE_BOX_ALIAS))
                 .collect(Collectors.toUnmodifiableList());
     }
 

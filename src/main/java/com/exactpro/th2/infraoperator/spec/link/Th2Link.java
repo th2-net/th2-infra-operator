@@ -13,13 +13,11 @@
 
 package com.exactpro.th2.infraoperator.spec.link;
 
-import com.exactpro.th2.infraoperator.spec.link.relation.boxes.BoxesRelation;
 import io.fabric8.kubernetes.client.CustomResource;
 import lombok.Getter;
 import lombok.Setter;
 import lombok.ToString;
 
-import java.util.ArrayList;
 import java.util.Objects;
 
 import static com.exactpro.th2.infraoperator.util.ExtractUtils.extractName;
@@ -39,27 +37,19 @@ public class Th2Link extends CustomResource {
 
 
     public static Th2Link newInstance() {
-        var th2Link = new Th2Link();
 
-        var th2LinkSpec = Th2LinkSpec.builder()
-                .boxesRelation(
-                        BoxesRelation.builder()
-                                .routerGrpc(new ArrayList<>())
-                                .routerMq(new ArrayList<>())
-                                .build()
-                ).dictionariesRelation(new ArrayList<>())
-                .build();
-
-        th2Link.setSpec(th2LinkSpec);
-
+        Th2Link th2Link = new Th2Link();
+        th2Link.setSpec(Th2LinkSpec.builder().build());
         return th2Link;
     }
 
 
     @Override
     public boolean equals(Object object) {
-        if (this == object) return true;
-        if (!(object instanceof Th2Link)) return false;
+        if (this == object)
+            return true;
+        if (!(object instanceof Th2Link))
+            return false;
         Th2Link th2Link = (Th2Link) object;
         return extractName(this).equals(extractName(th2Link))
                 && extractNamespace(this).equals(extractNamespace(th2Link));

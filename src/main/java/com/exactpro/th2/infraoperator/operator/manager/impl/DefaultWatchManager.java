@@ -165,7 +165,7 @@ public class DefaultWatchManager {
         var oldBoxesLinks = oldLinkRes.getSpec().getBoxesRelation().getAllLinks();
         var newBoxesLinks = newLinkRes.getSpec().getBoxesRelation().getAllLinks();
         var fromBoxesLinks = getBoxesToUpdate(oldBoxesLinks, newBoxesLinks,
-            blb -> Set.of(blb.getFrom().getBox(), blb.getTo().getBox()));
+            blb -> Set.of(blb.getFrom().getBoxName(), blb.getTo().getBoxName()));
         Set<String> boxes = new HashSet<>(fromBoxesLinks);
 
         var oldLinks = oldLinkRes.getSpec().getDictionariesRelation();

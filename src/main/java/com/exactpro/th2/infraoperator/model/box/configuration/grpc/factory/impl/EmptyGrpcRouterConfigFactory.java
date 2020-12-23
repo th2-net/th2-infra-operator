@@ -16,7 +16,7 @@ package com.exactpro.th2.infraoperator.model.box.configuration.grpc.factory.impl
 import com.exactpro.th2.infraoperator.model.box.configuration.grpc.GrpcRouterConfiguration;
 import com.exactpro.th2.infraoperator.model.box.configuration.grpc.factory.GrpcRouterConfigFactory;
 import com.exactpro.th2.infraoperator.spec.Th2CustomResource;
-import com.exactpro.th2.infraoperator.spec.link.relation.boxes.bunch.impl.GrpcLinkBunch;
+import com.exactpro.th2.infraoperator.spec.link.relation.pins.PinCouplingGRPC;
 
 import java.util.List;
 import java.util.Map;
@@ -24,7 +24,7 @@ import java.util.Map;
 public class EmptyGrpcRouterConfigFactory implements GrpcRouterConfigFactory {
 
     @Override
-    public GrpcRouterConfiguration createConfig(Th2CustomResource resource, List<GrpcLinkBunch> grpcActiveLinks) {
+    public GrpcRouterConfiguration createConfig(Th2CustomResource resource, List<PinCouplingGRPC> grpcActiveLinks) {
         return GrpcRouterConfiguration.builder().services(Map.of()).build();
     }
 

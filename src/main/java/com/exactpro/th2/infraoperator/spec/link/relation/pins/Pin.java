@@ -11,12 +11,11 @@
  * limitations under the License.
  */
 
-package com.exactpro.th2.infraoperator.spec.link.relation.boxes.box;
+package com.exactpro.th2.infraoperator.spec.link.relation.pins;
 
-public interface Box {
+public interface Pin {
 
-    String getBox();
-
-    String getPin();
+    String getBoxName();
+    String getPinName();
 
 }

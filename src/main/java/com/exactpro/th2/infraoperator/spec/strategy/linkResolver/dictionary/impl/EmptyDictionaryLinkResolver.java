@@ -15,7 +15,7 @@ package com.exactpro.th2.infraoperator.spec.strategy.linkResolver.dictionary.imp
 
 import com.exactpro.th2.infraoperator.spec.Th2CustomResource;
 import com.exactpro.th2.infraoperator.spec.link.Th2Link;
-import com.exactpro.th2.infraoperator.spec.link.relation.dictionaries.bunch.DictionaryLinkBunch;
+import com.exactpro.th2.infraoperator.spec.link.relation.dictionaries.DictionaryBinding;
 import com.exactpro.th2.infraoperator.spec.strategy.linkResolver.dictionary.DictionaryLinkResolver;
 
 import java.util.ArrayList;
@@ -24,17 +24,17 @@ import java.util.List;
 public class EmptyDictionaryLinkResolver implements DictionaryLinkResolver {
 
     @Override
-    public List<DictionaryLinkBunch> resolve(List<Th2Link> linkResources) {
+    public List<DictionaryBinding> resolve(List<Th2Link> linkResources) {
         return new ArrayList<>();
     }
 
     @Override
-    public void resolve(List<Th2Link> linkResources, List<DictionaryLinkBunch> grpcActiveLinks) {
+    public void resolve(List<Th2Link> linkResources, List<DictionaryBinding> grpcActiveLinks) {
 
     }
 
     @Override
-    public void resolve(List<Th2Link> linkResources, List<DictionaryLinkBunch> grpcActiveLinks, Th2CustomResource... newResources) {
+    public void resolve(List<Th2Link> linkResources, List<DictionaryBinding> grpcActiveLinks, Th2CustomResource... newResources) {
 
     }
 

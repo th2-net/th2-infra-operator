@@ -11,30 +11,27 @@
  * limitations under the License.
  */
 
-package com.exactpro.th2.infraoperator.spec.link.relation.dictionaries;
+package com.exactpro.th2.infraoperator.spec.link.relation.pins;
 
-import com.exactpro.th2.infraoperator.spec.link.relation.dictionaries.bunch.DictionaryLinkBunch;
 import com.fasterxml.jackson.annotation.JsonProperty;
-import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
-import lombok.Builder;
-import lombok.Data;
 
-import java.util.ArrayList;
-import java.util.List;
+import java.util.Objects;
 
-@Data
-@JsonDeserialize
-public class DictionariesRelation {
-
-    @JsonProperty("dictionaries-relation")
-    private List<DictionaryLinkBunch> relations = new ArrayList<>();
-
-
-    protected DictionariesRelation() {
+public class PinMQ extends AbstractPin {
+    public PinMQ(@JsonProperty("box") String boxName,
+                 @JsonProperty("pin") String pinName) {
+        super(boxName, pinName);
     }
 
-    @Builder
-    protected DictionariesRelation(List<DictionaryLinkBunch> relations) {
-        this.relations = relations;
+    @Override
+    public boolean equals(final Object o) {
+        if (this == o)
+            return true;
+        if (! (o instanceof PinMQ))
+            return false;
+
+        return Objects.equals(getBoxName(), ((PinMQ) o).getBoxName())
+                && Objects.equals(getPinName(), ((PinMQ) o).getPinName());
     }
 }
+

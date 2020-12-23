@@ -13,39 +13,39 @@
 
 package com.exactpro.th2.infraoperator.model.box.schema.link;
 
-import com.exactpro.th2.infraoperator.spec.link.relation.boxes.box.impl.BoxMq;
-import com.exactpro.th2.infraoperator.spec.link.relation.boxes.bunch.impl.MqLinkBunch;
-import com.exactpro.th2.infraoperator.spec.link.relation.boxes.bunch.BoxLinkBunch;
+import com.exactpro.th2.infraoperator.spec.link.relation.pins.PinMQ;
+import com.exactpro.th2.infraoperator.spec.link.relation.pins.PinCoupling;
+import com.exactpro.th2.infraoperator.spec.link.relation.pins.PinCouplingMQ;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
 
 @Data
 @NoArgsConstructor
-public class QueueLinkBunch implements BoxLinkBunch {
+public class QueueLinkBunch implements PinCoupling {
 
     protected QueueBunch queueBunch;
 
-    protected MqLinkBunch mqLinkBunch;
+    protected PinCouplingMQ mqLinkBunch;
 
 
-    public QueueLinkBunch(MqLinkBunch mqLinkBunch) {
+    public QueueLinkBunch(PinCouplingMQ mqLinkBunch) {
         this.mqLinkBunch = mqLinkBunch;
     }
 
-    public QueueLinkBunch(MqLinkBunch mqLinkBunch, QueueBunch queueBunch) {
+    public QueueLinkBunch(PinCouplingMQ mqLinkBunch, QueueBunch queueBunch) {
         this(mqLinkBunch);
         this.queueBunch = queueBunch;
     }
 
 
     @Override
-    public BoxMq getFrom(){
+    public PinMQ getFrom(){
         return mqLinkBunch.getFrom();
     }
 
     @Override
-    public BoxMq getTo(){
+    public PinMQ getTo(){
         return mqLinkBunch.getTo();
     }
 
@@ -53,5 +53,4 @@ public class QueueLinkBunch implements BoxLinkBunch {
     public String getName() {
         return mqLinkBunch.getName();
     }
-
 }

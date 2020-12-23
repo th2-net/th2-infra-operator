@@ -11,27 +11,12 @@
  * limitations under the License.
  */
 
-package com.exactpro.th2.infraoperator.spec.link.relation.dictionaries.dictionary;
+package com.exactpro.th2.infraoperator.spec.link.relation.pins;
 
-import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
-import lombok.Builder;
-import lombok.Data;
+import com.exactpro.th2.infraoperator.spec.shared.Nameable;
 
-@Data
-@JsonDeserialize
-public class DictionarySpec {
+public interface PinCoupling extends Nameable {
 
-    private String name;
-
-    private String type = "MAIN";
-
-
-    protected DictionarySpec() {
-    }
-
-    @Builder
-    protected DictionarySpec(String name, String type) {
-        this.name = name;
-        this.type = type;
-    }
+    Pin getFrom();
+    Pin getTo();
 }
