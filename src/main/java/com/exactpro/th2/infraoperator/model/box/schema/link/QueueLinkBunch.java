@@ -55,10 +55,8 @@ public class QueueLinkBunch implements PinCoupling {
 
     @Override
     public String getId() {
-        return String.format("%s[%s:%s](%s)",
-                queueBunch.getExchange(),
-                queueBunch.getQueue(),
-                queueBunch.getRoutingKey(),
+        return String.format("%s[%s]",
+                this.getClass().getName(),
                 mqLinkBunch.getId()
         );
     }
