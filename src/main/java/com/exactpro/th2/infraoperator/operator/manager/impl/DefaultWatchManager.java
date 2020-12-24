@@ -29,7 +29,7 @@ import com.exactpro.th2.infraoperator.spec.Th2CustomResource;
 import com.exactpro.th2.infraoperator.spec.dictionary.Th2Dictionary;
 import com.exactpro.th2.infraoperator.spec.link.Th2Link;
 import com.exactpro.th2.infraoperator.spec.link.singleton.LinkSingleton;
-import com.exactpro.th2.infraoperator.spec.shared.Nameable;
+import com.exactpro.th2.infraoperator.spec.shared.Identifiable;
 import com.exactpro.th2.infraoperator.spec.strategy.linkResolver.dictionary.impl.DefaultDictionaryLinkResolver;
 import com.exactpro.th2.infraoperator.spec.strategy.linkResolver.dictionary.impl.EmptyDictionaryLinkResolver;
 import com.exactpro.th2.infraoperator.spec.strategy.linkResolver.grpc.impl.DefaultGrpcLinkResolver;
@@ -176,8 +176,8 @@ public class DefaultWatchManager {
         return boxes;
     }
 
-    private <T extends Nameable> Set<String> getBoxesToUpdate(List<T> oldLinks, List<T> newLinks,
-                                                              Function<T, Set<String>> boxesExtractor) {
+    private <T extends Identifiable> Set<String> getBoxesToUpdate(List<T> oldLinks, List<T> newLinks,
+                                                                  Function<T, Set<String>> boxesExtractor) {
 
         Set<String> boxes = new HashSet<>();
 
@@ -186,7 +186,7 @@ public class DefaultWatchManager {
         for (var maxLink : or.getMaxLinks()) {
             var isLinkExist = false;
             for (var minLink : or.getMinLinks()) {
-                if (minLink.getName().equals(maxLink.getName())) {
+                if (minLink.getId().equals(maxLink.getId())) {
                     if (!minLink.equals(maxLink)) {
                         boxes.addAll(boxesExtractor.apply(minLink));
                         boxes.addAll(boxesExtractor.apply(maxLink));
@@ -200,7 +200,7 @@ public class DefaultWatchManager {
         }
 
         var oldToUpdate = oldLinks.stream()
-            .filter(t -> newLinks.stream().noneMatch(t1 -> t1.getName().equals(t.getName())))
+            .filter(t -> newLinks.stream().noneMatch(t1 -> t1.getId().equals(t.getId())))
             .flatMap(t -> boxesExtractor.apply(t).stream())
             .collect(Collectors.toSet());
 

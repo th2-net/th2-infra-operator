@@ -13,12 +13,12 @@
 
 package com.exactpro.th2.infraoperator.spec.link.relation.dictionaries;
 
-import com.exactpro.th2.infraoperator.spec.shared.Nameable;
+import com.exactpro.th2.infraoperator.spec.shared.Identifiable;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 
 @JsonDeserialize(builder = DictionaryBinding.Builder.class)
-public final class DictionaryBinding implements Nameable {
+public final class DictionaryBinding implements Identifiable {
 
     private final String name;
     private final String box;
@@ -61,6 +61,14 @@ public final class DictionaryBinding implements Nameable {
     @Override
     public int hashCode() {
         throw new AssertionError("method not defined");
+    }
+
+    @Override
+    public String getId() {
+        return String.format("%s[%s:%s]",
+                this.getClass().getName(),
+                this.box,
+                this.dictionary == null ? "null" : this.dictionary.getName());
     }
 
 

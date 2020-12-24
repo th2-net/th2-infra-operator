@@ -40,17 +40,24 @@ public class QueueLinkBunch implements PinCoupling {
 
 
     @Override
-    public PinMQ getFrom(){
+    public PinMQ getFrom() {
         return mqLinkBunch.getFrom();
     }
 
     @Override
-    public PinMQ getTo(){
+    public PinMQ getTo() {
         return mqLinkBunch.getTo();
     }
 
-    @Override
     public String getName() {
         return mqLinkBunch.getName();
+    }
+
+    @Override
+    public String getId() {
+        return String.format("%s[%s]",
+                this.getClass().getName(),
+                mqLinkBunch.getId()
+        );
     }
 }

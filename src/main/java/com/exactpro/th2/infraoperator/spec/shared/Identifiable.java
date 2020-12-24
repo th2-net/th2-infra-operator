@@ -13,8 +13,8 @@
 
 package com.exactpro.th2.infraoperator.spec.shared;
 
-public interface Nameable {
+public interface Identifiable {
 
-    String getName();
+    String getId();
 
 }

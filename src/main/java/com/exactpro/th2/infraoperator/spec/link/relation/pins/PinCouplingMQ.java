@@ -32,7 +32,6 @@ public final class PinCouplingMQ implements PinCoupling {
         this.to = to;
     }
 
-    @Override
     public String getName() {
         return this.name;
     }
@@ -49,12 +48,12 @@ public final class PinCouplingMQ implements PinCoupling {
         return this.to;
     }
 
-    
+
     @Override
     public boolean equals(final Object o) {
         if (o == this)
             return true;
-        if (! (o instanceof PinCouplingMQ))
+        if (!(o instanceof PinCouplingMQ))
             return false;
         return Objects.equals(name, ((PinCouplingMQ) o).name)
                 && Objects.equals(from, ((PinCouplingMQ) o).from)
@@ -65,5 +64,14 @@ public final class PinCouplingMQ implements PinCoupling {
     @Override
     public int hashCode() {
         throw new AssertionError("method not defined");
+    }
+
+    @Override
+    public String getId() {
+        return String.format("%s[%s:%s-%s:%s]",
+                this.getClass().getName(),
+                from.getBoxName(), from.getPinName(),
+                to.getBoxName(), to.getPinName()
+        );
     }
 }

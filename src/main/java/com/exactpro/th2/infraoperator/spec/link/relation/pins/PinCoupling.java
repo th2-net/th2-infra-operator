@@ -13,9 +13,9 @@
 
 package com.exactpro.th2.infraoperator.spec.link.relation.pins;
 
-import com.exactpro.th2.infraoperator.spec.shared.Nameable;
+import com.exactpro.th2.infraoperator.spec.shared.Identifiable;
 
-public interface PinCoupling extends Nameable {
+public interface PinCoupling extends Identifiable {
 
     Pin getFrom();
     Pin getTo();
