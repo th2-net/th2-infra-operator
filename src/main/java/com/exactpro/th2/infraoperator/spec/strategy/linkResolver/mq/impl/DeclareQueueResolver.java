@@ -18,7 +18,7 @@ import com.exactpro.th2.infraoperator.configuration.RabbitMQConfig;
 import com.exactpro.th2.infraoperator.configuration.RabbitMQManagementConfig;
 import com.exactpro.th2.infraoperator.spec.Th2CustomResource;
 import com.exactpro.th2.infraoperator.spec.link.relation.pins.PinMQ;
-import com.exactpro.th2.infraoperator.spec.link.singleton.LinkSingleton;
+import com.exactpro.th2.infraoperator.OperatorState;
 import com.exactpro.th2.infraoperator.spec.shared.DirectionAttribute;
 import com.exactpro.th2.infraoperator.spec.strategy.linkResolver.queue.QueueName;
 import com.exactpro.th2.infraoperator.util.ExtractUtils;
@@ -116,7 +116,7 @@ public class DeclareQueueResolver {
     }
 
     private void removeLinkedQueues(Set<String> boxQueueNames, String namespace) {
-        var lSingleton = LinkSingleton.INSTANCE;
+        var lSingleton = OperatorState.INSTANCE;
         var mqActiveLinks = new ArrayList<>(lSingleton.getMqActiveLinks(namespace));
         //remove queues that appear in active links
         Set<String> activeQueueNames = mqActiveLinks.stream()

@@ -34,7 +34,7 @@ import com.exactpro.th2.infraoperator.spec.link.relation.pins.PinMQ;
 import com.exactpro.th2.infraoperator.spec.link.relation.pins.PinCoupling;
 import com.exactpro.th2.infraoperator.spec.link.relation.pins.PinCouplingGRPC;
 import com.exactpro.th2.infraoperator.spec.link.relation.pins.PinCouplingMQ;
-import com.exactpro.th2.infraoperator.spec.link.singleton.LinkSingleton;
+import com.exactpro.th2.infraoperator.OperatorState;
 import com.exactpro.th2.infraoperator.spec.shared.DirectionAttribute;
 import com.exactpro.th2.infraoperator.spec.shared.PinSpec;
 import com.exactpro.th2.infraoperator.spec.shared.PrometheusConfiguration;
@@ -159,7 +159,7 @@ public abstract class HelmReleaseTh2Op<CR extends Th2CustomResource> extends Abs
 
         String resNamespace = ExtractUtils.extractNamespace(resource);
         Th2Spec resSpec = resource.getSpec();
-        LinkSingleton lSingleton = LinkSingleton.INSTANCE;
+        OperatorState lSingleton = OperatorState.INSTANCE;
         var grpcActiveLinks = lSingleton.getGrpcActiveLinks(resNamespace);
         var dictionaryActiveLinks = lSingleton.getDictionaryActiveLinks(resNamespace);
 
@@ -207,7 +207,7 @@ public abstract class HelmReleaseTh2Op<CR extends Th2CustomResource> extends Abs
     @Override
     protected void addedEvent(CR resource) {
 
-        synchronized (LinkSingleton.INSTANCE.getLock(ExtractUtils.extractNamespace(resource))) {
+        synchronized (OperatorState.INSTANCE.getLock(ExtractUtils.extractNamespace(resource))) {
 
             updateEventStorageLinksBeforeAdd(resource);
 
@@ -226,7 +226,7 @@ public abstract class HelmReleaseTh2Op<CR extends Th2CustomResource> extends Abs
     @Override
     protected void modifiedEvent(CR resource) {
 
-        synchronized (LinkSingleton.INSTANCE.getLock(ExtractUtils.extractNamespace(resource))) {
+        synchronized (OperatorState.INSTANCE.getLock(ExtractUtils.extractNamespace(resource))) {
 
             updateEventStorageLinksBeforeAdd(resource);
 
@@ -245,7 +245,7 @@ public abstract class HelmReleaseTh2Op<CR extends Th2CustomResource> extends Abs
     @Override
     protected void deletedEvent(CR resource) {
 
-        synchronized (LinkSingleton.INSTANCE.getLock(ExtractUtils.extractNamespace(resource))) {
+        synchronized (OperatorState.INSTANCE.getLock(ExtractUtils.extractNamespace(resource))) {
 
             super.deletedEvent(resource);
 
@@ -319,7 +319,7 @@ public abstract class HelmReleaseTh2Op<CR extends Th2CustomResource> extends Abs
 
         logger.info("Updating all linked boxes of '{}.{}' resource...", namespace, currentResName);
 
-        var lSingleton = LinkSingleton.INSTANCE;
+        var lSingleton = OperatorState.INSTANCE;
 
         var grpcActiveLinks = new ArrayList<>(lSingleton.getGrpcActiveLinks(namespace));
 
@@ -434,7 +434,7 @@ public abstract class HelmReleaseTh2Op<CR extends Th2CustomResource> extends Abs
 
             var resNamespace = ExtractUtils.extractNamespace(resource);
 
-            var lSingleton = LinkSingleton.INSTANCE;
+            var lSingleton = OperatorState.INSTANCE;
 
             var linkResources = lSingleton.getLinkResources(resNamespace);
 
@@ -610,7 +610,7 @@ public abstract class HelmReleaseTh2Op<CR extends Th2CustomResource> extends Abs
 
             var resNamespace = ExtractUtils.extractNamespace(resource);
 
-            var lSingleton = LinkSingleton.INSTANCE;
+            var lSingleton = OperatorState.INSTANCE;
 
             var linkResources = new ArrayList<>(lSingleton.getLinkResources(resNamespace));
 
@@ -624,7 +624,7 @@ public abstract class HelmReleaseTh2Op<CR extends Th2CustomResource> extends Abs
 
             hiddenLinksRes.getSpec().getBoxesRelation().setRouterMq(updatedHiddenLinks);
 
-            LinkSingleton.INSTANCE.setLinkResources(resNamespace, linkResources);
+            OperatorState.INSTANCE.setLinkResources(resNamespace, linkResources);
 
             logger.info("{} hidden links has been refreshed successfully with '{}.{}'", context.getBoxAlias(),
                 resNamespace, resName);

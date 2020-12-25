@@ -11,56 +11,59 @@
  * limitations under the License.
  */
 
-package com.exactpro.th2.infraoperator.spec.link.singleton;
+package com.exactpro.th2.infraoperator;
 
 import com.exactpro.th2.infraoperator.model.box.schema.link.EnqueuedLink;
 import com.exactpro.th2.infraoperator.spec.link.Th2Link;
+import com.exactpro.th2.infraoperator.spec.link.relation.dictionaries.DictionaryBinding;
 import com.exactpro.th2.infraoperator.spec.link.relation.pins.PinCoupling;
 import com.exactpro.th2.infraoperator.spec.link.relation.pins.PinCouplingGRPC;
-import com.exactpro.th2.infraoperator.spec.link.relation.dictionaries.DictionaryBinding;
 
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.locks.Lock;
+import java.util.concurrent.locks.ReentrantLock;
 import java.util.stream.Collectors;
 
 import static com.exactpro.th2.infraoperator.operator.StoreHelmTh2Op.EVENT_STORAGE_BOX_ALIAS;
 import static com.exactpro.th2.infraoperator.operator.StoreHelmTh2Op.MESSAGE_STORAGE_BOX_ALIAS;
 
 
-public enum LinkSingleton {
-
+public enum OperatorState {
     INSTANCE;
 
-
-    private Map<String, Object> lockPerNamespace = new ConcurrentHashMap<>();
-
-    private Map<String, ClusterLinks> linksPerNamespace = new ConcurrentHashMap<>();
+    private Map<String, Lock> locks = new ConcurrentHashMap<>();
+    private Map<String, NamespaceState> namespaceStates = new ConcurrentHashMap<>();
 
 
     public void setLinkResources(String namespace, List<Th2Link> linkResources) {
         computeIfAbsent(namespace).setLinkResources(new ArrayList<>(linkResources));
     }
 
+
     public void setMqActiveLinks(String namespace, List<EnqueuedLink> activeLinks) {
         computeIfAbsent(namespace).setMqActiveLinks(new ArrayList<>(activeLinks));
     }
+
 
     public void setGrpcActiveLinks(String namespace, List<PinCouplingGRPC> activeLinks) {
         computeIfAbsent(namespace).setGrpcActiveLinks(new ArrayList<>(activeLinks));
     }
 
+
     public void setDictionaryActiveLinks(String namespace, List<DictionaryBinding> activeLinks) {
-        computeIfAbsent(namespace).setDictionaryActiveLinks(new ArrayList<>(activeLinks));
+        computeIfAbsent(namespace).setDictionaryBindings(new ArrayList<>(activeLinks));
     }
 
 
     public List<Th2Link> getLinkResources(String namespace) {
-        var links = linksPerNamespace.get(namespace);
+        var links = namespaceStates.get(namespace);
         return Objects.nonNull(links) ? Collections.unmodifiableList(links.getLinkResources()) : List.of();
     }
 
+
     public List<PinCoupling> getAllBoxesActiveLinks(String namespace) {
-        var links = linksPerNamespace.get(namespace);
+        var links = namespaceStates.get(namespace);
         if (Objects.isNull(links)) {
             return List.of();
         }
@@ -69,19 +72,22 @@ public enum LinkSingleton {
         return Collections.unmodifiableList(allLinks);
     }
 
+
     public List<EnqueuedLink> getMqActiveLinks(String namespace) {
-        var links = linksPerNamespace.get(namespace);
+        var links = namespaceStates.get(namespace);
         return Objects.nonNull(links) ? Collections.unmodifiableList(links.getMqActiveLinks()) : List.of();
     }
 
+
     public List<PinCouplingGRPC> getGrpcActiveLinks(String namespace) {
-        var links = linksPerNamespace.get(namespace);
+        var links = namespaceStates.get(namespace);
         return Objects.nonNull(links) ? Collections.unmodifiableList(links.getGrpcActiveLinks()) : List.of();
     }
 
+
     public List<DictionaryBinding> getDictionaryActiveLinks(String namespace) {
-        var links = linksPerNamespace.get(namespace);
-        return Objects.nonNull(links) ? Collections.unmodifiableList(links.getDictionaryActiveLinks()) : List.of();
+        var links = namespaceStates.get(namespace);
+        return Objects.nonNull(links) ? Collections.unmodifiableList(links.getDictionaryBindings()) : List.of();
     }
 
 
@@ -91,11 +97,13 @@ public enum LinkSingleton {
                 .collect(Collectors.toUnmodifiableList());
     }
 
+
     public List<EnqueuedLink> getEventStorageActiveLinks(String namespace) {
         return getMqActiveLinks(namespace).stream()
                 .filter(queueLinkBunch -> queueLinkBunch.getTo().getBoxName().equals(EVENT_STORAGE_BOX_ALIAS))
                 .collect(Collectors.toUnmodifiableList());
     }
+
 
     public List<EnqueuedLink> getGeneralMqActiveLinks(String namespace) {
         return getMqActiveLinks(namespace).stream()
@@ -104,13 +112,76 @@ public enum LinkSingleton {
                 .collect(Collectors.toUnmodifiableList());
     }
 
-    public Object getLock(String namespace) {
-        return lockPerNamespace.computeIfAbsent(namespace, n -> new Object());
+
+    public Lock getLock(String namespace) {
+        return locks.computeIfAbsent(namespace, k -> new ReentrantLock());
     }
 
 
-    private ClusterLinks computeIfAbsent(String namespace) {
-        return linksPerNamespace.computeIfAbsent(namespace, s -> new ClusterLinks());
+    private NamespaceState computeIfAbsent(String namespace) {
+        return namespaceStates.computeIfAbsent(namespace, s -> new NamespaceState());
+    }
+
+
+
+    public static class NamespaceState {
+
+        private List<Th2Link> linkResources = new ArrayList<>();
+        private List<EnqueuedLink> mqActiveLinks = new ArrayList<>();
+        private List<PinCouplingGRPC> grpcActiveLinks = new ArrayList<>();
+        private List<DictionaryBinding> dictionaryBindings = new ArrayList<>();
+
+
+        public List<Th2Link> getLinkResources() {
+            return this.linkResources;
+        }
+
+
+        public List<EnqueuedLink> getMqActiveLinks() {
+            return this.mqActiveLinks;
+        }
+
+
+        public List<PinCouplingGRPC> getGrpcActiveLinks() {
+            return this.grpcActiveLinks;
+        }
+
+
+        public List<DictionaryBinding> getDictionaryBindings() {
+            return this.dictionaryBindings;
+        }
+
+
+        public void setLinkResources(List<Th2Link> linkResources) {
+            this.linkResources = linkResources;
+        }
+
+
+        public void setMqActiveLinks(List<EnqueuedLink> mqActiveLinks) {
+            this.mqActiveLinks = mqActiveLinks;
+        }
+
+
+        public void setGrpcActiveLinks(List<PinCouplingGRPC> grpcActiveLinks) {
+            this.grpcActiveLinks = grpcActiveLinks;
+        }
+
+
+        public void setDictionaryBindings(List<DictionaryBinding> dictionaryBindings) {
+            this.dictionaryBindings = dictionaryBindings;
+        }
+
+
+        @Override
+        public boolean equals(final Object o) {
+            throw new AssertionError("method not supported");
+        }
+
+
+        @Override
+        public int hashCode() {
+            throw new AssertionError("method not supported");
+        }
     }
 
 }
