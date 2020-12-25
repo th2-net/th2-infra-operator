@@ -15,7 +15,7 @@ package com.exactpro.th2.infraoperator.operator;
 
 import com.exactpro.th2.infraoperator.operator.context.HelmOperatorContext;
 import com.exactpro.th2.infraoperator.spec.Th2CustomResource;
-import com.exactpro.th2.infraoperator.spec.link.singleton.LinkSingleton;
+import com.exactpro.th2.infraoperator.OperatorState;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -56,7 +56,7 @@ public abstract class StoreHelmTh2Op<CR extends Th2CustomResource> extends HelmR
 
         var msNamespace = extractNamespace(resource);
 
-        synchronized (LinkSingleton.INSTANCE.getLock(msNamespace)) {
+        synchronized (OperatorState.INSTANCE.getLock(msNamespace)) {
 
             var msName = extractName(resource);
 

@@ -28,7 +28,7 @@ import com.exactpro.th2.infraoperator.operator.context.HelmOperatorContext;
 import com.exactpro.th2.infraoperator.spec.Th2CustomResource;
 import com.exactpro.th2.infraoperator.spec.dictionary.Th2Dictionary;
 import com.exactpro.th2.infraoperator.spec.link.Th2Link;
-import com.exactpro.th2.infraoperator.spec.link.singleton.LinkSingleton;
+import com.exactpro.th2.infraoperator.OperatorState;
 import com.exactpro.th2.infraoperator.spec.shared.Identifiable;
 import com.exactpro.th2.infraoperator.spec.strategy.linkResolver.dictionary.impl.DefaultDictionaryLinkResolver;
 import com.exactpro.th2.infraoperator.spec.strategy.linkResolver.dictionary.impl.EmptyDictionaryLinkResolver;
@@ -399,7 +399,7 @@ public class DefaultWatchManager {
                 logger.info("Processing {} event for \"{}\"", action, resourceLabel);
 
                 if (configMapName.equals(OperatorConfig.INSTANCE.getRabbitMQConfigMapName())) {
-                    synchronized (LinkSingleton.INSTANCE.getLock(namespace)) {
+                    synchronized (OperatorState.INSTANCE.getLock(namespace)) {
                         OperatorConfig opConfig = OperatorConfig.INSTANCE;
                         ConfigMaps configMaps = ConfigMaps.INSTANCE;
                         RabbitMQConfig rabbitMQConfig = configMaps.getRabbitMQConfig4Namespace(namespace);
@@ -480,7 +480,7 @@ public class DefaultWatchManager {
         private Set<String> getLinkedResources(Th2Dictionary dictionary) {
             Set<String> resources = new HashSet<>();
 
-            var lSingleton = LinkSingleton.INSTANCE;
+            var lSingleton = OperatorState.INSTANCE;
 
             for (var linkRes : lSingleton.getLinkResources(extractNamespace(dictionary))) {
                 for (var dicLink : linkRes.getSpec().getDictionariesRelation()) {
@@ -501,9 +501,9 @@ public class DefaultWatchManager {
             logger.debug("Received {} event for \"{}\"", action, CustomResourceUtils.annotationFor(th2Link));
 
             var linkNamespace = extractNamespace(th2Link);
-            synchronized (LinkSingleton.INSTANCE.getLock(linkNamespace)) {
+            synchronized (OperatorState.INSTANCE.getLock(linkNamespace)) {
 
-                var linkSingleton = LinkSingleton.INSTANCE;
+                var linkSingleton = OperatorState.INSTANCE;
 
                 var resourceLinks = new ArrayList<>(linkSingleton.getLinkResources(linkNamespace));
 

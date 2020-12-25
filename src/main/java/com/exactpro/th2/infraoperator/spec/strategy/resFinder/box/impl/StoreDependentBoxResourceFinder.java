@@ -15,7 +15,7 @@ package com.exactpro.th2.infraoperator.spec.strategy.resFinder.box.impl;
 
 import com.exactpro.th2.infraoperator.spec.Th2CustomResource;
 import com.exactpro.th2.infraoperator.spec.Th2Spec;
-import com.exactpro.th2.infraoperator.spec.link.singleton.LinkSingleton;
+import com.exactpro.th2.infraoperator.OperatorState;
 import com.exactpro.th2.infraoperator.spec.shared.PinSpec;
 import com.exactpro.th2.infraoperator.spec.strategy.resFinder.box.BoxResourceFinder;
 import com.exactpro.th2.infraoperator.util.ExtractUtils;
@@ -50,7 +50,7 @@ public class StoreDependentBoxResourceFinder implements BoxResourceFinder {
 
         if (ExtractUtils.isStorageBox(name)) {
 
-            synchronized (LinkSingleton.INSTANCE.getLock(namespace)) {
+            synchronized (OperatorState.INSTANCE.getLock(namespace)) {
 
                 var stPins = generateStoragePins(namespace);
 
@@ -80,7 +80,7 @@ public class StoreDependentBoxResourceFinder implements BoxResourceFinder {
 
 
     private List<PinSpec> generateStoragePins(String namespace) {
-        return LinkSingleton.INSTANCE.getLinkResources(namespace).stream()
+        return OperatorState.INSTANCE.getLinkResources(namespace).stream()
                 .filter(ExtractUtils::isStorageResource)
                 .flatMap(lr -> lr.getSpec().getBoxesRelation().getRouterMq().stream())
                 .map(l -> {
