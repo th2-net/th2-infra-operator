@@ -13,12 +13,12 @@
 
 package com.exactpro.th2.infraoperator.spec.strategy.linkResolver.mq.impl;
 
+import com.exactpro.th2.infraoperator.OperatorState;
 import com.exactpro.th2.infraoperator.configuration.OperatorConfig;
 import com.exactpro.th2.infraoperator.configuration.RabbitMQConfig;
 import com.exactpro.th2.infraoperator.configuration.RabbitMQManagementConfig;
 import com.exactpro.th2.infraoperator.spec.Th2CustomResource;
 import com.exactpro.th2.infraoperator.spec.link.relation.pins.PinMQ;
-import com.exactpro.th2.infraoperator.OperatorState;
 import com.exactpro.th2.infraoperator.spec.shared.DirectionAttribute;
 import com.exactpro.th2.infraoperator.spec.strategy.linkResolver.queue.QueueName;
 import com.exactpro.th2.infraoperator.util.ExtractUtils;
@@ -29,10 +29,9 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
-import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
-import java.util.stream.Collectors;
 
 import static com.exactpro.th2.infraoperator.util.ExtractUtils.extractName;
 
@@ -46,12 +45,14 @@ public class DeclareQueueResolver {
         this.rabbitMQManagementConfig = OperatorConfig.INSTANCE.getRabbitMQManagementConfig();
     }
 
+
     public void resolveAdd(Th2CustomResource resource) {
 
         String namespace = ExtractUtils.extractNamespace(resource);
         RabbitMQContext.createVHostIfAbsent(namespace);
         declareQueueBunch(namespace, resource);
     }
+
 
     public void resolveDelete(Th2CustomResource resource) {
 
@@ -100,30 +101,33 @@ public class DeclareQueueResolver {
         return boxQueueNames;
     }
 
+
     @SneakyThrows
     private Set<String> getBoxQueues(String namespace, String boxName) {
+
         RabbitMQConfig rabbitMQConfig = RabbitMQContext.getRabbitMQConfig(namespace);
         List<QueueInfo> queueInfoList = RabbitMQContext.getQueues(rabbitMQConfig.getVHost());
 
-        List<QueueName> queueNames = queueInfoList.stream()
-                .map(queueInfo -> QueueName.fromString(queueInfo.getName()))
-                .collect(Collectors.toList());
-
-        return queueNames.stream()
-                .filter(queueName -> queueName != null && queueName.getBoxName().equals(boxName))
-                .map(QueueName::toString)
-                .collect(Collectors.toSet());
+        Set<String> queueNames = new HashSet<>();
+        queueInfoList.forEach(q -> {
+            var queue = QueueName.fromString(q.getName());
+            if (queue != null && queue.getBoxName().equals(boxName))
+                queueNames.add(q.getName());
+        });
+        return queueNames;
     }
+
 
     private void removeLinkedQueues(Set<String> boxQueueNames, String namespace) {
         var lSingleton = OperatorState.INSTANCE;
-        var mqActiveLinks = new ArrayList<>(lSingleton.getMqActiveLinks(namespace));
+        var mqActiveLinks = lSingleton.getMqActiveLinks(namespace);
+
         //remove queues that appear in active links
-        Set<String> activeQueueNames = mqActiveLinks.stream()
-                .map(mqActiveLink -> mqActiveLink.getQueueDescription().getName())
-                .collect(Collectors.toSet());
-        boxQueueNames.removeAll(activeQueueNames);
+        mqActiveLinks.forEach(enqueuedLink ->
+                boxQueueNames.remove(enqueuedLink.getQueueDescription().getName())
+        );
     }
+
 
     @SneakyThrows
     private Channel getChannel(String namespace) {
