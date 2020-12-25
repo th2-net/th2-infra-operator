@@ -13,7 +13,7 @@
 
 package com.exactpro.th2.infraoperator.spec.strategy.linkResolver.mq.impl;
 
-import com.exactpro.th2.infraoperator.model.box.schema.link.QueueLinkBunch;
+import com.exactpro.th2.infraoperator.model.box.schema.link.EnqueuedLink;
 import com.exactpro.th2.infraoperator.spec.Th2CustomResource;
 import com.exactpro.th2.infraoperator.spec.link.Th2Link;
 import com.exactpro.th2.infraoperator.spec.strategy.linkResolver.mq.QueueLinkResolver;
@@ -30,17 +30,17 @@ public class EmptyQueueLinkResolver implements QueueLinkResolver {
 
 
     @Override
-    public List<QueueLinkBunch> resolve(List<Th2Link> linkResources) {
+    public List<EnqueuedLink> resolve(List<Th2Link> linkResources) {
         return new ArrayList<>();
     }
 
     @Override
-    public void resolve(List<Th2Link> linkResources, List<QueueLinkBunch> grpcActiveLinks) {
+    public void resolve(List<Th2Link> linkResources, List<EnqueuedLink> grpcActiveLinks) {
 
     }
 
     @Override
-    public void resolve(List<Th2Link> linkResources, List<QueueLinkBunch> grpcActiveLinks, Th2CustomResource... newResources) {
+    public void resolve(List<Th2Link> linkResources, List<EnqueuedLink> grpcActiveLinks, Th2CustomResource... newResources) {
 
     }
 

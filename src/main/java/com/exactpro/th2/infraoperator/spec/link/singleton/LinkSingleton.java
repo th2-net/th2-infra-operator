@@ -13,7 +13,7 @@
 
 package com.exactpro.th2.infraoperator.spec.link.singleton;
 
-import com.exactpro.th2.infraoperator.model.box.schema.link.QueueLinkBunch;
+import com.exactpro.th2.infraoperator.model.box.schema.link.EnqueuedLink;
 import com.exactpro.th2.infraoperator.spec.link.Th2Link;
 import com.exactpro.th2.infraoperator.spec.link.relation.pins.PinCoupling;
 import com.exactpro.th2.infraoperator.spec.link.relation.pins.PinCouplingGRPC;
@@ -41,7 +41,7 @@ public enum LinkSingleton {
         computeIfAbsent(namespace).setLinkResources(new ArrayList<>(linkResources));
     }
 
-    public void setMqActiveLinks(String namespace, List<QueueLinkBunch> activeLinks) {
+    public void setMqActiveLinks(String namespace, List<EnqueuedLink> activeLinks) {
         computeIfAbsent(namespace).setMqActiveLinks(new ArrayList<>(activeLinks));
     }
 
@@ -69,7 +69,7 @@ public enum LinkSingleton {
         return Collections.unmodifiableList(allLinks);
     }
 
-    public List<QueueLinkBunch> getMqActiveLinks(String namespace) {
+    public List<EnqueuedLink> getMqActiveLinks(String namespace) {
         var links = linksPerNamespace.get(namespace);
         return Objects.nonNull(links) ? Collections.unmodifiableList(links.getMqActiveLinks()) : List.of();
     }
@@ -85,19 +85,19 @@ public enum LinkSingleton {
     }
 
 
-    public List<QueueLinkBunch> getMsgStorageActiveLinks(String namespace) {
+    public List<EnqueuedLink> getMsgStorageActiveLinks(String namespace) {
         return getMqActiveLinks(namespace).stream()
                 .filter(queueLinkBunch -> queueLinkBunch.getTo().getBoxName().equals(MESSAGE_STORAGE_BOX_ALIAS))
                 .collect(Collectors.toUnmodifiableList());
     }
 
-    public List<QueueLinkBunch> getEventStorageActiveLinks(String namespace) {
+    public List<EnqueuedLink> getEventStorageActiveLinks(String namespace) {
         return getMqActiveLinks(namespace).stream()
                 .filter(queueLinkBunch -> queueLinkBunch.getTo().getBoxName().equals(EVENT_STORAGE_BOX_ALIAS))
                 .collect(Collectors.toUnmodifiableList());
     }
 
-    public List<QueueLinkBunch> getGeneralMqActiveLinks(String namespace) {
+    public List<EnqueuedLink> getGeneralMqActiveLinks(String namespace) {
         return getMqActiveLinks(namespace).stream()
                 .filter(queueLinkBunch -> !queueLinkBunch.getTo().getBoxName().equals(MESSAGE_STORAGE_BOX_ALIAS)
                         && !queueLinkBunch.getTo().getBoxName().equals(EVENT_STORAGE_BOX_ALIAS))

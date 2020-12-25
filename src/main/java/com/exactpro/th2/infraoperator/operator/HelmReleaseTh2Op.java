@@ -20,7 +20,7 @@ import com.exactpro.th2.infraoperator.model.box.configuration.grpc.GrpcRouterCon
 import com.exactpro.th2.infraoperator.model.box.configuration.grpc.factory.GrpcRouterConfigFactory;
 import com.exactpro.th2.infraoperator.model.box.configuration.mq.MessageRouterConfiguration;
 import com.exactpro.th2.infraoperator.model.box.configuration.mq.factory.MessageRouterConfigFactory;
-import com.exactpro.th2.infraoperator.model.box.schema.link.QueueLinkBunch;
+import com.exactpro.th2.infraoperator.model.box.schema.link.EnqueuedLink;
 import com.exactpro.th2.infraoperator.operator.context.HelmOperatorContext;
 import com.exactpro.th2.infraoperator.spec.Th2CustomResource;
 import com.exactpro.th2.infraoperator.spec.Th2Spec;
@@ -509,7 +509,7 @@ public abstract class HelmReleaseTh2Op<CR extends Th2CustomResource> extends Abs
 
         protected abstract void refreshMqLinks(
             List<Th2Link> linkResources,
-            List<QueueLinkBunch> activeLinks,
+            List<EnqueuedLink> activeLinks,
             Th2CustomResource... newResources
         );
 
@@ -541,7 +541,7 @@ public abstract class HelmReleaseTh2Op<CR extends Th2CustomResource> extends Abs
         }
 
         @Override
-        protected void refreshMqLinks(List<Th2Link> linkResources, List<QueueLinkBunch> mqActiveLinks,
+        protected void refreshMqLinks(List<Th2Link> linkResources, List<EnqueuedLink> mqActiveLinks,
                                       Th2CustomResource... newResources) {
             queueGenLinkResolver.resolve(linkResources, mqActiveLinks, newResources);
         }
@@ -573,7 +573,7 @@ public abstract class HelmReleaseTh2Op<CR extends Th2CustomResource> extends Abs
         }
 
         @Override
-        protected void refreshMqLinks(List<Th2Link> linkResources, List<QueueLinkBunch> mqActiveLinks,
+        protected void refreshMqLinks(List<Th2Link> linkResources, List<EnqueuedLink> mqActiveLinks,
                                       Th2CustomResource... newResources) {
             queueGenLinkResolver.resolve(linkResources, mqActiveLinks);
         }

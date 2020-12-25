@@ -17,7 +17,7 @@ import com.exactpro.th2.infraoperator.model.box.configuration.mq.MessageRouterCo
 import com.exactpro.th2.infraoperator.model.box.configuration.mq.QueueConfiguration;
 import com.exactpro.th2.infraoperator.model.box.configuration.mq.RouterFilterConfiguration;
 import com.exactpro.th2.infraoperator.model.box.configuration.mq.factory.MessageRouterConfigFactory;
-import com.exactpro.th2.infraoperator.model.box.schema.link.QueueBunch;
+import com.exactpro.th2.infraoperator.model.box.schema.link.QueueDescription;
 import com.exactpro.th2.infraoperator.model.kubernetes.configmaps.ConfigMaps;
 import com.exactpro.th2.infraoperator.spec.Th2CustomResource;
 import com.exactpro.th2.infraoperator.spec.link.relation.pins.PinMQ;
@@ -59,7 +59,7 @@ public class DefaultMessageRouterConfigFactory implements MessageRouterConfigFac
 
             PinMQ mqPin = new PinMQ(boxName, pin.getName());
 
-            QueueBunch queueSpec;
+            QueueDescription queueSpec;
 
             if (attrs.contains(DirectionAttribute.publish.name())) {
                 queueSpec = createQueueBunch(ExtractUtils.extractNamespace(resource), null, mqPin);
@@ -73,7 +73,7 @@ public class DefaultMessageRouterConfigFactory implements MessageRouterConfigFac
                     .attributes(pin.getAttributes())
                     .filters(specToConfigFilters(pin.getFilters()))
                     .name(queueSpec.getRoutingKey())
-                    .queue(queueSpec.getQueue())
+                    .queue(queueSpec.getName())
                     .build();
 
             queues.put(pin.getName(), queueConfig);
@@ -95,7 +95,7 @@ public class DefaultMessageRouterConfigFactory implements MessageRouterConfigFac
     }
 
     @Nullable
-    private QueueBunch createQueueBunch(String namespace, PinMQ toBox, PinMQ fromBox) {
+    private QueueDescription createQueueBunch(String namespace, PinMQ toBox, PinMQ fromBox) {
 
         var rabbitMQConfig = ConfigMaps.INSTANCE.getRabbitMQConfig4Namespace(namespace);
 
@@ -107,7 +107,7 @@ public class DefaultMessageRouterConfigFactory implements MessageRouterConfigFac
 
         String fullRoutingKey = fromBox == null ? EMPTY_STRING_ALIAS : new RoutingKeyName(namespace, fromBox).toString();
 
-        return new QueueBunch(
+        return new QueueDescription(
                 fullQueue,
                 fullRoutingKey,
                 rabbitMQConfig.getExchangeName()

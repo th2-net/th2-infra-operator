@@ -13,20 +13,20 @@
 
 package com.exactpro.th2.infraoperator.spec.strategy.linkResolver.mq;
 
-import com.exactpro.th2.infraoperator.model.box.schema.link.QueueLinkBunch;
-import com.exactpro.th2.infraoperator.model.box.schema.link.QueueBunch;
+import com.exactpro.th2.infraoperator.model.box.schema.link.EnqueuedLink;
+import com.exactpro.th2.infraoperator.model.box.schema.link.QueueDescription;
 import com.exactpro.th2.infraoperator.spec.link.Th2Link;
 import com.exactpro.th2.infraoperator.spec.strategy.linkResolver.LinkResolver;
 
 import java.util.List;
 
 
-public interface QueueLinkResolver extends LinkResolver<QueueLinkBunch> {
+public interface QueueLinkResolver extends LinkResolver<EnqueuedLink> {
 
     /**
      * Generates active links with already generated
-     * corresponding {@link QueueBunch}s based on the th2 link resources.
+     * corresponding {@link QueueDescription}s based on the th2 link resources.
      */
-    List<QueueLinkBunch> resolve(List<Th2Link> linkResources);
+    List<EnqueuedLink> resolve(List<Th2Link> linkResources);
 
 }
