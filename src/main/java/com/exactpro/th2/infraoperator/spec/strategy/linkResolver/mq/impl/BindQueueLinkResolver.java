@@ -15,8 +15,8 @@ package com.exactpro.th2.infraoperator.spec.strategy.linkResolver.mq.impl;
 
 import com.exactpro.th2.infraoperator.configuration.OperatorConfig;
 import com.exactpro.th2.infraoperator.configuration.RabbitMQManagementConfig;
-import com.exactpro.th2.infraoperator.model.box.schema.link.QueueBunch;
-import com.exactpro.th2.infraoperator.model.box.schema.link.QueueLinkBunch;
+import com.exactpro.th2.infraoperator.model.box.schema.link.QueueDescription;
+import com.exactpro.th2.infraoperator.model.box.schema.link.EnqueuedLink;
 import com.exactpro.th2.infraoperator.spec.Th2CustomResource;
 import com.exactpro.th2.infraoperator.spec.link.Th2Link;
 import com.exactpro.th2.infraoperator.spec.link.relation.pins.PinMQ;
@@ -61,9 +61,9 @@ public class BindQueueLinkResolver implements QueueLinkResolver {
 
 
     @Override
-    public List<QueueLinkBunch> resolve(List<Th2Link> linkResources) {
+    public List<EnqueuedLink> resolve(List<Th2Link> linkResources) {
 
-        List<QueueLinkBunch> qAssignedLinks = new ArrayList<>();
+        List<EnqueuedLink> qAssignedLinks = new ArrayList<>();
 
         resolve(linkResources, qAssignedLinks);
 
@@ -71,12 +71,12 @@ public class BindQueueLinkResolver implements QueueLinkResolver {
     }
 
     @Override
-    public void resolve(List<Th2Link> linkResources, List<QueueLinkBunch> activeLinks) {
+    public void resolve(List<Th2Link> linkResources, List<EnqueuedLink> activeLinks) {
         resolve(linkResources, activeLinks, new Th2CustomResource[]{});
     }
 
     @Override
-    public void resolve(List<Th2Link> linkResources, List<QueueLinkBunch> activeLinks, Th2CustomResource... newResources) {
+    public void resolve(List<Th2Link> linkResources, List<EnqueuedLink> activeLinks, Th2CustomResource... newResources) {
 
         var activeLinksCopy = new ArrayList<>(activeLinks);
 
@@ -99,14 +99,14 @@ public class BindQueueLinkResolver implements QueueLinkResolver {
                 bindQueues(linkNamespace, queueBunch, resourceCouple.to, link.getTo());
 
                 logger.info("Queue '{}' of link {{}.{} -> {}.{}} successfully bound",
-                        queueBunch.getQueue(), linkNamespace, link.getFrom(), linkNamespace, link.getTo());
+                        queueBunch.getName(), linkNamespace, link.getFrom(), linkNamespace, link.getTo());
 
                 var alreadyExistLink = activeLinksCopy.stream()
-                        .filter(l -> l.getQueueBunch().equals(queueBunch) && l.getMqLinkBunch().equals(link))
+                        .filter(l -> l.getQueueDescription().equals(queueBunch) && l.getPinCoupling().equals(link))
                         .findFirst()
                         .orElse(null);
 
-                activeLinks.add(Objects.requireNonNullElseGet(alreadyExistLink, () -> new QueueLinkBunch(link, queueBunch)));
+                activeLinks.add(Objects.requireNonNullElseGet(alreadyExistLink, () -> new EnqueuedLink(link, queueBunch)));
 
             }
         }
@@ -119,7 +119,7 @@ public class BindQueueLinkResolver implements QueueLinkResolver {
 
 
     @SneakyThrows
-    private void bindQueues(String namespace, QueueBunch queueBunch, Th2CustomResource resource, PinMQ mqPin) {
+    private void bindQueues(String namespace, QueueDescription queueBunch, Th2CustomResource resource, PinMQ mqPin) {
 
 
         Channel channel = RabbitMQContext.getChannel(namespace);
@@ -132,17 +132,17 @@ public class BindQueueLinkResolver implements QueueLinkResolver {
         }
 
         PinSettings pinSettings = resource.getSpec().getPin(mqPin.getPinName()).getSettings();
-        channel.queueDeclare(queueBunch.getQueue(), rabbitMQManagementConfig.isPersistence(), false, false, RabbitMQContext.generateQueueArguments(pinSettings));
-        channel.queueBind(queueBunch.getQueue(), queueBunch.getExchange(), queueBunch.getRoutingKey());
+        channel.queueDeclare(queueBunch.getName(), rabbitMQManagementConfig.isPersistence(), false, false, RabbitMQContext.generateQueueArguments(pinSettings));
+        channel.queueBind(queueBunch.getName(), queueBunch.getExchange(), queueBunch.getRoutingKey());
 
     }
 
     @SneakyThrows
-    private void removeExtinctQueue(String namespace, List<QueueLinkBunch> oldLinks, List<QueueLinkBunch> newLinks) {
+    private void removeExtinctQueue(String namespace, List<EnqueuedLink> oldLinks, List<EnqueuedLink> newLinks) {
 
         oldLinks.removeIf(qlb -> newLinks.stream().anyMatch(newQlb ->
-                qlb.getQueueBunch().getQueue().equals(newQlb.getQueueBunch().getQueue())
-                        && qlb.getQueueBunch().getRoutingKey().equals(newQlb.getQueueBunch().getRoutingKey())
+                qlb.getQueueDescription().getName().equals(newQlb.getQueueDescription().getName())
+                        && qlb.getQueueDescription().getRoutingKey().equals(newQlb.getQueueDescription().getRoutingKey())
         ));
 
         Channel channel = RabbitMQContext.getChannel(namespace);
@@ -151,8 +151,8 @@ public class BindQueueLinkResolver implements QueueLinkResolver {
 
             var fromBox = extinctLink.getFrom();
             var toBox = extinctLink.getTo();
-            var queueBunch = extinctLink.getQueueBunch();
-            var queue = queueBunch.getQueue();
+            var queueBunch = extinctLink.getQueueDescription();
+            var queue = queueBunch.getName();
             var routingKey = queueBunch.getRoutingKey();
 
             channel.queueUnbind(queue, queueBunch.getExchange(), routingKey);
@@ -178,16 +178,16 @@ public class BindQueueLinkResolver implements QueueLinkResolver {
 
     }
 
-    private boolean isQueueUsed(QueueBunch targetQB, List<QueueLinkBunch> links) {
+    private boolean isQueueUsed(QueueDescription targetQB, List<EnqueuedLink> links) {
         return links.stream().anyMatch(qlb -> {
-            var qb = qlb.getQueueBunch();
-            return qb.getQueue().equals(targetQB.getQueue()) && qb.getExchange().equals(targetQB.getExchange());
+            var qb = qlb.getQueueDescription();
+            return qb.getName().equals(targetQB.getName()) && qb.getExchange().equals(targetQB.getExchange());
         });
     }
 
-    private QueueBunch createQueueBunch(String namespace, PinMQ mqPinFrom, PinMQ mqPinTo) {
+    private QueueDescription createQueueBunch(String namespace, PinMQ mqPinFrom, PinMQ mqPinTo) {
 
-        return new QueueBunch(
+        return new QueueDescription(
                 new QueueName(namespace, mqPinTo).toString(),
                 new RoutingKeyName(namespace, mqPinFrom).toString(),
                 RabbitMQContext.getExchangeName(namespace)

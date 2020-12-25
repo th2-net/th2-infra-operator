@@ -120,7 +120,7 @@ public class DeclareQueueResolver {
         var mqActiveLinks = new ArrayList<>(lSingleton.getMqActiveLinks(namespace));
         //remove queues that appear in active links
         Set<String> activeQueueNames = mqActiveLinks.stream()
-                .map(mqActiveLink -> mqActiveLink.getQueueBunch().getQueue())
+                .map(mqActiveLink -> mqActiveLink.getQueueDescription().getName())
                 .collect(Collectors.toSet());
         boxQueueNames.removeAll(activeQueueNames);
     }
