@@ -19,7 +19,7 @@ import com.exactpro.th2.infraoperator.OperatorState;
 import com.exactpro.th2.infraoperator.spec.shared.PinSpec;
 import com.exactpro.th2.infraoperator.spec.strategy.resFinder.box.BoxResourceFinder;
 import com.exactpro.th2.infraoperator.util.ExtractUtils;
-import com.exactpro.th2.infraoperator.spec.shared.DirectionAttribute;
+import com.exactpro.th2.infraoperator.spec.shared.PinAttribute;
 import com.exactpro.th2.infraoperator.spec.shared.SchemaConnectionType;
 import io.fabric8.kubernetes.api.model.ObjectMeta;
 import org.jetbrains.annotations.Nullable;
@@ -90,14 +90,14 @@ public class StoreDependentBoxResourceFinder implements BoxResourceFinder {
                     pin.setName(toPinName);
                     pin.setConnectionType(SchemaConnectionType.mq);
 
-                    var attributes = new HashSet<>(Set.of(DirectionAttribute.subscribe.name()));
+                    var attributes = new HashSet<>(Set.of(PinAttribute.subscribe.name()));
 
-                    if (toPinName.contains(DirectionAttribute.parsed.name())) {
-                        attributes.add(DirectionAttribute.parsed.name());
-                    } else if (toPinName.contains(DirectionAttribute.raw.name())) {
-                        attributes.add(DirectionAttribute.raw.name());
+                    if (toPinName.contains(PinAttribute.parsed.name())) {
+                        attributes.add(PinAttribute.parsed.name());
+                    } else if (toPinName.contains(PinAttribute.raw.name())) {
+                        attributes.add(PinAttribute.raw.name());
                     } else if (toPinName.equals(EVENT_STORAGE_PIN_ALIAS)) {
-                        attributes.add(DirectionAttribute.event.name());
+                        attributes.add(PinAttribute.event.name());
                     }
 
                     pin.setAttributes(attributes);

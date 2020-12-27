@@ -14,7 +14,7 @@
 package com.exactpro.th2.infraoperator.spec.link.validator.warnPrinter.node.impl;
 
 import com.exactpro.th2.infraoperator.spec.shared.BoxDirection;
-import com.exactpro.th2.infraoperator.spec.shared.DirectionAttribute;
+import com.exactpro.th2.infraoperator.spec.shared.PinAttribute;
 
 public class IncorrectFromPinAttrsNode extends AbstractIncorrectPinAttrsNode {
 
@@ -23,7 +23,7 @@ public class IncorrectFromPinAttrsNode extends AbstractIncorrectPinAttrsNode {
             String resNamespace,
             String resName
     ) {
-        super(pinName, resNamespace, resName, BoxDirection.from.name(), DirectionAttribute.publish.name(), DirectionAttribute.subscribe.name());
+        super(pinName, resNamespace, resName, BoxDirection.from.name(), PinAttribute.publish.name(), PinAttribute.subscribe.name());
     }
 
 }

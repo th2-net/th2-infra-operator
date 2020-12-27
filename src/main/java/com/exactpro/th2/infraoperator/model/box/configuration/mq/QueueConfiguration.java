@@ -13,39 +13,131 @@
 
 package com.exactpro.th2.infraoperator.model.box.configuration.mq;
 
+import com.exactpro.th2.infraoperator.model.box.schema.link.QueueDescription;
+import com.exactpro.th2.infraoperator.spec.strategy.linkResolver.queue.QueueName;
+import com.exactpro.th2.infraoperator.spec.strategy.linkResolver.queue.RoutingKeyName;
+import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
-import lombok.Builder;
-import lombok.Data;
 
+import java.util.Objects;
 import java.util.Set;
 
-@Data
-@JsonDeserialize
-@Builder(toBuilder = true)
-public class QueueConfiguration {
+@JsonDeserialize(builder = QueueConfiguration.Builder.class)
+public final class QueueConfiguration {
 
-    /**
-     * also known as routing key
-     */
-    private String name;
-
-    private String queue;
-
-    private String exchange;
-
+    private QueueDescription queue;
     private Set<String> attributes;
-
     private Set<RouterFilterConfiguration> filters;
 
 
-    protected QueueConfiguration() {
-    }
-
-    protected QueueConfiguration(String name, String queue, String exchange, Set<String> attributes, Set<RouterFilterConfiguration> filters) {
-        this.name = name;
+    public QueueConfiguration(QueueDescription queue, Set<String> attributes, Set<RouterFilterConfiguration> filters) {
         this.queue = queue;
-        this.exchange = exchange;
         this.attributes = attributes;
         this.filters = filters;
+    }
+
+
+    @JsonProperty("queue")
+    public String getQueueName() {
+        return this.queue.getQueueName().toString();
+    }
+
+
+    @JsonProperty("name")
+    public String getRouterKeyName() {
+        return this.queue.getRoutingKey().toString();
+    }
+
+
+    @JsonProperty("exchange")
+    public String getExchange() {
+        return this.queue.getExchange();
+    }
+
+
+    @JsonProperty("attributes")
+    public Set<String> getAttributes() {
+        return this.attributes;
+    }
+
+
+    @JsonProperty("filters")
+    public Set<RouterFilterConfiguration> getFilters() {
+        return this.filters;
+    }
+
+
+    @Override
+    public boolean equals(final Object o) {
+        if (o == this)
+            return true;
+        if (!(o instanceof QueueConfiguration))
+            return false;
+
+        final QueueConfiguration other = (QueueConfiguration) o;
+        return Objects.equals(this.attributes, other.attributes) &&
+                Objects.equals(this.filters, other.filters) &&
+                Objects.equals(this.queue, other.filters);
+    }
+
+
+    public Builder builder() {
+        return new Builder();
+    }
+
+
+    public static class Builder {
+        private String queueName;
+        private String routingkey;
+        private String exchange;
+
+        private Set<String> attributes;
+        private Set<RouterFilterConfiguration> filters;
+
+        Builder() {
+        }
+
+
+        @JsonProperty("queue")
+        public Builder queueName(String queueName) {
+            this.queueName = queueName;
+            return this;
+        }
+
+        @JsonProperty("name")
+        public Builder routingKey(String routingkey) {
+            this.routingkey = routingkey;
+            return this;
+        }
+
+        @JsonProperty("exchange")
+        public Builder exchange(String exchange) {
+            this.exchange = exchange;
+            return this;
+        }
+
+        @JsonProperty("attributes")
+        public Builder attributes(Set<String> attributes) {
+            this.attributes = attributes;
+            return this;
+        }
+
+        @JsonProperty("filters")
+        public Builder filters(Set<RouterFilterConfiguration> filters) {
+            this.filters = filters;
+            return this;
+        }
+
+
+        public QueueConfiguration build() {
+            return new QueueConfiguration(
+                    new QueueDescription(
+                        QueueName.fromString(queueName),
+                        RoutingKeyName.fromString(routingkey),
+                        exchange
+                    ),
+                    attributes,
+                    filters);
+        }
     }
 }

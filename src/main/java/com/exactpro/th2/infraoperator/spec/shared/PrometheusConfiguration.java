@@ -2,24 +2,25 @@ package com.exactpro.th2.infraoperator.spec.shared;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonInclude;
+import com.fasterxml.jackson.annotation.JsonProperty;
+import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 
 @JsonIgnoreProperties(ignoreUnknown = true)
 @JsonInclude(JsonInclude.Include.NON_NULL)
-public class PrometheusConfiguration {
+@JsonDeserialize(builder = PrometheusConfiguration.Builder.class)
+public final class PrometheusConfiguration {
     private String host;
     private String port;
     private String enabled;
 
-    public PrometheusConfiguration() { }
-
-    public PrometheusConfiguration(String host, String port, String enabled) {
+    private PrometheusConfiguration(String host, String port, String enabled) {
         this.host = host;
         this.port = port;
         this.enabled = enabled;
     }
 
-    public static PrometheusConfigurationBuilder builder() {
-        return new PrometheusConfigurationBuilder();
+    public static Builder builder() {
+        return new Builder();
     }
 
     public String getHost() {
@@ -34,37 +35,25 @@ public class PrometheusConfiguration {
         return this.enabled;
     }
 
-    public void setHost(String host) {
-        this.host = host;
-    }
-
-    public void setPort(String port) {
-        this.port = port;
-    }
-
-    public void setEnabled(String enabled) {
-        this.enabled = enabled;
-    }
-
-    public static class PrometheusConfigurationBuilder {
+    public static class Builder {
         private String host;
         private String port;
         private String enabled;
 
-        PrometheusConfigurationBuilder() {
-        }
-
-        public PrometheusConfigurationBuilder host(String host) {
+        @JsonProperty("host")
+        public Builder host(String host) {
             this.host = host;
             return this;
         }
 
-        public PrometheusConfigurationBuilder port(String port) {
+        @JsonProperty("port")
+        public Builder port(String port) {
             this.port = port;
             return this;
         }
 
-        public PrometheusConfigurationBuilder enabled(String enabled) {
+        @JsonProperty("enabled")
+        public Builder enabled(String enabled) {
             this.enabled = enabled;
             return this;
         }

@@ -15,12 +15,12 @@ package com.exactpro.th2.infraoperator.spec.strategy.linkResolver.mq.impl;
 
 import com.exactpro.th2.infraoperator.configuration.OperatorConfig;
 import com.exactpro.th2.infraoperator.configuration.RabbitMQManagementConfig;
-import com.exactpro.th2.infraoperator.model.box.schema.link.QueueDescription;
 import com.exactpro.th2.infraoperator.model.box.schema.link.EnqueuedLink;
+import com.exactpro.th2.infraoperator.model.box.schema.link.QueueDescription;
 import com.exactpro.th2.infraoperator.spec.Th2CustomResource;
 import com.exactpro.th2.infraoperator.spec.link.Th2Link;
-import com.exactpro.th2.infraoperator.spec.link.relation.pins.PinMQ;
 import com.exactpro.th2.infraoperator.spec.link.relation.pins.PinCouplingMQ;
+import com.exactpro.th2.infraoperator.spec.link.relation.pins.PinMQ;
 import com.exactpro.th2.infraoperator.spec.link.validator.ValidationStatus;
 import com.exactpro.th2.infraoperator.spec.link.validator.chain.impl.ExpectedPinAttr;
 import com.exactpro.th2.infraoperator.spec.link.validator.chain.impl.ExpectedPinType;
@@ -84,22 +84,26 @@ public class BindQueueLinkResolver implements QueueLinkResolver {
 
         for (var lRes : linkResources) {
 
-            var linkNamespace = ExtractUtils.extractNamespace(lRes);
+            var namespace = ExtractUtils.extractNamespace(lRes);
 
             for (var link : lRes.getSpec().getBoxesRelation().getRouterMq()) {
 
                 var resourceCouple = validateAndReturnRes(lRes, link, newResources);
+                var queueBunch = new QueueDescription(
+                        new QueueName(namespace, link.getFrom()),
+                        new RoutingKeyName(namespace, link.getTo()),
+                        RabbitMQContext.getExchangeName(namespace)
+                );
 
-                var queueBunch = createQueueBunch(linkNamespace, link.getFrom(), link.getTo());
 
                 if (resourceCouple == null) {
                     continue;
                 }
 
-                bindQueues(linkNamespace, queueBunch, resourceCouple.to, link.getTo());
+                bindQueues(namespace, queueBunch, resourceCouple.to, link.getTo());
 
                 logger.info("Queue '{}' of link {{}.{} -> {}.{}} successfully bound",
-                        queueBunch.getName(), linkNamespace, link.getFrom(), linkNamespace, link.getTo());
+                        queueBunch.getQueueName(), namespace, link.getFrom(), namespace, link.getTo());
 
                 var alreadyExistLink = activeLinksCopy.stream()
                         .filter(l -> l.getQueueDescription().equals(queueBunch) && l.getPinCoupling().equals(link))
@@ -119,7 +123,7 @@ public class BindQueueLinkResolver implements QueueLinkResolver {
 
 
     @SneakyThrows
-    private void bindQueues(String namespace, QueueDescription queueBunch, Th2CustomResource resource, PinMQ mqPin) {
+    private void bindQueues(String namespace, QueueDescription queue, Th2CustomResource resource, PinMQ mqPin) {
 
 
         Channel channel = RabbitMQContext.getChannel(namespace);
@@ -132,8 +136,8 @@ public class BindQueueLinkResolver implements QueueLinkResolver {
         }
 
         PinSettings pinSettings = resource.getSpec().getPin(mqPin.getPinName()).getSettings();
-        channel.queueDeclare(queueBunch.getName(), rabbitMQManagementConfig.isPersistence(), false, false, RabbitMQContext.generateQueueArguments(pinSettings));
-        channel.queueBind(queueBunch.getName(), queueBunch.getExchange(), queueBunch.getRoutingKey());
+        channel.queueDeclare(queue.getQueueName().toString(), rabbitMQManagementConfig.isPersistence(), false, false, RabbitMQContext.generateQueueArguments(pinSettings));
+        channel.queueBind(queue.getQueueName().toString(), queue.getExchange(), queue.getRoutingKey().toString());
 
     }
 
@@ -141,7 +145,7 @@ public class BindQueueLinkResolver implements QueueLinkResolver {
     private void removeExtinctQueue(String namespace, List<EnqueuedLink> oldLinks, List<EnqueuedLink> newLinks) {
 
         oldLinks.removeIf(qlb -> newLinks.stream().anyMatch(newQlb ->
-                qlb.getQueueDescription().getName().equals(newQlb.getQueueDescription().getName())
+                qlb.getQueueDescription().getQueueName().equals(newQlb.getQueueDescription().getQueueName())
                         && qlb.getQueueDescription().getRoutingKey().equals(newQlb.getQueueDescription().getRoutingKey())
         ));
 
@@ -151,9 +155,9 @@ public class BindQueueLinkResolver implements QueueLinkResolver {
 
             var fromBox = extinctLink.getFrom();
             var toBox = extinctLink.getTo();
-            var queueBunch = extinctLink.getQueueDescription();
-            var queue = queueBunch.getName();
-            var routingKey = queueBunch.getRoutingKey();
+            QueueDescription queueBunch = extinctLink.getQueueDescription();
+            var queue = queueBunch.getQueueName().toString();
+            var routingKey = queueBunch.getRoutingKey().toString();
 
             channel.queueUnbind(queue, queueBunch.getExchange(), routingKey);
 
@@ -181,19 +185,10 @@ public class BindQueueLinkResolver implements QueueLinkResolver {
     private boolean isQueueUsed(QueueDescription targetQB, List<EnqueuedLink> links) {
         return links.stream().anyMatch(qlb -> {
             var qb = qlb.getQueueDescription();
-            return qb.getName().equals(targetQB.getName()) && qb.getExchange().equals(targetQB.getExchange());
+            return qb.getQueueName().equals(targetQB.getQueueName()) && qb.getExchange().equals(targetQB.getExchange());
         });
     }
 
-    private QueueDescription createQueueBunch(String namespace, PinMQ mqPinFrom, PinMQ mqPinTo) {
-
-        return new QueueDescription(
-                new QueueName(namespace, mqPinTo).toString(),
-                new RoutingKeyName(namespace, mqPinFrom).toString(),
-                RabbitMQContext.getExchangeName(namespace)
-        );
-
-    }
 
     private ResourceCouple validateAndReturnRes(Th2Link linkRes, PinCouplingMQ link, Th2CustomResource... additionalSource) {
 
