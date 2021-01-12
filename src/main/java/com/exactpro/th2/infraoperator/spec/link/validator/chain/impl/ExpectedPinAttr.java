@@ -19,7 +19,7 @@ import com.exactpro.th2.infraoperator.spec.link.validator.model.DirectionalLinkC
 import com.exactpro.th2.infraoperator.spec.link.validator.warnPrinter.WarnPrinter;
 import com.exactpro.th2.infraoperator.spec.link.validator.warnPrinter.node.impl.*;
 import com.exactpro.th2.infraoperator.spec.shared.BoxDirection;
-import com.exactpro.th2.infraoperator.spec.shared.DirectionAttribute;
+import com.exactpro.th2.infraoperator.spec.shared.PinAttribute;
 import com.exactpro.th2.infraoperator.spec.shared.PinSpec;
 
 
@@ -68,10 +68,10 @@ public class ExpectedPinAttr extends AbstractValidator {
         switch (boxDirection) {
             case to:
 
-                if (pin.getAttributes().contains(DirectionAttribute.publish.name())) {
+                if (pin.getAttributes().contains(PinAttribute.publish.name())) {
                     printError();
                     return ValidationStatus.INVALID_PIN_DIRECTION_ATTR;
-                } else if (!pin.getAttributes().contains(DirectionAttribute.subscribe.name())) {
+                } else if (!pin.getAttributes().contains(PinAttribute.subscribe.name())) {
                     printWarn();
                 }
 
@@ -79,8 +79,8 @@ public class ExpectedPinAttr extends AbstractValidator {
 
             case from:
 
-                if (!pin.getAttributes().contains(DirectionAttribute.publish.name())
-                        || pin.getAttributes().contains(DirectionAttribute.subscribe.name())) {
+                if (!pin.getAttributes().contains(PinAttribute.publish.name())
+                        || pin.getAttributes().contains(PinAttribute.subscribe.name())) {
                     printError();
                     return ValidationStatus.INVALID_PIN_DIRECTION_ATTR;
                 }

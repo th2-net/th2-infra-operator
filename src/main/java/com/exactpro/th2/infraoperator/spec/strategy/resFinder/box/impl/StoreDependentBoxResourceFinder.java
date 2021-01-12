@@ -13,20 +13,19 @@
 
 package com.exactpro.th2.infraoperator.spec.strategy.resFinder.box.impl;
 
+import com.exactpro.th2.infraoperator.OperatorState;
 import com.exactpro.th2.infraoperator.spec.Th2CustomResource;
 import com.exactpro.th2.infraoperator.spec.Th2Spec;
-import com.exactpro.th2.infraoperator.OperatorState;
+import com.exactpro.th2.infraoperator.spec.shared.PinAttribute;
 import com.exactpro.th2.infraoperator.spec.shared.PinSpec;
+import com.exactpro.th2.infraoperator.spec.shared.SchemaConnectionType;
 import com.exactpro.th2.infraoperator.spec.strategy.resFinder.box.BoxResourceFinder;
 import com.exactpro.th2.infraoperator.util.ExtractUtils;
-import com.exactpro.th2.infraoperator.spec.shared.DirectionAttribute;
-import com.exactpro.th2.infraoperator.spec.shared.SchemaConnectionType;
 import io.fabric8.kubernetes.api.model.ObjectMeta;
 import org.jetbrains.annotations.Nullable;
 
 import java.util.HashSet;
 import java.util.List;
-import java.util.Objects;
 import java.util.Set;
 import java.util.stream.Collectors;
 
@@ -47,22 +46,14 @@ public class StoreDependentBoxResourceFinder implements BoxResourceFinder {
     public Th2CustomResource getResource(String name, String namespace, Th2CustomResource... additionalSource) {
 
         var resource = resourceFinder.getResource(name, namespace, additionalSource);
-
         if (ExtractUtils.isStorageBox(name)) {
 
             synchronized (OperatorState.INSTANCE.getLock(namespace)) {
-
-                var stPins = generateStoragePins(namespace);
-
-                if (Objects.nonNull(resource)) {
-                    resource.getSpec().setPins(stPins);
+                if (resource != null)
                     return resource;
-                }
-
-                return generateFakeResource(name, namespace, stPins);
-
+                else
+                    return generateFakeResource(name, namespace, generateStoragePins(namespace));
             }
-
         }
 
         return resource;
@@ -90,14 +81,14 @@ public class StoreDependentBoxResourceFinder implements BoxResourceFinder {
                     pin.setName(toPinName);
                     pin.setConnectionType(SchemaConnectionType.mq);
 
-                    var attributes = new HashSet<>(Set.of(DirectionAttribute.subscribe.name()));
+                    var attributes = new HashSet<>(Set.of(PinAttribute.subscribe.name()));
 
-                    if (toPinName.contains(DirectionAttribute.parsed.name())) {
-                        attributes.add(DirectionAttribute.parsed.name());
-                    } else if (toPinName.contains(DirectionAttribute.raw.name())) {
-                        attributes.add(DirectionAttribute.raw.name());
+                    if (toPinName.contains(PinAttribute.parsed.name())) {
+                        attributes.add(PinAttribute.parsed.name());
+                    } else if (toPinName.contains(PinAttribute.raw.name())) {
+                        attributes.add(PinAttribute.raw.name());
                     } else if (toPinName.equals(EVENT_STORAGE_PIN_ALIAS)) {
-                        attributes.add(DirectionAttribute.event.name());
+                        attributes.add(PinAttribute.event.name());
                     }
 
                     pin.setAttributes(attributes);

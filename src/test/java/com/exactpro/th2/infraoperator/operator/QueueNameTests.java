@@ -17,7 +17,6 @@ public class QueueNameTests {
     @Test
     public void invalidQueueNameTest() {
         String[] tests = new String[] {
-                "",
                 "tes",
                 "link",
                 "link[]",
@@ -44,6 +43,7 @@ public class QueueNameTests {
     public void validQueueNameTest() {
 
         String[] tests = new String[] {
+                "",
                 "link[abc:030:test]",
                 "link[name-space:box:pin]",
                 "link[schema-demo:test-box:ab]",

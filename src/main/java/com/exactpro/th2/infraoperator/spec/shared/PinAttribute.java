@@ -13,7 +13,7 @@
 
 package com.exactpro.th2.infraoperator.spec.shared;
 
-public enum DirectionAttribute {
+public enum PinAttribute {
     raw,
     parsed,
     publish,

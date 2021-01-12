@@ -14,19 +14,18 @@
 package com.exactpro.th2.infraoperator.spec.strategy.linkResolver.queue;
 
 import com.exactpro.th2.infraoperator.spec.link.relation.pins.PinMQ;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+
+import java.util.Objects;
 
 
 public class QueueName extends AbstractName {
 
+    public static final QueueName EMPTY = new QueueName("","","");
+
+    private static final String EMPTY_QUEUE_NAME = "";
     private static final String QUEUE_NAME_PREFIX = "link";
-    private static final String NAMESPACE_REGEXP = "[a-z0-9]([-a-z0-9]*[a-z0-9])?";
-    private static final String BOX_NAME_REGEXP = "[a-z0-9]([-a-z0-9]*[a-z0-9])?";
-    private static final String PIN_NAME_REGEXP = "[a-z0-9]([-_a-z0-9]*[a-z0-9])?";
     private static final String QUEUE_NAME_REGEXP = QUEUE_NAME_PREFIX + "\\[" + NAMESPACE_REGEXP + ":" + BOX_NAME_REGEXP + ":" + PIN_NAME_REGEXP + "\\]";
 
-    private static final Logger logger = LoggerFactory.getLogger(QueueName.class);
 
     public QueueName(String namespace, PinMQ mqPin) {
         super(namespace, mqPin);
@@ -39,17 +38,37 @@ public class QueueName extends AbstractName {
 
 
     @Override
+    public boolean equals(Object o) {
+        if (o == this)
+            return true;
+        if (! (o instanceof QueueName))
+            return false;
+
+        QueueName other = (QueueName) o;
+        return Objects.equals(this.namespace, other.namespace) &&
+                Objects.equals(this.boxName, other.boxName) &&
+                Objects.equals(this.pinName, other.pinName);
+    }
+
+
+    @Override
     public String toString() {
         return QueueName.format(namespace, boxName, pinName);
     }
 
 
     public static String format(String namespace, String boxName, String pinName) {
-        return String.format("%s[%s:%s:%s]", QUEUE_NAME_PREFIX, namespace, boxName, pinName);
+        if  (namespace.equals("") && boxName.equals("") && pinName.equals(""))
+            return EMPTY_QUEUE_NAME;
+        else
+            return String.format("%s[%s:%s:%s]", QUEUE_NAME_PREFIX, namespace, boxName, pinName);
     }
 
 
     public static QueueName fromString(String str) {
+
+        if (str == null || str.equals(EMPTY_QUEUE_NAME))
+            return QueueName.EMPTY;
 
         if (str.matches(QUEUE_NAME_REGEXP)) {
             try {
@@ -59,8 +78,6 @@ public class QueueName extends AbstractName {
             } catch (Exception ignored) {
             }
         }
-        logger.warn("Queue name \"{}\" does not match expected pattern \"{}\"", str
-                , QueueName.format("namespace", "box", "pin"));
         return null;
     }
 }

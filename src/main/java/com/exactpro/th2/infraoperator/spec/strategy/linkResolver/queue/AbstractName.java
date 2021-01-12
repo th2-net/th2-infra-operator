@@ -17,6 +17,10 @@ import com.exactpro.th2.infraoperator.spec.link.relation.pins.PinMQ;
 
 
 abstract class AbstractName {
+    protected static final String NAMESPACE_REGEXP = "[a-z0-9]([-a-z0-9]*[a-z0-9])?";
+    protected static final String BOX_NAME_REGEXP = "[a-z0-9]([-a-z0-9]*[a-z0-9])?";
+    protected static final String PIN_NAME_REGEXP = "[a-z0-9]([-_a-z0-9]*[a-z0-9])?";
+
     protected final String boxName;
     protected final String pinName;
     protected final String namespace;

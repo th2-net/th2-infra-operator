@@ -15,9 +15,15 @@ package com.exactpro.th2.infraoperator.spec.strategy.linkResolver.queue;
 
 import com.exactpro.th2.infraoperator.spec.link.relation.pins.PinMQ;
 
+import java.util.Objects;
+
 public class RoutingKeyName extends AbstractName {
 
-    public static final String ROUTING_KEY_PREFIX = "key";
+    public static final RoutingKeyName EMPTY = new RoutingKeyName("","","");
+
+    private static final String EMPTY_ROUTING_KEY = "";
+    private static final String ROUTING_KEY_PREFIX = "key";
+    private static final String ROUTING_KEY_REGEXP = ROUTING_KEY_PREFIX + "\\[" + NAMESPACE_REGEXP + ":" + BOX_NAME_REGEXP + ":" + PIN_NAME_REGEXP + "\\]";
 
 
     public RoutingKeyName(String namespace, PinMQ mqPin) {
@@ -30,8 +36,42 @@ public class RoutingKeyName extends AbstractName {
     }
 
 
+    public static RoutingKeyName fromString(String str) {
+
+        if (str == null || str.equals(EMPTY_ROUTING_KEY))
+            return RoutingKeyName.EMPTY;
+
+        if (str.matches(ROUTING_KEY_REGEXP)) {
+            try {
+                String enclosedStr = str.substring(ROUTING_KEY_PREFIX.length() + 1, str.length() - 1);
+                String[] tokens = enclosedStr.split(":");
+                return new RoutingKeyName(tokens[0], tokens[1], tokens[2]);
+            } catch (Exception ignored) {
+            }
+        }
+        return null;
+    }
+
+
     public static String format(String namespace, String boxName, String pinName) {
-        return String.format("%s[%s:%s:%s]", ROUTING_KEY_PREFIX, namespace, boxName, pinName);
+        if  (namespace.equals("") && boxName.equals("") && pinName.equals(""))
+            return EMPTY_ROUTING_KEY;
+        else
+            return String.format("%s[%s:%s:%s]", ROUTING_KEY_PREFIX, namespace, boxName, pinName);
+    }
+
+
+    @Override
+    public boolean equals(Object o) {
+        if (o == this)
+            return true;
+        if (! (o instanceof RoutingKeyName))
+            return false;
+
+        RoutingKeyName other = (RoutingKeyName) o;
+        return Objects.equals(this.namespace, other.namespace) &&
+                Objects.equals(this.boxName, other.boxName) &&
+                Objects.equals(this.pinName, other.pinName);
     }
 
 
