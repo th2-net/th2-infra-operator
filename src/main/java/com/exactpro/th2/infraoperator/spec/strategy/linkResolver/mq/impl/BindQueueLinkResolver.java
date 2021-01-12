@@ -161,23 +161,12 @@ public class BindQueueLinkResolver implements QueueLinkResolver {
 
             channel.queueUnbind(queue, queueBunch.getExchange(), routingKey);
 
-            var infoMsg = String.format(
+            String infoMsg = String.format(
                     "Unbind queue '%1$s' -> '%2$s' because link {%5$s.%3$s -> %5$s.%4$s} is not active anymore",
                     queue, routingKey, fromBox, toBox, namespace
             );
 
-            int msgCount = 0;
-
-            if (!isQueueUsed(queueBunch, newLinks)) {
-                msgCount = channel.queueDelete(queue).getMessageCount();
-                infoMsg += ". Queue has been deleted because it's not bound for any routing key";
-            }
-
-            if (msgCount == 0) {
-                logger.info(infoMsg);
-            } else {
-                logger.warn("{}. The queue contained {} messages, which are now lost!", infoMsg, msgCount);
-            }
+            logger.info(infoMsg);
         }
 
     }

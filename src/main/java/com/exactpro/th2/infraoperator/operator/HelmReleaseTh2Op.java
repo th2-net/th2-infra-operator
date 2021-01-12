@@ -615,13 +615,13 @@ public abstract class HelmReleaseTh2Op<CR extends Th2CustomResource> extends Abs
 
             var hiddenLinksRes = getStLinkResAndCreateIfAbsent(resNamespace, linkResources);
 
-            var oldHiddenLinks = hiddenLinksRes.getSpec().getBoxesRelation().getRouterMq();
+            //var oldHiddenLinks = hiddenLinksRes.getSpec().getBoxesRelation().getRouterMq();
 
             var newHiddenLinks = createHiddenLinks(resource);
 
-            var updatedHiddenLinks = update(oldHiddenLinks, newHiddenLinks);
+            //var updatedHiddenLinks = update(oldHiddenLinks, newHiddenLinks);
 
-            hiddenLinksRes.getSpec().getBoxesRelation().setRouterMq(updatedHiddenLinks);
+            hiddenLinksRes.getSpec().getBoxesRelation().setRouterMq(newHiddenLinks);
 
             OperatorState.INSTANCE.setLinkResources(resNamespace, linkResources);
 
