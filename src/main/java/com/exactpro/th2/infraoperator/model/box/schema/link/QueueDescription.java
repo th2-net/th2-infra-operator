@@ -13,31 +13,28 @@
 
 package com.exactpro.th2.infraoperator.model.box.schema.link;
 
-import com.exactpro.th2.infraoperator.spec.strategy.linkResolver.queue.QueueName;
-import com.exactpro.th2.infraoperator.spec.strategy.linkResolver.queue.RoutingKeyName;
-
 import java.util.Objects;
 
 public final class QueueDescription {
 
-    private QueueName queueName;
-    private RoutingKeyName routingKey;
+    private String name;
+    private String routingKey;
     private String exchange;
 
 
-    public QueueDescription(QueueName queueName, RoutingKeyName routingKey, String exchange) {
-        this.queueName = queueName;
+    public QueueDescription(String name, String routingKey, String exchange) {
+        this.name = name;
         this.routingKey = routingKey;
         this.exchange = exchange;
     }
 
 
-    public QueueName getQueueName() {
-        return this.queueName;
+    public String getName() {
+        return this.name;
     }
 
 
-    public RoutingKeyName getRoutingKey() {
+    public String getRoutingKey() {
         return this.routingKey;
     }
 
@@ -56,7 +53,7 @@ public final class QueueDescription {
             return false;
 
         final QueueDescription other = (QueueDescription) o;
-        return Objects.equals(this.queueName, other.queueName) &&
+        return Objects.equals(this.name, other.name) &&
                 Objects.equals(this.exchange, other.exchange) &&
                 Objects.equals(this.routingKey, other.routingKey);
     }
@@ -70,6 +67,6 @@ public final class QueueDescription {
 
     @Override
     public String toString() {
-        return String.format("%s[%s:%s:%s]", this.getClass().getName(), queueName, routingKey, exchange);
+        return String.format("%s[%s:%s:%s]", this.getClass().getName(), name, routingKey, exchange);
     }
 }

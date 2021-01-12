@@ -35,7 +35,7 @@ import com.exactpro.th2.infraoperator.spec.link.relation.pins.PinCoupling;
 import com.exactpro.th2.infraoperator.spec.link.relation.pins.PinCouplingGRPC;
 import com.exactpro.th2.infraoperator.spec.link.relation.pins.PinCouplingMQ;
 import com.exactpro.th2.infraoperator.OperatorState;
-import com.exactpro.th2.infraoperator.spec.shared.PinAttribute;
+import com.exactpro.th2.infraoperator.spec.shared.DirectionAttribute;
 import com.exactpro.th2.infraoperator.spec.shared.PinSpec;
 import com.exactpro.th2.infraoperator.spec.shared.PrometheusConfiguration;
 import com.exactpro.th2.infraoperator.spec.strategy.linkResolver.dictionary.DictionaryLinkResolver;
@@ -331,10 +331,11 @@ public abstract class HelmReleaseTh2Op<CR extends Th2CustomResource> extends Abs
             var resourceName = ExtractUtils.extractName(res);
 
             var hr = getHelmRelease(res, helmReleases);
-            if (hr == null) {
+            if (Objects.isNull(hr)) {
                 logger.info("Release of '{}.{}' resource not found", namespace, resourceName);
                 continue;
             } else {
+                logger.info("Found helm release of '{}.{}' resource", namespace, resourceName);
                 logger.debug("Found HelmRelease \"{}\"", CustomResourceUtils.annotationFor(hr));
             }
 
@@ -615,13 +616,13 @@ public abstract class HelmReleaseTh2Op<CR extends Th2CustomResource> extends Abs
 
             var hiddenLinksRes = getStLinkResAndCreateIfAbsent(resNamespace, linkResources);
 
-            //var oldHiddenLinks = hiddenLinksRes.getSpec().getBoxesRelation().getRouterMq();
+            var oldHiddenLinks = hiddenLinksRes.getSpec().getBoxesRelation().getRouterMq();
 
             var newHiddenLinks = createHiddenLinks(resource);
 
-            //var updatedHiddenLinks = update(oldHiddenLinks, newHiddenLinks);
+            var updatedHiddenLinks = update(oldHiddenLinks, newHiddenLinks);
 
-            hiddenLinksRes.getSpec().getBoxesRelation().setRouterMq(newHiddenLinks);
+            hiddenLinksRes.getSpec().getBoxesRelation().setRouterMq(updatedHiddenLinks);
 
             OperatorState.INSTANCE.setLinkResources(resNamespace, linkResources);
 
@@ -658,10 +659,10 @@ public abstract class HelmReleaseTh2Op<CR extends Th2CustomResource> extends Abs
             var hyphen = "-";
             var targetAttr = "";
 
-            if (pin.getAttributes().contains(PinAttribute.parsed.name())) {
-                targetAttr += hyphen + PinAttribute.parsed.name();
-            } else if (pin.getAttributes().contains(PinAttribute.raw.name())) {
-                targetAttr += hyphen + PinAttribute.raw.name();
+            if (pin.getAttributes().contains(DirectionAttribute.parsed.name())) {
+                targetAttr += hyphen + DirectionAttribute.parsed.name();
+            } else if (pin.getAttributes().contains(DirectionAttribute.raw.name())) {
+                targetAttr += hyphen + DirectionAttribute.raw.name();
             }
 
             return new PinMQ(context.getBoxAlias(), context.getPinName() + targetAttr);
@@ -754,11 +755,11 @@ public abstract class HelmReleaseTh2Op<CR extends Th2CustomResource> extends Abs
 
         @Override
         protected boolean checkAttributes(Set<String> attributes) {
-            return attributes.contains(PinAttribute.store.name())
-                && attributes.contains(PinAttribute.publish.name())
-                && (attributes.contains(PinAttribute.parsed.name())
-                || attributes.contains(PinAttribute.raw.name()))
-                && !attributes.contains(PinAttribute.subscribe.name());
+            return attributes.contains(DirectionAttribute.store.name())
+                && attributes.contains(DirectionAttribute.publish.name())
+                && (attributes.contains(DirectionAttribute.parsed.name())
+                || attributes.contains(DirectionAttribute.raw.name()))
+                && !attributes.contains(DirectionAttribute.subscribe.name());
         }
 
     }
@@ -769,9 +770,9 @@ public abstract class HelmReleaseTh2Op<CR extends Th2CustomResource> extends Abs
 
         @Override
         protected boolean checkAttributes(Set<String> attributes) {
-            return attributes.contains(PinAttribute.event.name())
-                && attributes.contains(PinAttribute.publish.name())
-                && !attributes.contains(PinAttribute.subscribe.name());
+            return attributes.contains(DirectionAttribute.event.name())
+                && attributes.contains(DirectionAttribute.publish.name())
+                && !attributes.contains(DirectionAttribute.subscribe.name());
         }
 
     }

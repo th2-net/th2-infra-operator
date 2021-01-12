@@ -63,7 +63,7 @@ public abstract class Th2Spec implements KubernetesResource {
 
             pin.setName(StoreHelmTh2Op.EVENT_STORAGE_PIN_ALIAS);
             pin.setConnectionType(SchemaConnectionType.mq);
-            pin.setAttributes(Set.of(PinAttribute.publish.name(), PinAttribute.event.name()));
+            pin.setAttributes(Set.of(DirectionAttribute.publish.name(), DirectionAttribute.event.name()));
 
             getPins().add(pin);
         }

@@ -19,7 +19,7 @@ import com.exactpro.th2.infraoperator.configuration.RabbitMQConfig;
 import com.exactpro.th2.infraoperator.configuration.RabbitMQManagementConfig;
 import com.exactpro.th2.infraoperator.spec.Th2CustomResource;
 import com.exactpro.th2.infraoperator.spec.link.relation.pins.PinMQ;
-import com.exactpro.th2.infraoperator.spec.shared.PinAttribute;
+import com.exactpro.th2.infraoperator.spec.shared.DirectionAttribute;
 import com.exactpro.th2.infraoperator.spec.strategy.linkResolver.queue.QueueName;
 import com.exactpro.th2.infraoperator.util.ExtractUtils;
 import com.rabbitmq.client.Channel;
@@ -78,7 +78,7 @@ public class DeclareQueueResolver {
             String boxName = extractName(resource);
             PinMQ mqPin = new PinMQ(boxName, pin.getName());
 
-            if (!attrs.contains(PinAttribute.publish.name())) {
+            if (!attrs.contains(DirectionAttribute.publish.name())) {
                 String queueName = new QueueName(namespace, mqPin).toString();
                 //remove from set if pin for queue still exists.
                 boxUnlinkedQueueNames.remove(queueName);
@@ -124,7 +124,7 @@ public class DeclareQueueResolver {
 
         //remove queues that appear in active links
         mqActiveLinks.forEach(enqueuedLink ->
-                boxQueueNames.remove(enqueuedLink.getQueueDescription().getQueueName().toString())
+                boxQueueNames.remove(enqueuedLink.getQueueDescription().getName())
         );
     }
 

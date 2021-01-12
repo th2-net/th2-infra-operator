@@ -21,7 +21,7 @@ import com.exactpro.th2.infraoperator.model.box.schema.link.QueueDescription;
 import com.exactpro.th2.infraoperator.model.kubernetes.configmaps.ConfigMaps;
 import com.exactpro.th2.infraoperator.spec.Th2CustomResource;
 import com.exactpro.th2.infraoperator.spec.link.relation.pins.PinMQ;
-import com.exactpro.th2.infraoperator.spec.shared.PinAttribute;
+import com.exactpro.th2.infraoperator.spec.shared.DirectionAttribute;
 import com.exactpro.th2.infraoperator.spec.shared.FilterSpec;
 import com.exactpro.th2.infraoperator.spec.strategy.linkResolver.queue.QueueName;
 import com.exactpro.th2.infraoperator.spec.strategy.linkResolver.queue.RoutingKeyName;
@@ -31,38 +31,58 @@ import org.jetbrains.annotations.Nullable;
 
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Set;
 import java.util.stream.Collectors;
 
 
 public class DefaultMessageRouterConfigFactory implements MessageRouterConfigFactory {
 
+    private static final String EMPTY_STRING_ALIAS = "";
+
+
     @Override
     public MessageRouterConfiguration createConfig(Th2CustomResource resource) {
+        return mqPinsToMsgConfig(resource);
+    }
+
+
+    private MessageRouterConfiguration mqPinsToMsgConfig(Th2CustomResource resource) {
 
         Map<String, QueueConfiguration> queues = new HashMap<>();
 
         for (var pin : ExtractUtils.extractMqPins(resource)) {
 
             var attrs = pin.getAttributes();
+
             String boxName = ExtractUtils.extractName(resource);
+
             PinMQ mqPin = new PinMQ(boxName, pin.getName());
+
             QueueDescription queueSpec;
 
-            if (attrs.contains(PinAttribute.publish.name())) {
+            if (attrs.contains(DirectionAttribute.publish.name())) {
                 queueSpec = createQueueBunch(ExtractUtils.extractNamespace(resource), null, mqPin);
             } else {
                 queueSpec = createQueueBunch(ExtractUtils.extractNamespace(resource), mqPin, null);
             }
 
             //TODO null check
-            queues.put(pin.getName(),
-                    new QueueConfiguration(queueSpec, pin.getAttributes(), specToConfigFilters(pin.getFilters())));
+            var queueConfig = QueueConfiguration.builder()
+                    .exchange(queueSpec.getExchange())
+                    .attributes(pin.getAttributes())
+                    .filters(specToConfigFilters(pin.getFilters()))
+                    .name(queueSpec.getRoutingKey())
+                    .queue(queueSpec.getName())
+                    .build();
+
+            queues.put(pin.getName(), queueConfig);
         }
 
-        return MessageRouterConfiguration.builder().queues(queues).build();
+        return MessageRouterConfiguration.builder()
+                .queues(queues)
+                .build();
     }
-
 
     private Set<RouterFilterConfiguration> specToConfigFilters(Set<FilterSpec> filterSpecs) {
         return filterSpecs.stream()
@@ -74,21 +94,22 @@ public class DefaultMessageRouterConfigFactory implements MessageRouterConfigFac
                 ).collect(Collectors.toSet());
     }
 
-
     @Nullable
-    private QueueDescription createQueueBunch(String namespace, PinMQ to, PinMQ from) {
+    private QueueDescription createQueueBunch(String namespace, PinMQ toBox, PinMQ fromBox) {
 
         var rabbitMQConfig = ConfigMaps.INSTANCE.getRabbitMQConfig4Namespace(namespace);
 
-        if (rabbitMQConfig == null)
+        if (Objects.isNull(rabbitMQConfig)) {
             return null;
+        }
 
-        QueueName queue = (to == null) ? QueueName.EMPTY : new QueueName(namespace, to);
-        RoutingKeyName routingKey = (from == null) ? RoutingKeyName.EMPTY : new RoutingKeyName(namespace, from);
+        String fullQueue = toBox == null ? EMPTY_STRING_ALIAS : new QueueName(namespace, toBox).toString();
+
+        String fullRoutingKey = fromBox == null ? EMPTY_STRING_ALIAS : new RoutingKeyName(namespace, fromBox).toString();
 
         return new QueueDescription(
-                queue,
-                routingKey,
+                fullQueue,
+                fullRoutingKey,
                 rabbitMQConfig.getExchangeName()
         );
     }
