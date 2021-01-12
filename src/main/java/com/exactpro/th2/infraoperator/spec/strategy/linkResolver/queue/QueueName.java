@@ -15,6 +15,8 @@ package com.exactpro.th2.infraoperator.spec.strategy.linkResolver.queue;
 
 import com.exactpro.th2.infraoperator.spec.link.relation.pins.PinMQ;
 
+import java.util.Objects;
+
 
 public class QueueName extends AbstractName {
 
@@ -32,6 +34,20 @@ public class QueueName extends AbstractName {
 
     public QueueName(String namespace, String boxName, String pinName) {
         super(namespace, boxName, pinName);
+    }
+
+
+    @Override
+    public boolean equals(Object o) {
+        if (o == this)
+            return true;
+        if (! (o instanceof QueueName))
+            return false;
+
+        QueueName other = (QueueName) o;
+        return Objects.equals(this.namespace, other.namespace) &&
+                Objects.equals(this.boxName, other.boxName) &&
+                Objects.equals(this.pinName, other.pinName);
     }
 
 

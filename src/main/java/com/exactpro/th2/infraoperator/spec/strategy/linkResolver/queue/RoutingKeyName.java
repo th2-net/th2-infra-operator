@@ -15,6 +15,8 @@ package com.exactpro.th2.infraoperator.spec.strategy.linkResolver.queue;
 
 import com.exactpro.th2.infraoperator.spec.link.relation.pins.PinMQ;
 
+import java.util.Objects;
+
 public class RoutingKeyName extends AbstractName {
 
     public static final RoutingKeyName EMPTY = new RoutingKeyName("","","");
@@ -56,6 +58,20 @@ public class RoutingKeyName extends AbstractName {
             return EMPTY_ROUTING_KEY;
         else
             return String.format("%s[%s:%s:%s]", ROUTING_KEY_PREFIX, namespace, boxName, pinName);
+    }
+
+
+    @Override
+    public boolean equals(Object o) {
+        if (o == this)
+            return true;
+        if (! (o instanceof RoutingKeyName))
+            return false;
+
+        RoutingKeyName other = (RoutingKeyName) o;
+        return Objects.equals(this.namespace, other.namespace) &&
+                Objects.equals(this.boxName, other.boxName) &&
+                Objects.equals(this.pinName, other.pinName);
     }
 
 

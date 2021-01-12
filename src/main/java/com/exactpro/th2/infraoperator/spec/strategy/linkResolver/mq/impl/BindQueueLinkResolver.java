@@ -90,8 +90,8 @@ public class BindQueueLinkResolver implements QueueLinkResolver {
 
                 var resourceCouple = validateAndReturnRes(lRes, link, newResources);
                 var queueBunch = new QueueDescription(
-                        new QueueName(namespace, link.getFrom()),
-                        new RoutingKeyName(namespace, link.getTo()),
+                        new QueueName(namespace, link.getTo()),
+                        new RoutingKeyName(namespace, link.getFrom()),
                         RabbitMQContext.getExchangeName(namespace)
                 );
 
