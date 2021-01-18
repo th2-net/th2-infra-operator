@@ -28,6 +28,7 @@ import java.util.List;
 public class DefaultDictionaryFactory implements DictionaryFactory {
 
     private DictionaryResourceFinder resourceFinder;
+
     public DefaultDictionaryFactory(DictionaryResourceFinder resourceFinder) {
         this.resourceFinder = resourceFinder;
     }
@@ -43,9 +44,15 @@ public class DefaultDictionaryFactory implements DictionaryFactory {
                     DictionaryDescription dict = link.getDictionary();
                     String name = dict.getName();
                     String type = dict.getType();
-
                     Th2Dictionary res = resourceFinder.getResource(name, resource.getMetadata().getNamespace());
-                    String encodedData = new String(ArchiveUtils.getGZIPBase64Encoder().encodeString(res.getSpec().getData()));
+
+                    String encodedData;
+                    if (res.getSpec().isCompressed()) {
+                        encodedData = res.getSpec().getData();
+                    } else {
+                        encodedData = new String(ArchiveUtils.getGZIPBase64Encoder().encodeString(res.getSpec().getData()));
+
+                    }
 
                     dictionaries.add(DictionaryEntity.builder()
                             .setName(name)
