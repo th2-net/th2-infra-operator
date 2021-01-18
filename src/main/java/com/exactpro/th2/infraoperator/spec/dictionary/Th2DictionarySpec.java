@@ -28,11 +28,17 @@ public class Th2DictionarySpec implements KubernetesResource {
 
     private String data;
 
+    private boolean compressed;
 
     protected Th2DictionarySpec() {
     }
 
     protected Th2DictionarySpec(String data) {
         this.data = data;
+    }
+
+    protected Th2DictionarySpec(String data, boolean compressed) {
+        this.data = data;
+        this.compressed = compressed;
     }
 }
