@@ -20,6 +20,8 @@ import com.exactpro.th2.infraoperator.spec.shared.Identifiable;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 
+import java.util.Objects;
+
 @JsonDeserialize(builder = DictionaryBinding.Builder.class)
 public final class DictionaryBinding implements Identifiable {
 
@@ -54,12 +56,15 @@ public final class DictionaryBinding implements Identifiable {
         return this.dictionary;
     }
 
-
     @Override
-    public boolean equals(final Object o) {
-        throw new AssertionError("method not defined");
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (!(o instanceof DictionaryBinding)) return false;
+        DictionaryBinding that = (DictionaryBinding) o;
+        return Objects.equals(name, that.name) &&
+                Objects.equals(box, that.box) &&
+                Objects.equals(dictionary, that.dictionary);
     }
-
 
     @Override
     public int hashCode() {
