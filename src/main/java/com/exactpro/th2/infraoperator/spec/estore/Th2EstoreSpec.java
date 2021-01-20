@@ -18,7 +18,6 @@ package com.exactpro.th2.infraoperator.spec.estore;
 
 import com.exactpro.th2.infraoperator.operator.StoreHelmTh2Op;
 import com.exactpro.th2.infraoperator.spec.Th2Spec;
-import com.exactpro.th2.infraoperator.spec.mstore.Th2MstoreSpec;
 import com.exactpro.th2.infraoperator.spec.shared.PinAttribute;
 import com.exactpro.th2.infraoperator.spec.shared.PinSpec;
 import com.exactpro.th2.infraoperator.spec.shared.SchemaConnectionType;
@@ -57,7 +56,7 @@ public class Th2EstoreSpec extends Th2Spec {
     public boolean equals(final Object o) {
         if (o == this)
             return true;
-        if (!(o instanceof Th2MstoreSpec))
+        if (!(o instanceof Th2EstoreSpec))
             return false;
 
         return super.equals(o);
