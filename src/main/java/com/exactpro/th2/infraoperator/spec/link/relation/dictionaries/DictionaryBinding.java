@@ -41,7 +41,7 @@ public final class DictionaryBinding implements Identifiable {
         return new Builder();
     }
 
-
+    @Override
     public String getName() {
         return this.name;
     }
@@ -77,6 +77,12 @@ public final class DictionaryBinding implements Identifiable {
                 this.getClass().getName(),
                 this.box,
                 this.dictionary == null ? "null" : this.dictionary.getName());
+    }
+
+
+    @Override
+    public String toString() {
+        return String.format("name: %s box: %s dictionary: %s (%s)", name, box, dictionary.getName(), dictionary.getType());
     }
 
 

@@ -89,7 +89,7 @@ public class PinGRPC extends AbstractPin {
     public boolean equals(final Object o) {
         if (this == o)
             return true;
-        if (! (o instanceof PinGRPC))
+        if (!(o instanceof PinGRPC))
             return false;
 
         return Objects.equals(getBoxName(), ((PinGRPC) o).getBoxName())

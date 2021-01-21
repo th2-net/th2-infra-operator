@@ -35,6 +35,8 @@ public final class PinCouplingMQ implements PinCoupling {
         this.to = to;
     }
 
+
+    @Override
     public String getName() {
         return this.name;
     }
@@ -69,6 +71,7 @@ public final class PinCouplingMQ implements PinCoupling {
         throw new AssertionError("method not defined");
     }
 
+
     @Override
     public String getId() {
         return String.format("%s[%s:%s-%s:%s]",
@@ -76,5 +79,11 @@ public final class PinCouplingMQ implements PinCoupling {
                 from.getBoxName(), from.getPinName(),
                 to.getBoxName(), to.getPinName()
         );
+    }
+
+
+    @Override
+    public String toString() {
+        return String.format("name: %s from: [%s.%s] to: [%s.%s]", name, from.getBoxName(), from.getPinName(), to.getBoxName(), to.getPinName());
     }
 }
