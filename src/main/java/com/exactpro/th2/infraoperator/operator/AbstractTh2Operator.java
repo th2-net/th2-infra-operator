@@ -143,6 +143,13 @@ public abstract class AbstractTh2Operator<CR extends Th2CustomResource, KO exten
 
         logger.debug("Processing event {} for \"{}\"", action, CustomResourceUtils.annotationFor(resource));
 
+        String namespace = resource.getMetadata().getNamespace();
+        Namespace namespaceObj = kubClient.namespaces().withName(namespace).get();
+        if (namespaceObj == null || !namespaceObj.getStatus().getPhase().equals("Active")) {
+            logger.info("Namespace \"{}\" deleted or not active, cancelling", namespace);
+            return;
+        }
+
         resource.getStatus().idle();
 
         resource = updateStatus(resource);
@@ -360,17 +367,17 @@ public abstract class AbstractTh2Operator<CR extends Th2CustomResource, KO exten
 
                 if (isResourceExist(currentOwnerFullName)) {
 
-                    String namepace = kubObj.getMetadata().getNamespace();
-                    Namespace namespaceObj = kubClient.namespaces().withName(namepace).get();
+                    String namespace = kubObj.getMetadata().getNamespace();
+                    Namespace namespaceObj = kubClient.namespaces().withName(namespace).get();
                     if (namespaceObj == null || !namespaceObj.getStatus().getPhase().equals("Active")) {
-                        logger.info("Namespace \"{}\" deleted or not active, cancelling", namepace);
+                        logger.info("Namespace \"{}\" deleted or not active, cancelling", namespace);
                         return;
                     }
 
                     ObjectMeta kubObjMD = kubObj.getMetadata();
                     kubObjMD.setUid(null);
                     kubObjMD.setResourceVersion(null);
-                    createKubObj(namepace, kubObj);
+                    createKubObj(namespace, kubObj);
 
                     logger.info("\"{}\" has been redeployed", resourceLabel);
 
