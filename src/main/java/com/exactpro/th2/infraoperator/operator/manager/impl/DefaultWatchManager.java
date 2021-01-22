@@ -66,6 +66,7 @@ import java.util.stream.Collectors;
 
 import static com.exactpro.th2.infraoperator.configuration.RabbitMQConfig.CONFIG_MAP_RABBITMQ_PROP_NAME;
 import static com.exactpro.th2.infraoperator.operator.AbstractTh2Operator.REFRESH_TOKEN_ALIAS;
+import static com.exactpro.th2.infraoperator.util.CustomResourceUtils.annotationFor;
 import static com.exactpro.th2.infraoperator.util.ExtractUtils.extractName;
 import static com.exactpro.th2.infraoperator.util.ExtractUtils.extractNamespace;
 import static com.exactpro.th2.infraoperator.util.JsonUtils.JSON_READER;
@@ -132,7 +133,7 @@ public class DefaultWatchManager {
     }
 
     public <T extends Th2CustomResource> void addTarget(
-        Function<HelmOperatorContext.Builder<?, ?>, HelmReleaseTh2Op<T>> operator) {
+            Function<HelmOperatorContext.Builder<?, ?>, HelmReleaseTh2Op<T>> operator) {
 
         helmWatchersCommands.add(() -> {
             // T extends Th2CustomResource -> T is a Th2CustomResource
@@ -147,7 +148,7 @@ public class DefaultWatchManager {
 
         var linkNamespace = extractNamespace(oldLinkRes);
 
-        if (Objects.isNull(linkNamespace)) {
+        if (linkNamespace == null) {
             linkNamespace = extractNamespace(newLinkRes);
         }
 
@@ -168,7 +169,7 @@ public class DefaultWatchManager {
         var oldBoxesLinks = oldLinkRes.getSpec().getBoxesRelation().getAllLinks();
         var newBoxesLinks = newLinkRes.getSpec().getBoxesRelation().getAllLinks();
         var fromBoxesLinks = getBoxesToUpdate(oldBoxesLinks, newBoxesLinks,
-            blb -> Set.of(blb.getFrom().getBoxName(), blb.getTo().getBoxName()));
+                blb -> Set.of(blb.getFrom().getBoxName(), blb.getTo().getBoxName()));
         Set<String> boxes = new HashSet<>(fromBoxesLinks);
 
         var oldLinks = oldLinkRes.getSpec().getDictionariesRelation();
@@ -203,9 +204,9 @@ public class DefaultWatchManager {
         }
 
         var oldToUpdate = oldLinks.stream()
-            .filter(t -> newLinks.stream().noneMatch(t1 -> t1.getId().equals(t.getId())))
-            .flatMap(t -> boxesExtractor.apply(t).stream())
-            .collect(Collectors.toSet());
+                .filter(t -> newLinks.stream().noneMatch(t1 -> t1.getId().equals(t.getId())))
+                .flatMap(t -> boxesExtractor.apply(t).stream())
+                .collect(Collectors.toSet());
 
         boxes.addAll(oldToUpdate);
 
@@ -381,13 +382,13 @@ public class DefaultWatchManager {
             String namespace = configMap.getMetadata().getNamespace();
             List<String> namespacePrefixes = OperatorConfig.INSTANCE.getNamespacePrefixes();
             if (namespace != null
-                && namespacePrefixes != null
-                && namespacePrefixes.size() > 0
-                && namespacePrefixes.stream().noneMatch(namespace::startsWith)) {
+                    && namespacePrefixes != null
+                    && namespacePrefixes.size() > 0
+                    && namespacePrefixes.stream().noneMatch(namespace::startsWith)) {
                 return;
             }
 
-            String resourceLabel = CustomResourceUtils.annotationFor(configMap);
+            String resourceLabel = annotationFor(configMap);
             logger.debug("Received {} event for \"{}\"", action, resourceLabel);
 
             if (action == Action.DELETED)
@@ -410,19 +411,19 @@ public class DefaultWatchManager {
                         String configContent = configMap.getData().get(CONFIG_MAP_RABBITMQ_PROP_NAME);
                         if (Strings.isNullOrEmpty(configContent)) {
                             logger.error("Key \"{}\" not found in \"{}\"", CONFIG_MAP_RABBITMQ_PROP_NAME,
-                                resourceLabel);
+                                    resourceLabel);
                             return;
                         }
 
                         RabbitMQConfig newRabbitMQConfig = JSON_READER.readValue(configContent, RabbitMQConfig.class);
                         newRabbitMQConfig.setPassword(readRabbitMQPasswordForSchema(client, namespace,
-                            opConfig.getSchemaSecrets().getRabbitMQ()));
+                                opConfig.getSchemaSecrets().getRabbitMQ()));
 
                         if (!Objects.equals(rabbitMQConfig, newRabbitMQConfig)) {
                             configMaps.setRabbitMQConfig4Namespace(namespace, newRabbitMQConfig);
                             RabbitMQContext.createVHostIfAbsent(namespace);
-                            logger.info("RabbitMQ ConfigMap has been updated in namespace \"%s\". Updating all boxes",
-                                namespace);
+                            logger.info("RabbitMQ ConfigMap has been updated in namespace \"{}\". Updating all boxes",
+                                    namespace);
                             int refreshedBoxesCount = refreshBoxes(namespace);
                             logger.info("{} box-definition(s) have been updated", refreshedBoxesCount);
                         } else
@@ -440,16 +441,16 @@ public class DefaultWatchManager {
         Secret secret = client.secrets().inNamespace(namespace).withName(secretName).get();
         if (secret == null)
             throw new Exception(String.format("Secret not found \"%s\"",
-                CustomResourceUtils.annotationFor(namespace, "Secret", secretName)));
+                    annotationFor(namespace, "Secret", secretName)));
         if (secret.getData() == null)
             throw new Exception(String.format("Invalid secret \"%s\". No data",
-                CustomResourceUtils.annotationFor(secret)));
+                    annotationFor(secret)));
 
         String password = secret.getData().get(OperatorConfig.RABBITMQ_SECRET_PASSWORD_KEY);
         if (password == null)
             throw new Exception(String.format("Invalid secret \"%s\". No password was found with key \"%s\""
-                , CustomResourceUtils.annotationFor(secret)
-                , OperatorConfig.RABBITMQ_SECRET_PASSWORD_KEY));
+                    , annotationFor(secret)
+                    , OperatorConfig.RABBITMQ_SECRET_PASSWORD_KEY));
 
         if (secret.getType().equals(SECRET_TYPE_OPAQUE))
             password = new String(Base64.getDecoder().decode(password.getBytes()));
@@ -461,7 +462,7 @@ public class DefaultWatchManager {
         @Override
         public void eventReceived(Action action, Th2Dictionary dictionary) {
 
-            String resourceLabel = CustomResourceUtils.annotationFor(dictionary);
+            String resourceLabel = annotationFor(dictionary);
             logger.debug("Received {} event for \"{}\"", action, resourceLabel);
             logger.info("Updating all boxes that contains dictionary \"{}\"", resourceLabel);
 
@@ -501,7 +502,7 @@ public class DefaultWatchManager {
 
         @Override
         public void eventReceived(Action action, Th2Link th2Link) {
-            logger.debug("Received {} event for \"{}\"", action, CustomResourceUtils.annotationFor(th2Link));
+            logger.debug("Received {} event for \"{}\"", action, annotationFor(th2Link));
 
             var linkNamespace = extractNamespace(th2Link);
             synchronized (OperatorState.INSTANCE.getLock(linkNamespace)) {
@@ -513,6 +514,10 @@ public class DefaultWatchManager {
                 var oldLinkRes = getOldLink(th2Link, resourceLinks);
 
                 int refreshedBoxCount = 0;
+
+                checkForSameName(th2Link.getSpec().getBoxesRelation().getRouterMq(), annotationFor(th2Link));
+                checkForSameName(th2Link.getSpec().getBoxesRelation().getRouterGrpc(), annotationFor(th2Link));
+                checkForSameName(th2Link.getSpec().getDictionariesRelation(), annotationFor(th2Link));
 
                 switch (action) {
                     case ADDED:
@@ -557,6 +562,16 @@ public class DefaultWatchManager {
             if (cause != null)
                 logger.error("Watcher closed ({})", this.getClass().getSimpleName(), cause);
         }
+
+        private <T extends Identifiable> void checkForSameName(List<T> links, String annotation) {
+            Set<String> linkNames = new HashSet<>();
+            for (var link : links) {
+                if (!linkNames.add(link.getName())) {
+                    logger.warn("Link with name: {} already exists in {}", link.getName(), annotation);
+                }
+            }
+        }
+
     }
 
     public static Builder builder(KubernetesClient client) {

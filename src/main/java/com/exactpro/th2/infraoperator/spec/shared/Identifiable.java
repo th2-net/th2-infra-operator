@@ -20,4 +20,5 @@ public interface Identifiable {
 
     String getId();
 
+    String getName();
 }
