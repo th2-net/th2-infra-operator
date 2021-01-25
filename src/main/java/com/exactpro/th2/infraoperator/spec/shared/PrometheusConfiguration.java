@@ -21,19 +21,43 @@ import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 
+import java.util.Objects;
+
 @JsonIgnoreProperties(ignoreUnknown = true)
 @JsonInclude(JsonInclude.Include.NON_NULL)
 @JsonDeserialize(builder = PrometheusConfiguration.Builder.class)
 public final class PrometheusConfiguration {
+    private static final Boolean DEFAULT_VALUE_ENABLED = Boolean.TRUE;
+
     private String host;
     private String port;
-    private String enabled;
+    private Boolean enabled;
 
-    private PrometheusConfiguration(String host, String port, String enabled) {
+
+    private PrometheusConfiguration(String host, String port, Boolean enabled) {
         this.host = host;
         this.port = port;
         this.enabled = enabled;
     }
+
+
+    public static PrometheusConfiguration createDefault() {
+        return new PrometheusConfiguration(null, null, DEFAULT_VALUE_ENABLED);
+    }
+
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o)
+            return true;
+        if (! (o instanceof PrometheusConfiguration))
+            return false;
+        PrometheusConfiguration that = (PrometheusConfiguration) o;
+        return Objects.equals(host, that.host) &&
+                Objects.equals(port, that.port) &&
+                Objects.equals(enabled, that.enabled);
+    }
+
 
     public static Builder builder() {
         return new Builder();
@@ -47,14 +71,14 @@ public final class PrometheusConfiguration {
         return this.port;
     }
 
-    public String getEnabled() {
+    public Boolean getEnabled() {
         return this.enabled;
     }
 
     public static class Builder {
         private String host;
         private String port;
-        private String enabled;
+        private Boolean enabled;
 
         @JsonProperty("host")
         public Builder host(String host) {
@@ -69,7 +93,7 @@ public final class PrometheusConfiguration {
         }
 
         @JsonProperty("enabled")
-        public Builder enabled(String enabled) {
+        public Builder enabled(Boolean enabled) {
             this.enabled = enabled;
             return this;
         }
