@@ -98,6 +98,12 @@ public abstract class AbstractTh2Operator<CR extends Th2CustomResource, KO exten
             resource.getStatus().failed(e);
             updateStatus(resource);
 
+            String namespace = resource.getMetadata().getNamespace();
+            Namespace namespaceObj = kubClient.namespaces().withName(namespace).get();
+            if (namespaceObj == null || !namespaceObj.getStatus().getPhase().equals("Active")) {
+                logger.info("Namespace \"{}\" deleted or not active, cancelling", namespace);
+                return;
+            }
             //create and schedule task to redeploy failed component
             TriggerRedeployTask triggerRedeployTask = new TriggerRedeployTask(this, getResourceClient(), kubClient, resource, action, REDEPLOY_DELAY);
             retryableTaskQueue.add(triggerRedeployTask, true);
@@ -142,13 +148,6 @@ public abstract class AbstractTh2Operator<CR extends Th2CustomResource, KO exten
     protected void processEvent(Action action, CR resource) {
 
         logger.debug("Processing event {} for \"{}\"", action, CustomResourceUtils.annotationFor(resource));
-
-        String namespace = resource.getMetadata().getNamespace();
-        Namespace namespaceObj = kubClient.namespaces().withName(namespace).get();
-        if (namespaceObj == null || !namespaceObj.getStatus().getPhase().equals("Active")) {
-            logger.info("Namespace \"{}\" deleted or not active, cancelling", namespace);
-            return;
-        }
 
         resource.getStatus().idle();
 
