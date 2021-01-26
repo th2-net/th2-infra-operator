@@ -383,7 +383,6 @@ public class DefaultWatchManager {
                 synchronized (OperatorState.INSTANCE.getLock(namespaceName)) {
                     logger.debug("Processing event DELETED for namespace: \"{}\"", namespaceName);
                     RabbitMQContext.cleanupVHost(namespace.getMetadata().getName());
-                    logger.info("Namespace \"{}\" DELETED  ", namespaceName);
                 }
             }
         }
