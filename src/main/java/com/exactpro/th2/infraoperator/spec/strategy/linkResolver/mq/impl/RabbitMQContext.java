@@ -210,6 +210,9 @@ public final class RabbitMQContext {
                 logger.info("Deleted user \"{}\" in RabbitMQ", username);
             }
 
+            //close channel
+            closeChannel(namespace);
+
             // delete vhost
             if (rmqClient.getVhost(vHostName) != null) {
                 rmqClient.deleteVhost(vHostName);

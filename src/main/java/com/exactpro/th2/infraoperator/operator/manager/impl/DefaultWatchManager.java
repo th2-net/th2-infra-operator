@@ -50,6 +50,7 @@ import com.exactpro.th2.infraoperator.util.CustomResourceUtils;
 import com.exactpro.th2.infraoperator.util.Strings;
 import com.fasterxml.uuid.Generators;
 import io.fabric8.kubernetes.api.model.ConfigMap;
+import io.fabric8.kubernetes.api.model.Namespace;
 import io.fabric8.kubernetes.api.model.Secret;
 import io.fabric8.kubernetes.client.KubernetesClient;
 import io.fabric8.kubernetes.client.KubernetesClientException;
@@ -255,6 +256,7 @@ public class DefaultWatchManager {
         addWatch(CustomResourceUtils.watchFor(dictionaryClient, new DictionaryWatcher()));
 
         new ConfigMapWatcher(operatorBuilder.getClient(), this).watch();
+        new NamespaceWatcher(operatorBuilder.getClient(), this).watch();
         logger.info("Started watching for ConfigMaps");
 
         /*
@@ -339,6 +341,57 @@ public class DefaultWatchManager {
             } else {
                 this.maxLinks = oldLinks;
                 this.minLinks = newLinks;
+            }
+        }
+    }
+
+    private static class NamespaceWatcher implements Watcher<Namespace> {
+
+        protected KubernetesClient client;
+        protected DefaultWatchManager manager;
+        protected Watch watch;
+
+        public NamespaceWatcher(KubernetesClient client, DefaultWatchManager manager) {
+            this.client = client;
+            this.manager = manager;
+        }
+
+        protected void watch() {
+            if (watch != null) {
+                watch.close();
+                manager.removeWatch(watch);
+            }
+
+            watch = client.namespaces().watch(this);
+            manager.addWatch(watch);
+            logger.info("Watch created ({})", this.getClass().getSimpleName());
+        }
+
+        @Override
+        public void eventReceived(Action action, Namespace namespace) {
+            String namespaceName = namespace.getMetadata().getName();
+            List<String> namespacePrefixes = OperatorConfig.INSTANCE.getNamespacePrefixes();
+            if (namespaceName != null
+                    && namespacePrefixes != null
+                    && namespacePrefixes.size() > 0
+                    && namespacePrefixes.stream().noneMatch(namespaceName::startsWith)) {
+                return;
+            }
+
+            logger.debug("Received {} event for namespace: \"{}\"", action, namespaceName);
+            if (action == Action.DELETED) {
+                synchronized (OperatorState.INSTANCE.getLock(namespaceName)) {
+                    logger.debug("Processing event DELETED for namespace: \"{}\"", namespaceName);
+                    RabbitMQContext.cleanupVHost(namespace.getMetadata().getName());
+                }
+            }
+        }
+
+        @Override
+        public final void onClose(KubernetesClientException cause) {
+            if (cause != null) {
+                logger.error("Watcher closed ({})", this.getClass().getSimpleName(), cause);
+                watch();
             }
         }
     }
