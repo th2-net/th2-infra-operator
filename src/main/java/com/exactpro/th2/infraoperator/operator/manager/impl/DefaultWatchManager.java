@@ -16,6 +16,7 @@
 
 package com.exactpro.th2.infraoperator.operator.manager.impl;
 
+import com.exactpro.th2.infraoperator.OperatorState;
 import com.exactpro.th2.infraoperator.configuration.OperatorConfig;
 import com.exactpro.th2.infraoperator.configuration.RabbitMQConfig;
 import com.exactpro.th2.infraoperator.model.box.configuration.dictionary.factory.impl.DefaultDictionaryFactory;
@@ -31,7 +32,6 @@ import com.exactpro.th2.infraoperator.operator.context.HelmOperatorContext;
 import com.exactpro.th2.infraoperator.spec.Th2CustomResource;
 import com.exactpro.th2.infraoperator.spec.dictionary.Th2Dictionary;
 import com.exactpro.th2.infraoperator.spec.link.Th2Link;
-import com.exactpro.th2.infraoperator.OperatorState;
 import com.exactpro.th2.infraoperator.spec.shared.Identifiable;
 import com.exactpro.th2.infraoperator.spec.strategy.linkResolver.dictionary.impl.DefaultDictionaryLinkResolver;
 import com.exactpro.th2.infraoperator.spec.strategy.linkResolver.dictionary.impl.EmptyDictionaryLinkResolver;
@@ -60,6 +60,10 @@ import lombok.Getter;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.time.Duration;
+import java.time.Instant;
+import java.time.LocalDateTime;
+import java.time.ZoneOffset;
 import java.util.*;
 import java.util.function.Function;
 import java.util.function.Supplier;
@@ -431,6 +435,7 @@ public class DefaultWatchManager {
 
         @Override
         public void eventReceived(Action action, ConfigMap configMap) {
+            LocalDateTime startDateTime = LocalDateTime.ofInstant(Instant.now(), ZoneOffset.UTC);
 
             String namespace = configMap.getMetadata().getNamespace();
             List<String> namespacePrefixes = OperatorConfig.INSTANCE.getNamespacePrefixes();
@@ -486,6 +491,13 @@ public class DefaultWatchManager {
             } catch (Exception e) {
                 logger.error("Exception processing {} event for \"{}\"", action, resourceLabel, e);
             }
+
+            LocalDateTime endDateTime = LocalDateTime.ofInstant(Instant.now(), ZoneOffset.UTC);
+            java.time.Duration duration = Duration.between(startDateTime, endDateTime);
+            logger.info("{} Event for {} processed in {}ms",
+                    action.toString(),
+                    resourceLabel,
+                    duration.toMillis());
         }
     }
 
