@@ -18,7 +18,6 @@ package com.exactpro.th2.infraoperator.util;
 
 import com.exactpro.th2.infraoperator.configuration.OperatorConfig;
 import com.exactpro.th2.infraoperator.model.kubernetes.client.ResourceClient;
-import io.fabric8.kubernetes.api.model.Doneable;
 import io.fabric8.kubernetes.api.model.HasMetadata;
 import io.fabric8.kubernetes.api.model.KubernetesResourceList;
 import io.fabric8.kubernetes.api.model.apiextensions.v1.CustomResourceDefinition;
@@ -109,19 +108,19 @@ public final class CustomResourceUtils {
     }
 
 
-    private static class RecoveringWatch<T extends CustomResource, L extends KubernetesResourceList<T>, D extends Doneable<T>> implements Watcher<T>, Watch {
+    private static class RecoveringWatch<T extends CustomResource, L extends KubernetesResourceList<T>> implements Watcher<T>, Watch {
 
         private Watch watch;
         private String kind;
         private Watcher<T> watcher;
-        MixedOperation<T, L, D, ? extends Resource<T, ? extends Doneable<T>>> crClient;
+        MixedOperation<T, L, ? extends Resource<T>> crClient;
 
 
         public RecoveringWatch(
                 Watcher<T> watcher,
                 Class<T> resourceType,
                 CustomResourceDefinition crd,
-                MixedOperation<T, L, D, ? extends Resource<T, ? extends Doneable<T>>> crClient
+                MixedOperation<T, L, ? extends Resource<T>> crClient
         ) {
 
             this.watcher = watcher;
@@ -180,7 +179,7 @@ public final class CustomResourceUtils {
         }
 
         @Override
-        public void onClose(KubernetesClientException cause) {
+        public void onClose(WatcherException cause) {
             watcher.onClose(cause);
             if (cause != null) {
                 logger.error("Exception watching for \"{}\" resources", kind, cause);
@@ -190,11 +189,11 @@ public final class CustomResourceUtils {
     }
 
 
-    public static <T extends CustomResource, L extends KubernetesResourceList<T>, D extends Doneable<T>> Watch watchFor(
+    public static <T extends CustomResource, L extends KubernetesResourceList<T>> Watch watchFor(
             Watcher<T> watcher,
             Class<T> resourceType,
             CustomResourceDefinition crd,
-            MixedOperation<T, L, D, ? extends Resource<T, ? extends Doneable<T>>> crClient
+            MixedOperation<T, L, ? extends Resource<T>> crClient
     ) {
         CustomResourceDefinitionSpec spec = crd.getSpec();
 
@@ -208,7 +207,7 @@ public final class CustomResourceUtils {
 
         KubernetesDeserializer.registerCustomKind(apiVersion, kind, resourceType);
 
-        RecoveringWatch<T, L, D> watch = new RecoveringWatch<>(watcher, resourceType, crd, crClient);
+        RecoveringWatch<T, L> watch = new RecoveringWatch<>(watcher, resourceType, crd, crClient);
         watch.watch();
         return watch;
     }

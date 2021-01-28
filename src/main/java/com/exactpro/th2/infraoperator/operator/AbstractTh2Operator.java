@@ -25,10 +25,7 @@ import com.exactpro.th2.infraoperator.spec.strategy.redeploy.tasks.TriggerRedepl
 import com.exactpro.th2.infraoperator.util.CustomResourceUtils;
 import com.exactpro.th2.infraoperator.util.ExtractUtils;
 import io.fabric8.kubernetes.api.model.*;
-import io.fabric8.kubernetes.client.KubernetesClient;
-import io.fabric8.kubernetes.client.KubernetesClientException;
-import io.fabric8.kubernetes.client.Watch;
-import io.fabric8.kubernetes.client.Watcher;
+import io.fabric8.kubernetes.client.*;
 import lombok.SneakyThrows;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -114,7 +111,7 @@ public abstract class AbstractTh2Operator<CR extends Th2CustomResource, KO exten
     }
 
     @Override
-    public void onClose(KubernetesClientException cause) {
+    public void onClose(WatcherException cause) {
 
         if (cause != null)
             logger.error("Watcher[1] has been closed for {}", this.getClass().getSimpleName(), cause);
@@ -387,7 +384,7 @@ public abstract class AbstractTh2Operator<CR extends Th2CustomResource, KO exten
         }
 
         @Override
-        public void onClose(KubernetesClientException cause) {
+        public void onClose(WatcherException cause) {
             if (cause != null)
                 logger.error("Watcher[2] has been closed for {}", this.getClass().getSimpleName(), cause);
         }

@@ -17,6 +17,8 @@
 package com.exactpro.th2.infraoperator.spec.mstore;
 
 import com.exactpro.th2.infraoperator.spec.Th2CustomResource;
+import io.fabric8.kubernetes.model.annotation.Group;
+import io.fabric8.kubernetes.model.annotation.Version;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 import lombok.ToString;
@@ -24,9 +26,9 @@ import lombok.ToString;
 @Data
 @ToString(callSuper = true)
 @EqualsAndHashCode(callSuper = true)
+@Group("th2.exactpro.com")
+@Version("v1")
 public class Th2Mstore extends Th2CustomResource {
-
-    public static final String KIND = "Th2Mstore";
 
     private Th2MstoreSpec spec;
 }

@@ -52,10 +52,7 @@ import com.fasterxml.uuid.Generators;
 import io.fabric8.kubernetes.api.model.ConfigMap;
 import io.fabric8.kubernetes.api.model.Namespace;
 import io.fabric8.kubernetes.api.model.Secret;
-import io.fabric8.kubernetes.client.KubernetesClient;
-import io.fabric8.kubernetes.client.KubernetesClientException;
-import io.fabric8.kubernetes.client.Watch;
-import io.fabric8.kubernetes.client.Watcher;
+import io.fabric8.kubernetes.client.*;
 import lombok.Getter;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -388,7 +385,7 @@ public class DefaultWatchManager {
         }
 
         @Override
-        public final void onClose(KubernetesClientException cause) {
+        public final void onClose(WatcherException cause) {
             if (cause != null) {
                 logger.error("Watcher closed ({})", this.getClass().getSimpleName(), cause);
                 watch();
@@ -422,7 +419,7 @@ public class DefaultWatchManager {
         }
 
         @Override
-        public final void onClose(KubernetesClientException cause) {
+        public final void onClose(WatcherException cause) {
             if (cause != null) {
                 logger.error("Watcher closed ({})", this.getClass().getSimpleName(), cause);
                 watch();
@@ -536,7 +533,7 @@ public class DefaultWatchManager {
         }
 
         @Override
-        public final void onClose(KubernetesClientException cause) {
+        public final void onClose(WatcherException cause) {
             if (cause != null)
                 logger.error("Watcher closed ({})", this.getClass().getSimpleName(), cause);
         }
@@ -618,7 +615,7 @@ public class DefaultWatchManager {
         }
 
         @Override
-        public void onClose(KubernetesClientException cause) {
+        public void onClose(WatcherException cause) {
             if (cause != null)
                 logger.error("Watcher closed ({})", this.getClass().getSimpleName(), cause);
         }

@@ -27,7 +27,6 @@ import com.exactpro.th2.infraoperator.model.box.schema.link.EnqueuedLink;
 import com.exactpro.th2.infraoperator.operator.context.HelmOperatorContext;
 import com.exactpro.th2.infraoperator.spec.Th2CustomResource;
 import com.exactpro.th2.infraoperator.spec.Th2Spec;
-import com.exactpro.th2.infraoperator.spec.helmRelease.DoneableHelmRelease;
 import com.exactpro.th2.infraoperator.spec.helmRelease.HelmRelease;
 import com.exactpro.th2.infraoperator.spec.helmRelease.HelmReleaseList;
 import com.exactpro.th2.infraoperator.spec.helmRelease.HelmReleaseSecrets;
@@ -95,8 +94,7 @@ public abstract class HelmReleaseTh2Op<CR extends Th2CustomResource> extends Abs
     protected final DictionaryFactory dictionaryFactory;
 
     protected final CustomResourceDefinition helmReleaseCrd;
-    protected final MixedOperation<HelmRelease, HelmReleaseList, DoneableHelmRelease,
-        Resource<HelmRelease, DoneableHelmRelease>> helmReleaseClient;
+    protected final MixedOperation<HelmRelease, HelmReleaseList, Resource<HelmRelease>> helmReleaseClient;
 
     protected final ActiveLinkUpdater activeLinkUpdaterOnDelete;
     protected final ActiveLinkUpdater activeLinkUpdaterOnAdd;
@@ -130,8 +128,7 @@ public abstract class HelmReleaseTh2Op<CR extends Th2CustomResource> extends Abs
         helmReleaseClient = kubClient.customResources(
             crdContext,
             HelmRelease.class,
-            HelmReleaseList.class,
-            DoneableHelmRelease.class
+            HelmReleaseList.class
         );
 
         var msgStContext = MsgStorageContext.builder()

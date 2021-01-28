@@ -17,7 +17,6 @@
 package com.exactpro.th2.infraoperator.model.kubernetes.client.ipml;
 
 import com.exactpro.th2.infraoperator.model.kubernetes.client.DefaultResourceClient;
-import com.exactpro.th2.infraoperator.spec.link.DoneableTh2Link;
 import com.exactpro.th2.infraoperator.spec.link.Th2Link;
 import com.exactpro.th2.infraoperator.spec.link.Th2LinkList;
 import io.fabric8.kubernetes.client.KubernetesClient;
@@ -29,7 +28,6 @@ public class LinkClient extends DefaultResourceClient<Th2Link> {
                 client,
                 Th2Link.class,
                 Th2LinkList.class,
-                DoneableTh2Link.class,
                 "th2links.th2.exactpro.com"
         );
     }

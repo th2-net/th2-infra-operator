@@ -17,6 +17,8 @@
 package com.exactpro.th2.infraoperator.spec.link;
 
 import io.fabric8.kubernetes.client.CustomResource;
+import io.fabric8.kubernetes.model.annotation.Group;
+import io.fabric8.kubernetes.model.annotation.Version;
 import lombok.Getter;
 import lombok.Setter;
 import lombok.ToString;
@@ -30,6 +32,8 @@ import static com.exactpro.th2.infraoperator.util.ExtractUtils.extractNamespace;
 @Getter
 @Setter
 @ToString(callSuper = true)
+@Group("th2.exactpro.com")
+@Version("v1")
 public class Th2Link extends CustomResource {
 
     private Th2LinkSpec spec;

@@ -17,7 +17,6 @@
 package com.exactpro.th2.infraoperator.model.kubernetes.client;
 
 import com.exactpro.th2.infraoperator.util.CustomResourceUtils;
-import io.fabric8.kubernetes.api.model.Doneable;
 import io.fabric8.kubernetes.api.model.KubernetesResourceList;
 import io.fabric8.kubernetes.api.model.apiextensions.v1.CustomResourceDefinition;
 import io.fabric8.kubernetes.client.*;
@@ -37,7 +36,7 @@ public abstract class DefaultResourceClient<CR extends CustomResource> implement
     private final KubernetesClient client;
     private final Class<CR> resourceType;
     private final CustomResourceDefinition customResourceDefinition;
-    private final MixedOperation<CR, ? extends KubernetesResourceList<CR>, ? extends Doneable<CR>, ? extends Resource<CR, ? extends Doneable<CR>>> instance;
+    private final MixedOperation<CR, ? extends KubernetesResourceList<CR>, ? extends Resource<CR>> instance;
     private final String crdName;
 
     private CRDWatcher watcher;
@@ -46,7 +45,6 @@ public abstract class DefaultResourceClient<CR extends CustomResource> implement
             KubernetesClient client,
             Class<CR> resourceType,
             Class<? extends KubernetesResourceList<CR>> listClass,
-            Class<? extends Doneable<CR>> doneClass,
             String crdName
     ) {
         this.client = client;
@@ -61,7 +59,7 @@ public abstract class DefaultResourceClient<CR extends CustomResource> implement
                 .withPlural(customResourceDefinition.getSpec().getNames().getPlural())
                 .build();
 
-        instance = client.customResources(crdContext, resourceType, listClass, doneClass);
+        instance = client.customResources(crdContext, resourceType, listClass);
 
         watcher = new CRDWatcher();
         watcher.watch();
@@ -99,7 +97,7 @@ public abstract class DefaultResourceClient<CR extends CustomResource> implement
 
 
         @Override
-        public void onClose(KubernetesClientException cause) {
+        public void onClose(WatcherException cause) {
             if (cause != null) {
                 logger.error("Exception watching CustomResourceDefinition {}", crdName, cause);
                 watch();

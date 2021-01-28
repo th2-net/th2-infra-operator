@@ -16,7 +16,6 @@
 
 package com.exactpro.th2.infraoperator.model.kubernetes.client;
 
-import io.fabric8.kubernetes.api.model.Doneable;
 import io.fabric8.kubernetes.api.model.KubernetesResourceList;
 import io.fabric8.kubernetes.api.model.apiextensions.v1.CustomResourceDefinition;
 import io.fabric8.kubernetes.client.CustomResource;
@@ -44,6 +43,6 @@ public interface ResourceClient<CR extends CustomResource> {
     /**
      * @return kubernetes custom client of custom resource
      */
-    MixedOperation<CR, ? extends KubernetesResourceList<CR>, ? extends Doneable<CR>, ? extends Resource<CR, ? extends Doneable<CR>>> getInstance();
+    MixedOperation<CR, ? extends KubernetesResourceList<CR>,  ? extends Resource<CR>> getInstance();
 
 }

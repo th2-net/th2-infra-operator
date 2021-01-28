@@ -18,8 +18,9 @@ package com.exactpro.th2.infraoperator.spec.helmRelease;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
-import com.fasterxml.jackson.annotation.JsonProperty;
 import io.fabric8.kubernetes.client.CustomResource;
+import io.fabric8.kubernetes.model.annotation.Group;
+import io.fabric8.kubernetes.model.annotation.Version;
 import lombok.SneakyThrows;
 import lombok.ToString;
 
@@ -35,10 +36,10 @@ import static com.exactpro.th2.infraoperator.util.JsonUtils.YAML_READER;
 @SuppressWarnings("unchecked")
 @JsonIgnoreProperties(ignoreUnknown = true)
 @ToString(callSuper = true, exclude = {"mergePutter"})
-public class HelmRelease extends CustomResource {
+@Group("helm.fluxcd.io")
+@Version("v1")
+public class HelmRelease extends CustomResource<Map<String, Object>, Object> {
 
-    @JsonProperty("spec")
-    private Map<String, Object> spec = new LinkedHashMap<>();
 
 
     private MergePutter mergePutter = new MergePutter();
@@ -62,28 +63,24 @@ public class HelmRelease extends CustomResource {
     public Map<String, Object> getValuesSection() {
         var valuesAlias = "values";
 
-        var values = (Map<String, Object>) spec.get(valuesAlias);
+        var values = (Map<String, Object>) getSpec().get(valuesAlias);
 
         if (Objects.isNull(values)) {
             var newValues = new LinkedHashMap<String, Object>();
-            spec.put(valuesAlias, newValues);
+            getSpec().put(valuesAlias, newValues);
             return newValues;
         }
 
         return values;
     }
 
-    public Map<String, Object> getSpec() {
-        return new LinkedHashMap<>(spec);
-    }
-
 
     public void removeSpecProp(String key) {
-        spec.remove(key);
+        getSpec().remove(key);
     }
 
     public void putSpecProp(String key, Object value) {
-        mergePutter.putValue(spec, key, value);
+        mergePutter.putValue(getSpec(), key, value);
     }
 
     public void putSpecProp(String key, Map<String, Object> values) {
@@ -103,11 +100,11 @@ public class HelmRelease extends CustomResource {
     }
 
     public void mergeSpecProp(int depth, String key, Map<String, Object> values) {
-        mergePutter.putValue(depth, spec, key, values);
+        mergePutter.putValue(depth, getSpec(), key, values);
     }
 
     public void mergeSpecProp(int depth, Map<String, Object> values) {
-        mergePutter.putValue(depth, spec, values);
+        mergePutter.putValue(depth, getSpec(), values);
     }
 
 
