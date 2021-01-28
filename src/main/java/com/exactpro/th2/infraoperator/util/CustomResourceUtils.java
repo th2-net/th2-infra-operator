@@ -155,6 +155,8 @@ public final class CustomResourceUtils {
 
         @Override
         public void eventReceived(Action action, T resource) {
+            long startDateTime = System.currentTimeMillis();
+
             String namespace = resource.getMetadata().getNamespace();
             List<String> namespacePrefixes = OperatorConfig.INSTANCE.getNamespacePrefixes();
             if (namespace != null
@@ -164,7 +166,17 @@ public final class CustomResourceUtils {
                 return;
             }
 
-            watcher.eventReceived(action, resource);
+            try {
+                watcher.eventReceived(action, resource);
+            } catch (Exception e) {
+                logger.error("Exception processing event {} for \"{}\"", action, annotationFor(resource), e);
+            }
+
+            long endDateTime = System.currentTimeMillis();
+            logger.info("{} Event for {} processed in {}ms",
+                    action.toString(),
+                    annotationFor(resource),
+                    (endDateTime - startDateTime));
         }
 
         @Override

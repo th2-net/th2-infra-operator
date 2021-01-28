@@ -16,6 +16,7 @@
 
 package com.exactpro.th2.infraoperator.operator.manager.impl;
 
+import com.exactpro.th2.infraoperator.OperatorState;
 import com.exactpro.th2.infraoperator.configuration.OperatorConfig;
 import com.exactpro.th2.infraoperator.configuration.RabbitMQConfig;
 import com.exactpro.th2.infraoperator.model.box.configuration.dictionary.factory.impl.DefaultDictionaryFactory;
@@ -31,7 +32,6 @@ import com.exactpro.th2.infraoperator.operator.context.HelmOperatorContext;
 import com.exactpro.th2.infraoperator.spec.Th2CustomResource;
 import com.exactpro.th2.infraoperator.spec.dictionary.Th2Dictionary;
 import com.exactpro.th2.infraoperator.spec.link.Th2Link;
-import com.exactpro.th2.infraoperator.OperatorState;
 import com.exactpro.th2.infraoperator.spec.shared.Identifiable;
 import com.exactpro.th2.infraoperator.spec.strategy.linkResolver.dictionary.impl.DefaultDictionaryLinkResolver;
 import com.exactpro.th2.infraoperator.spec.strategy.linkResolver.dictionary.impl.EmptyDictionaryLinkResolver;
@@ -431,6 +431,7 @@ public class DefaultWatchManager {
 
         @Override
         public void eventReceived(Action action, ConfigMap configMap) {
+            long startDateTime = System.currentTimeMillis();
 
             String namespace = configMap.getMetadata().getNamespace();
             List<String> namespacePrefixes = OperatorConfig.INSTANCE.getNamespacePrefixes();
@@ -486,6 +487,12 @@ public class DefaultWatchManager {
             } catch (Exception e) {
                 logger.error("Exception processing {} event for \"{}\"", action, resourceLabel, e);
             }
+
+            long endDateTime = System.currentTimeMillis();
+            logger.info("{} Event for {} processed in {}ms",
+                    action.toString(),
+                    resourceLabel,
+                    (endDateTime - startDateTime));
         }
     }
 
