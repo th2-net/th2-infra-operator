@@ -60,10 +60,6 @@ import lombok.Getter;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.time.Duration;
-import java.time.Instant;
-import java.time.LocalDateTime;
-import java.time.ZoneOffset;
 import java.util.*;
 import java.util.function.Function;
 import java.util.function.Supplier;
@@ -435,7 +431,7 @@ public class DefaultWatchManager {
 
         @Override
         public void eventReceived(Action action, ConfigMap configMap) {
-            LocalDateTime startDateTime = LocalDateTime.ofInstant(Instant.now(), ZoneOffset.UTC);
+            long startDateTime = System.currentTimeMillis();
 
             String namespace = configMap.getMetadata().getNamespace();
             List<String> namespacePrefixes = OperatorConfig.INSTANCE.getNamespacePrefixes();
@@ -492,12 +488,11 @@ public class DefaultWatchManager {
                 logger.error("Exception processing {} event for \"{}\"", action, resourceLabel, e);
             }
 
-            LocalDateTime endDateTime = LocalDateTime.ofInstant(Instant.now(), ZoneOffset.UTC);
-            java.time.Duration duration = Duration.between(startDateTime, endDateTime);
+            long endDateTime = System.currentTimeMillis();
             logger.info("{} Event for {} processed in {}ms",
                     action.toString(),
                     resourceLabel,
-                    duration.toMillis());
+                    (endDateTime - startDateTime));
         }
     }
 

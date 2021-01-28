@@ -30,10 +30,6 @@ import io.fabric8.kubernetes.internal.KubernetesDeserializer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.time.Duration;
-import java.time.Instant;
-import java.time.LocalDateTime;
-import java.time.ZoneOffset;
 import java.util.List;
 
 
@@ -159,7 +155,7 @@ public final class CustomResourceUtils {
 
         @Override
         public void eventReceived(Action action, T resource) {
-            LocalDateTime startDateTime = LocalDateTime.ofInstant(Instant.now(), ZoneOffset.UTC);
+            long startDateTime = System.currentTimeMillis();
 
             String namespace = resource.getMetadata().getNamespace();
             List<String> namespacePrefixes = OperatorConfig.INSTANCE.getNamespacePrefixes();
@@ -173,15 +169,14 @@ public final class CustomResourceUtils {
             try {
                 watcher.eventReceived(action, resource);
             } catch (Exception e) {
-                logger.error(e.getMessage());
+                logger.error("Exception processing event {} for \"{}\"", action, annotationFor(resource), e);
             }
 
-            LocalDateTime endDateTime = LocalDateTime.ofInstant(Instant.now(), ZoneOffset.UTC);
-            Duration duration = Duration.between(startDateTime, endDateTime);
+            long endDateTime = System.currentTimeMillis();
             logger.info("{} Event for {} processed in {}ms",
                     action.toString(),
                     annotationFor(resource),
-                    duration.toMillis());
+                    (endDateTime - startDateTime));
         }
 
         @Override
