@@ -53,6 +53,8 @@ import io.fabric8.kubernetes.api.model.ConfigMap;
 import io.fabric8.kubernetes.api.model.Namespace;
 import io.fabric8.kubernetes.api.model.Secret;
 import io.fabric8.kubernetes.client.*;
+import io.fabric8.kubernetes.client.informers.ResourceEventHandler;
+import io.fabric8.kubernetes.client.informers.SharedInformerFactory;
 import lombok.Getter;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -88,8 +90,11 @@ public class DefaultWatchManager {
 
     private final List<Supplier<HelmReleaseTh2Op<Th2CustomResource>>> helmWatchersCommands = new ArrayList<>();
 
+    private final SharedInformerFactory sharedInformerFactory;
+
     private DefaultWatchManager(Builder builder) {
         this.operatorBuilder = builder;
+        this.sharedInformerFactory = builder.getClient().informers();
         this.linkClient = new LinkClient(operatorBuilder.getClient());
         this.dictionaryClient = new DictionaryClient(operatorBuilder.getClient());
     }
@@ -342,6 +347,50 @@ public class DefaultWatchManager {
         }
     }
 
+    private static class NamespaceEventHandler implements ResourceEventHandler<Namespace> {
+        private boolean notInNamespacePrefixes(String namespace) {
+            List<String> namespacePrefixes = OperatorConfig.INSTANCE.getNamespacePrefixes();
+            return (namespace != null
+                    && namespacePrefixes != null
+                    && namespacePrefixes.size() > 0
+                    && namespacePrefixes.stream().noneMatch(namespace::startsWith));
+        }
+
+        @Override
+        public void onAdd(Namespace namespace) {
+            if (notInNamespacePrefixes(namespace.getMetadata().getName())) {
+                return;
+            }
+
+            logger.debug("Received ADDED event for namespace: \"{}\"", namespace.getMetadata().getName());
+        }
+
+        @Override
+        public void onUpdate(Namespace oldNamespace, Namespace newNamespace) {
+            if (notInNamespacePrefixes(newNamespace.getMetadata().getName())) {
+                return;
+            }
+
+            logger.debug("Received MODIFIED event for namespace: \"{}\"", newNamespace.getMetadata().getName());
+        }
+
+        @Override
+        public void onDelete(Namespace namespace, boolean deletedFinalStateUnknown) {
+            String namespaceName = namespace.getMetadata().getName();
+
+            if (notInNamespacePrefixes(namespaceName)) {
+                return;
+            }
+
+            logger.debug("Received DELETED event for namespace: \"{}\"", namespaceName);
+
+            synchronized (OperatorState.INSTANCE.getLock(namespaceName)) {
+                logger.debug("Processing event DELETED for namespace: \"{}\"", namespaceName);
+                RabbitMQContext.cleanupVHost(namespaceName);
+            }
+        }
+    }
+
     private static class NamespaceWatcher implements Watcher<Namespace> {
 
         protected KubernetesClient client;
@@ -390,6 +439,122 @@ public class DefaultWatchManager {
                 logger.error("Watcher closed ({})", this.getClass().getSimpleName(), cause);
                 watch();
             }
+        }
+    }
+
+    private class ConfigMapEventHandler implements ResourceEventHandler<ConfigMap> {
+
+        protected KubernetesClient client;
+
+        public ConfigMapEventHandler (KubernetesClient client) {
+            this.client = client;
+        }
+
+        private boolean notInNamespacePrefixes(String namespace) {
+            List<String> namespacePrefixes = OperatorConfig.INSTANCE.getNamespacePrefixes();
+            return (namespace != null
+                    && namespacePrefixes != null
+                    && namespacePrefixes.size() > 0
+                    && namespacePrefixes.stream().noneMatch(namespace::startsWith));
+        }
+
+        private void processEvent (Watcher.Action action, ConfigMap configMap) {
+            String resourceLabel = annotationFor(configMap);
+            String namespace = configMap.getMetadata().getNamespace();
+            String configMapName = configMap.getMetadata().getName();
+
+            if (!(configMapName.equals(OperatorConfig.INSTANCE.getRabbitMQConfigMapName())))
+                return;
+            try {
+                logger.info("Processing {} event for \"{}\"", action, resourceLabel);
+
+                if (configMapName.equals(OperatorConfig.INSTANCE.getRabbitMQConfigMapName())) {
+                    synchronized (OperatorState.INSTANCE.getLock(namespace)) {
+                        OperatorConfig opConfig = OperatorConfig.INSTANCE;
+                        ConfigMaps configMaps = ConfigMaps.INSTANCE;
+                        RabbitMQConfig rabbitMQConfig = configMaps.getRabbitMQConfig4Namespace(namespace);
+
+                        String configContent = configMap.getData().get(CONFIG_MAP_RABBITMQ_PROP_NAME);
+                        if (Strings.isNullOrEmpty(configContent)) {
+                            logger.error("Key \"{}\" not found in \"{}\"", CONFIG_MAP_RABBITMQ_PROP_NAME,
+                                    resourceLabel);
+                            return;
+                        }
+
+                        RabbitMQConfig newRabbitMQConfig = JSON_READER.readValue(configContent, RabbitMQConfig.class);
+                        newRabbitMQConfig.setPassword(readRabbitMQPasswordForSchema(client, namespace,
+                                opConfig.getSchemaSecrets().getRabbitMQ()));
+
+                        if (!Objects.equals(rabbitMQConfig, newRabbitMQConfig)) {
+                            configMaps.setRabbitMQConfig4Namespace(namespace, newRabbitMQConfig);
+                            RabbitMQContext.createVHostIfAbsent(namespace);
+                            logger.info("RabbitMQ ConfigMap has been updated in namespace \"{}\". Updating all boxes",
+                                    namespace);
+                            int refreshedBoxesCount = refreshBoxes(namespace);
+                            logger.info("{} box-definition(s) have been updated", refreshedBoxesCount);
+                        } else
+                            logger.info("RabbitMQ ConfigMap data hasn't changed");
+                    }
+                }
+            } catch (Exception e) {
+                logger.error("Exception processing {} event for \"{}\"", action, resourceLabel, e);
+            }
+        }
+
+        @Override
+        public void onAdd(ConfigMap configMap) {
+            long startDateTime = System.currentTimeMillis();
+
+            if (notInNamespacePrefixes(configMap.getMetadata().getNamespace())) {
+                return;
+            }
+
+            String resourceLabel = annotationFor(configMap);
+            logger.debug("Received ADD event for \"{}\"", annotationFor(configMap));
+
+            processEvent(Watcher.Action.ADDED, configMap);
+
+            long endDateTime = System.currentTimeMillis();
+            logger.info("ADD Event for {} processed in {}ms",
+                    resourceLabel,
+                    (endDateTime - startDateTime));
+        }
+
+        @Override
+        public void onUpdate(ConfigMap oldConfigMap, ConfigMap newConfigMap) {
+            long startDateTime = System.currentTimeMillis();
+
+            if (notInNamespacePrefixes(newConfigMap.getMetadata().getNamespace())) {
+                return;
+            }
+
+            String resourceLabel = annotationFor(newConfigMap);
+            logger.debug("Received ADD event for \"{}\"", annotationFor(newConfigMap));
+
+            processEvent(Watcher.Action.MODIFIED, newConfigMap);
+
+            long endDateTime = System.currentTimeMillis();
+            logger.info("ADD Event for {} processed in {}ms",
+                    resourceLabel,
+                    (endDateTime - startDateTime));
+        }
+
+        @Override
+        public void onDelete(ConfigMap configMap, boolean deletedFinalStateUnknown) {
+            long startDateTime = System.currentTimeMillis();
+
+            if (notInNamespacePrefixes(configMap.getMetadata().getNamespace())) {
+                return;
+            }
+
+            String resourceLabel = annotationFor(configMap);
+            logger.debug("Received ADD event for \"{}\"", annotationFor(configMap));
+
+
+            long endDateTime = System.currentTimeMillis();
+            logger.info("ADD Event for {} processed in {}ms",
+                    resourceLabel,
+                    (endDateTime - startDateTime));
         }
     }
 
@@ -514,6 +679,54 @@ public class DefaultWatchManager {
         return password;
     }
 
+    private class DictionaryEventHandler implements ResourceEventHandler <Th2Dictionary> {
+
+        private Set<String> getLinkedResources(Th2Dictionary dictionary) {
+            Set<String> resources = new HashSet<>();
+
+            var lSingleton = OperatorState.INSTANCE;
+
+            for (var linkRes : lSingleton.getLinkResources(extractNamespace(dictionary))) {
+                for (var dicLink : linkRes.getSpec().getDictionariesRelation()) {
+                    if (dicLink.getDictionary().getName().contains(extractName(dictionary))) {
+                        resources.add(dicLink.getBox());
+                    }
+                }
+            }
+
+            return resources;
+        }
+
+        private void handleEvent (Watcher.Action action, Th2Dictionary dictionary) {
+            String resourceLabel = annotationFor(dictionary);
+            logger.debug("Received {} event for \"{}\"", action, resourceLabel);
+            logger.info("Updating all boxes that contains dictionary \"{}\"", resourceLabel);
+
+            var linkedResources = getLinkedResources(dictionary);
+
+            logger.info("{} box(es) need updating", linkedResources.size());
+
+            var refreshedBoxCount = refreshBoxes(extractNamespace(dictionary), linkedResources);
+
+            logger.info("{} box-definition(s) updated", refreshedBoxCount);
+        }
+
+        @Override
+        public void onAdd(Th2Dictionary dictionary) {
+            handleEvent(Watcher.Action.ADDED, dictionary);
+        }
+
+        @Override
+        public void onUpdate(Th2Dictionary oldDictionary, Th2Dictionary newDictionary) {
+            handleEvent(Watcher.Action.MODIFIED, newDictionary);
+        }
+
+        @Override
+        public void onDelete(Th2Dictionary dictionary, boolean deletedFinalStateUnknown) {
+            handleEvent(Watcher.Action.DELETED, dictionary);
+        }
+    }
+
     private class DictionaryWatcher implements Watcher<Th2Dictionary> {
 
         @Override
@@ -552,6 +765,120 @@ public class DefaultWatchManager {
             }
 
             return resources;
+        }
+    }
+
+    private class LinkResourceEventHandler implements ResourceEventHandler<Th2Link> {
+
+        private <T extends Identifiable> void checkForSameName(List<T> links, String annotation) {
+            Set<String> linkNames = new HashSet<>();
+            for (var link : links) {
+                if (!linkNames.add(link.getName())) {
+                    logger.warn("Link with name: {} already exists in {}", link.getName(), annotation);
+                }
+            }
+        }
+
+
+        @Override
+        public void onAdd(Th2Link th2Link) {
+            logger.debug("Received ADDED event for \"{}\"", annotationFor(th2Link));
+
+            var linkNamespace = extractNamespace(th2Link);
+            synchronized (OperatorState.INSTANCE.getLock(linkNamespace)) {
+
+                var linkSingleton = OperatorState.INSTANCE;
+
+                var resourceLinks = new ArrayList<>(linkSingleton.getLinkResources(linkNamespace));
+
+                var oldLinkRes = getOldLink(th2Link, resourceLinks);
+
+                int refreshedBoxCount = 0;
+
+                checkForSameName(th2Link.getSpec().getBoxesRelation().getRouterMq(), annotationFor(th2Link));
+                checkForSameName(th2Link.getSpec().getBoxesRelation().getRouterGrpc(), annotationFor(th2Link));
+                checkForSameName(th2Link.getSpec().getDictionariesRelation(), annotationFor(th2Link));
+
+                logger.info("Updating all dependent boxes according to provided links ...");
+
+                refreshedBoxCount = refreshBoxesIfNeeded(oldLinkRes, th2Link);
+
+                resourceLinks.remove(th2Link);
+
+                resourceLinks.add(th2Link);
+
+                logger.info("{} box-definition(s) updated", refreshedBoxCount);
+
+                linkSingleton.setLinkResources(linkNamespace, resourceLinks);
+            }
+        }
+
+        @Override
+        public void onUpdate(Th2Link oldTh2Link, Th2Link newTh2Link) {
+            logger.debug("Received UPDATE event for \"{}\"", annotationFor(newTh2Link));
+
+            var linkNamespace = extractNamespace(newTh2Link);
+            synchronized (OperatorState.INSTANCE.getLock(linkNamespace)) {
+
+                var linkSingleton = OperatorState.INSTANCE;
+
+                var resourceLinks = new ArrayList<>(linkSingleton.getLinkResources(linkNamespace));
+
+                var oldLinkRes = getOldLink(newTh2Link, resourceLinks);
+
+                int refreshedBoxCount = 0;
+
+                checkForSameName(newTh2Link.getSpec().getBoxesRelation().getRouterMq(), annotationFor(newTh2Link));
+                checkForSameName(newTh2Link.getSpec().getBoxesRelation().getRouterGrpc(), annotationFor(newTh2Link));
+                checkForSameName(newTh2Link.getSpec().getDictionariesRelation(), annotationFor(newTh2Link));
+
+
+                logger.info("Updating all dependent boxes according to updated links ...");
+
+                refreshedBoxCount = refreshBoxesIfNeeded(oldLinkRes, newTh2Link);
+
+                resourceLinks.remove(newTh2Link);
+
+                resourceLinks.add(newTh2Link);
+
+                logger.info("{} box-definition(s) updated", refreshedBoxCount);
+
+                linkSingleton.setLinkResources(linkNamespace, resourceLinks);
+            }
+        }
+
+        @Override
+        public void onDelete(Th2Link th2Link, boolean deletedFinalStateUnknown) {
+            logger.debug("Received UPDATE event for \"{}\"", annotationFor(th2Link));
+
+            var linkNamespace = extractNamespace(th2Link);
+            synchronized (OperatorState.INSTANCE.getLock(linkNamespace)) {
+
+                var linkSingleton = OperatorState.INSTANCE;
+
+                var resourceLinks = new ArrayList<>(linkSingleton.getLinkResources(linkNamespace));
+
+                var oldLinkRes = getOldLink(th2Link, resourceLinks);
+
+                int refreshedBoxCount = 0;
+
+                checkForSameName(th2Link.getSpec().getBoxesRelation().getRouterMq(), annotationFor(th2Link));
+                checkForSameName(th2Link.getSpec().getBoxesRelation().getRouterGrpc(), annotationFor(th2Link));
+                checkForSameName(th2Link.getSpec().getDictionariesRelation(), annotationFor(th2Link));
+
+
+                logger.info("Updating all dependent boxes of destroyed links ...");
+
+                refreshedBoxCount = refreshBoxesIfNeeded(oldLinkRes, Th2Link.newInstance());
+
+                resourceLinks.remove(th2Link);
+
+                //TODO: Error case not covered
+
+                logger.info("{} box-definition(s) updated", refreshedBoxCount);
+
+                linkSingleton.setLinkResources(linkNamespace, resourceLinks);
+            }
         }
     }
 

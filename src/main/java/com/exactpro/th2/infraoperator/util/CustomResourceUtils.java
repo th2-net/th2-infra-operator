@@ -25,6 +25,7 @@ import io.fabric8.kubernetes.api.model.apiextensions.v1.CustomResourceDefinition
 import io.fabric8.kubernetes.client.*;
 import io.fabric8.kubernetes.client.dsl.MixedOperation;
 import io.fabric8.kubernetes.client.dsl.Resource;
+import io.fabric8.kubernetes.client.informers.ResourceEventHandler;
 import io.fabric8.kubernetes.internal.KubernetesDeserializer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -188,6 +189,118 @@ public final class CustomResourceUtils {
         }
     }
 
+    private static class FilteringEventHandler<T extends CustomResource> implements ResourceEventHandler<T> {
+
+        private String kind;
+        private ResourceEventHandler<T> eventHandler;
+
+        public FilteringEventHandler(
+                ResourceEventHandler<T> eventHandler,
+                Class<T> resourceType,
+                CustomResourceDefinition crd
+        ) {
+
+            this.eventHandler = eventHandler;
+
+            CustomResourceDefinitionSpec spec = crd.getSpec();
+
+            /*
+                Multiple versions in CRD specs in new lib
+                TODO: please check if getting the first version will suffice
+            */
+
+            String apiVersion = spec.getGroup() + "/" + spec.getVersions().get(0);
+            kind = spec.getNames().getKind();
+
+            KubernetesDeserializer.registerCustomKind(apiVersion, kind, resourceType);
+        }
+
+        private boolean notInNamespacePrefixes(String namespace) {
+            List<String> namespacePrefixes = OperatorConfig.INSTANCE.getNamespacePrefixes();
+            return (namespace != null
+                    && namespacePrefixes != null
+                    && namespacePrefixes.size() > 0
+                    && namespacePrefixes.stream().noneMatch(namespace::startsWith));
+        }
+
+        @Override
+        public void onAdd(T obj) {
+            long startDateTime = System.currentTimeMillis();
+
+            if (notInNamespacePrefixes(obj.getMetadata().getNamespace())) {
+                return;
+            }
+
+            try {
+                eventHandler.onAdd(obj);
+            } catch (Exception e) {
+                logger.error("Exception processing ADD {} for \"{}\"", annotationFor(obj), e);
+            }
+
+            long endDateTime = System.currentTimeMillis();
+            logger.info("ADD Event for {} processed in {}ms",
+                    annotationFor(obj),
+                    (endDateTime - startDateTime));
+        }
+
+        @Override
+        public void onUpdate(T oldObj, T newObj) {
+            long startDateTime = System.currentTimeMillis();
+
+            if (notInNamespacePrefixes(oldObj.getMetadata().getNamespace())
+                && notInNamespacePrefixes(newObj.getMetadata().getNamespace())) {
+                return;
+            }
+
+            try {
+                eventHandler.onUpdate(oldObj, newObj);
+            } catch (Exception e) {
+                logger.error("Exception processing UPDATE {} for \"{}\"", annotationFor(oldObj), e);
+            }
+
+            long endDateTime = System.currentTimeMillis();
+            logger.info("UPDATE Event for {} processed in {}ms",
+                    annotationFor(oldObj),
+                    (endDateTime - startDateTime));
+        }
+
+        @Override
+        public void onDelete(T obj, boolean deletedFinalStateUnknown) {
+            long startDateTime = System.currentTimeMillis();
+
+            if (notInNamespacePrefixes(obj.getMetadata().getNamespace())) {
+                return;
+            }
+
+            try {
+                eventHandler.onDelete(obj, deletedFinalStateUnknown);
+            } catch (Exception e) {
+                logger.error("Exception processing DELETE {} for \"{}\"", annotationFor(obj), e);
+            }
+
+            long endDateTime = System.currentTimeMillis();
+            logger.info("DELETE Event for {} processed in {}ms",
+                    annotationFor(obj),
+                    (endDateTime - startDateTime));
+        }
+    }
+
+
+
+    public static <T extends CustomResource> ResourceEventHandler<T> informerFor(
+            ResourceEventHandler<T> eventHandler,
+            Class<T> resourceType,
+            CustomResourceDefinition crd
+    ) {
+        CustomResourceDefinitionSpec spec = crd.getSpec();
+
+        String apiVersion = spec.getGroup() + "/" + spec.getVersions().get(0);
+        String kind = spec.getNames().getKind();
+
+        KubernetesDeserializer.registerCustomKind(apiVersion, kind, resourceType);
+
+        return new FilteringEventHandler<T>(eventHandler, resourceType, crd);
+    }
 
     public static <T extends CustomResource, L extends KubernetesResourceList<T>> Watch watchFor(
             Watcher<T> watcher,
