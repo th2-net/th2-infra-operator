@@ -22,7 +22,6 @@ import io.fabric8.kubernetes.client.CustomResource;
 import io.fabric8.kubernetes.model.annotation.Group;
 import io.fabric8.kubernetes.model.annotation.Version;
 import lombok.SneakyThrows;
-import lombok.ToString;
 
 import java.io.File;
 import java.nio.file.Path;
@@ -35,12 +34,9 @@ import static com.exactpro.th2.infraoperator.util.JsonUtils.YAML_READER;
 
 @SuppressWarnings("unchecked")
 @JsonIgnoreProperties(ignoreUnknown = true)
-@ToString(callSuper = true, exclude = {"mergePutter"})
 @Group("helm.fluxcd.io")
 @Version("v1")
 public class HelmRelease extends CustomResource<Map<String, Object>, Object> {
-
-
 
     private MergePutter mergePutter = new MergePutter();
 
@@ -138,6 +134,10 @@ public class HelmRelease extends CustomResource<Map<String, Object>, Object> {
 
     public void mergeValue(int depth, Map<String, Object> values) {
         mergePutter.putValue(depth, getValuesSection(), values);
+    }
+
+    public String toString() {
+        return "HelmRelease(super=" + super.toString() + ")";
     }
 
 

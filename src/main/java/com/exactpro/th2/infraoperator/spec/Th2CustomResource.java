@@ -18,17 +18,45 @@ package com.exactpro.th2.infraoperator.spec;
 
 import com.exactpro.th2.infraoperator.spec.shared.status.StatusSpec;
 import io.fabric8.kubernetes.client.CustomResource;
-import lombok.Data;
-import lombok.EqualsAndHashCode;
-import lombok.ToString;
 
-@Data
-@ToString(callSuper = true)
-@EqualsAndHashCode(callSuper = true)
 public abstract class Th2CustomResource extends CustomResource {
 
     protected StatusSpec status = new StatusSpec();
 
+    public Th2CustomResource() {
+    }
+
     public abstract Th2Spec getSpec();
 
+    @Override
+    public void setSpec (Object spec) {
+        throw new AssertionError("Setting spec with Object argument");
+    }
+
+    public StatusSpec getStatus() {
+        return this.status;
+    }
+
+    public void setStatus(StatusSpec status) {
+        this.status = status;
+    }
+
+    public boolean equals(final Object o) {
+        if (o == this) return true;
+        if (!(o instanceof Th2CustomResource)) return false;
+        final Th2CustomResource other = (Th2CustomResource) o;
+        if (!super.equals(o)) return false;
+        final Object this$status = this.getStatus();
+        final Object other$status = other.getStatus();
+        if (this$status == null ? other$status != null : !this$status.equals(other$status)) return false;
+        return true;
+    }
+
+    public int hashCode() {
+        throw new AssertionError("HashCode is being called");
+    }
+
+    public String toString() {
+        return "Th2CustomResource(super=" + super.toString() + ", status=" + this.getStatus() + ")";
+    }
 }
