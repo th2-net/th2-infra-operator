@@ -97,17 +97,6 @@ public final class CustomResourceUtils {
                 });
     }
 
-
-    public static <T extends CustomResource> Watch watchFor(ResourceClient<T> resourceClient, Watcher<T> watcher) {
-
-        return watchFor(
-                watcher,
-                resourceClient.getResourceType(),
-                resourceClient.getCustomResourceDefinition(),
-                resourceClient.getInstance()
-        );
-    }
-
     public static <T extends CustomResource> ResourceEventHandler resourceEventHandlerFor(ResourceClient<T> resourceClient, ResourceEventHandler<T> handler) {
 
         return resourceEventHandlerFor(
