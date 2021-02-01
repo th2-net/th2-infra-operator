@@ -26,6 +26,8 @@ import com.exactpro.th2.infraoperator.util.CustomResourceUtils;
 import com.exactpro.th2.infraoperator.util.ExtractUtils;
 import io.fabric8.kubernetes.api.model.*;
 import io.fabric8.kubernetes.client.*;
+import io.fabric8.kubernetes.client.informers.ResourceEventHandler;
+import io.fabric8.kubernetes.client.informers.SharedIndexInformer;
 import lombok.SneakyThrows;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -62,6 +64,157 @@ public abstract class AbstractTh2Operator<CR extends Th2CustomResource, KO exten
         this.targetCrFullNames = ConcurrentHashMap.newKeySet();
     }
 
+    public ResourceEventHandler<CR> generateResourceEventHandler () {
+        return new ResourceEventHandler<CR>() {
+            @Override
+            public void onAdd(CR resource) {
+
+                logger.debug("Received ADDED event for \"{}\"", CustomResourceUtils.annotationFor(resource));
+                String resourceType = ExtractUtils.extractType(resource);
+
+                var resFullName = ExtractUtils.extractFullName(resource);
+
+                try {
+                    logger.debug("Processing event ADDED for \"{}\"", CustomResourceUtils.annotationFor(resource));
+
+                    resource.getStatus().idle();
+
+                    resource = updateStatus(resource);
+
+
+                    startWatchForKubObj(resource);
+
+
+                    logger.info("Resource [{}] has been added", resFullName);
+                    resource.getStatus().installing();
+                    resource = updateStatus(resource);
+
+                    addedEvent(resource);
+
+                } catch (Exception e) {
+                    logger.error("Something went wrong while processing [ADDED] event of [{}<{}>]",
+                            resourceType, resFullName, e);
+
+                    resource.getStatus().failed(e);
+                    updateStatus(resource);
+
+                    String namespace = resource.getMetadata().getNamespace();
+                    Namespace namespaceObj = kubClient.namespaces().withName(namespace).get();
+                    if (namespaceObj == null || !namespaceObj.getStatus().getPhase().equals("Active")) {
+                        logger.info("Namespace \"{}\" deleted or not active, cancelling", namespace);
+                        return;
+                    }
+                    //create and schedule task to redeploy failed component
+                    TriggerRedeployTask triggerRedeployTask = new TriggerRedeployTask(
+                            AbstractTh2Operator.this,
+                            getResourceClient(),
+                            kubClient,
+                            resource,
+                            Action.ADDED,
+                            REDEPLOY_DELAY);
+                    retryableTaskQueue.add(triggerRedeployTask, true);
+
+                    logger.info("added task \"{}\" to scheduler, with delay \"{}\" seconds", triggerRedeployTask.getName(), REDEPLOY_DELAY);
+                }
+            }
+
+            @Override
+            public void onUpdate(CR oldResource, CR newResource) {
+                logger.debug("Received MODIFIED event for \"{}\"", CustomResourceUtils.annotationFor(newResource));
+                String resourceType = ExtractUtils.extractType(newResource);
+
+                var resFullName = ExtractUtils.extractFullName(newResource);
+
+                try {
+
+                    var existRes = bunches.get(resFullName);
+
+                    bunches.put(resFullName, newResource);
+
+                    if (Objects.nonNull(existRes)
+                            && ExtractUtils.compareRefreshTokens(existRes, newResource)
+                            && ExtractUtils.extractGeneration(existRes).equals(ExtractUtils.extractGeneration(newResource))) {
+                        logger.debug("Received MODIFIED event for \"{}\", but no changes detected and exiting", CustomResourceUtils.annotationFor(newResource));
+
+                        return;
+                    }
+
+                    logger.debug("Processing event MODIFIED for \"{}\"", CustomResourceUtils.annotationFor(newResource));
+
+                    newResource.getStatus().idle();
+                    newResource = updateStatus(newResource);
+
+                    startWatchForKubObj(newResource);
+
+                } catch (Exception e) {
+                    logger.error("Something went wrong while processing [MODIFIED] event of [{}<{}>]",
+                            resourceType, resFullName, e);
+
+                    newResource.getStatus().failed(e);
+                    updateStatus(newResource);
+
+                    String namespace = newResource.getMetadata().getNamespace();
+                    Namespace namespaceObj = kubClient.namespaces().withName(namespace).get();
+                    if (namespaceObj == null || !namespaceObj.getStatus().getPhase().equals("Active")) {
+                        logger.info("Namespace \"{}\" deleted or not active, cancelling", namespace);
+                        return;
+                    }
+                    //create and schedule task to redeploy failed component
+                    TriggerRedeployTask triggerRedeployTask = new TriggerRedeployTask(
+                            AbstractTh2Operator.this,
+                            getResourceClient(),
+                            kubClient,
+                            newResource,
+                            Action.ADDED,
+                            REDEPLOY_DELAY);
+                    retryableTaskQueue.add(triggerRedeployTask, true);
+
+                    logger.info("added task \"{}\" to scheduler, with delay \"{}\" seconds", triggerRedeployTask.getName(), REDEPLOY_DELAY);
+                }
+            }
+
+            @Override
+            public void onDelete(CR resource, boolean deletedFinalStateUnknown) {
+                logger.debug("Received DELETED event for \"{}\"", CustomResourceUtils.annotationFor(resource));
+                String resourceType = ExtractUtils.extractType(resource);
+
+                var resFullName = ExtractUtils.extractFullName(resource);
+
+                try {
+                    logger.debug("Processing event DELETED for \"{}\"", CustomResourceUtils.annotationFor(resource));
+
+                    logger.info("Resource [{}] has been deleted", resFullName);
+
+                    deletedEvent(resource);
+
+                } catch (Exception e) {
+                    logger.error("Something went wrong while processing [DELETED] event of [{}<{}>]",
+                            resourceType, resFullName, e);
+
+                    resource.getStatus().failed(e);
+                    updateStatus(resource);
+
+                    String namespace = resource.getMetadata().getNamespace();
+                    Namespace namespaceObj = kubClient.namespaces().withName(namespace).get();
+                    if (namespaceObj == null || !namespaceObj.getStatus().getPhase().equals("Active")) {
+                        logger.info("Namespace \"{}\" deleted or not active, cancelling", namespace);
+                        return;
+                    }
+                    //create and schedule task to redeploy failed component
+                    TriggerRedeployTask triggerRedeployTask = new TriggerRedeployTask(
+                            AbstractTh2Operator.this,
+                            getResourceClient(),
+                            kubClient,
+                            resource,
+                            Action.ADDED,
+                            REDEPLOY_DELAY);
+                    retryableTaskQueue.add(triggerRedeployTask, true);
+
+                    logger.info("added task \"{}\" to scheduler, with delay \"{}\" seconds", triggerRedeployTask.getName(), REDEPLOY_DELAY);
+                }
+            }
+        };
+    }
 
     @Override
     public void eventReceived(Action action, CR resource) {
@@ -342,7 +495,6 @@ public abstract class AbstractTh2Operator<CR extends Th2CustomResource, KO exten
     protected abstract void createKubObj(String namespace, KO kubObj);
 
     protected abstract Watch setKubObjWatcher(String namespace, Watcher<KO> objWatcher);
-
 
     protected class KubObjWatcher implements Watcher<KO> {
 

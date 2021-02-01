@@ -108,6 +108,14 @@ public final class CustomResourceUtils {
         );
     }
 
+    public static <T extends CustomResource> ResourceEventHandler resourceEventHandlerFor(ResourceClient<T> resourceClient, ResourceEventHandler<T> handler) {
+
+        return resourceEventHandlerFor(
+                handler,
+                resourceClient.getResourceType(),
+                resourceClient.getCustomResourceDefinition());
+    }
+
 
     private static class RecoveringWatch<T extends CustomResource, L extends KubernetesResourceList<T>> implements Watcher<T>, Watch {
 
@@ -255,11 +263,11 @@ public final class CustomResourceUtils {
             try {
                 eventHandler.onUpdate(oldObj, newObj);
             } catch (Exception e) {
-                logger.error("Exception processing UPDATE {} for \"{}\"", annotationFor(oldObj), e);
+                logger.error("Exception processing MODIFIED {} for \"{}\"", annotationFor(oldObj), e);
             }
 
             long endDateTime = System.currentTimeMillis();
-            logger.info("UPDATE Event for {} processed in {}ms",
+            logger.info("MODIFIED Event for {} processed in {}ms",
                     annotationFor(oldObj),
                     (endDateTime - startDateTime));
         }
@@ -287,7 +295,7 @@ public final class CustomResourceUtils {
 
 
 
-    public static <T extends CustomResource> ResourceEventHandler<T> informerFor(
+    public static <T extends CustomResource> ResourceEventHandler<T> resourceEventHandlerFor(
             ResourceEventHandler<T> eventHandler,
             Class<T> resourceType,
             CustomResourceDefinition crd

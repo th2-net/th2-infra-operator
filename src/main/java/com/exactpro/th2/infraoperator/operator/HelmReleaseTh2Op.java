@@ -54,6 +54,8 @@ import io.fabric8.kubernetes.client.Watcher;
 import io.fabric8.kubernetes.client.dsl.MixedOperation;
 import io.fabric8.kubernetes.client.dsl.Resource;
 import io.fabric8.kubernetes.client.dsl.base.CustomResourceDefinitionContext;
+import io.fabric8.kubernetes.client.informers.SharedInformer;
+import io.fabric8.kubernetes.client.informers.SharedInformerFactory;
 import lombok.Getter;
 import lombok.SneakyThrows;
 import lombok.experimental.SuperBuilder;
@@ -152,6 +154,8 @@ public abstract class HelmReleaseTh2Op<CR extends Th2CustomResource> extends Abs
         this.activeLinkUpdaterOnDelete = new DeletedActiveLinkUpdater();
         this.activeLinkUpdaterOnAdd = new AddedActiveLinkUpdater();
     }
+
+    public abstract SharedInformer<CR> generateInformerFromFactory (SharedInformerFactory factory);
 
     @Override
     protected void mapProperties(CR resource, HelmRelease helmRelease) {

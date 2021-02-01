@@ -20,8 +20,14 @@ import com.exactpro.th2.infraoperator.model.kubernetes.client.ResourceClient;
 import com.exactpro.th2.infraoperator.model.kubernetes.client.ipml.CoreBoxClient;
 import com.exactpro.th2.infraoperator.operator.GenericHelmTh2Op;
 import com.exactpro.th2.infraoperator.operator.context.HelmOperatorContext;
+import com.exactpro.th2.infraoperator.spec.box.Th2Box;
+import com.exactpro.th2.infraoperator.spec.box.Th2BoxList;
 import com.exactpro.th2.infraoperator.spec.corebox.Th2CoreBox;
+import com.exactpro.th2.infraoperator.spec.corebox.Th2CoreBoxList;
 import io.fabric8.kubernetes.client.KubernetesClient;
+import io.fabric8.kubernetes.client.dsl.base.CustomResourceDefinitionContext;
+import io.fabric8.kubernetes.client.informers.SharedIndexInformer;
+import io.fabric8.kubernetes.client.informers.SharedInformerFactory;
 
 public class CoreBoxHelmTh2Op extends GenericHelmTh2Op<Th2CoreBox> {
 
@@ -39,7 +45,14 @@ public class CoreBoxHelmTh2Op extends GenericHelmTh2Op<Th2CoreBox> {
         return coreBoxClient;
     }
 
-
+    @Override
+    public SharedIndexInformer<Th2CoreBox> generateInformerFromFactory (SharedInformerFactory factory) {
+        return factory.sharedIndexInformerForCustomResource(
+                CustomResourceDefinitionContext.fromCrd(coreBoxClient.getCustomResourceDefinition()),
+                Th2CoreBox.class,
+                Th2CoreBoxList.class,
+                0);
+    }
     @Override
     protected String getKubObjDefPath(Th2CoreBox resource) {
         return "/Th2CoreBox-HelmRelease.yml";

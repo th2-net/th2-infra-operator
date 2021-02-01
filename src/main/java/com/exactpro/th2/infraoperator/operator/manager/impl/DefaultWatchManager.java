@@ -31,7 +31,9 @@ import com.exactpro.th2.infraoperator.operator.HelmReleaseTh2Op;
 import com.exactpro.th2.infraoperator.operator.context.HelmOperatorContext;
 import com.exactpro.th2.infraoperator.spec.Th2CustomResource;
 import com.exactpro.th2.infraoperator.spec.dictionary.Th2Dictionary;
+import com.exactpro.th2.infraoperator.spec.dictionary.Th2DictionaryList;
 import com.exactpro.th2.infraoperator.spec.link.Th2Link;
+import com.exactpro.th2.infraoperator.spec.link.Th2LinkList;
 import com.exactpro.th2.infraoperator.spec.shared.Identifiable;
 import com.exactpro.th2.infraoperator.spec.strategy.linkResolver.dictionary.impl.DefaultDictionaryLinkResolver;
 import com.exactpro.th2.infraoperator.spec.strategy.linkResolver.dictionary.impl.EmptyDictionaryLinkResolver;
@@ -49,11 +51,11 @@ import com.exactpro.th2.infraoperator.spec.strategy.resFinder.dictionary.impl.Em
 import com.exactpro.th2.infraoperator.util.CustomResourceUtils;
 import com.exactpro.th2.infraoperator.util.Strings;
 import com.fasterxml.uuid.Generators;
-import io.fabric8.kubernetes.api.model.ConfigMap;
-import io.fabric8.kubernetes.api.model.Namespace;
-import io.fabric8.kubernetes.api.model.Secret;
+import io.fabric8.kubernetes.api.model.*;
 import io.fabric8.kubernetes.client.*;
+import io.fabric8.kubernetes.client.dsl.base.CustomResourceDefinitionContext;
 import io.fabric8.kubernetes.client.informers.ResourceEventHandler;
+import io.fabric8.kubernetes.client.informers.SharedIndexInformer;
 import io.fabric8.kubernetes.client.informers.SharedInformerFactory;
 import lombok.Getter;
 import org.slf4j.Logger;
@@ -92,6 +94,10 @@ public class DefaultWatchManager {
 
     private final SharedInformerFactory sharedInformerFactory;
 
+    private synchronized SharedInformerFactory getInformerFactory() {
+        return sharedInformerFactory;
+    }
+
     private DefaultWatchManager(Builder builder) {
         this.operatorBuilder = builder;
         this.sharedInformerFactory = builder.getClient().informers();
@@ -109,6 +115,97 @@ public class DefaultWatchManager {
         isWatching = true;
 
         logger.info("All resources are watched");
+    }
+
+    public void startInformers () {
+        logger.info("Starting all informers...");
+
+        SharedInformerFactory sharedInformerFactory = getInformerFactory();
+
+        postInit();
+        registerInformers (sharedInformerFactory);
+
+        isWatching = true;
+
+        sharedInformerFactory.startAllRegisteredInformers();
+        logger.info("All informers has been started");
+    }
+
+    private void registerInformerForLinks (SharedInformerFactory sharedInformerFactory) {
+        SharedIndexInformer<Th2Link> linkInformer = sharedInformerFactory.sharedIndexInformerForCustomResource(
+                CustomResourceDefinitionContext.fromCrd(linkClient.getCustomResourceDefinition()),
+                Th2Link.class,
+                Th2LinkList.class,
+                0);
+
+        linkInformer.addEventHandler(CustomResourceUtils.resourceEventHandlerFor(
+                new LinkResourceEventHandler(),
+                Th2Link.class,
+                linkClient.getCustomResourceDefinition()));
+    }
+
+    private void registerInformerForDictionaries (SharedInformerFactory sharedInformerFactory) {
+        SharedIndexInformer<Th2Dictionary> dictionaryInformer = sharedInformerFactory.sharedIndexInformerForCustomResource(
+                CustomResourceDefinitionContext.fromCrd(dictionaryClient.getCustomResourceDefinition()),
+                Th2Dictionary.class,
+                Th2DictionaryList.class,
+                0);
+
+        dictionaryInformer.addEventHandler(CustomResourceUtils.resourceEventHandlerFor(
+                new DictionaryEventHandler(),
+                Th2Dictionary.class,
+                dictionaryClient.getCustomResourceDefinition()));
+    }
+
+    private void registerInformerForConfigMaps (SharedInformerFactory sharedInformerFactory) {
+        SharedIndexInformer<ConfigMap> configMapInformer = sharedInformerFactory.sharedIndexInformerFor(
+                ConfigMap.class,
+                ConfigMapList.class,
+                0);
+
+        configMapInformer.addEventHandler(new ConfigMapEventHandler(operatorBuilder.getClient()));
+    }
+
+    private void registerInformerForNamespaces (SharedInformerFactory sharedInformerFactory) {
+        SharedIndexInformer<Namespace> namespaceInformer = sharedInformerFactory.sharedIndexInformerFor(
+                Namespace.class,
+                NamespaceList.class,
+                0);
+
+        namespaceInformer.addEventHandler(new NamespaceEventHandler());
+    }
+
+    private void registerInformers (SharedInformerFactory sharedInformerFactory) {
+        registerInformerForLinks(sharedInformerFactory);
+        registerInformerForDictionaries(sharedInformerFactory);
+        registerInformerForConfigMaps(sharedInformerFactory);
+        registerInformerForNamespaces(sharedInformerFactory);
+
+        /*
+             resourceClients initialization should be done first
+             for concurrency issues
+         */
+        for (var hwSup : helmWatchersCommands) {
+            HelmReleaseTh2Op<Th2CustomResource> helmReleaseTh2Op = hwSup.get();
+            resourceClients.add(helmReleaseTh2Op.getResourceClient());
+        }
+
+        /*
+            Appropriate informers will be registered afterwards
+         */
+        for (var hwSup : helmWatchersCommands) {
+            HelmReleaseTh2Op<Th2CustomResource> helmReleaseTh2Op = hwSup.get();
+
+            helmReleaseTh2Op.generateInformerFromFactory(getInformerFactory()).addEventHandler(
+                    CustomResourceUtils.resourceEventHandlerFor(helmReleaseTh2Op.getResourceClient(),
+                            helmReleaseTh2Op.generateResourceEventHandler()));
+        }
+
+    }
+
+    public void stopInformers () {
+        logger.info("Shutting down informers");
+        getInformerFactory().stopAllRegisteredInformers();
     }
 
     public void stopWatching() {

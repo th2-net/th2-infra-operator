@@ -41,11 +41,13 @@ public class Th2CrdController {
             watchManager.addTarget(BoxHelmTh2Op::new);
             watchManager.addTarget(CoreBoxHelmTh2Op::new);
 
-            watchManager.startWatching();
+//            watchManager.startWatching();
+            watchManager.startInformers();
 
         } catch (Exception e) {
             logger.error("Exception in main thread", e);
-            watchManager.stopWatching();
+//            watchManager.stopWatching();
+            watchManager.stopInformers();
             client.close();
         }
     }
