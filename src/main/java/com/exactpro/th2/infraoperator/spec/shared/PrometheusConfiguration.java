@@ -27,14 +27,14 @@ import java.util.Objects;
 @JsonInclude(JsonInclude.Include.NON_NULL)
 @JsonDeserialize(builder = PrometheusConfiguration.Builder.class)
 public final class PrometheusConfiguration {
-    private static final Boolean DEFAULT_VALUE_ENABLED = Boolean.TRUE;
+    private static final String DEFAULT_VALUE_ENABLED = Boolean.TRUE.toString();
 
     private String host;
     private String port;
-    private Boolean enabled;
+    private String enabled;
 
 
-    private PrometheusConfiguration(String host, String port, Boolean enabled) {
+    private PrometheusConfiguration(String host, String port, String enabled) {
         this.host = host;
         this.port = port;
         this.enabled = enabled;
@@ -71,14 +71,14 @@ public final class PrometheusConfiguration {
         return this.port;
     }
 
-    public Boolean getEnabled() {
+    public String getEnabled() {
         return this.enabled;
     }
 
     public static class Builder {
         private String host;
         private String port;
-        private Boolean enabled;
+        private String enabled;
 
         @JsonProperty("host")
         public Builder host(String host) {
@@ -93,7 +93,7 @@ public final class PrometheusConfiguration {
         }
 
         @JsonProperty("enabled")
-        public Builder enabled(Boolean enabled) {
+        public Builder enabled(String enabled) {
             this.enabled = enabled;
             return this;
         }
