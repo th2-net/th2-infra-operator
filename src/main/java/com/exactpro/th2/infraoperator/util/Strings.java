@@ -16,8 +16,17 @@
 
 package com.exactpro.th2.infraoperator.util;
 
+import java.util.List;
+
 public class Strings {
     public static boolean isNullOrEmpty(String s) {
         return (s == null || s.isEmpty());
+    }
+
+    public static boolean nonePrefixMatch(String namespace, List<String> prefixes) {
+        return (namespace != null
+                && prefixes != null
+                && prefixes.size() > 0
+                && prefixes.stream().noneMatch(namespace::startsWith));
     }
 }

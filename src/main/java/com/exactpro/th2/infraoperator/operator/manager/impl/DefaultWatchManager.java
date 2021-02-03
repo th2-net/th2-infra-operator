@@ -456,17 +456,9 @@ public class DefaultWatchManager {
     }
 
     private static class NamespaceEventHandler implements ResourceEventHandler<Namespace> {
-        private boolean notInNamespacePrefixes(String namespace) {
-            List<String> namespacePrefixes = OperatorConfig.INSTANCE.getNamespacePrefixes();
-            return (namespace != null
-                    && namespacePrefixes != null
-                    && namespacePrefixes.size() > 0
-                    && namespacePrefixes.stream().noneMatch(namespace::startsWith));
-        }
-
         @Override
         public void onAdd(Namespace namespace) {
-            if (notInNamespacePrefixes(namespace.getMetadata().getName())) {
+            if (Strings.nonePrefixMatch(namespace.getMetadata().getName(), OperatorConfig.INSTANCE.getNamespacePrefixes())) {
                 return;
             }
 
@@ -475,7 +467,8 @@ public class DefaultWatchManager {
 
         @Override
         public void onUpdate(Namespace oldNamespace, Namespace newNamespace) {
-            if (notInNamespacePrefixes(newNamespace.getMetadata().getName())) {
+            if (Strings.nonePrefixMatch(oldNamespace.getMetadata().getName(), OperatorConfig.INSTANCE.getNamespacePrefixes())
+                && Strings.nonePrefixMatch(newNamespace.getMetadata().getName(), OperatorConfig.INSTANCE.getNamespacePrefixes())) {
                 return;
             }
 
@@ -486,7 +479,7 @@ public class DefaultWatchManager {
         public void onDelete(Namespace namespace, boolean deletedFinalStateUnknown) {
             String namespaceName = namespace.getMetadata().getName();
 
-            if (notInNamespacePrefixes(namespaceName)) {
+            if (Strings.nonePrefixMatch(namespace.getMetadata().getName(), OperatorConfig.INSTANCE.getNamespacePrefixes())) {
                 return;
             }
 
@@ -505,14 +498,6 @@ public class DefaultWatchManager {
 
         public ConfigMapEventHandler (KubernetesClient client) {
             this.client = client;
-        }
-
-        private boolean notInNamespacePrefixes(String namespace) {
-            List<String> namespacePrefixes = OperatorConfig.INSTANCE.getNamespacePrefixes();
-            return (namespace != null
-                    && namespacePrefixes != null
-                    && namespacePrefixes.size() > 0
-                    && namespacePrefixes.stream().noneMatch(namespace::startsWith));
         }
 
         private void processEvent (Watcher.Action action, ConfigMap configMap) {
@@ -562,7 +547,7 @@ public class DefaultWatchManager {
         public void onAdd(ConfigMap configMap) {
             long startDateTime = System.currentTimeMillis();
 
-            if (notInNamespacePrefixes(configMap.getMetadata().getNamespace())) {
+            if (Strings.nonePrefixMatch(configMap.getMetadata().getNamespace(), OperatorConfig.INSTANCE.getNamespacePrefixes())) {
                 return;
             }
 
@@ -581,7 +566,8 @@ public class DefaultWatchManager {
         public void onUpdate(ConfigMap oldConfigMap, ConfigMap newConfigMap) {
             long startDateTime = System.currentTimeMillis();
 
-            if (notInNamespacePrefixes(newConfigMap.getMetadata().getNamespace())) {
+            if (Strings.nonePrefixMatch(oldConfigMap.getMetadata().getNamespace(), OperatorConfig.INSTANCE.getNamespacePrefixes())
+                && Strings.nonePrefixMatch(newConfigMap.getMetadata().getNamespace(), OperatorConfig.INSTANCE.getNamespacePrefixes())) {
                 return;
             }
 
@@ -600,7 +586,7 @@ public class DefaultWatchManager {
         public void onDelete(ConfigMap configMap, boolean deletedFinalStateUnknown) {
             long startDateTime = System.currentTimeMillis();
 
-            if (notInNamespacePrefixes(configMap.getMetadata().getNamespace())) {
+            if (Strings.nonePrefixMatch(configMap.getMetadata().getNamespace(), OperatorConfig.INSTANCE.getNamespacePrefixes())) {
                 return;
             }
 

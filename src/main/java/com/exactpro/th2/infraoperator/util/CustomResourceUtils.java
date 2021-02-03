@@ -129,19 +129,11 @@ public final class CustomResourceUtils {
             KubernetesDeserializer.registerCustomKind(apiVersion, kind, resourceType);
         }
 
-        private boolean notInNamespacePrefixes(String namespace) {
-            List<String> namespacePrefixes = OperatorConfig.INSTANCE.getNamespacePrefixes();
-            return (namespace != null
-                    && namespacePrefixes != null
-                    && namespacePrefixes.size() > 0
-                    && namespacePrefixes.stream().noneMatch(namespace::startsWith));
-        }
-
         @Override
         public void onAdd(T obj) {
             long startDateTime = System.currentTimeMillis();
 
-            if (notInNamespacePrefixes(obj.getMetadata().getNamespace())) {
+            if (Strings.nonePrefixMatch(obj.getMetadata().getNamespace(), OperatorConfig.INSTANCE.getNamespacePrefixes())) {
                 return;
             }
 
@@ -161,8 +153,8 @@ public final class CustomResourceUtils {
         public void onUpdate(T oldObj, T newObj) {
             long startDateTime = System.currentTimeMillis();
 
-            if (notInNamespacePrefixes(oldObj.getMetadata().getNamespace())
-                && notInNamespacePrefixes(newObj.getMetadata().getNamespace())) {
+            if (Strings.nonePrefixMatch(oldObj.getMetadata().getNamespace(), OperatorConfig.INSTANCE.getNamespacePrefixes())
+                && Strings.nonePrefixMatch(newObj.getMetadata().getNamespace(), OperatorConfig.INSTANCE.getNamespacePrefixes())) {
                 return;
             }
 
@@ -182,7 +174,7 @@ public final class CustomResourceUtils {
         public void onDelete(T obj, boolean deletedFinalStateUnknown) {
             long startDateTime = System.currentTimeMillis();
 
-            if (notInNamespacePrefixes(obj.getMetadata().getNamespace())) {
+            if (Strings.nonePrefixMatch(obj.getMetadata().getNamespace(), OperatorConfig.INSTANCE.getNamespacePrefixes())) {
                 return;
             }
 
