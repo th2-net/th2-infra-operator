@@ -38,7 +38,10 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.InputStream;
-import java.util.*;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Objects;
 import java.util.concurrent.ConcurrentHashMap;
 
 import static io.fabric8.kubernetes.client.Watcher.Action.*;
@@ -341,11 +344,6 @@ public abstract class AbstractTh2Operator<CR extends Th2CustomResource, KO exten
                 .withBlockOwnerDeletion(true)
                 .build();
     }
-
-    protected boolean isResourceExist(String resourceFullName) {
-        return Objects.nonNull(bunches.get(resourceFullName));
-    }
-
 
     protected abstract String getKubObjDefPath(CR resource);
 
