@@ -55,16 +55,12 @@ public abstract class AbstractTh2Operator<CR extends Th2CustomResource, KO exten
 
     private final RetryableTaskQueue retryableTaskQueue = new RetryableTaskQueue();
 
-
-    protected final Set<String> targetCrFullNames;
     protected final KubernetesClient kubClient;
     protected final Map<String, CR> bunches;
-
 
     protected AbstractTh2Operator(KubernetesClient kubClient) {
         this.kubClient = kubClient;
         this.bunches = new ConcurrentHashMap<>();
-        this.targetCrFullNames = ConcurrentHashMap.newKeySet();
     }
 
     public ResourceEventHandler<CR> generateResourceEventHandler () {
