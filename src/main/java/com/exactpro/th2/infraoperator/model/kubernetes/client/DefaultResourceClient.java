@@ -39,8 +39,6 @@ public abstract class DefaultResourceClient<CR extends CustomResource> implement
     private final MixedOperation<CR, ? extends KubernetesResourceList<CR>, ? extends Resource<CR>> instance;
     private final String crdName;
 
-    private CRDWatcher watcher;
-
     public DefaultResourceClient(
             KubernetesClient client,
             Class<CR> resourceType,
@@ -60,9 +58,6 @@ public abstract class DefaultResourceClient<CR extends CustomResource> implement
                 .build();
 
         instance = client.customResources(crdContext, resourceType, listClass);
-
-        watcher = new CRDWatcher();
-        watcher.watch();
     }
 
 
@@ -75,35 +70,5 @@ public abstract class DefaultResourceClient<CR extends CustomResource> implement
     public CustomResourceDefinition getCustomResourceDefinition() {
         return customResourceDefinition;
     }
-
-
-
-    private class CRDWatcher implements Watcher<CustomResourceDefinition> {
-
-        private void watch() {
-            client.apiextensions().v1().customResourceDefinitions().withName(crdName).watch(watcher);
-            logger.info("Watching for CustomResourceDefinition \"{}\"", crdName);
-        }
-
-        @Override
-        public void eventReceived(Action action, CustomResourceDefinition crd) {
-
-            logger.debug("Received {} event for \"{}\"", action, CustomResourceUtils.annotationFor(crd));
-            if (action != Action.ADDED) {
-                logger.error("Modification detected for CustomResourceDefinition \"{}\". going to shutdown...", crd.getMetadata().getName());
-                System.exit(1);
-            }
-        }
-
-
-        @Override
-        public void onClose(WatcherException cause) {
-            if (cause != null) {
-                logger.error("Exception watching CustomResourceDefinition {}", crdName, cause);
-                watch();
-            }
-        }
-    }
-
 }
 

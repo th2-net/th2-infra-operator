@@ -52,6 +52,8 @@ import com.exactpro.th2.infraoperator.util.CustomResourceUtils;
 import com.exactpro.th2.infraoperator.util.Strings;
 import com.fasterxml.uuid.Generators;
 import io.fabric8.kubernetes.api.model.*;
+import io.fabric8.kubernetes.api.model.apiextensions.v1.CustomResourceDefinition;
+import io.fabric8.kubernetes.api.model.apiextensions.v1.CustomResourceDefinitionList;
 import io.fabric8.kubernetes.client.*;
 import io.fabric8.kubernetes.client.dsl.base.CustomResourceDefinitionContext;
 import io.fabric8.kubernetes.client.informers.ResourceEventHandler;
@@ -163,11 +165,29 @@ public class DefaultWatchManager {
         namespaceInformer.addEventHandler(new NamespaceEventHandler());
     }
 
+    private void registerInformerForCRDs (SharedInformerFactory sharedInformerFactory) {
+        SharedIndexInformer<CustomResourceDefinition> crdInformer = sharedInformerFactory.sharedIndexInformerFor(
+                CustomResourceDefinition.class,
+                CustomResourceDefinitionList.class,
+                0);
+
+        List<String> crdNames = List.of(
+                "th2boxes.th2.exactpro.com",
+                "th2coreboxes.th2.exactpro.com",
+                "th2dictionaries.th2.exactpro.com",
+                "th2estores.th2.exactpro.com",
+                "th2links.th2.exactpro.com",
+                "th2mstores.th2.exactpro.com");
+
+        crdInformer.addEventHandler(new CRDResourceEventHandler(crdNames));
+    }
+
     private void registerInformers (SharedInformerFactory sharedInformerFactory) {
         registerInformerForLinks(sharedInformerFactory);
         registerInformerForDictionaries(sharedInformerFactory);
         registerInformerForConfigMaps(sharedInformerFactory);
         registerInformerForNamespaces(sharedInformerFactory);
+        registerInformerForCRDs(sharedInformerFactory);
 
         /*
              resourceClients initialization should be done first
@@ -387,6 +407,51 @@ public class DefaultWatchManager {
                 this.maxLinks = oldLinks;
                 this.minLinks = newLinks;
             }
+        }
+    }
+
+    private class CRDResourceEventHandler implements ResourceEventHandler<CustomResourceDefinition> {
+        public CRDResourceEventHandler (List<String> crdNames) {
+            if (crdNames == null) {
+                logger.error("Can't initialize CRDResourceEventHandler, crdNames is null");
+                return;
+            }
+
+            this.crdNames = crdNames;
+        }
+
+        private List<String> crdNames;
+
+        private boolean notInCrdNames (String crdName) {
+            return !(crdNames.stream().anyMatch(el -> el.equals(crdName)));
+        }
+
+        @Override
+        public void onAdd(CustomResourceDefinition crd) {
+            if (notInCrdNames(crd.getMetadata().getName())) {
+                return;
+            }
+
+            logger.debug("Received ADDED event for \"{}\"", CustomResourceUtils.annotationFor(crd));
+        }
+
+        @Override
+        public void onUpdate(CustomResourceDefinition oldCrd, CustomResourceDefinition newCrd) {
+            if (notInCrdNames(oldCrd.getMetadata().getName()))
+                return;
+
+            logger.info("CRD old ResourceVersion {}, new ResourceVersion {}", oldCrd.getMetadata().getResourceVersion(), newCrd.getMetadata().getResourceVersion());
+            logger.error("Modification detected for CustomResourceDefinition \"{}\". going to shutdown...", oldCrd.getMetadata().getName());
+            System.exit(1);       
+        }
+
+        @Override
+        public void onDelete(CustomResourceDefinition crd, boolean deletedFinalStateUnknown) {
+            if (notInCrdNames(crd.getMetadata().getName()))
+                return;
+
+            logger.error("Modification detected for CustomResourceDefinition \"{}\". going to shutdown...", crd.getMetadata().getName());
+            System.exit(1);
         }
     }
 
