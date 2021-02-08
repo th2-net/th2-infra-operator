@@ -22,6 +22,7 @@ import com.exactpro.th2.infraoperator.operator.GenericHelmTh2Op;
 import com.exactpro.th2.infraoperator.operator.context.HelmOperatorContext;
 import com.exactpro.th2.infraoperator.spec.corebox.Th2CoreBox;
 import com.exactpro.th2.infraoperator.spec.corebox.Th2CoreBoxList;
+import com.exactpro.th2.infraoperator.util.CustomResourceUtils;
 import io.fabric8.kubernetes.client.KubernetesClient;
 import io.fabric8.kubernetes.client.dsl.base.CustomResourceDefinitionContext;
 import io.fabric8.kubernetes.client.informers.SharedIndexInformer;
@@ -49,7 +50,7 @@ public class CoreBoxHelmTh2Op extends GenericHelmTh2Op<Th2CoreBox> {
                 CustomResourceDefinitionContext.fromCrd(coreBoxClient.getCustomResourceDefinition()),
                 Th2CoreBox.class,
                 Th2CoreBoxList.class,
-                0);
+                CustomResourceUtils.RESYNC_TIME);
     }
     @Override
     protected String getKubObjDefPath(Th2CoreBox resource) {

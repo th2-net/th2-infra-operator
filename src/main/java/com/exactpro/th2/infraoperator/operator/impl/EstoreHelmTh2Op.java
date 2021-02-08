@@ -22,6 +22,7 @@ import com.exactpro.th2.infraoperator.operator.StoreHelmTh2Op;
 import com.exactpro.th2.infraoperator.operator.context.HelmOperatorContext;
 import com.exactpro.th2.infraoperator.spec.estore.Th2Estore;
 import com.exactpro.th2.infraoperator.spec.estore.Th2EstoreList;
+import com.exactpro.th2.infraoperator.util.CustomResourceUtils;
 import io.fabric8.kubernetes.client.KubernetesClient;
 import io.fabric8.kubernetes.client.dsl.base.CustomResourceDefinitionContext;
 import io.fabric8.kubernetes.client.informers.SharedIndexInformer;
@@ -43,7 +44,7 @@ public class EstoreHelmTh2Op extends StoreHelmTh2Op<Th2Estore> {
                 CustomResourceDefinitionContext.fromCrd(estoreClient.getCustomResourceDefinition()),
                 Th2Estore.class,
                 Th2EstoreList.class,
-                0);
+                CustomResourceUtils.RESYNC_TIME);
     }
 
     @Override

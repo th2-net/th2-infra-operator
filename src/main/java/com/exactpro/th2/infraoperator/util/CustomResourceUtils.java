@@ -35,6 +35,7 @@ public final class CustomResourceUtils {
 
     private static final String DEFAULT_NAMESPACE = "default";
     private static final Logger logger = LoggerFactory.getLogger(CustomResourceUtils.class);
+    public static long RESYNC_TIME = 180000;
 
     private CustomResourceUtils() {
         throw new AssertionError();
@@ -80,7 +81,7 @@ public final class CustomResourceUtils {
         final String extractedNamespace = ExtractUtils.extractNamespace(crd);
         final String crdNamespace = (extractedNamespace == null) ? DEFAULT_NAMESPACE : extractedNamespace;
 
-        return kubClient.customResourceDefinitions()
+            return kubClient.customResourceDefinitions()
                 .list()
                 .getItems()
                 .stream()

@@ -62,6 +62,7 @@ import io.fabric8.kubernetes.client.dsl.Resource;
 import io.fabric8.kubernetes.client.dsl.base.CustomResourceDefinitionContext;
 import io.fabric8.kubernetes.client.informers.ResourceEventHandler;
 import io.fabric8.kubernetes.client.informers.SharedIndexInformer;
+import io.fabric8.kubernetes.client.informers.SharedInformerEventListener;
 import io.fabric8.kubernetes.client.informers.SharedInformerFactory;
 import lombok.Getter;
 import org.slf4j.Logger;
@@ -111,6 +112,13 @@ public class DefaultWatchManager {
         this.sharedInformerFactory = builder.getClient().informers();
         this.linkClient = new LinkClient(operatorBuilder.getClient());
         this.dictionaryClient = new DictionaryClient(operatorBuilder.getClient());
+
+        sharedInformerFactory.addSharedInformerEventListener(new SharedInformerEventListener() {
+            @Override
+            public void onException(Exception exception) {
+                logger.error("Exception in InformerFactory : {}", exception.getMessage());
+            }
+        });
     }
 
     public void startInformers () {
@@ -137,12 +145,13 @@ public class DefaultWatchManager {
                 CustomResourceDefinitionContext.fromCrd(linkClient.getCustomResourceDefinition()),
                 Th2Link.class,
                 Th2LinkList.class,
-                0);
+                CustomResourceUtils.RESYNC_TIME);
 
-        linkInformer.addEventHandler(CustomResourceUtils.resourceEventHandlerFor(
+        linkInformer.addEventHandlerWithResyncPeriod(CustomResourceUtils.resourceEventHandlerFor(
                 new LinkResourceEventHandler(),
                 Th2Link.class,
-                linkClient.getCustomResourceDefinition()));
+                linkClient.getCustomResourceDefinition()),
+                0);
     }
 
     private void registerInformerForDictionaries (SharedInformerFactory sharedInformerFactory) {
@@ -150,37 +159,38 @@ public class DefaultWatchManager {
                 CustomResourceDefinitionContext.fromCrd(dictionaryClient.getCustomResourceDefinition()),
                 Th2Dictionary.class,
                 Th2DictionaryList.class,
-                0);
+                CustomResourceUtils.RESYNC_TIME);
 
-        dictionaryInformer.addEventHandler(CustomResourceUtils.resourceEventHandlerFor(
+        dictionaryInformer.addEventHandlerWithResyncPeriod(CustomResourceUtils.resourceEventHandlerFor(
                 new DictionaryEventHandler(),
                 Th2Dictionary.class,
-                dictionaryClient.getCustomResourceDefinition()));
+                dictionaryClient.getCustomResourceDefinition()),
+                0);
     }
 
     private void registerInformerForConfigMaps (SharedInformerFactory sharedInformerFactory) {
         SharedIndexInformer<ConfigMap> configMapInformer = sharedInformerFactory.sharedIndexInformerFor(
                 ConfigMap.class,
                 ConfigMapList.class,
-                0);
+                CustomResourceUtils.RESYNC_TIME);
 
-        configMapInformer.addEventHandler(new ConfigMapEventHandler(operatorBuilder.getClient()));
+        configMapInformer.addEventHandlerWithResyncPeriod(new ConfigMapEventHandler(operatorBuilder.getClient()), 0);
     }
 
     private void registerInformerForNamespaces (SharedInformerFactory sharedInformerFactory) {
         SharedIndexInformer<Namespace> namespaceInformer = sharedInformerFactory.sharedIndexInformerFor(
                 Namespace.class,
                 NamespaceList.class,
-                0);
+                CustomResourceUtils.RESYNC_TIME);
 
-        namespaceInformer.addEventHandler(new NamespaceEventHandler());
+        namespaceInformer.addEventHandlerWithResyncPeriod(new NamespaceEventHandler(), 0);
     }
 
     private void registerInformerForCRDs (SharedInformerFactory sharedInformerFactory) {
         SharedIndexInformer<CustomResourceDefinition> crdInformer = sharedInformerFactory.sharedIndexInformerFor(
                 CustomResourceDefinition.class,
                 CustomResourceDefinitionList.class,
-                0);
+                CustomResourceUtils.RESYNC_TIME);
 
         List<String> crdNames = List.of(
                 "th2boxes.th2.exactpro.com",
@@ -190,7 +200,7 @@ public class DefaultWatchManager {
                 "th2links.th2.exactpro.com",
                 "th2mstores.th2.exactpro.com");
 
-        crdInformer.addEventHandler(new CRDResourceEventHandler(crdNames));
+        crdInformer.addEventHandlerWithResyncPeriod(new CRDResourceEventHandler(crdNames), 0);
     }
 
     private void registerInformerForHelmReleases(SharedInformerFactory factory, KubernetesClient client) {
@@ -205,12 +215,13 @@ public class DefaultWatchManager {
                         .build(),
                 HelmRelease.class,
                 HelmReleaseList.class,
-                0);
+                CustomResourceUtils.RESYNC_TIME);
 
-        helmReleaseInformer.addEventHandler(CustomResourceUtils.resourceEventHandlerFor(
+        helmReleaseInformer.addEventHandlerWithResyncPeriod(CustomResourceUtils.resourceEventHandlerFor(
                 new HelmReleaseEventHandler(client),
                 HelmRelease.class,
-                dictionaryClient.getCustomResourceDefinition()));
+                dictionaryClient.getCustomResourceDefinition()),
+                0);
     }
 
     private void registerInformers (SharedInformerFactory sharedInformerFactory) {
@@ -236,9 +247,10 @@ public class DefaultWatchManager {
         for (var hwSup : helmWatchersCommands) {
             HelmReleaseTh2Op<Th2CustomResource> helmReleaseTh2Op = hwSup.get();
 
-            helmReleaseTh2Op.generateInformerFromFactory(getInformerFactory()).addEventHandler(
+            helmReleaseTh2Op.generateInformerFromFactory(getInformerFactory()).addEventHandlerWithResyncPeriod(
                     CustomResourceUtils.resourceEventHandlerFor(helmReleaseTh2Op.getResourceClient(),
-                            helmReleaseTh2Op.generateResourceEventHandler()));
+                            helmReleaseTh2Op.generateResourceEventHandler()),
+                    0);
         }
 
     }
@@ -513,7 +525,8 @@ public class DefaultWatchManager {
 
         @Override
         public void onUpdate(CustomResourceDefinition oldCrd, CustomResourceDefinition newCrd) {
-            if (notInCrdNames(oldCrd.getMetadata().getName()))
+            if (notInCrdNames(oldCrd.getMetadata().getName())
+                || oldCrd.getMetadata().getResourceVersion().equals(newCrd.getMetadata().getResourceVersion()))
                 return;
 
             logger.info("CRD old ResourceVersion {}, new ResourceVersion {}", oldCrd.getMetadata().getResourceVersion(), newCrd.getMetadata().getResourceVersion());

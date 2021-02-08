@@ -22,6 +22,7 @@ import com.exactpro.th2.infraoperator.operator.StoreHelmTh2Op;
 import com.exactpro.th2.infraoperator.operator.context.HelmOperatorContext;
 import com.exactpro.th2.infraoperator.spec.mstore.Th2Mstore;
 import com.exactpro.th2.infraoperator.spec.mstore.Th2MstoreList;
+import com.exactpro.th2.infraoperator.util.CustomResourceUtils;
 import io.fabric8.kubernetes.client.KubernetesClient;
 import io.fabric8.kubernetes.client.dsl.base.CustomResourceDefinitionContext;
 import io.fabric8.kubernetes.client.informers.SharedIndexInformer;
@@ -43,8 +44,7 @@ public class MstoreHelmTh2Op extends StoreHelmTh2Op<Th2Mstore> {
                 CustomResourceDefinitionContext.fromCrd(mstoreClient.getCustomResourceDefinition()),
                 Th2Mstore.class,
                 Th2MstoreList.class,
-                0
-        );
+                CustomResourceUtils.RESYNC_TIME);
     }
 
     @Override

@@ -22,6 +22,7 @@ import com.exactpro.th2.infraoperator.operator.GenericHelmTh2Op;
 import com.exactpro.th2.infraoperator.operator.context.HelmOperatorContext;
 import com.exactpro.th2.infraoperator.spec.box.Th2Box;
 import com.exactpro.th2.infraoperator.spec.box.Th2BoxList;
+import com.exactpro.th2.infraoperator.util.CustomResourceUtils;
 import io.fabric8.kubernetes.client.KubernetesClient;
 import io.fabric8.kubernetes.client.dsl.base.CustomResourceDefinitionContext;
 import io.fabric8.kubernetes.client.informers.SharedIndexInformer;
@@ -43,7 +44,7 @@ public class BoxHelmTh2Op extends GenericHelmTh2Op<Th2Box> {
                 CustomResourceDefinitionContext.fromCrd(boxClient.getCustomResourceDefinition()),
                 Th2Box.class,
                 Th2BoxList.class,
-                0);
+                CustomResourceUtils.RESYNC_TIME);
     }
 
     @Override
