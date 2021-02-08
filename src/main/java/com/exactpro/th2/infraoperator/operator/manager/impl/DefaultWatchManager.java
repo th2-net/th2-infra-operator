@@ -576,9 +576,15 @@ public class DefaultWatchManager {
 
             logger.debug("Received DELETED event for namespace: \"{}\"", namespaceName);
 
-            synchronized (OperatorState.INSTANCE.getLock(namespaceName)) {
+            var lock = OperatorState.INSTANCE.getLock(namespaceName);
+
+            try {
+                lock.lock();
+
                 logger.debug("Processing event DELETED for namespace: \"{}\"", namespaceName);
                 RabbitMQContext.cleanupVHost(namespaceName);
+            } finally {
+                lock.unlock();
             }
         }
     }
@@ -602,7 +608,10 @@ public class DefaultWatchManager {
                 logger.info("Processing {} event for \"{}\"", action, resourceLabel);
 
                 if (configMapName.equals(OperatorConfig.INSTANCE.getRabbitMQConfigMapName())) {
-                    synchronized (OperatorState.INSTANCE.getLock(namespace)) {
+                    var lock = OperatorState.INSTANCE.getLock(namespace);
+                    try {
+                        lock.lock();
+
                         OperatorConfig opConfig = OperatorConfig.INSTANCE;
                         ConfigMaps configMaps = ConfigMaps.INSTANCE;
                         RabbitMQConfig rabbitMQConfig = configMaps.getRabbitMQConfig4Namespace(namespace);
@@ -627,6 +636,8 @@ public class DefaultWatchManager {
                             logger.info("{} box-definition(s) have been updated", refreshedBoxesCount);
                         } else
                             logger.info("RabbitMQ ConfigMap data hasn't changed");
+                    } finally {
+                        lock.unlock();
                     }
                 }
             } catch (Exception e) {
@@ -776,7 +787,9 @@ public class DefaultWatchManager {
         public void onAdd(Th2Link th2Link) {
 
             var linkNamespace = extractNamespace(th2Link);
-            synchronized (OperatorState.INSTANCE.getLock(linkNamespace)) {
+            var lock = OperatorState.INSTANCE.getLock(linkNamespace);
+            try {
+                lock.lock();
 
                 var linkSingleton = OperatorState.INSTANCE;
 
@@ -793,14 +806,14 @@ public class DefaultWatchManager {
                 logger.info("Updating all dependent boxes according to provided links ...");
 
                 refreshedBoxCount = refreshBoxesIfNeeded(oldLinkRes, th2Link);
-
                 resourceLinks.remove(th2Link);
-
                 resourceLinks.add(th2Link);
 
                 logger.info("{} box-definition(s) updated", refreshedBoxCount);
 
                 linkSingleton.setLinkResources(linkNamespace, resourceLinks);
+            } finally {
+                lock.unlock();
             }
         }
 
@@ -808,7 +821,9 @@ public class DefaultWatchManager {
         public void onUpdate(Th2Link oldTh2Link, Th2Link newTh2Link) {
 
             var linkNamespace = extractNamespace(newTh2Link);
-            synchronized (OperatorState.INSTANCE.getLock(linkNamespace)) {
+            var lock = OperatorState.INSTANCE.getLock(linkNamespace);
+            try {
+                lock.lock();
 
                 var linkSingleton = OperatorState.INSTANCE;
 
@@ -834,6 +849,8 @@ public class DefaultWatchManager {
                 logger.info("{} box-definition(s) updated", refreshedBoxCount);
 
                 linkSingleton.setLinkResources(linkNamespace, resourceLinks);
+            } finally {
+                lock.unlock();
             }
         }
 
@@ -841,7 +858,9 @@ public class DefaultWatchManager {
         public void onDelete(Th2Link th2Link, boolean deletedFinalStateUnknown) {
 
             var linkNamespace = extractNamespace(th2Link);
-            synchronized (OperatorState.INSTANCE.getLock(linkNamespace)) {
+            var lock = OperatorState.INSTANCE.getLock(linkNamespace);
+            try {
+                lock.lock();
 
                 var linkSingleton = OperatorState.INSTANCE;
 
@@ -867,6 +886,8 @@ public class DefaultWatchManager {
                 logger.info("{} box-definition(s) updated", refreshedBoxCount);
 
                 linkSingleton.setLinkResources(linkNamespace, resourceLinks);
+            } finally {
+                lock.unlock();
             }
         }
 

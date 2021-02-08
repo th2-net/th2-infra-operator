@@ -53,11 +53,15 @@ public class StoreDependentBoxResourceFinder implements BoxResourceFinder {
         var resource = resourceFinder.getResource(name, namespace, additionalSource);
         if (ExtractUtils.isStorageBox(name)) {
 
-            synchronized (OperatorState.INSTANCE.getLock(namespace)) {
+            var lock = OperatorState.INSTANCE.getLock(namespace);
+            try {
+                lock.lock();
                 if (resource != null)
                     return resource;
                 else
                     return generateFakeResource(name, namespace, generateStoragePins(namespace));
+            } finally {
+                lock.unlock();
             }
         }
 

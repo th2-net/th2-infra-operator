@@ -16,9 +16,9 @@
 
 package com.exactpro.th2.infraoperator.operator;
 
+import com.exactpro.th2.infraoperator.OperatorState;
 import com.exactpro.th2.infraoperator.operator.context.HelmOperatorContext;
 import com.exactpro.th2.infraoperator.spec.Th2CustomResource;
-import com.exactpro.th2.infraoperator.OperatorState;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -58,11 +58,12 @@ public abstract class StoreHelmTh2Op<CR extends Th2CustomResource> extends HelmR
     protected void addedEvent(CR resource) {
 
         var msNamespace = extractNamespace(resource);
+        var lock = OperatorState.INSTANCE.getLock(msNamespace);
 
-        synchronized (OperatorState.INSTANCE.getLock(msNamespace)) {
+        try {
+            lock.lock();
 
             var msName = extractName(resource);
-
             var stName = getStorageName();
 
             if (!msName.equals(stName)) {
@@ -71,16 +72,14 @@ public abstract class StoreHelmTh2Op<CR extends Th2CustomResource> extends HelmR
                         extractType(resource), msNamespace, msName, stName);
 
                 logger.warn(msg);
-
                 resource.getStatus().failed(msg);
-
                 updateStatus(resource);
-
                 return;
             }
-
             super.addedEvent(resource);
 
+        } finally {
+            lock.unlock();
         }
 
     }

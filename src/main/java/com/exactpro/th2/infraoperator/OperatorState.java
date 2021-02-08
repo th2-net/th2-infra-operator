@@ -21,6 +21,8 @@ import com.exactpro.th2.infraoperator.spec.link.Th2Link;
 import com.exactpro.th2.infraoperator.spec.link.relation.dictionaries.DictionaryBinding;
 import com.exactpro.th2.infraoperator.spec.link.relation.pins.PinCoupling;
 import com.exactpro.th2.infraoperator.spec.link.relation.pins.PinCouplingGRPC;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
@@ -35,7 +37,7 @@ import static com.exactpro.th2.infraoperator.operator.StoreHelmTh2Op.MESSAGE_STO
 public enum OperatorState {
     INSTANCE;
 
-    private Map<String, Lock> locks = new ConcurrentHashMap<>();
+    private static final Logger logger = LoggerFactory.getLogger(OperatorState.class);
     private Map<String, NamespaceState> namespaceStates = new ConcurrentHashMap<>();
 
 
@@ -116,8 +118,8 @@ public enum OperatorState {
     }
 
 
-    public Lock getLock(String namespace) {
-        return locks.computeIfAbsent(namespace, k -> new ReentrantLock());
+    public NamespaceLock getLock(String namespace) {
+        return computeIfAbsent(namespace);
     }
 
 
@@ -127,13 +129,32 @@ public enum OperatorState {
 
 
 
-    public static class NamespaceState {
+    public interface NamespaceLock {
+        void lock();
+        void unlock();
+    }
+
+    public static class NamespaceState implements NamespaceLock {
 
         private List<Th2Link> linkResources = new ArrayList<>();
         private List<EnqueuedLink> mqActiveLinks = new ArrayList<>();
         private List<PinCouplingGRPC> grpcActiveLinks = new ArrayList<>();
         private List<DictionaryBinding> dictionaryBindings = new ArrayList<>();
 
+        private Lock lock = new ReentrantLock(true);
+
+        @Override
+        public void lock() {
+            logger.debug("Acquiring lock for NamespaceState");
+            lock.lock();
+            logger.debug("Lock acquired");
+        }
+
+        @Override
+        public void unlock() {
+            lock.unlock();
+            logger.debug("NamespaceState lock released");
+        }
 
         public List<Th2Link> getLinkResources() {
             return this.linkResources;

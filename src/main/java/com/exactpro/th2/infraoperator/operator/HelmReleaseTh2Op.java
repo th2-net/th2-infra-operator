@@ -210,18 +210,18 @@ public abstract class HelmReleaseTh2Op<CR extends Th2CustomResource> extends Abs
     @Override
     protected void addedEvent(CR resource) {
 
-        synchronized (OperatorState.INSTANCE.getLock(ExtractUtils.extractNamespace(resource))) {
+        var lock = OperatorState.INSTANCE.getLock(ExtractUtils.extractNamespace(resource));
+        try {
+            lock.lock();
 
             updateEventStorageLinksBeforeAdd(resource);
-
             updateMsgStorageLinksBeforeAdd(resource);
-
             var linkedResources = updateActiveLinksBeforeAdd(resource);
-
             updateDependedResourcesIfNeeded(resource, linkedResources);
-
             super.addedEvent(resource);
 
+        } finally {
+            lock.unlock();
         }
 
     }
@@ -229,40 +229,40 @@ public abstract class HelmReleaseTh2Op<CR extends Th2CustomResource> extends Abs
     @Override
     protected void modifiedEvent(CR resource) {
 
-        synchronized (OperatorState.INSTANCE.getLock(ExtractUtils.extractNamespace(resource))) {
+        var lock = OperatorState.INSTANCE.getLock(ExtractUtils.extractNamespace(resource));
+        try {
+            lock.lock();
 
             updateEventStorageLinksBeforeAdd(resource);
-
             updateMsgStorageLinksBeforeAdd(resource);
-
             var linkedResources = updateActiveLinksBeforeAdd(resource);
-
             updateDependedResourcesIfNeeded(resource, linkedResources);
-
             super.modifiedEvent(resource);
 
+        } finally {
+            lock.unlock();
         }
-
     }
+
 
     @Override
     protected void deletedEvent(CR resource) {
 
-        synchronized (OperatorState.INSTANCE.getLock(ExtractUtils.extractNamespace(resource))) {
+        var lock = OperatorState.INSTANCE.getLock(ExtractUtils.extractNamespace(resource));
+        try {
+            lock.lock();
 
             super.deletedEvent(resource);
-
             updateEventStorageLinksAfterDelete(resource);
-
             updateMsgStorageLinksAfterDelete(resource);
-
             var linkedResources = updateActiveLinksAfterDelete(resource);
-
             updateDependedResourcesIfNeeded(resource, linkedResources);
 
+        } finally {
+            lock.unlock();
         }
-
     }
+
 
     @Override
     protected void setupKubObj(CR resource, HelmRelease helmRelease) {
