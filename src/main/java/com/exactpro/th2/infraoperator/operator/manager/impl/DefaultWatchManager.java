@@ -219,7 +219,7 @@ public class DefaultWatchManager {
         registerInformerForConfigMaps(sharedInformerFactory);
         registerInformerForNamespaces(sharedInformerFactory);
         registerInformerForCRDs(sharedInformerFactory);
-        registerInformerForHelmReleases(sharedInformerFactory, operatorBuilder.getClient());
+//        registerInformerForHelmReleases(sharedInformerFactory, operatorBuilder.getClient());
 
         /*
              resourceClients initialization should be done first

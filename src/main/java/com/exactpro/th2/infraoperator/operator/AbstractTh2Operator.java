@@ -229,7 +229,7 @@ public abstract class AbstractTh2Operator<CR extends Th2CustomResource, KO exten
 
         // kubernetes objects will be removed when custom resource removed (through 'OwnerReference')
 
-        removeKubObjAnnotation(resource);
+//        removeKubObjAnnotation(resource);
         bunches.remove(ExtractUtils.extractFullName(resource));
 
     }
