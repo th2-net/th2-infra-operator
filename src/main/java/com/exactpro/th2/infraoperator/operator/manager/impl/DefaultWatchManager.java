@@ -28,7 +28,6 @@ import com.exactpro.th2.infraoperator.model.kubernetes.client.ipml.DictionaryCli
 import com.exactpro.th2.infraoperator.model.kubernetes.client.ipml.LinkClient;
 import com.exactpro.th2.infraoperator.model.kubernetes.configmaps.ConfigMaps;
 import com.exactpro.th2.infraoperator.operator.HelmReleaseTh2Op;
-import com.exactpro.th2.infraoperator.operator.context.EventCounter;
 import com.exactpro.th2.infraoperator.operator.context.HelmOperatorContext;
 import com.exactpro.th2.infraoperator.spec.Th2CustomResource;
 import com.exactpro.th2.infraoperator.spec.dictionary.Th2Dictionary;
@@ -57,7 +56,9 @@ import com.fasterxml.uuid.Generators;
 import io.fabric8.kubernetes.api.model.*;
 import io.fabric8.kubernetes.api.model.apiextensions.v1.CustomResourceDefinition;
 import io.fabric8.kubernetes.api.model.apiextensions.v1.CustomResourceDefinitionList;
-import io.fabric8.kubernetes.client.*;
+import io.fabric8.kubernetes.client.KubernetesClient;
+import io.fabric8.kubernetes.client.Watch;
+import io.fabric8.kubernetes.client.Watcher;
 import io.fabric8.kubernetes.client.dsl.MixedOperation;
 import io.fabric8.kubernetes.client.dsl.Resource;
 import io.fabric8.kubernetes.client.dsl.base.CustomResourceDefinitionContext;
@@ -732,7 +733,6 @@ public class DefaultWatchManager {
 
         private void handleEvent (Watcher.Action action, Th2Dictionary dictionary) {
             String resourceLabel = annotationFor(dictionary);
-            logger.debug("Received {} event for \"{}\"", action, resourceLabel);
             logger.info("Updating all boxes that contains dictionary \"{}\"", resourceLabel);
 
             var linkedResources = getLinkedResources(dictionary);
@@ -775,12 +775,6 @@ public class DefaultWatchManager {
         @Override
         public void onAdd(Th2Link th2Link) {
 
-            // temp fix: change thread name for logging purposes
-            // TODO: propagate event id logging in code
-            Thread.currentThread().setName(EventCounter.newEvent());
-
-            logger.debug("Received ADDED event for \"{}\"", annotationFor(th2Link));
-
             var linkNamespace = extractNamespace(th2Link);
             synchronized (OperatorState.INSTANCE.getLock(linkNamespace)) {
 
@@ -808,20 +802,10 @@ public class DefaultWatchManager {
 
                 linkSingleton.setLinkResources(linkNamespace, resourceLinks);
             }
-
-            EventCounter.closeEvent();
-            Thread.currentThread().setName("thread-" + Thread.currentThread().getId());
-
         }
 
         @Override
         public void onUpdate(Th2Link oldTh2Link, Th2Link newTh2Link) {
-
-            // temp fix: change thread name for logging purposes
-            // TODO: propagate event id logging in code
-            Thread.currentThread().setName(EventCounter.newEvent());
-
-            logger.debug("Received UPDATE event for \"{}\"", annotationFor(newTh2Link));
 
             var linkNamespace = extractNamespace(newTh2Link);
             synchronized (OperatorState.INSTANCE.getLock(linkNamespace)) {
@@ -851,20 +835,10 @@ public class DefaultWatchManager {
 
                 linkSingleton.setLinkResources(linkNamespace, resourceLinks);
             }
-
-            EventCounter.closeEvent();
-            Thread.currentThread().setName("thread-" + Thread.currentThread().getId());
-
         }
 
         @Override
         public void onDelete(Th2Link th2Link, boolean deletedFinalStateUnknown) {
-
-            // temp fix: change thread name for logging purposes
-            // TODO: propagate event id logging in code
-            Thread.currentThread().setName(EventCounter.newEvent());
-
-            logger.debug("Received UPDATE event for \"{}\"", annotationFor(th2Link));
 
             var linkNamespace = extractNamespace(th2Link);
             synchronized (OperatorState.INSTANCE.getLock(linkNamespace)) {
@@ -894,8 +868,6 @@ public class DefaultWatchManager {
 
                 linkSingleton.setLinkResources(linkNamespace, resourceLinks);
             }
-            EventCounter.closeEvent();
-            Thread.currentThread().setName("thread-" + Thread.currentThread().getId());
         }
 
 

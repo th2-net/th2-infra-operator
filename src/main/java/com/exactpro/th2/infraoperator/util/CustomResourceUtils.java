@@ -18,6 +18,7 @@ package com.exactpro.th2.infraoperator.util;
 
 import com.exactpro.th2.infraoperator.configuration.OperatorConfig;
 import com.exactpro.th2.infraoperator.model.kubernetes.client.ResourceClient;
+import com.exactpro.th2.infraoperator.operator.context.EventCounter;
 import io.fabric8.kubernetes.api.model.HasMetadata;
 import io.fabric8.kubernetes.api.model.apiextensions.v1.CustomResourceDefinition;
 import io.fabric8.kubernetes.api.model.apiextensions.v1.CustomResourceDefinitionSpec;
@@ -27,8 +28,6 @@ import io.fabric8.kubernetes.client.informers.ResourceEventHandler;
 import io.fabric8.kubernetes.internal.KubernetesDeserializer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-import java.util.List;
 
 
 public final class CustomResourceUtils {
@@ -130,65 +129,113 @@ public final class CustomResourceUtils {
             KubernetesDeserializer.registerCustomKind(apiVersion, kind, resourceType);
         }
 
+
         @Override
         public void onAdd(T obj) {
-            long startDateTime = System.currentTimeMillis();
-
-            if (Strings.nonePrefixMatch(obj.getMetadata().getNamespace(), OperatorConfig.INSTANCE.getNamespacePrefixes())) {
-                return;
-            }
 
             try {
-                eventHandler.onAdd(obj);
-            } catch (Exception e) {
-                logger.error("Exception processing ADD {} for \"{}\"", annotationFor(obj), e);
-            }
+                long startDateTime = System.currentTimeMillis();
 
-            long endDateTime = System.currentTimeMillis();
-            logger.info("ADD Event for {} processed in {}ms",
-                    annotationFor(obj),
-                    (endDateTime - startDateTime));
+                if (Strings.nonePrefixMatch(obj.getMetadata().getNamespace(), OperatorConfig.INSTANCE.getNamespacePrefixes())) {
+                    return;
+                }
+
+                try {
+                    // temp fix: change thread name for logging purposes
+                    // TODO: propagate event id logging in code
+                    Thread.currentThread().setName(EventCounter.newEvent());
+                    String resourceLabel = annotationFor(obj);
+                    logger.debug("Received ADDED event for \"{}\"", resourceLabel);
+
+                    try {
+                        eventHandler.onAdd(obj);
+                    } catch (Exception e) {
+                        logger.error("Exception processing ADDED event for \"{}\"", resourceLabel, e);
+                    }
+
+                    long duration = System.currentTimeMillis() - startDateTime;
+                    logger.info("event for \"{}\" processed in {}ms", resourceLabel, duration);
+
+                } finally {
+                    EventCounter.closeEvent();
+                    Thread.currentThread().setName("thread-" + Thread.currentThread().getId());
+                }
+            } catch (Exception e) {
+                logger.error("Exception processing event", e);
+            }
         }
+
 
         @Override
         public void onUpdate(T oldObj, T newObj) {
-            long startDateTime = System.currentTimeMillis();
-
-            if (Strings.nonePrefixMatch(oldObj.getMetadata().getNamespace(), OperatorConfig.INSTANCE.getNamespacePrefixes())
-                && Strings.nonePrefixMatch(newObj.getMetadata().getNamespace(), OperatorConfig.INSTANCE.getNamespacePrefixes())) {
-                return;
-            }
 
             try {
-                eventHandler.onUpdate(oldObj, newObj);
-            } catch (Exception e) {
-                logger.error("Exception processing MODIFIED {} for \"{}\"", annotationFor(oldObj), e);
-            }
+                long startDateTime = System.currentTimeMillis();
 
-            long endDateTime = System.currentTimeMillis();
-            logger.info("MODIFIED Event for {} processed in {}ms",
-                    annotationFor(oldObj),
-                    (endDateTime - startDateTime));
+                if (Strings.nonePrefixMatch(oldObj.getMetadata().getNamespace(), OperatorConfig.INSTANCE.getNamespacePrefixes())
+                        && Strings.nonePrefixMatch(newObj.getMetadata().getNamespace(), OperatorConfig.INSTANCE.getNamespacePrefixes())) {
+                    return;
+                }
+
+                try {
+                    // temp fix: change thread name for logging purposes
+                    // TODO: propagate event id logging in code
+                    Thread.currentThread().setName(EventCounter.newEvent());
+                    String resourceLabel = annotationFor(oldObj);
+                    logger.debug("Received MODIFIED event for \"{}\"", resourceLabel);
+
+                    try {
+                        eventHandler.onUpdate(oldObj, newObj);
+                    } catch (Exception e) {
+                        logger.error("Exception processing MODIFIED event for \"{}\"", resourceLabel, e);
+                    }
+
+                    long duration = System.currentTimeMillis() - startDateTime;
+                    logger.info("MODIFIED Event for \"{}\" processed in {}ms", resourceLabel, duration);
+
+                } finally {
+                    EventCounter.closeEvent();
+                    Thread.currentThread().setName("thread-" + Thread.currentThread().getId());
+                }
+            } catch (Exception e) {
+                logger.error("Exception processing event", e);
+            }
         }
+
 
         @Override
         public void onDelete(T obj, boolean deletedFinalStateUnknown) {
-            long startDateTime = System.currentTimeMillis();
-
-            if (Strings.nonePrefixMatch(obj.getMetadata().getNamespace(), OperatorConfig.INSTANCE.getNamespacePrefixes())) {
-                return;
-            }
 
             try {
-                eventHandler.onDelete(obj, deletedFinalStateUnknown);
-            } catch (Exception e) {
-                logger.error("Exception processing DELETE {} for \"{}\"", annotationFor(obj), e);
-            }
+                long startDateTime = System.currentTimeMillis();
 
-            long endDateTime = System.currentTimeMillis();
-            logger.info("DELETE Event for {} processed in {}ms",
-                    annotationFor(obj),
-                    (endDateTime - startDateTime));
+                if (Strings.nonePrefixMatch(obj.getMetadata().getNamespace(), OperatorConfig.INSTANCE.getNamespacePrefixes())) {
+                    return;
+                }
+
+                try {
+                    // temp fix: change thread name for logging purposes
+                    // TODO: propagate event id logging in code
+                    Thread.currentThread().setName(EventCounter.newEvent());
+                    String resourceLabel = annotationFor(obj);
+                    logger.debug("Received DELETED event for \"{}\"", resourceLabel);
+
+                    try {
+                        eventHandler.onDelete(obj, deletedFinalStateUnknown);
+                    } catch (Exception e) {
+                        logger.error("Exception processing DELETED event for \"{}\"", resourceLabel, e);
+                    }
+
+                    long duration = System.currentTimeMillis() - startDateTime;
+                    logger.info("DELETE Event for {} processed in {}ms", resourceLabel, duration);
+
+                } finally {
+                    EventCounter.closeEvent();
+                    Thread.currentThread().setName("thread-" + Thread.currentThread().getId());
+                }
+            } catch (Exception e) {
+                logger.error("Exception processing event", e);
+            }
         }
     }
 

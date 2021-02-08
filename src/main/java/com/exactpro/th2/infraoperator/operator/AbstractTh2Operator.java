@@ -91,6 +91,7 @@ public abstract class AbstractTh2Operator<CR extends Th2CustomResource, KO exten
         Thread.currentThread().setName(EventCounter.newEvent());
 
         try {
+            long startDateTime = System.currentTimeMillis();
 
             String resourceLabel = CustomResourceUtils.annotationFor(resource);
             logger.debug("Received {} event for \"{}\"", action, resourceLabel);
@@ -130,6 +131,10 @@ public abstract class AbstractTh2Operator<CR extends Th2CustomResource, KO exten
 
                 logger.info("Task \"{}\" added to scheduler, with delay \"{}\" seconds", triggerRedeployTask.getName(), REDEPLOY_DELAY);
             }
+
+            long endDateTime = System.currentTimeMillis();
+            logger.debug("{} event for \"{}\" processed in {}ms", action, resourceLabel, (endDateTime - startDateTime));
+
         } catch (Exception e) {
             logger.error("Exception processing {} event", action, e);
         }
