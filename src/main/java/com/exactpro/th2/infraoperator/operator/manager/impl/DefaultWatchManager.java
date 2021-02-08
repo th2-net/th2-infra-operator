@@ -28,6 +28,7 @@ import com.exactpro.th2.infraoperator.model.kubernetes.client.ipml.DictionaryCli
 import com.exactpro.th2.infraoperator.model.kubernetes.client.ipml.LinkClient;
 import com.exactpro.th2.infraoperator.model.kubernetes.configmaps.ConfigMaps;
 import com.exactpro.th2.infraoperator.operator.HelmReleaseTh2Op;
+import com.exactpro.th2.infraoperator.operator.context.EventCounter;
 import com.exactpro.th2.infraoperator.operator.context.HelmOperatorContext;
 import com.exactpro.th2.infraoperator.spec.Th2CustomResource;
 import com.exactpro.th2.infraoperator.spec.dictionary.Th2Dictionary;
@@ -773,6 +774,11 @@ public class DefaultWatchManager {
 
         @Override
         public void onAdd(Th2Link th2Link) {
+
+            // temp fix: change thread name for logging purposes
+            // TODO: propagate event id logging in code
+            Thread.currentThread().setName(EventCounter.newEvent());
+
             logger.debug("Received ADDED event for \"{}\"", annotationFor(th2Link));
 
             var linkNamespace = extractNamespace(th2Link);
@@ -802,10 +808,19 @@ public class DefaultWatchManager {
 
                 linkSingleton.setLinkResources(linkNamespace, resourceLinks);
             }
+
+            EventCounter.closeEvent();
+            Thread.currentThread().setName("thread-" + Thread.currentThread().getId());
+
         }
 
         @Override
         public void onUpdate(Th2Link oldTh2Link, Th2Link newTh2Link) {
+
+            // temp fix: change thread name for logging purposes
+            // TODO: propagate event id logging in code
+            Thread.currentThread().setName(EventCounter.newEvent());
+
             logger.debug("Received UPDATE event for \"{}\"", annotationFor(newTh2Link));
 
             var linkNamespace = extractNamespace(newTh2Link);
@@ -836,10 +851,19 @@ public class DefaultWatchManager {
 
                 linkSingleton.setLinkResources(linkNamespace, resourceLinks);
             }
+
+            EventCounter.closeEvent();
+            Thread.currentThread().setName("thread-" + Thread.currentThread().getId());
+
         }
 
         @Override
         public void onDelete(Th2Link th2Link, boolean deletedFinalStateUnknown) {
+
+            // temp fix: change thread name for logging purposes
+            // TODO: propagate event id logging in code
+            Thread.currentThread().setName(EventCounter.newEvent());
+
             logger.debug("Received UPDATE event for \"{}\"", annotationFor(th2Link));
 
             var linkNamespace = extractNamespace(th2Link);
@@ -870,7 +894,11 @@ public class DefaultWatchManager {
 
                 linkSingleton.setLinkResources(linkNamespace, resourceLinks);
             }
+            EventCounter.closeEvent();
+            Thread.currentThread().setName("thread-" + Thread.currentThread().getId());
         }
+
+
     }
 
     public static Builder builder(KubernetesClient client) {
