@@ -124,7 +124,7 @@ public enum OperatorState {
 
 
     private NamespaceState computeIfAbsent(String namespace) {
-        return namespaceStates.computeIfAbsent(namespace, s -> new NamespaceState());
+        return namespaceStates.computeIfAbsent(namespace, s -> new NamespaceState(namespace));
     }
 
 
@@ -136,6 +136,7 @@ public enum OperatorState {
 
     public static class NamespaceState implements NamespaceLock {
 
+        private String name;
         private List<Th2Link> linkResources = new ArrayList<>();
         private List<EnqueuedLink> mqActiveLinks = new ArrayList<>();
         private List<PinCouplingGRPC> grpcActiveLinks = new ArrayList<>();
@@ -143,17 +144,22 @@ public enum OperatorState {
 
         private Lock lock = new ReentrantLock(true);
 
+        public NamespaceState(String name) {
+            this.name = name;
+        }
         @Override
         public void lock() {
-            logger.debug("Acquiring lock for NamespaceState");
+            logger.debug("Acquiring lock for NamespaceState[\"{}\"]", name);
+            long start = System.currentTimeMillis();
             lock.lock();
-            logger.debug("Lock acquired");
+            long end = System.currentTimeMillis();
+            logger.debug("Lock for NamespaceState[\"{}\"] acquired in {}ms", name, (end - start));
         }
 
         @Override
         public void unlock() {
             lock.unlock();
-            logger.debug("NamespaceState lock released");
+            logger.debug("Lock for NamespaceState[\"{}\"] released", name);
         }
 
         public List<Th2Link> getLinkResources() {
