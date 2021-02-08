@@ -32,6 +32,8 @@ import com.exactpro.th2.infraoperator.operator.context.HelmOperatorContext;
 import com.exactpro.th2.infraoperator.spec.Th2CustomResource;
 import com.exactpro.th2.infraoperator.spec.dictionary.Th2Dictionary;
 import com.exactpro.th2.infraoperator.spec.dictionary.Th2DictionaryList;
+import com.exactpro.th2.infraoperator.spec.helmRelease.HelmRelease;
+import com.exactpro.th2.infraoperator.spec.helmRelease.HelmReleaseList;
 import com.exactpro.th2.infraoperator.spec.link.Th2Link;
 import com.exactpro.th2.infraoperator.spec.link.Th2LinkList;
 import com.exactpro.th2.infraoperator.spec.shared.Identifiable;
@@ -55,6 +57,8 @@ import io.fabric8.kubernetes.api.model.*;
 import io.fabric8.kubernetes.api.model.apiextensions.v1.CustomResourceDefinition;
 import io.fabric8.kubernetes.api.model.apiextensions.v1.CustomResourceDefinitionList;
 import io.fabric8.kubernetes.client.*;
+import io.fabric8.kubernetes.client.dsl.MixedOperation;
+import io.fabric8.kubernetes.client.dsl.Resource;
 import io.fabric8.kubernetes.client.dsl.base.CustomResourceDefinitionContext;
 import io.fabric8.kubernetes.client.informers.ResourceEventHandler;
 import io.fabric8.kubernetes.client.informers.SharedIndexInformer;
@@ -70,6 +74,7 @@ import java.util.stream.Collectors;
 
 import static com.exactpro.th2.infraoperator.configuration.RabbitMQConfig.CONFIG_MAP_RABBITMQ_PROP_NAME;
 import static com.exactpro.th2.infraoperator.operator.AbstractTh2Operator.REFRESH_TOKEN_ALIAS;
+import static com.exactpro.th2.infraoperator.operator.HelmReleaseTh2Op.HELM_RELEASE_CRD_NAME;
 import static com.exactpro.th2.infraoperator.util.CustomResourceUtils.annotationFor;
 import static com.exactpro.th2.infraoperator.util.ExtractUtils.extractName;
 import static com.exactpro.th2.infraoperator.util.ExtractUtils.extractNamespace;
@@ -79,6 +84,7 @@ public class DefaultWatchManager {
 
     private static final Logger logger = LoggerFactory.getLogger(DefaultWatchManager.class);
     public static final String SECRET_TYPE_OPAQUE = "Opaque";
+    private static final String ANTECEDENT_LABEL_KEY_ALIAS = "th2.exactpro.com/antecedent";
 
     private boolean isWatching = false;
 
@@ -119,6 +125,11 @@ public class DefaultWatchManager {
 
         sharedInformerFactory.startAllRegisteredInformers();
         logger.info("All informers has been started");
+    }
+
+    public void stopInformers () {
+        logger.info("Shutting down informers");
+        getInformerFactory().stopAllRegisteredInformers();
     }
 
     private void registerInformerForLinks (SharedInformerFactory sharedInformerFactory) {
@@ -182,12 +193,33 @@ public class DefaultWatchManager {
         crdInformer.addEventHandler(new CRDResourceEventHandler(crdNames));
     }
 
+    private void registerInformerForHelmReleases(SharedInformerFactory factory, KubernetesClient client) {
+        var helmReleaseCrd = CustomResourceUtils.getResourceCrd(client, HELM_RELEASE_CRD_NAME);
+
+        SharedIndexInformer<HelmRelease> helmReleaseInformer = factory.sharedIndexInformerForCustomResource(
+                new CustomResourceDefinitionContext.Builder()
+                        .withGroup(helmReleaseCrd.getSpec().getGroup())
+                        .withVersion(helmReleaseCrd.getSpec().getVersions().get(0).getName())
+                        .withScope(helmReleaseCrd.getSpec().getScope())
+                        .withPlural(helmReleaseCrd.getSpec().getNames().getPlural())
+                        .build(),
+                HelmRelease.class,
+                HelmReleaseList.class,
+                0);
+
+        helmReleaseInformer.addEventHandler(CustomResourceUtils.resourceEventHandlerFor(
+                new HelmReleaseEventHandler(client),
+                HelmRelease.class,
+                dictionaryClient.getCustomResourceDefinition()));
+    }
+
     private void registerInformers (SharedInformerFactory sharedInformerFactory) {
         registerInformerForLinks(sharedInformerFactory);
         registerInformerForDictionaries(sharedInformerFactory);
         registerInformerForConfigMaps(sharedInformerFactory);
         registerInformerForNamespaces(sharedInformerFactory);
         registerInformerForCRDs(sharedInformerFactory);
+        registerInformerForHelmReleases(sharedInformerFactory, operatorBuilder.getClient());
 
         /*
              resourceClients initialization should be done first
@@ -209,22 +241,6 @@ public class DefaultWatchManager {
                             helmReleaseTh2Op.generateResourceEventHandler()));
         }
 
-    }
-
-    public void stopInformers () {
-        logger.info("Shutting down informers");
-        getInformerFactory().stopAllRegisteredInformers();
-    }
-
-    private void addWatch(Watch watch) {
-        watches.add(watch);
-    }
-
-    private void removeWatch(Watch watch) {
-        if (watches.contains(watch))
-            watches.remove(watch);
-        else
-            throw new IllegalArgumentException("Watch to update was not found in the set");
     }
 
     public boolean isWatching() {
@@ -407,6 +423,66 @@ public class DefaultWatchManager {
                 this.maxLinks = oldLinks;
                 this.minLinks = newLinks;
             }
+        }
+    }
+
+    private class HelmReleaseEventHandler implements ResourceEventHandler<HelmRelease> {
+        private final KubernetesClient client;
+        private final MixedOperation<HelmRelease, HelmReleaseList, Resource<HelmRelease>> helmReleaseClient;
+
+        public HelmReleaseEventHandler (KubernetesClient client) {
+            this.client = client;
+
+            var helmReleaseCrd = CustomResourceUtils.getResourceCrd(client, HELM_RELEASE_CRD_NAME);
+
+            CustomResourceDefinitionContext crdContext = new CustomResourceDefinitionContext.Builder()
+                    .withGroup(helmReleaseCrd.getSpec().getGroup())
+                    .withVersion(helmReleaseCrd.getSpec().getVersions().get(0).getName())
+                    .withScope(helmReleaseCrd.getSpec().getScope())
+                    .withPlural(helmReleaseCrd.getSpec().getNames().getPlural())
+                    .build();
+
+            helmReleaseClient = client.customResources(
+                    crdContext,
+                    HelmRelease.class,
+                    HelmReleaseList.class
+            );
+        }
+
+        @Override
+        public void onAdd(HelmRelease helmRelease) {
+
+        }
+
+        @Override
+        public void onUpdate(HelmRelease oldHelmRelease, HelmRelease newHelmRelease) {
+
+        }
+
+        @Override
+        public void onDelete(HelmRelease helmRelease, boolean deletedFinalStateUnknown) {
+            String resourceLabel = annotationFor(helmRelease);
+            if (!helmRelease.getMetadata().getAnnotations().containsKey(ANTECEDENT_LABEL_KEY_ALIAS)) {
+                logger.info("\"{}\" doesn't have ANTECEDENT annotation, probably operator deleted it. it won't be redeployed!", resourceLabel);
+
+                return;
+            }
+
+            logger.info("\"{}\" has been deleted. Trying to redeploy", resourceLabel);
+
+            String namespace = helmRelease.getMetadata().getNamespace();
+            Namespace namespaceObj = client.namespaces().withName(namespace).get();
+            if (namespaceObj == null || !namespaceObj.getStatus().getPhase().equals("Active")) {
+                logger.info("Namespace \"{}\" deleted or not active, cancelling", namespace);
+                return;
+            }
+
+            ObjectMeta kubObjMD = helmRelease.getMetadata();
+            kubObjMD.setUid(null);
+            kubObjMD.setResourceVersion(null);
+            helmReleaseClient.inNamespace(namespace).createOrReplace(helmRelease);
+
+            logger.info("\"{}\" has been redeployed", resourceLabel);
         }
     }
 

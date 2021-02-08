@@ -229,6 +229,7 @@ public abstract class AbstractTh2Operator<CR extends Th2CustomResource, KO exten
 
         // kubernetes objects will be removed when custom resource removed (through 'OwnerReference')
 
+        removeKubObjAnnotation(resource);
         bunches.remove(ExtractUtils.extractFullName(resource));
 
     }
@@ -269,6 +270,12 @@ public abstract class AbstractTh2Operator<CR extends Th2CustomResource, KO exten
 
             throw e;
         }
+    }
+
+    protected void removeKubObjAnnotation(CR resource) {
+        KO obj = loadKubObj(getKubObjDefPath((resource)));
+        obj.getMetadata().getAnnotations().remove(ANTECEDENT_LABEL_KEY_ALIAS);
+        createKubObj(resource.getMetadata().getName(), obj);
     }
 
     protected void setupAndCreateKubObj(CR resource) {
