@@ -19,7 +19,6 @@ package com.exactpro.th2.infraoperator.operator;
 import com.exactpro.th2.infraoperator.Th2CrdController;
 import com.exactpro.th2.infraoperator.model.http.HttpCode;
 import com.exactpro.th2.infraoperator.model.kubernetes.client.ResourceClient;
-import com.exactpro.th2.infraoperator.operator.context.EventCounter;
 import com.exactpro.th2.infraoperator.spec.Th2CustomResource;
 import com.exactpro.th2.infraoperator.spec.strategy.redeploy.RetryableTaskQueue;
 import com.exactpro.th2.infraoperator.spec.strategy.redeploy.tasks.TriggerRedeployTask;
@@ -86,15 +85,8 @@ public abstract class AbstractTh2Operator<CR extends Th2CustomResource, KO exten
     @Override
     public void eventReceived(Action action, CR resource) {
 
-        // temp fix: change thread name for logging purposes
-        // TODO: propagate event id logging in code
-        Thread.currentThread().setName(EventCounter.newEvent());
-
         try {
-            long startDateTime = System.currentTimeMillis();
-
             String resourceLabel = CustomResourceUtils.annotationFor(resource);
-            logger.debug("Received {} event for \"{}\"", action, resourceLabel);
 
             try {
 
@@ -132,15 +124,9 @@ public abstract class AbstractTh2Operator<CR extends Th2CustomResource, KO exten
                 logger.info("Task \"{}\" added to scheduler, with delay \"{}\" seconds", triggerRedeployTask.getName(), REDEPLOY_DELAY);
             }
 
-            long endDateTime = System.currentTimeMillis();
-            logger.debug("{} event for \"{}\" processed in {}ms", action, resourceLabel, (endDateTime - startDateTime));
-
         } catch (Exception e) {
             logger.error("Exception processing {} event", action, e);
         }
-
-        EventCounter.closeEvent();
-        Thread.currentThread().setName("thread-" + Thread.currentThread().getId());
     }
 
     @Override
