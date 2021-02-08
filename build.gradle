@@ -40,6 +40,7 @@ dependencies {
     compile "org.springframework:spring-web:5.3.0"
 
     compile "org.slf4j:slf4j-log4j12:1.7.21"
+    compile "org.json:json:20190722"
 
     compile "org.jetbrains:annotations:15.0"
 
