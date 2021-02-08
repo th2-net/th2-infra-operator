@@ -91,7 +91,6 @@ public abstract class AbstractTh2Operator<CR extends Th2CustomResource, KO exten
             try {
 
                 var existRes = trackedResources.get(resourceLabel);
-                trackedResources.put(resourceLabel, resource);
 
                 if (action.equals(MODIFIED)
                         && Objects.nonNull(existRes)
@@ -103,6 +102,7 @@ public abstract class AbstractTh2Operator<CR extends Th2CustomResource, KO exten
                 }
 
                 processEvent(action, resource);
+                trackedResources.put(resourceLabel, resource);
 
             } catch (Exception e) {
                 logger.error("Exception processing {} event for \"{}\"", action, resourceLabel, e);
