@@ -19,6 +19,7 @@ package com.exactpro.th2.infraoperator.operator;
 import com.exactpro.th2.infraoperator.Th2CrdController;
 import com.exactpro.th2.infraoperator.model.http.HttpCode;
 import com.exactpro.th2.infraoperator.model.kubernetes.client.ResourceClient;
+import com.exactpro.th2.infraoperator.operator.context.EventCounter;
 import com.exactpro.th2.infraoperator.spec.Th2CustomResource;
 import com.exactpro.th2.infraoperator.spec.strategy.redeploy.RetryableTaskQueue;
 import com.exactpro.th2.infraoperator.spec.strategy.redeploy.tasks.TriggerRedeployTask;
@@ -51,19 +52,16 @@ public abstract class AbstractTh2Operator<CR extends Th2CustomResource, KO exten
     private static final Logger logger = LoggerFactory.getLogger(AbstractTh2Operator.class);
 
     private static final int REDEPLOY_DELAY = 120;
-
     public static final String REFRESH_TOKEN_ALIAS = "refresh-token";
-
     public static final String ANTECEDENT_LABEL_KEY_ALIAS = "th2.exactpro.com/antecedent";
-
     private final RetryableTaskQueue retryableTaskQueue = new RetryableTaskQueue();
 
     protected final KubernetesClient kubClient;
-    protected final Map<String, CR> bunches;
+    private final Map<String, CR> trackedResources;
 
     protected AbstractTh2Operator(KubernetesClient kubClient) {
         this.kubClient = kubClient;
-        this.bunches = new ConcurrentHashMap<>();
+        this.trackedResources = new ConcurrentHashMap<>();
     }
 
     public ResourceEventHandler<CR> generateResourceEventHandler () {
@@ -88,55 +86,61 @@ public abstract class AbstractTh2Operator<CR extends Th2CustomResource, KO exten
     @Override
     public void eventReceived(Action action, CR resource) {
 
-        logger.debug("Received {} event for \"{}\"", action, CustomResourceUtils.annotationFor(resource));
-        String resourceType = ExtractUtils.extractType(resource);
-
-        var resFullName = ExtractUtils.extractFullName(resource);
+        // temp fix: change thread name for logging purposes
+        // TODO: propagate event id logging in code
+        Thread.currentThread().setName(EventCounter.newEvent());
 
         try {
 
-            var existRes = bunches.get(resFullName);
+            String resourceLabel = CustomResourceUtils.annotationFor(resource);
+            logger.debug("Received {} event for \"{}\"", action, resourceLabel);
 
-            bunches.put(resFullName, resource);
+            try {
 
-            if (action.equals(MODIFIED)
-                    && Objects.nonNull(existRes)
-                    && ExtractUtils.compareRefreshTokens(existRes, resource)
-                    && ExtractUtils.extractGeneration(existRes).equals(ExtractUtils.extractGeneration(resource))) {
-                logger.debug("Received {} event for \"{}\", but no changes detected and exiting", action, CustomResourceUtils.annotationFor(resource));
+                var existRes = trackedResources.get(resourceLabel);
+                trackedResources.put(resourceLabel, resource);
 
-                return;
+                if (action.equals(MODIFIED)
+                        && Objects.nonNull(existRes)
+                        && ExtractUtils.compareRefreshTokens(existRes, resource)
+                        && ExtractUtils.extractGeneration(existRes).equals(ExtractUtils.extractGeneration(resource))) {
+                    logger.debug("No changes detected for \"{}\" and exiting", action, resourceLabel);
+
+                    return;
+                }
+
+                processEvent(action, resource);
+
+            } catch (Exception e) {
+                logger.error("Exception processing {} event for \"{}\"", action, resourceLabel, e);
+
+                resource.getStatus().failed(e);
+                updateStatus(resource);
+
+                String namespace = resource.getMetadata().getNamespace();
+                Namespace namespaceObj = kubClient.namespaces().withName(namespace).get();
+                if (namespaceObj == null || !namespaceObj.getStatus().getPhase().equals("Active")) {
+                    logger.info("Namespace \"{}\" deleted or not active, cancelling", namespace);
+                    return;
+                }
+
+                //create and schedule task to redeploy failed component
+                TriggerRedeployTask triggerRedeployTask = new TriggerRedeployTask(this, getResourceClient(), kubClient, resource, action, REDEPLOY_DELAY);
+                retryableTaskQueue.add(triggerRedeployTask, true);
+
+                logger.info("Task \"{}\" added to scheduler, with delay \"{}\" seconds", triggerRedeployTask.getName(), REDEPLOY_DELAY);
             }
-
-            processEvent(action, resource);
-
         } catch (Exception e) {
-            logger.error("Something went wrong while processing [{}] event of [{}<{}>]",
-                    action, resourceType, resFullName, e);
-
-            resource.getStatus().failed(e);
-            updateStatus(resource);
-
-            String namespace = resource.getMetadata().getNamespace();
-            Namespace namespaceObj = kubClient.namespaces().withName(namespace).get();
-            if (namespaceObj == null || !namespaceObj.getStatus().getPhase().equals("Active")) {
-                logger.info("Namespace \"{}\" deleted or not active, cancelling", namespace);
-                return;
-            }
-            //create and schedule task to redeploy failed component
-            TriggerRedeployTask triggerRedeployTask = new TriggerRedeployTask(this, getResourceClient(), kubClient, resource, action, REDEPLOY_DELAY);
-            retryableTaskQueue.add(triggerRedeployTask, true);
-
-            logger.info("added task \"{}\" to scheduler, with delay \"{}\" seconds", triggerRedeployTask.getName(), REDEPLOY_DELAY);
+            logger.error("Exception processing {} event", action, e);
         }
 
+        EventCounter.closeEvent();
+        Thread.currentThread().setName("thread-" + Thread.currentThread().getId());
     }
 
     @Override
     public void onClose(WatcherException cause) {
-
-        if (cause != null)
-            logger.error("Watcher[1] has been closed for {}", this.getClass().getSimpleName(), cause);
+        throw new AssertionError("This method should not be called");
     }
 
 
@@ -152,7 +156,7 @@ public abstract class AbstractTh2Operator<CR extends Th2CustomResource, KO exten
 
             String kubObjType = ko.getClass().getSimpleName();
 
-            logger.info("[{}] from '{}' has been loaded", kubObjType, kubObjDefPath);
+            logger.info("{} from \"{}\" has been loaded", kubObjType, kubObjDefPath);
 
             return ko;
         }
@@ -166,53 +170,37 @@ public abstract class AbstractTh2Operator<CR extends Th2CustomResource, KO exten
 
     protected void processEvent(Action action, CR resource) {
 
-        logger.debug("Processing event {} for \"{}\"", action, CustomResourceUtils.annotationFor(resource));
+        String resourceLabel = CustomResourceUtils.annotationFor(resource);
+        logger.debug("Processing event {} for \"{}\"", action, resourceLabel);
 
         resource.getStatus().idle();
-
         resource = updateStatus(resource);
-
-
-        var resFullName = ExtractUtils.extractFullName(resource);
-
-
 
         switch (action) {
             case ADDED:
-                logger.info("Resource [{}] has been added", resFullName);
-
                 resource.getStatus().installing();
-
                 resource = updateStatus(resource);
-
                 addedEvent(resource);
-
+                logger.info("Resource \"{}\" has been added", resourceLabel);
                 break;
+
             case MODIFIED:
-                logger.info("Resource [{}] has been modified", resFullName);
-
                 resource.getStatus().upgrading();
-
                 resource = updateStatus(resource);
-
                 modifiedEvent(resource);
-
+                logger.info("Resource \"{}\" has been modified", resourceLabel);
                 break;
+
             case DELETED:
-                logger.info("Resource [{}] has been deleted", resFullName);
-
                 deletedEvent(resource);
-
+                logger.info("Resource \"{}\" has been deleted", resourceLabel);
                 break;
+
             case ERROR:
-                logger.warn("Some error occurred while processing [{}]", resFullName);
-
+                logger.warn("Error while processing \"{}\"", resourceLabel);
                 resource.getStatus().failed("Unknown error from kubernetes");
-
                 resource = updateStatus(resource);
-
                 errorEvent(resource);
-
                 break;
         }
     }
@@ -229,20 +217,20 @@ public abstract class AbstractTh2Operator<CR extends Th2CustomResource, KO exten
 
         // kubernetes objects will be removed when custom resource removed (through 'OwnerReference')
 
+        String resourceLabel = CustomResourceUtils.annotationFor(resource);
+        trackedResources.remove(resourceLabel);
 //        removeKubObjAnnotation(resource);
-        bunches.remove(ExtractUtils.extractFullName(resource));
-
     }
 
     protected void errorEvent(CR resource) {
-        bunches.remove(ExtractUtils.extractFullName(resource));
+        String resourceLabel = CustomResourceUtils.annotationFor(resource);
+        trackedResources.remove(resourceLabel);
     }
 
 
     protected CR updateStatus(CR resource) {
 
-        var resFullName = ExtractUtils.extractFullName(resource);
-
+        String resourceLabel = CustomResourceUtils.annotationFor(resource);
         var resClient = getResourceClient().getInstance();
 
         try {
@@ -250,8 +238,8 @@ public abstract class AbstractTh2Operator<CR extends Th2CustomResource, KO exten
         } catch (KubernetesClientException e) {
 
             if (HttpCode.ofCode(e.getCode()) == HttpCode.SERVER_CONFLICT) {
-                logger.warn("Failed to update status of [{}] resource to [{}] because it has been " +
-                        "already changed on the server. Trying to sync a resource...", resFullName, resource.getStatus().getPhase());
+                logger.warn("Failed to update status for \"{}\"  to \"{}\" because it has been " +
+                        "already changed on the server. Trying to sync a resource...", resourceLabel, resource.getStatus().getPhase());
                 var freshRes = resClient.inNamespace(ExtractUtils.extractNamespace(resource)).list().getItems().stream()
                         .filter(r -> ExtractUtils.extractName(r).equals(ExtractUtils.extractName(resource)))
                         .findFirst()
@@ -259,11 +247,11 @@ public abstract class AbstractTh2Operator<CR extends Th2CustomResource, KO exten
                 if (Objects.nonNull(freshRes)) {
                     freshRes.setStatus(resource.getStatus());
                     var updatedRes = updateStatus(freshRes);
-                    bunches.put(resFullName, updatedRes);
-                    logger.info("Status of [{}] resource successfully updated to [{}]", resFullName, resource.getStatus().getPhase());
+                    trackedResources.put(resourceLabel, updatedRes);
+                    logger.info("Status for \"{}\" resource successfully updated to \"{}\"", resourceLabel, resource.getStatus().getPhase());
                     return updatedRes;
                 } else {
-                    logger.warn("Unable to update status of [{}] resource to [{}]: resource not present", resFullName, resource.getStatus().getPhase());
+                    logger.warn("Unable to update status for \"{}\" resource to \"{}\": resource not present", resourceLabel, resource.getStatus().getPhase());
                     return resource;
                 }
             }
