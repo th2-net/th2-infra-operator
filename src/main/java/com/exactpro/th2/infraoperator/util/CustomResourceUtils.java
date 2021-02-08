@@ -227,7 +227,7 @@ public final class CustomResourceUtils {
                     }
 
                     long duration = System.currentTimeMillis() - startDateTime;
-                    logger.info("DELETE Event for {} processed in {}ms", resourceLabel, duration);
+                    logger.info("DELETED Event for {} processed in {}ms", resourceLabel, duration);
 
                 } finally {
                     EventCounter.closeEvent();
