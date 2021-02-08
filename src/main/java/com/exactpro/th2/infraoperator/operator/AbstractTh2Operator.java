@@ -86,10 +86,11 @@ public abstract class AbstractTh2Operator<CR extends Th2CustomResource, KO exten
     @Override
     public void eventReceived(Action action, CR resource) {
 
+        // temp fix: change thread name for logging purposes
+        // TODO: propagate event id logging in code
+        Thread.currentThread().setName(EventCounter.newEvent());
+
         try {
-            // temp fix: change thread name for logging purposes
-            // TODO: propagate event id logging in code
-            Thread.currentThread().setName(EventCounter.newEvent());
 
             String resourceLabel = CustomResourceUtils.annotationFor(resource);
             logger.debug("Received {} event for \"{}\"", action, resourceLabel);
@@ -132,6 +133,9 @@ public abstract class AbstractTh2Operator<CR extends Th2CustomResource, KO exten
         } catch (Exception e) {
             logger.error("Exception processing {} event", action, e);
         }
+
+        EventCounter.closeEvent();
+        Thread.currentThread().setName("thread-" + Thread.currentThread().getId());
     }
 
     @Override
