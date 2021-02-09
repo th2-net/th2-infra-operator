@@ -16,9 +16,8 @@
 
 package com.exactpro.th2.infraoperator.util;
 
-import com.exactpro.th2.infraoperator.configuration.OperatorConfig;
 import com.exactpro.th2.infraoperator.model.kubernetes.client.ResourceClient;
-import com.exactpro.th2.infraoperator.operator.context.EventCounter;
+import com.exactpro.th2.infraoperator.operator.manager.impl.GenericResourceEventHandler;
 import io.fabric8.kubernetes.api.model.HasMetadata;
 import io.fabric8.kubernetes.api.model.apiextensions.v1.CustomResourceDefinition;
 import io.fabric8.kubernetes.api.model.apiextensions.v1.CustomResourceDefinitionSpec;
@@ -103,143 +102,6 @@ public final class CustomResourceUtils {
                 resourceClient.getCustomResourceDefinition());
     }
 
-    private static class FilteringEventHandler<T extends CustomResource> implements ResourceEventHandler<T> {
-
-        private String kind;
-        private ResourceEventHandler<T> eventHandler;
-
-        public FilteringEventHandler(
-                ResourceEventHandler<T> eventHandler,
-                Class<T> resourceType,
-                CustomResourceDefinition crd
-        ) {
-
-            this.eventHandler = eventHandler;
-
-            CustomResourceDefinitionSpec spec = crd.getSpec();
-
-            /*
-                Multiple versions in CRD specs in new lib
-                TODO: please check if getting the first version will suffice
-            */
-
-            String apiVersion = spec.getGroup() + "/" + spec.getVersions().get(0);
-            kind = spec.getNames().getKind();
-
-            KubernetesDeserializer.registerCustomKind(apiVersion, kind, resourceType);
-        }
-
-
-        @Override
-        public void onAdd(T obj) {
-
-            try {
-                long startDateTime = System.currentTimeMillis();
-
-                if (Strings.nonePrefixMatch(obj.getMetadata().getNamespace(), OperatorConfig.INSTANCE.getNamespacePrefixes())) {
-                    return;
-                }
-
-                try {
-                    // temp fix: change thread name for logging purposes
-                    // TODO: propagate event id logging in code
-                    Thread.currentThread().setName(EventCounter.newEvent());
-                    String resourceLabel = annotationFor(obj);
-                    logger.debug("Received ADDED event for \"{}\"", resourceLabel);
-
-                    try {
-                        eventHandler.onAdd(obj);
-                    } catch (Exception e) {
-                        logger.error("Exception processing ADDED event for \"{}\"", resourceLabel, e);
-                    }
-
-                    long duration = System.currentTimeMillis() - startDateTime;
-                    logger.info("event for \"{}\" processed in {}ms", resourceLabel, duration);
-
-                } finally {
-                    EventCounter.closeEvent();
-                    Thread.currentThread().setName("thread-" + Thread.currentThread().getId());
-                }
-            } catch (Exception e) {
-                logger.error("Exception processing event", e);
-            }
-        }
-
-
-        @Override
-        public void onUpdate(T oldObj, T newObj) {
-
-            try {
-                long startDateTime = System.currentTimeMillis();
-
-                if (Strings.nonePrefixMatch(oldObj.getMetadata().getNamespace(), OperatorConfig.INSTANCE.getNamespacePrefixes())
-                        && Strings.nonePrefixMatch(newObj.getMetadata().getNamespace(), OperatorConfig.INSTANCE.getNamespacePrefixes())) {
-                    return;
-                }
-
-                try {
-                    // temp fix: change thread name for logging purposes
-                    // TODO: propagate event id logging in code
-                    Thread.currentThread().setName(EventCounter.newEvent());
-                    String resourceLabel = annotationFor(oldObj);
-                    logger.debug("Received MODIFIED event for \"{}\"", resourceLabel);
-
-                    try {
-                        eventHandler.onUpdate(oldObj, newObj);
-                    } catch (Exception e) {
-                        logger.error("Exception processing MODIFIED event for \"{}\"", resourceLabel, e);
-                    }
-
-                    long duration = System.currentTimeMillis() - startDateTime;
-                    logger.info("MODIFIED Event for \"{}\" processed in {}ms", resourceLabel, duration);
-
-                } finally {
-                    EventCounter.closeEvent();
-                    Thread.currentThread().setName("thread-" + Thread.currentThread().getId());
-                }
-            } catch (Exception e) {
-                logger.error("Exception processing event", e);
-            }
-        }
-
-
-        @Override
-        public void onDelete(T obj, boolean deletedFinalStateUnknown) {
-
-            try {
-                long startDateTime = System.currentTimeMillis();
-
-                if (Strings.nonePrefixMatch(obj.getMetadata().getNamespace(), OperatorConfig.INSTANCE.getNamespacePrefixes())) {
-                    return;
-                }
-
-                try {
-                    // temp fix: change thread name for logging purposes
-                    // TODO: propagate event id logging in code
-                    Thread.currentThread().setName(EventCounter.newEvent());
-                    String resourceLabel = annotationFor(obj);
-                    logger.debug("Received DELETED event for \"{}\"", resourceLabel);
-
-                    try {
-                        eventHandler.onDelete(obj, deletedFinalStateUnknown);
-                    } catch (Exception e) {
-                        logger.error("Exception processing DELETED event for \"{}\"", resourceLabel, e);
-                    }
-
-                    long duration = System.currentTimeMillis() - startDateTime;
-                    logger.info("DELETED Event for {} processed in {}ms", resourceLabel, duration);
-
-                } finally {
-                    EventCounter.closeEvent();
-                    Thread.currentThread().setName("thread-" + Thread.currentThread().getId());
-                }
-            } catch (Exception e) {
-                logger.error("Exception processing event", e);
-            }
-        }
-    }
-
-
 
     public static <T extends CustomResource> ResourceEventHandler<T> resourceEventHandlerFor(
             ResourceEventHandler<T> eventHandler,
@@ -253,6 +115,6 @@ public final class CustomResourceUtils {
 
         KubernetesDeserializer.registerCustomKind(apiVersion, kind, resourceType);
 
-        return new FilteringEventHandler<T>(eventHandler, resourceType, crd);
+        return new GenericResourceEventHandler<>(eventHandler);
     }
 }
