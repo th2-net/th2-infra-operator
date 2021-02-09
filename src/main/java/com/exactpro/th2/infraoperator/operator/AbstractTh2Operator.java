@@ -56,11 +56,11 @@ public abstract class AbstractTh2Operator<CR extends Th2CustomResource, KO exten
     private final RetryableTaskQueue retryableTaskQueue = new RetryableTaskQueue();
 
     protected final KubernetesClient kubClient;
-    private final Map<String, CR> trackedResources;
+    private final Map<String, ResourceFingerprint> fingerprints;
 
     protected AbstractTh2Operator(KubernetesClient kubClient) {
         this.kubClient = kubClient;
-        this.trackedResources = new ConcurrentHashMap<>();
+        this.fingerprints = new ConcurrentHashMap<>();
     }
 
     public ResourceEventHandler<CR> generateResourceEventHandler () {
@@ -90,19 +90,16 @@ public abstract class AbstractTh2Operator<CR extends Th2CustomResource, KO exten
 
             try {
 
-                var existRes = trackedResources.get(resourceLabel);
+                var cachedFingerprint = fingerprints.get(resourceLabel);
+                var resourceFingerprint = new ResourceFingerprint(resource);
 
-                if (action.equals(MODIFIED)
-                        && Objects.nonNull(existRes)
-                        && ExtractUtils.compareRefreshTokens(existRes, resource)
-                        && ExtractUtils.extractGeneration(existRes).equals(ExtractUtils.extractGeneration(resource))) {
-                    logger.debug("No changes detected for \"{}\" and exiting", action, resourceLabel);
-
+                if (cachedFingerprint != null && action.equals(MODIFIED) && cachedFingerprint.equals(resourceFingerprint)) {
+                    logger.debug("No changes detected for \"{}\"", resourceLabel);
                     return;
                 }
 
                 processEvent(action, resource);
-                trackedResources.put(resourceLabel, resource);
+                fingerprints.put(resourceLabel, resourceFingerprint);
 
             } catch (Exception e) {
                 logger.error("Exception processing {} event for \"{}\"", action, resourceLabel, e);
@@ -144,11 +141,8 @@ public abstract class AbstractTh2Operator<CR extends Th2CustomResource, KO exten
         try (var somePodYml = Th2CrdController.class.getResourceAsStream(kubObjDefPath)) {
 
             var ko = parseStreamToKubObj(somePodYml);
-
             String kubObjType = ko.getClass().getSimpleName();
-
             logger.info("{} from \"{}\" has been loaded", kubObjType, kubObjDefPath);
-
             return ko;
         }
 
@@ -209,13 +203,13 @@ public abstract class AbstractTh2Operator<CR extends Th2CustomResource, KO exten
         // kubernetes objects will be removed when custom resource removed (through 'OwnerReference')
 
         String resourceLabel = CustomResourceUtils.annotationFor(resource);
-        trackedResources.remove(resourceLabel);
+        fingerprints.remove(resourceLabel);
 //        removeKubObjAnnotation(resource);
     }
 
     protected void errorEvent(CR resource) {
         String resourceLabel = CustomResourceUtils.annotationFor(resource);
-        trackedResources.remove(resourceLabel);
+        fingerprints.remove(resourceLabel);
     }
 
 
@@ -238,7 +232,7 @@ public abstract class AbstractTh2Operator<CR extends Th2CustomResource, KO exten
                 if (Objects.nonNull(freshRes)) {
                     freshRes.setStatus(resource.getStatus());
                     var updatedRes = updateStatus(freshRes);
-                    trackedResources.put(resourceLabel, updatedRes);
+                    fingerprints.put(resourceLabel, new ResourceFingerprint(updatedRes));
                     logger.info("Status for \"{}\" resource successfully updated to \"{}\"", resourceLabel, resource.getStatus().getPhase());
                     return updatedRes;
                 } else {
@@ -297,27 +291,16 @@ public abstract class AbstractTh2Operator<CR extends Th2CustomResource, KO exten
     protected void mapProperties(CR resource, KO kubObj) {
 
         var kubObjMD = kubObj.getMetadata();
-
         var resMD = resource.getMetadata();
-
         var resName = resMD.getName();
 
-        var resNamespace = ExtractUtils.extractNamespace(resource);
-
-
         kubObjMD.setName(resName);
-
         kubObjMD.setNamespace(ExtractUtils.extractNamespace(resource));
-
         kubObjMD.setLabels(resMD.getLabels());
-
         kubObjMD.setAnnotations(resMD.getAnnotations());
-
         kubObjMD.setAnnotations(kubObjMD.getAnnotations() != null ? kubObjMD.getAnnotations() : new HashMap<>());
 
-        String resourceType = ExtractUtils.extractType(resource);
-
-        kubObjMD.getAnnotations().put(ANTECEDENT_LABEL_KEY_ALIAS, resNamespace + ":" + resourceType + "/" + resName);
+        kubObjMD.getAnnotations().put(ANTECEDENT_LABEL_KEY_ALIAS, CustomResourceUtils.annotationFor(resource));
 
     }
 
@@ -334,4 +317,37 @@ public abstract class AbstractTh2Operator<CR extends Th2CustomResource, KO exten
     protected abstract String getKubObjDefPath(CR resource);
 
     protected abstract void createKubObj(String namespace, KO kubObj);
+
+
+    private static class ResourceFingerprint {
+        private String refreshToken;
+        private Long generation;
+
+        public ResourceFingerprint(HasMetadata res) {
+
+            var metadata = res.getMetadata();
+            if (metadata == null)
+                return;
+
+            generation = res.getMetadata().getGeneration();
+
+            var annotations= metadata.getAnnotations();
+            if (annotations != null)
+                refreshToken = annotations.get(REFRESH_TOKEN_ALIAS);
+        }
+
+
+        @Override
+        public boolean equals(Object o) {
+            if (this == o)
+                return true;
+
+            if (!(o instanceof ResourceFingerprint))
+                return false;
+
+            ResourceFingerprint that = (ResourceFingerprint) o;
+            return Objects.equals(refreshToken, that.refreshToken) &&
+                    Objects.equals(generation, that.generation);
+        }
+    }
 }
