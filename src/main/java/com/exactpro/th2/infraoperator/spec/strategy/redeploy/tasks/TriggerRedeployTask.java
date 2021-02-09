@@ -18,6 +18,7 @@ package com.exactpro.th2.infraoperator.spec.strategy.redeploy.tasks;
 import com.exactpro.th2.infraoperator.model.kubernetes.client.ResourceClient;
 import com.exactpro.th2.infraoperator.spec.Th2CustomResource;
 import com.exactpro.th2.infraoperator.spec.strategy.redeploy.RetryableTaskQueue;
+import com.exactpro.th2.infraoperator.util.CustomResourceUtils;
 import com.fasterxml.uuid.Generators;
 import io.fabric8.kubernetes.api.model.Namespace;
 import io.fabric8.kubernetes.api.model.ObjectMeta;
@@ -29,7 +30,6 @@ import org.slf4j.LoggerFactory;
 import java.util.HashMap;
 
 import static com.exactpro.th2.infraoperator.operator.AbstractTh2Operator.REFRESH_TOKEN_ALIAS;
-import static com.exactpro.th2.infraoperator.util.ExtractUtils.extractName;
 
 
 public class TriggerRedeployTask implements RetryableTaskQueue.Task {
@@ -95,8 +95,10 @@ public class TriggerRedeployTask implements RetryableTaskQueue.Task {
                 .withName(boxName)
                 .get();
 
+        String resourceLabel = CustomResourceUtils.annotationFor(resource);
+
         if (resource == null) {
-            logger.warn("Cannot redeploy resource \"{}\" as it was Deleted", boxName);
+            logger.warn("Cannot redeploy resource \"{}\" as it is deleted", resourceLabel);
             return;
         }
 
@@ -105,10 +107,10 @@ public class TriggerRedeployTask implements RetryableTaskQueue.Task {
             case MODIFIED:
                 refreshToken(resource);
                 watcher.eventReceived(Watcher.Action.MODIFIED, resource);
-                logger.info("Triggered redeploy for [{}]", extractName(resource));
+                logger.info("Triggered redeploy for \"{}\"", resourceLabel);
                 break;
             case DELETED:
-                logger.info("action was DELETED, no need to redeploy [{}]", extractName(resource));
+                logger.info("action was DELETED, no need to redeploy \"{}\"", resourceLabel);
         }
     }
 
