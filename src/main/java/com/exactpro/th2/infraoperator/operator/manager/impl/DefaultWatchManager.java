@@ -16,24 +16,14 @@
 
 package com.exactpro.th2.infraoperator.operator.manager.impl;
 
-import com.exactpro.th2.infraoperator.configuration.OperatorConfig;
 import com.exactpro.th2.infraoperator.model.box.configuration.dictionary.factory.impl.DefaultDictionaryFactory;
 import com.exactpro.th2.infraoperator.model.box.configuration.dictionary.factory.impl.EmptyDictionaryFactory;
 import com.exactpro.th2.infraoperator.model.box.configuration.grpc.factory.impl.DefaultGrpcRouterConfigFactory;
 import com.exactpro.th2.infraoperator.model.box.configuration.grpc.factory.impl.EmptyGrpcRouterConfigFactory;
 import com.exactpro.th2.infraoperator.model.kubernetes.client.ResourceClient;
-import com.exactpro.th2.infraoperator.model.kubernetes.client.ipml.DictionaryClient;
-import com.exactpro.th2.infraoperator.model.kubernetes.client.ipml.LinkClient;
 import com.exactpro.th2.infraoperator.operator.HelmReleaseTh2Op;
 import com.exactpro.th2.infraoperator.operator.context.HelmOperatorContext;
 import com.exactpro.th2.infraoperator.spec.Th2CustomResource;
-import com.exactpro.th2.infraoperator.spec.dictionary.Th2Dictionary;
-import com.exactpro.th2.infraoperator.spec.dictionary.Th2DictionaryList;
-import com.exactpro.th2.infraoperator.spec.helmRelease.HelmRelease;
-import com.exactpro.th2.infraoperator.spec.helmRelease.HelmReleaseList;
-import com.exactpro.th2.infraoperator.spec.link.Th2Link;
-import com.exactpro.th2.infraoperator.spec.link.Th2LinkList;
-import com.exactpro.th2.infraoperator.spec.shared.Identifiable;
 import com.exactpro.th2.infraoperator.spec.strategy.linkResolver.dictionary.impl.DefaultDictionaryLinkResolver;
 import com.exactpro.th2.infraoperator.spec.strategy.linkResolver.dictionary.impl.EmptyDictionaryLinkResolver;
 import com.exactpro.th2.infraoperator.spec.strategy.linkResolver.grpc.impl.DefaultGrpcLinkResolver;
@@ -48,14 +38,8 @@ import com.exactpro.th2.infraoperator.spec.strategy.resFinder.dictionary.impl.De
 import com.exactpro.th2.infraoperator.spec.strategy.resFinder.dictionary.impl.EmptyDictionaryResourceFinder;
 import com.exactpro.th2.infraoperator.util.CustomResourceUtils;
 import com.fasterxml.uuid.Generators;
-import io.fabric8.kubernetes.api.model.*;
-import io.fabric8.kubernetes.api.model.apiextensions.v1.CustomResourceDefinition;
-import io.fabric8.kubernetes.api.model.apiextensions.v1.CustomResourceDefinitionList;
 import io.fabric8.kubernetes.client.DefaultKubernetesClient;
 import io.fabric8.kubernetes.client.KubernetesClient;
-import io.fabric8.kubernetes.client.dsl.base.CustomResourceDefinitionContext;
-import io.fabric8.kubernetes.client.informers.SharedIndexInformer;
-import io.fabric8.kubernetes.client.informers.SharedInformerEventListener;
 import io.fabric8.kubernetes.client.informers.SharedInformerFactory;
 import lombok.Getter;
 import org.slf4j.Logger;
@@ -64,27 +48,18 @@ import org.slf4j.LoggerFactory;
 import java.util.*;
 import java.util.function.Function;
 import java.util.function.Supplier;
-import java.util.stream.Collectors;
 
 import static com.exactpro.th2.infraoperator.operator.AbstractTh2Operator.REFRESH_TOKEN_ALIAS;
-import static com.exactpro.th2.infraoperator.operator.HelmReleaseTh2Op.HELM_RELEASE_CRD_NAME;
-import static com.exactpro.th2.infraoperator.util.CustomResourceUtils.annotationFor;
 import static com.exactpro.th2.infraoperator.util.ExtractUtils.extractName;
-import static com.exactpro.th2.infraoperator.util.ExtractUtils.extractNamespace;
 
 public class DefaultWatchManager {
 
     private static final Logger logger = LoggerFactory.getLogger(DefaultWatchManager.class);
-    public static final String SECRET_TYPE_OPAQUE = "Opaque";
-    private static final String ANTECEDENT_LABEL_KEY_ALIAS = "th2.exactpro.com/antecedent";
 
     private boolean isWatching = false;
 
     private final Builder operatorBuilder;
 
-    private final LinkClient linkClient;
-
-    private final DictionaryClient dictionaryClient;
 
     private final List<ResourceClient<Th2CustomResource>> resourceClients = new ArrayList<>();
 
@@ -101,14 +76,9 @@ public class DefaultWatchManager {
     private DefaultWatchManager(Builder builder) {
         this.operatorBuilder = builder;
         this.sharedInformerFactory = builder.getClient().informers();
-        this.linkClient = new LinkClient(operatorBuilder.getClient());
-        this.dictionaryClient = new DictionaryClient(operatorBuilder.getClient());
 
-        sharedInformerFactory.addSharedInformerEventListener(new SharedInformerEventListener() {
-            @Override
-            public void onException(Exception exception) {
-                logger.error("Exception in InformerFactory : {}", exception.getMessage());
-            }
+        sharedInformerFactory.addSharedInformerEventListener(exception -> {
+            logger.error("Exception in InformerFactory : {}", exception.getMessage());
         });
 
         instance = this;
@@ -119,8 +89,8 @@ public class DefaultWatchManager {
 
         SharedInformerFactory sharedInformerFactory = getInformerFactory();
 
-        postInit();
         registerInformers (sharedInformerFactory);
+        postInit();
 
         isWatching = true;
 
@@ -133,97 +103,17 @@ public class DefaultWatchManager {
         getInformerFactory().stopAllRegisteredInformers();
     }
 
-    private void registerInformerForLinks (SharedInformerFactory sharedInformerFactory) {
-        SharedIndexInformer<Th2Link> linkInformer = sharedInformerFactory.sharedIndexInformerForCustomResource(
-                CustomResourceDefinitionContext.fromCrd(linkClient.getCustomResourceDefinition()),
-                Th2Link.class,
-                Th2LinkList.class,
-                CustomResourceUtils.RESYNC_TIME);
 
-        linkInformer.addEventHandlerWithResyncPeriod(CustomResourceUtils.resourceEventHandlerFor(
-                new Th2LinkEventHandler(),
-                Th2Link.class,
-                linkClient.getCustomResourceDefinition()),
-                0);
-    }
-
-    private void registerInformerForDictionaries (SharedInformerFactory sharedInformerFactory) {
-        SharedIndexInformer<Th2Dictionary> dictionaryInformer = sharedInformerFactory.sharedIndexInformerForCustomResource(
-                CustomResourceDefinitionContext.fromCrd(dictionaryClient.getCustomResourceDefinition()),
-                Th2Dictionary.class,
-                Th2DictionaryList.class,
-                CustomResourceUtils.RESYNC_TIME);
-
-        dictionaryInformer.addEventHandlerWithResyncPeriod(CustomResourceUtils.resourceEventHandlerFor(
-                new Th2DictionaryEventHandler(),
-                Th2Dictionary.class,
-                dictionaryClient.getCustomResourceDefinition()),
-                0);
-    }
-
-    private void registerInformerForConfigMaps (SharedInformerFactory sharedInformerFactory) {
-        SharedIndexInformer<ConfigMap> configMapInformer = sharedInformerFactory.sharedIndexInformerFor(
-                ConfigMap.class,
-                ConfigMapList.class,
-                CustomResourceUtils.RESYNC_TIME);
-
-        configMapInformer.addEventHandlerWithResyncPeriod(new GenericResourceEventHandler<>(new ConfigMapEventHandler(operatorBuilder.getClient())), 0);
-    }
-
-    private void registerInformerForNamespaces (SharedInformerFactory sharedInformerFactory) {
-        SharedIndexInformer<Namespace> namespaceInformer = sharedInformerFactory.sharedIndexInformerFor(
-                Namespace.class,
-                NamespaceList.class,
-                CustomResourceUtils.RESYNC_TIME);
-
-        namespaceInformer.addEventHandlerWithResyncPeriod(new NamespaceEventHandler(), 0);
-    }
-
-    private void registerInformerForCRDs (SharedInformerFactory sharedInformerFactory) {
-        SharedIndexInformer<CustomResourceDefinition> crdInformer = sharedInformerFactory.sharedIndexInformerFor(
-                CustomResourceDefinition.class,
-                CustomResourceDefinitionList.class,
-                CustomResourceUtils.RESYNC_TIME);
-
-        List<String> crdNames = List.of(
-                "th2boxes.th2.exactpro.com",
-                "th2coreboxes.th2.exactpro.com",
-                "th2dictionaries.th2.exactpro.com",
-                "th2estores.th2.exactpro.com",
-                "th2links.th2.exactpro.com",
-                "th2mstores.th2.exactpro.com");
-
-        crdInformer.addEventHandlerWithResyncPeriod(new CRDEventHandler(crdNames), 0);
-    }
-
-    private void registerInformerForHelmReleases(SharedInformerFactory factory, KubernetesClient client) {
-        var helmReleaseCrd = CustomResourceUtils.getResourceCrd(client, HELM_RELEASE_CRD_NAME);
-
-        SharedIndexInformer<HelmRelease> helmReleaseInformer = factory.sharedIndexInformerForCustomResource(
-                new CustomResourceDefinitionContext.Builder()
-                        .withGroup(helmReleaseCrd.getSpec().getGroup())
-                        .withVersion(helmReleaseCrd.getSpec().getVersions().get(0).getName())
-                        .withScope(helmReleaseCrd.getSpec().getScope())
-                        .withPlural(helmReleaseCrd.getSpec().getNames().getPlural())
-                        .build(),
-                HelmRelease.class,
-                HelmReleaseList.class,
-                CustomResourceUtils.RESYNC_TIME);
-
-        helmReleaseInformer.addEventHandlerWithResyncPeriod(CustomResourceUtils.resourceEventHandlerFor(
-                new HelmReleaseEventHandler(client),
-                HelmRelease.class,
-                dictionaryClient.getCustomResourceDefinition()),
-                0);
-    }
-
+    Th2DictionaryEventHandler dictionaryEventHandler;
     private void registerInformers (SharedInformerFactory sharedInformerFactory) {
-        registerInformerForLinks(sharedInformerFactory);
-        registerInformerForDictionaries(sharedInformerFactory);
-        registerInformerForConfigMaps(sharedInformerFactory);
-        registerInformerForNamespaces(sharedInformerFactory);
-        registerInformerForCRDs(sharedInformerFactory);
-//        registerInformerForHelmReleases(sharedInformerFactory, operatorBuilder.getClient());
+
+        KubernetesClient client = operatorBuilder.getClient();
+        Th2LinkEventHandler.newInstance(sharedInformerFactory, client);
+        dictionaryEventHandler = Th2DictionaryEventHandler.newInstance(sharedInformerFactory,client);
+        ConfigMapEventHandler.newInstance(sharedInformerFactory, client);
+        NamespaceEventHandler.newInstance(sharedInformerFactory);
+        CRDEventHandler.newInstance(sharedInformerFactory);
+        //HelmReleaseEventHandler.newInstance(sharedInformerFactory, client);
 
         /*
              resourceClients initialization should be done first
@@ -317,7 +207,7 @@ public class DefaultWatchManager {
         }
 
         if (dicResourceFinder instanceof EmptyDictionaryResourceFinder || dicResourceFinder instanceof DefaultDictionaryResourceFinder) {
-            operatorBuilder.dictionaryResourceFinder(new DefaultDictionaryResourceFinder(dictionaryClient));
+            operatorBuilder.dictionaryResourceFinder(new DefaultDictionaryResourceFinder(dictionaryEventHandler.getDictionaryClient()));
         }
 
         if (grpcLinkResolver instanceof EmptyGrpcLinkResolver || grpcLinkResolver instanceof DefaultGrpcLinkResolver) {
@@ -343,118 +233,10 @@ public class DefaultWatchManager {
         }
     }
 
-    String readRabbitMQPasswordForSchema(KubernetesClient client, String namespace, String secretName) throws Exception {
-
-        Secret secret = client.secrets().inNamespace(namespace).withName(secretName).get();
-        if (secret == null)
-            throw new Exception(String.format("Secret not found \"%s\"",
-                    annotationFor(namespace, "Secret", secretName)));
-        if (secret.getData() == null)
-            throw new Exception(String.format("Invalid secret \"%s\". No data",
-                    annotationFor(secret)));
-
-        String password = secret.getData().get(OperatorConfig.RABBITMQ_SECRET_PASSWORD_KEY);
-        if (password == null)
-            throw new Exception(String.format("Invalid secret \"%s\". No password was found with key \"%s\""
-                    , annotationFor(secret)
-                    , OperatorConfig.RABBITMQ_SECRET_PASSWORD_KEY));
-
-        if (secret.getType().equals(SECRET_TYPE_OPAQUE))
-            password = new String(Base64.getDecoder().decode(password.getBytes()));
-        return password;
-    }
-
     public static Builder builder(KubernetesClient client) {
         return new Builder(client);
     }
 
-    int refreshBoxesIfNeeded(Th2Link oldLinkRes, Th2Link newLinkRes) {
-
-        var linkNamespace = extractNamespace(oldLinkRes);
-
-        if (linkNamespace == null) {
-            linkNamespace = extractNamespace(newLinkRes);
-        }
-
-        var boxesToUpdate = getBoxesToUpdate(oldLinkRes, newLinkRes);
-
-        logger.info("{} box(es) need updating", boxesToUpdate.size());
-
-        return refreshBoxes(linkNamespace, boxesToUpdate);
-    }
-
-    Th2Link getOldLink(Th2Link th2Link, List<Th2Link> resourceLinks) {
-        var oldLinkIndex = resourceLinks.indexOf(th2Link);
-        return oldLinkIndex < 0 ? Th2Link.newInstance() : resourceLinks.get(oldLinkIndex);
-    }
-
-    Set<String> getBoxesToUpdate(Th2Link oldLinkRes, Th2Link newLinkRes) {
-
-        var oldBoxesLinks = oldLinkRes.getSpec().getBoxesRelation().getAllLinks();
-        var newBoxesLinks = newLinkRes.getSpec().getBoxesRelation().getAllLinks();
-        var fromBoxesLinks = getBoxesToUpdate(oldBoxesLinks, newBoxesLinks,
-                blb -> Set.of(blb.getFrom().getBoxName(), blb.getTo().getBoxName()));
-        Set<String> boxes = new HashSet<>(fromBoxesLinks);
-
-        var oldLinks = oldLinkRes.getSpec().getDictionariesRelation();
-        var newLinks = newLinkRes.getSpec().getDictionariesRelation();
-        var fromDicLinks = getBoxesToUpdate(oldLinks, newLinks, dlb -> Set.of(dlb.getBox()));
-        boxes.addAll(fromDicLinks);
-
-        return boxes;
-    }
-
-    <T extends Identifiable> Set<String> getBoxesToUpdate(List<T> oldLinks, List<T> newLinks,
-                                                                  Function<T, Set<String>> boxesExtractor) {
-
-        Set<String> boxes = new HashSet<>();
-
-        var or = new OrderedRelation<>(oldLinks, newLinks);
-
-        for (var maxLink : or.getMaxLinks()) {
-            var isLinkExist = false;
-            for (var minLink : or.getMinLinks()) {
-                if (minLink.getId().equals(maxLink.getId())) {
-                    if (!minLink.equals(maxLink)) {
-                        boxes.addAll(boxesExtractor.apply(minLink));
-                        boxes.addAll(boxesExtractor.apply(maxLink));
-                    }
-                    isLinkExist = true;
-                }
-            }
-            if (!isLinkExist) {
-                boxes.addAll(boxesExtractor.apply(maxLink));
-            }
-        }
-
-        var oldToUpdate = oldLinks.stream()
-                .filter(t -> newLinks.stream().noneMatch(t1 -> t1.getId().equals(t.getId())))
-                .flatMap(t -> boxesExtractor.apply(t).stream())
-                .collect(Collectors.toSet());
-
-        boxes.addAll(oldToUpdate);
-
-        return boxes;
-    }
-
-    private static class OrderedRelation<T> {
-
-        @Getter
-        private List<T> maxLinks;
-
-        @Getter
-        private List<T> minLinks;
-
-        public OrderedRelation(List<T> oldLinks, List<T> newLinks) {
-            if (newLinks.size() >= oldLinks.size()) {
-                this.maxLinks = newLinks;
-                this.minLinks = oldLinks;
-            } else {
-                this.maxLinks = oldLinks;
-                this.minLinks = newLinks;
-            }
-        }
-    }
 
     public static synchronized DefaultWatchManager getInstance () {
         if (instance == null) {

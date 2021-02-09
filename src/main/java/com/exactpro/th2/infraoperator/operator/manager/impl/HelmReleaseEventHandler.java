@@ -10,6 +10,8 @@ import io.fabric8.kubernetes.client.dsl.MixedOperation;
 import io.fabric8.kubernetes.client.dsl.Resource;
 import io.fabric8.kubernetes.client.dsl.base.CustomResourceDefinitionContext;
 import io.fabric8.kubernetes.client.informers.ResourceEventHandler;
+import io.fabric8.kubernetes.client.informers.SharedIndexInformer;
+import io.fabric8.kubernetes.client.informers.SharedInformerFactory;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -23,7 +25,31 @@ public class HelmReleaseEventHandler implements ResourceEventHandler<HelmRelease
     private final KubernetesClient client;
     private final MixedOperation<HelmRelease, HelmReleaseList, Resource<HelmRelease>> helmReleaseClient;
 
-    public HelmReleaseEventHandler (KubernetesClient client) {
+    public static HelmReleaseEventHandler newInstance(SharedInformerFactory factory, KubernetesClient client) {
+
+        var res = new HelmReleaseEventHandler(client);
+        var helmReleaseCrd = CustomResourceUtils.getResourceCrd(client, HELM_RELEASE_CRD_NAME);
+
+        SharedIndexInformer<HelmRelease> helmReleaseInformer = factory.sharedIndexInformerForCustomResource(
+                new CustomResourceDefinitionContext.Builder()
+                        .withGroup(helmReleaseCrd.getSpec().getGroup())
+                        .withVersion(helmReleaseCrd.getSpec().getVersions().get(0).getName())
+                        .withScope(helmReleaseCrd.getSpec().getScope())
+                        .withPlural(helmReleaseCrd.getSpec().getNames().getPlural())
+                        .build(),
+                HelmRelease.class,
+                HelmReleaseList.class,
+                CustomResourceUtils.RESYNC_TIME);
+
+        helmReleaseInformer.addEventHandlerWithResyncPeriod(CustomResourceUtils.resourceEventHandlerFor(
+                res,
+                HelmRelease.class,
+                helmReleaseCrd),
+                0);
+        return res;
+    }
+
+    private HelmReleaseEventHandler (KubernetesClient client) {
         this.client = client;
 
         var helmReleaseCrd = CustomResourceUtils.getResourceCrd(client, HELM_RELEASE_CRD_NAME);

@@ -16,7 +16,6 @@
 
 package com.exactpro.th2.infraoperator.util;
 
-import com.exactpro.th2.infraoperator.operator.AbstractTh2Operator;
 import com.exactpro.th2.infraoperator.operator.StoreHelmTh2Op;
 import com.exactpro.th2.infraoperator.spec.Th2CustomResource;
 import com.exactpro.th2.infraoperator.spec.shared.PinSpec;
@@ -29,7 +28,6 @@ import org.slf4j.LoggerFactory;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
-import java.util.Objects;
 
 public final class ExtractUtils {
 

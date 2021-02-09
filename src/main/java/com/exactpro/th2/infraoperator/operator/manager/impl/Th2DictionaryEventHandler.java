@@ -1,9 +1,16 @@
 package com.exactpro.th2.infraoperator.operator.manager.impl;
 
 import com.exactpro.th2.infraoperator.OperatorState;
+import com.exactpro.th2.infraoperator.model.kubernetes.client.ipml.DictionaryClient;
 import com.exactpro.th2.infraoperator.spec.dictionary.Th2Dictionary;
+import com.exactpro.th2.infraoperator.spec.dictionary.Th2DictionaryList;
+import com.exactpro.th2.infraoperator.util.CustomResourceUtils;
+import io.fabric8.kubernetes.client.KubernetesClient;
 import io.fabric8.kubernetes.client.Watcher;
+import io.fabric8.kubernetes.client.dsl.base.CustomResourceDefinitionContext;
 import io.fabric8.kubernetes.client.informers.ResourceEventHandler;
+import io.fabric8.kubernetes.client.informers.SharedIndexInformer;
+import io.fabric8.kubernetes.client.informers.SharedInformerFactory;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -16,6 +23,28 @@ import static com.exactpro.th2.infraoperator.util.ExtractUtils.extractNamespace;
 
 public class Th2DictionaryEventHandler implements ResourceEventHandler<Th2Dictionary> {
     private static final Logger logger = LoggerFactory.getLogger(Th2DictionaryEventHandler.class);
+
+    private DictionaryClient dictionaryClient;
+    public DictionaryClient getDictionaryClient() {
+        return dictionaryClient;
+    }
+
+    public static Th2DictionaryEventHandler newInstance (SharedInformerFactory sharedInformerFactory, KubernetesClient client) {
+        var res = new Th2DictionaryEventHandler();
+        res.dictionaryClient = new DictionaryClient(client);
+        SharedIndexInformer<Th2Dictionary> dictionaryInformer = sharedInformerFactory.sharedIndexInformerForCustomResource(
+                CustomResourceDefinitionContext.fromCrd(res.dictionaryClient.getCustomResourceDefinition()),
+                Th2Dictionary.class,
+                Th2DictionaryList.class,
+                CustomResourceUtils.RESYNC_TIME);
+
+        dictionaryInformer.addEventHandlerWithResyncPeriod(CustomResourceUtils.resourceEventHandlerFor(
+                res,
+                Th2Dictionary.class,
+                res.dictionaryClient.getCustomResourceDefinition()),
+                0);
+        return res;
+    }
 
     private Set<String> getLinkedResources(Th2Dictionary dictionary) {
         Set<String> resources = new HashSet<>();
