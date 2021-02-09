@@ -16,10 +16,10 @@
 
 package com.exactpro.th2.infraoperator.util;
 
-import com.exactpro.th2.infraoperator.spec.Th2CustomResource;
-import com.exactpro.th2.infraoperator.spec.shared.PinSpec;
 import com.exactpro.th2.infraoperator.operator.AbstractTh2Operator;
 import com.exactpro.th2.infraoperator.operator.StoreHelmTh2Op;
+import com.exactpro.th2.infraoperator.spec.Th2CustomResource;
+import com.exactpro.th2.infraoperator.spec.shared.PinSpec;
 import com.exactpro.th2.infraoperator.spec.shared.SchemaConnectionType;
 import io.fabric8.kubernetes.api.model.HasMetadata;
 import org.jetbrains.annotations.Nullable;
@@ -53,10 +53,6 @@ public final class ExtractUtils {
         return obj.getMetadata().getNamespace();
     }
 
-    public static Long extractGeneration(HasMetadata obj) {
-        return obj.getMetadata().getGeneration();
-    }
-
     public static Map<String, String> extractAnnotations(HasMetadata obj) {
         return obj.getMetadata().getAnnotations();
     }
@@ -75,17 +71,6 @@ public final class ExtractUtils {
         return mqPins;
     }
 
-    @Nullable
-    public static String extractRefreshToken(HasMetadata obj) {
-        var annotations = obj.getMetadata().getAnnotations();
-
-        if (Objects.nonNull(annotations)) {
-            return annotations.get(AbstractTh2Operator.REFRESH_TOKEN_ALIAS);
-        }
-
-        return null;
-    }
-
     public static String extractType(Object object) {
         return object.getClass().getSimpleName();
     }
@@ -99,13 +84,6 @@ public final class ExtractUtils {
             logger.warn("[{}<{}>] doesn't have owner resource", extractType(obj), extractFullName(obj));
             return null;
         }
-    }
-
-    public static boolean compareRefreshTokens(HasMetadata objFirst, HasMetadata objSecond) {
-        var firstRT = extractRefreshToken(objFirst);
-        var secondRT = extractRefreshToken(objSecond);
-        return Objects.isNull(firstRT) && Objects.isNull(secondRT) ||
-                Objects.nonNull(firstRT) && Objects.nonNull(secondRT) && firstRT.equals(secondRT);
     }
 
     public static boolean isStorageBox(HasMetadata hasMetadata) {
