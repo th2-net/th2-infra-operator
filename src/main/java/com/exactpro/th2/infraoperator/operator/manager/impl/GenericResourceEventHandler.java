@@ -11,11 +11,23 @@ import org.slf4j.LoggerFactory;
 
 public class GenericResourceEventHandler<T extends HasMetadata> implements ResourceEventHandler<T> {
     private static final Logger logger = LoggerFactory.getLogger(GenericResourceEventHandler.class);
+    public static final String KEY_SOURCE_HASH = "th2.exactpro.com/source-hash";
+
 
     private ResourceEventHandler<T> eventHandler;
 
     public GenericResourceEventHandler(ResourceEventHandler<T> eventHandler) {
         this.eventHandler = eventHandler;
+    }
+
+    private String sourceHash(HasMetadata res) {
+
+        if (res.getMetadata() != null && res.getMetadata().getAnnotations()!=null) {
+            String hash = res.getMetadata().getAnnotations().get(KEY_SOURCE_HASH);
+            if (hash != null)
+                return "[" + hash.substring(0, 8) + "]";
+        }
+        return "";
     }
 
     @Override
@@ -33,16 +45,16 @@ public class GenericResourceEventHandler<T extends HasMetadata> implements Resou
                 // TODO: propagate event id logging in code
                 Thread.currentThread().setName(EventCounter.newEvent());
                 String resourceLabel = CustomResourceUtils.annotationFor(obj);
-                logger.debug("Received ADDED event for \"{}\"", resourceLabel);
+                logger.debug("Received ADDED event for \"{}\" {}", resourceLabel, sourceHash(obj));
 
                 try {
                     eventHandler.onAdd(obj);
                 } catch (Exception e) {
-                    logger.error("Exception processing ADDED event for \"{}\"", resourceLabel, e);
+                    logger.error("Exception processing event for \"{}\"", resourceLabel, e);
                 }
 
                 long duration = System.currentTimeMillis() - startDateTime;
-                logger.info("event for \"{}\" processed in {}ms", resourceLabel, duration);
+                logger.info("Event for \"{}\" processed in {}ms", resourceLabel, duration);
 
             } finally {
                 EventCounter.closeEvent();
@@ -70,16 +82,16 @@ public class GenericResourceEventHandler<T extends HasMetadata> implements Resou
                 // TODO: propagate event id logging in code
                 Thread.currentThread().setName(EventCounter.newEvent());
                 String resourceLabel = CustomResourceUtils.annotationFor(oldObj);
-                logger.debug("Received MODIFIED event for \"{}\"", resourceLabel);
+                logger.debug("Received MODIFIED event for \"{}\" {}", resourceLabel, sourceHash(newObj));
 
                 try {
                     eventHandler.onUpdate(oldObj, newObj);
                 } catch (Exception e) {
-                    logger.error("Exception processing MODIFIED event for \"{}\"", resourceLabel, e);
+                    logger.error("Exception processing event for \"{}\"", resourceLabel, e);
                 }
 
                 long duration = System.currentTimeMillis() - startDateTime;
-                logger.info("MODIFIED Event for \"{}\" processed in {}ms", resourceLabel, duration);
+                logger.info("Event for \"{}\" processed in {}ms", resourceLabel, duration);
 
             } finally {
                 EventCounter.closeEvent();
@@ -106,16 +118,16 @@ public class GenericResourceEventHandler<T extends HasMetadata> implements Resou
                 // TODO: propagate event id logging in code
                 Thread.currentThread().setName(EventCounter.newEvent());
                 String resourceLabel = CustomResourceUtils.annotationFor(obj);
-                logger.debug("Received DELETED event for \"{}\"", resourceLabel);
+                logger.debug("Received DELETED event for \"{}\" {}", resourceLabel, sourceHash(obj));
 
                 try {
                     eventHandler.onDelete(obj, deletedFinalStateUnknown);
                 } catch (Exception e) {
-                    logger.error("Exception processing DELETED event for \"{}\"", resourceLabel, e);
+                    logger.error("Exception processing event for \"{}\"", resourceLabel, e);
                 }
 
                 long duration = System.currentTimeMillis() - startDateTime;
-                logger.info("DELETED Event for {} processed in {}ms", resourceLabel, duration);
+                logger.info("Event for {} processed in {}ms", resourceLabel, duration);
 
             } finally {
                 EventCounter.closeEvent();
