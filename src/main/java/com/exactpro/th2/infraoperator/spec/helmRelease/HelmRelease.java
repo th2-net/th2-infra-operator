@@ -36,7 +36,7 @@ import static com.exactpro.th2.infraoperator.util.JsonUtils.YAML_READER;
 @JsonIgnoreProperties(ignoreUnknown = true)
 @Group("helm.fluxcd.io")
 @Version("v1")
-public class HelmRelease extends CustomResource<Map<String, Object>, Object> {
+public class HelmRelease extends CustomResource<InstantiableMap, InstantiableMap> {
 
     private MergePutter mergePutter = new MergePutter();
 
