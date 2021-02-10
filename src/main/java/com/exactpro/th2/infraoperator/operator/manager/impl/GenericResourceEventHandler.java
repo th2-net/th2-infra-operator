@@ -11,6 +11,8 @@ import org.slf4j.LoggerFactory;
 
 public class GenericResourceEventHandler<T extends HasMetadata> implements ResourceEventHandler<T> {
     private static final Logger logger = LoggerFactory.getLogger(GenericResourceEventHandler.class);
+    public static final String KEY_SOURCE_HASH = "th2.exactpro.com/source-hash";
+
 
     private ResourceEventHandler<T> eventHandler;
 
@@ -34,6 +36,9 @@ public class GenericResourceEventHandler<T extends HasMetadata> implements Resou
                 Thread.currentThread().setName(EventCounter.newEvent());
                 String resourceLabel = CustomResourceUtils.annotationFor(obj);
                 logger.debug("Received ADDED event for \"{}\"", resourceLabel);
+                if (obj.getMetadata().getAnnotations().containsKey(KEY_SOURCE_HASH)) {
+                    logger.debug("{} : {}", KEY_SOURCE_HASH, obj.getMetadata().getAnnotations().get(KEY_SOURCE_HASH).substring(0, 8));
+                }
 
                 try {
                     eventHandler.onAdd(obj);
@@ -71,6 +76,9 @@ public class GenericResourceEventHandler<T extends HasMetadata> implements Resou
                 Thread.currentThread().setName(EventCounter.newEvent());
                 String resourceLabel = CustomResourceUtils.annotationFor(oldObj);
                 logger.debug("Received MODIFIED event for \"{}\"", resourceLabel);
+                if (newObj.getMetadata().getAnnotations().containsKey(KEY_SOURCE_HASH)) {
+                    logger.debug("{} : {}", KEY_SOURCE_HASH, newObj.getMetadata().getAnnotations().get(KEY_SOURCE_HASH).substring(0, 8));
+                }
 
                 try {
                     eventHandler.onUpdate(oldObj, newObj);
@@ -107,6 +115,9 @@ public class GenericResourceEventHandler<T extends HasMetadata> implements Resou
                 Thread.currentThread().setName(EventCounter.newEvent());
                 String resourceLabel = CustomResourceUtils.annotationFor(obj);
                 logger.debug("Received DELETED event for \"{}\"", resourceLabel);
+                if (obj.getMetadata().getAnnotations().containsKey(KEY_SOURCE_HASH)) {
+                    logger.debug("{} : {}", KEY_SOURCE_HASH, obj.getMetadata().getAnnotations().get(KEY_SOURCE_HASH).substring(0, 8));
+                }
 
                 try {
                     eventHandler.onDelete(obj, deletedFinalStateUnknown);
