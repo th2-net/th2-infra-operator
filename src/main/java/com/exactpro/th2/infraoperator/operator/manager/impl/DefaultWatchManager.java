@@ -21,6 +21,7 @@ import com.exactpro.th2.infraoperator.model.box.configuration.dictionary.factory
 import com.exactpro.th2.infraoperator.model.box.configuration.grpc.factory.impl.DefaultGrpcRouterConfigFactory;
 import com.exactpro.th2.infraoperator.model.box.configuration.grpc.factory.impl.EmptyGrpcRouterConfigFactory;
 import com.exactpro.th2.infraoperator.model.kubernetes.client.ResourceClient;
+import com.exactpro.th2.infraoperator.model.kubernetes.client.ipml.DictionaryClient;
 import com.exactpro.th2.infraoperator.operator.HelmReleaseTh2Op;
 import com.exactpro.th2.infraoperator.operator.context.HelmOperatorContext;
 import com.exactpro.th2.infraoperator.spec.Th2CustomResource;
@@ -60,6 +61,7 @@ public class DefaultWatchManager {
 
     private final Builder operatorBuilder;
 
+    private DictionaryClient dictionaryClient;
 
     private final List<ResourceClient<Th2CustomResource>> resourceClients = new ArrayList<>();
 
@@ -76,6 +78,7 @@ public class DefaultWatchManager {
     private DefaultWatchManager(Builder builder) {
         this.operatorBuilder = builder;
         this.sharedInformerFactory = builder.getClient().informers();
+        this.dictionaryClient = new DictionaryClient(operatorBuilder.getClient());
 
         sharedInformerFactory.addSharedInformerEventListener(exception -> {
             logger.error("Exception in InformerFactory : {}", exception.getMessage());
@@ -89,8 +92,8 @@ public class DefaultWatchManager {
 
         SharedInformerFactory sharedInformerFactory = getInformerFactory();
 
-        registerInformers (sharedInformerFactory);
         postInit();
+        registerInformers (sharedInformerFactory);
 
         isWatching = true;
 
@@ -104,12 +107,11 @@ public class DefaultWatchManager {
     }
 
 
-    Th2DictionaryEventHandler dictionaryEventHandler;
     private void registerInformers (SharedInformerFactory sharedInformerFactory) {
 
         KubernetesClient client = operatorBuilder.getClient();
         Th2LinkEventHandler.newInstance(sharedInformerFactory, client);
-        dictionaryEventHandler = Th2DictionaryEventHandler.newInstance(sharedInformerFactory,client);
+        Th2DictionaryEventHandler.newInstance(sharedInformerFactory, dictionaryClient);
         ConfigMapEventHandler.newInstance(sharedInformerFactory, client);
         NamespaceEventHandler.newInstance(sharedInformerFactory);
         CRDEventHandler.newInstance(sharedInformerFactory);
@@ -207,7 +209,7 @@ public class DefaultWatchManager {
         }
 
         if (dicResourceFinder instanceof EmptyDictionaryResourceFinder || dicResourceFinder instanceof DefaultDictionaryResourceFinder) {
-            operatorBuilder.dictionaryResourceFinder(new DefaultDictionaryResourceFinder(dictionaryEventHandler.getDictionaryClient()));
+            operatorBuilder.dictionaryResourceFinder(new DefaultDictionaryResourceFinder(dictionaryClient));
         }
 
         if (grpcLinkResolver instanceof EmptyGrpcLinkResolver || grpcLinkResolver instanceof DefaultGrpcLinkResolver) {

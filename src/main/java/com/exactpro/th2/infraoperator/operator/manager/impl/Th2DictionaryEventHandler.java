@@ -29,9 +29,9 @@ public class Th2DictionaryEventHandler implements ResourceEventHandler<Th2Dictio
         return dictionaryClient;
     }
 
-    public static Th2DictionaryEventHandler newInstance (SharedInformerFactory sharedInformerFactory, KubernetesClient client) {
+    public static Th2DictionaryEventHandler newInstance (SharedInformerFactory sharedInformerFactory, DictionaryClient dictionaryClient) {
         var res = new Th2DictionaryEventHandler();
-        res.dictionaryClient = new DictionaryClient(client);
+        res.dictionaryClient = dictionaryClient;
         SharedIndexInformer<Th2Dictionary> dictionaryInformer = sharedInformerFactory.sharedIndexInformerForCustomResource(
                 CustomResourceDefinitionContext.fromCrd(res.dictionaryClient.getCustomResourceDefinition()),
                 Th2Dictionary.class,
