@@ -39,9 +39,12 @@ import com.exactpro.th2.infraoperator.spec.strategy.resFinder.dictionary.impl.De
 import com.exactpro.th2.infraoperator.spec.strategy.resFinder.dictionary.impl.EmptyDictionaryResourceFinder;
 import com.exactpro.th2.infraoperator.util.CustomResourceUtils;
 import com.fasterxml.uuid.Generators;
+import io.fabric8.kubernetes.api.model.HasMetadata;
 import io.fabric8.kubernetes.client.DefaultKubernetesClient;
 import io.fabric8.kubernetes.client.KubernetesClient;
+import io.fabric8.kubernetes.client.Watcher;
 import io.fabric8.kubernetes.client.informers.SharedInformerFactory;
+import lombok.AllArgsConstructor;
 import lombok.Getter;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -71,6 +74,8 @@ public class DefaultWatchManager {
 
     private static DefaultWatchManager instance;
 
+    private final EventStorage<DispatcherEvent> eventStorage;
+
     private synchronized SharedInformerFactory getInformerFactory() {
         return sharedInformerFactory;
     }
@@ -79,12 +84,53 @@ public class DefaultWatchManager {
         this.operatorBuilder = builder;
         this.sharedInformerFactory = builder.getClient().informers();
         this.dictionaryClient = new DictionaryClient(operatorBuilder.getClient());
+        this.eventStorage = new EventStorage<>();
 
         sharedInformerFactory.addSharedInformerEventListener(exception -> {
             logger.error("Exception in InformerFactory : {}", exception.getMessage());
         });
 
         instance = this;
+    }
+
+    @Getter
+    @AllArgsConstructor
+    public static class DispatcherEvent {
+        private final String eventId;
+        private final String annotation;
+        private final Watcher.Action action;
+        private final HasMetadata cr;
+        private final Watcher callback;
+
+        @Override
+        public boolean equals(Object o) {
+            if (this == o) return true;
+            if (!(o instanceof DispatcherEvent)) return false;
+
+            return annotation.equals(((DispatcherEvent) o).annotation);
+        }
+    }
+
+    public static class EventStorage <T> {
+        LinkedList<T> events;
+
+        public EventStorage () {
+            events = new LinkedList<>();
+        }
+
+        public synchronized void addEvent (T event) {
+            events.removeFirstOccurrence(event);
+            events.addLast(event);
+        }
+
+        public synchronized T popEvent() {
+            logger.info("Event storage contains {} elements", events.size());
+
+            var event = events.getFirst();
+            events.removeFirst();
+
+            return event;
+        }
     }
 
     public void startInformers () {
@@ -110,9 +156,9 @@ public class DefaultWatchManager {
     private void registerInformers (SharedInformerFactory sharedInformerFactory) {
 
         KubernetesClient client = operatorBuilder.getClient();
-        Th2LinkEventHandler.newInstance(sharedInformerFactory, client);
-        Th2DictionaryEventHandler.newInstance(sharedInformerFactory, dictionaryClient);
-        ConfigMapEventHandler.newInstance(sharedInformerFactory, client);
+        Th2LinkEventHandler.newInstance(sharedInformerFactory, client, eventStorage);
+        Th2DictionaryEventHandler.newInstance(sharedInformerFactory, dictionaryClient, eventStorage);
+        ConfigMapEventHandler.newInstance(sharedInformerFactory, client, eventStorage);
         NamespaceEventHandler.newInstance(sharedInformerFactory);
         CRDEventHandler.newInstance(sharedInformerFactory);
         //HelmReleaseEventHandler.newInstance(sharedInformerFactory, client);
@@ -134,7 +180,8 @@ public class DefaultWatchManager {
 
             helmReleaseTh2Op.generateInformerFromFactory(getInformerFactory()).addEventHandlerWithResyncPeriod(
                     CustomResourceUtils.resourceEventHandlerFor(helmReleaseTh2Op.getResourceClient(),
-                            helmReleaseTh2Op.generateResourceEventHandler()),
+                            helmReleaseTh2Op.generateResourceEventHandler(),
+                            eventStorage),
                     0);
         }
 

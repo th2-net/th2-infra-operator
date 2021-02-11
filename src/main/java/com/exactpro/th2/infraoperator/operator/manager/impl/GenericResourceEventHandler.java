@@ -5,19 +5,24 @@ import com.exactpro.th2.infraoperator.operator.context.EventCounter;
 import com.exactpro.th2.infraoperator.util.CustomResourceUtils;
 import com.exactpro.th2.infraoperator.util.Strings;
 import io.fabric8.kubernetes.api.model.HasMetadata;
+import io.fabric8.kubernetes.client.Watcher;
+import io.fabric8.kubernetes.client.WatcherException;
 import io.fabric8.kubernetes.client.informers.ResourceEventHandler;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-public class GenericResourceEventHandler<T extends HasMetadata> implements ResourceEventHandler<T> {
+public class GenericResourceEventHandler<T extends HasMetadata> implements ResourceEventHandler<T>, Watcher<T> {
     private static final Logger logger = LoggerFactory.getLogger(GenericResourceEventHandler.class);
     public static final String KEY_SOURCE_HASH = "th2.exactpro.com/source-hash";
 
 
     private ResourceEventHandler<T> eventHandler;
+    private DefaultWatchManager.EventStorage<DefaultWatchManager.DispatcherEvent> eventStorage;
 
-    public GenericResourceEventHandler(ResourceEventHandler<T> eventHandler) {
+    public GenericResourceEventHandler(ResourceEventHandler<T> eventHandler,
+                                       DefaultWatchManager.EventStorage<DefaultWatchManager.DispatcherEvent> eventStorage) {
         this.eventHandler = eventHandler;
+        this.eventStorage = eventStorage;
     }
 
     private String sourceHash(HasMetadata res) {
@@ -33,47 +38,73 @@ public class GenericResourceEventHandler<T extends HasMetadata> implements Resou
     @Override
     public void onAdd(T obj) {
 
-        try {
-            long startDateTime = System.currentTimeMillis();
-
-            if (Strings.nonePrefixMatch(obj.getMetadata().getNamespace(), OperatorConfig.INSTANCE.getNamespacePrefixes())) {
+        if (Strings.nonePrefixMatch(obj.getMetadata().getNamespace(), OperatorConfig.INSTANCE.getNamespacePrefixes())) {
                 return;
-            }
-
-            try {
-                // temp fix: change thread name for logging purposes
-                // TODO: propagate event id logging in code
-                Thread.currentThread().setName(EventCounter.newEvent());
-                String resourceLabel = CustomResourceUtils.annotationFor(obj);
-                logger.debug("Received ADDED event for \"{}\" {}", resourceLabel, sourceHash(obj));
-
-                try {
-                    eventHandler.onAdd(obj);
-                } catch (Exception e) {
-                    logger.error("Exception processing event for \"{}\"", resourceLabel, e);
-                }
-
-                long duration = System.currentTimeMillis() - startDateTime;
-                logger.info("Event for \"{}\" processed in {}ms", resourceLabel, duration);
-
-            } finally {
-                EventCounter.closeEvent();
-                Thread.currentThread().setName("thread-" + Thread.currentThread().getId());
-            }
-        } catch (Exception e) {
-            logger.error("Exception processing event", e);
         }
+
+        // temp fix: change thread name for logging purposes
+        // TODO: propagate event id logging in code
+        String resourceLabel = CustomResourceUtils.annotationFor(obj);
+        logger.debug("Received ADDED event for \"{}\" {}", resourceLabel, sourceHash(obj));
+
+        eventStorage.addEvent(new DefaultWatchManager.DispatcherEvent(
+                EventCounter.newEvent(),
+                resourceLabel,
+                Action.ADDED,
+                obj,
+                this));
     }
 
 
     @Override
     public void onUpdate(T oldObj, T newObj) {
 
+        if (Strings.nonePrefixMatch(oldObj.getMetadata().getNamespace(), OperatorConfig.INSTANCE.getNamespacePrefixes())
+                && Strings.nonePrefixMatch(newObj.getMetadata().getNamespace(), OperatorConfig.INSTANCE.getNamespacePrefixes())) {
+            return;
+        }
+
+        // temp fix: change thread name for logging purposes
+        // TODO: propagate event id logging in code
+        String resourceLabel = CustomResourceUtils.annotationFor(oldObj);
+        logger.debug("Received MODIFIED event for \"{}\" {}", resourceLabel, sourceHash(newObj));
+
+        eventStorage.addEvent(new DefaultWatchManager.DispatcherEvent(
+                EventCounter.newEvent(),
+                resourceLabel,
+                Action.MODIFIED,
+                newObj,
+                this));
+    }
+
+
+    @Override
+    public void onDelete(T obj, boolean deletedFinalStateUnknown) {
+
+        if (Strings.nonePrefixMatch(obj.getMetadata().getNamespace(), OperatorConfig.INSTANCE.getNamespacePrefixes())) {
+            return;
+        }
+
+        // temp fix: change thread name for logging purposes
+        // TODO: propagate event id logging in code
+        String resourceLabel = CustomResourceUtils.annotationFor(obj);
+        logger.debug("Received DELETED event for \"{}\" {}", resourceLabel, sourceHash(obj));
+
+        eventStorage.addEvent(new DefaultWatchManager.DispatcherEvent(
+                EventCounter.newEvent(),
+                resourceLabel,
+                Action.DELETED,
+                obj,
+                this));
+    }
+
+    @Override
+    public void eventReceived(Action action, T resource) {
+
         try {
             long startDateTime = System.currentTimeMillis();
 
-            if (Strings.nonePrefixMatch(oldObj.getMetadata().getNamespace(), OperatorConfig.INSTANCE.getNamespacePrefixes())
-                    && Strings.nonePrefixMatch(newObj.getMetadata().getNamespace(), OperatorConfig.INSTANCE.getNamespacePrefixes())) {
+            if (Strings.nonePrefixMatch(resource.getMetadata().getNamespace(), OperatorConfig.INSTANCE.getNamespacePrefixes())) {
                 return;
             }
 
@@ -81,11 +112,23 @@ public class GenericResourceEventHandler<T extends HasMetadata> implements Resou
                 // temp fix: change thread name for logging purposes
                 // TODO: propagate event id logging in code
                 Thread.currentThread().setName(EventCounter.newEvent());
-                String resourceLabel = CustomResourceUtils.annotationFor(oldObj);
-                logger.debug("Received MODIFIED event for \"{}\" {}", resourceLabel, sourceHash(newObj));
+                String resourceLabel = CustomResourceUtils.annotationFor(resource);
+                logger.debug("Received {} event for \"{}\" {}", action, resourceLabel, sourceHash(resource));
 
                 try {
-                    eventHandler.onUpdate(oldObj, newObj);
+                    switch (action) {
+                        case ADDED:
+                            eventHandler.onAdd(resource);
+                            break;
+
+                        case MODIFIED:
+                            eventHandler.onUpdate(null, resource);
+                            break;
+
+                        case DELETED:
+                            eventHandler.onDelete(resource, false);
+                            break;
+                    }
                 } catch (Exception e) {
                     logger.error("Exception processing event for \"{}\"", resourceLabel, e);
                 }
@@ -102,39 +145,8 @@ public class GenericResourceEventHandler<T extends HasMetadata> implements Resou
         }
     }
 
-
     @Override
-    public void onDelete(T obj, boolean deletedFinalStateUnknown) {
+    public void onClose(WatcherException cause) {
 
-        try {
-            long startDateTime = System.currentTimeMillis();
-
-            if (Strings.nonePrefixMatch(obj.getMetadata().getNamespace(), OperatorConfig.INSTANCE.getNamespacePrefixes())) {
-                return;
-            }
-
-            try {
-                // temp fix: change thread name for logging purposes
-                // TODO: propagate event id logging in code
-                Thread.currentThread().setName(EventCounter.newEvent());
-                String resourceLabel = CustomResourceUtils.annotationFor(obj);
-                logger.debug("Received DELETED event for \"{}\" {}", resourceLabel, sourceHash(obj));
-
-                try {
-                    eventHandler.onDelete(obj, deletedFinalStateUnknown);
-                } catch (Exception e) {
-                    logger.error("Exception processing event for \"{}\"", resourceLabel, e);
-                }
-
-                long duration = System.currentTimeMillis() - startDateTime;
-                logger.info("Event for {} processed in {}ms", resourceLabel, duration);
-
-            } finally {
-                EventCounter.closeEvent();
-                Thread.currentThread().setName("thread-" + Thread.currentThread().getId());
-            }
-        } catch (Exception e) {
-            logger.error("Exception processing event", e);
-        }
     }
 }

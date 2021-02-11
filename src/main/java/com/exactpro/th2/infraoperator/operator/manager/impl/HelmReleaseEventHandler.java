@@ -25,7 +25,10 @@ public class HelmReleaseEventHandler implements ResourceEventHandler<HelmRelease
     private final KubernetesClient client;
     private final MixedOperation<HelmRelease, HelmReleaseList, Resource<HelmRelease>> helmReleaseClient;
 
-    public static HelmReleaseEventHandler newInstance(SharedInformerFactory factory, KubernetesClient client) {
+    public static HelmReleaseEventHandler newInstance(
+            SharedInformerFactory factory,
+            KubernetesClient client,
+            DefaultWatchManager.EventStorage<DefaultWatchManager.DispatcherEvent> eventStorage) {
 
         var res = new HelmReleaseEventHandler(client);
         var helmReleaseCrd = CustomResourceUtils.getResourceCrd(client, HELM_RELEASE_CRD_NAME);
@@ -44,7 +47,8 @@ public class HelmReleaseEventHandler implements ResourceEventHandler<HelmRelease
         helmReleaseInformer.addEventHandlerWithResyncPeriod(CustomResourceUtils.resourceEventHandlerFor(
                 res,
                 HelmRelease.class,
-                helmReleaseCrd),
+                helmReleaseCrd,
+                eventStorage),
                 0);
         return res;
     }

@@ -30,14 +30,16 @@ public class ConfigMapEventHandler implements ResourceEventHandler<ConfigMap> {
     private static final Logger logger = LoggerFactory.getLogger(ConfigMapEventHandler.class);
     private KubernetesClient client;
 
-    public static ConfigMapEventHandler newInstance(SharedInformerFactory sharedInformerFactory, KubernetesClient client) {
+    public static ConfigMapEventHandler newInstance(SharedInformerFactory sharedInformerFactory,
+                                                    KubernetesClient client,
+                                                    DefaultWatchManager.EventStorage<DefaultWatchManager.DispatcherEvent> eventStorage) {
         SharedIndexInformer<ConfigMap> configMapInformer = sharedInformerFactory.sharedIndexInformerFor(
                 ConfigMap.class,
                 ConfigMapList.class,
                 CustomResourceUtils.RESYNC_TIME);
 
         var res = new ConfigMapEventHandler(client);
-        configMapInformer.addEventHandlerWithResyncPeriod(new GenericResourceEventHandler<>(res), 0);
+        configMapInformer.addEventHandlerWithResyncPeriod(new GenericResourceEventHandler<>(res, eventStorage), 0);
         return res;
     }
 

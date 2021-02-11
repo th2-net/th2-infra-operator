@@ -17,6 +17,7 @@
 package com.exactpro.th2.infraoperator.util;
 
 import com.exactpro.th2.infraoperator.model.kubernetes.client.ResourceClient;
+import com.exactpro.th2.infraoperator.operator.manager.impl.DefaultWatchManager;
 import com.exactpro.th2.infraoperator.operator.manager.impl.GenericResourceEventHandler;
 import io.fabric8.kubernetes.api.model.HasMetadata;
 import io.fabric8.kubernetes.api.model.apiextensions.v1.CustomResourceDefinition;
@@ -94,20 +95,24 @@ public final class CustomResourceUtils {
                 });
     }
 
-    public static <T extends CustomResource> ResourceEventHandler resourceEventHandlerFor(ResourceClient<T> resourceClient, ResourceEventHandler<T> handler) {
+    public static <T extends CustomResource> ResourceEventHandler resourceEventHandlerFor(
+            ResourceClient<T> resourceClient,
+            ResourceEventHandler<T> handler,
+            DefaultWatchManager.EventStorage<DefaultWatchManager.DispatcherEvent> eventStorage) {
 
         return resourceEventHandlerFor(
                 handler,
                 resourceClient.getResourceType(),
-                resourceClient.getCustomResourceDefinition());
+                resourceClient.getCustomResourceDefinition(),
+                eventStorage);
     }
 
 
     public static <T extends CustomResource> ResourceEventHandler<T> resourceEventHandlerFor(
             ResourceEventHandler<T> eventHandler,
             Class<T> resourceType,
-            CustomResourceDefinition crd
-    ) {
+            CustomResourceDefinition crd,
+            DefaultWatchManager.EventStorage<DefaultWatchManager.DispatcherEvent> eventStorage) {
         CustomResourceDefinitionSpec spec = crd.getSpec();
 
         String apiVersion = spec.getGroup() + "/" + spec.getVersions().get(0);
@@ -115,6 +120,6 @@ public final class CustomResourceUtils {
 
         KubernetesDeserializer.registerCustomKind(apiVersion, kind, resourceType);
 
-        return new GenericResourceEventHandler<>(eventHandler);
+        return new GenericResourceEventHandler<>(eventHandler, eventStorage);
     }
 }

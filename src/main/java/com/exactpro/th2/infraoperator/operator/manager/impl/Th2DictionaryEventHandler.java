@@ -5,7 +5,6 @@ import com.exactpro.th2.infraoperator.model.kubernetes.client.ipml.DictionaryCli
 import com.exactpro.th2.infraoperator.spec.dictionary.Th2Dictionary;
 import com.exactpro.th2.infraoperator.spec.dictionary.Th2DictionaryList;
 import com.exactpro.th2.infraoperator.util.CustomResourceUtils;
-import io.fabric8.kubernetes.client.KubernetesClient;
 import io.fabric8.kubernetes.client.Watcher;
 import io.fabric8.kubernetes.client.dsl.base.CustomResourceDefinitionContext;
 import io.fabric8.kubernetes.client.informers.ResourceEventHandler;
@@ -25,11 +24,10 @@ public class Th2DictionaryEventHandler implements ResourceEventHandler<Th2Dictio
     private static final Logger logger = LoggerFactory.getLogger(Th2DictionaryEventHandler.class);
 
     private DictionaryClient dictionaryClient;
-    public DictionaryClient getDictionaryClient() {
-        return dictionaryClient;
-    }
 
-    public static Th2DictionaryEventHandler newInstance (SharedInformerFactory sharedInformerFactory, DictionaryClient dictionaryClient) {
+    public static Th2DictionaryEventHandler newInstance (SharedInformerFactory sharedInformerFactory,
+                                                         DictionaryClient dictionaryClient,
+                                                         DefaultWatchManager.EventStorage<DefaultWatchManager.DispatcherEvent> eventStorage) {
         var res = new Th2DictionaryEventHandler();
         res.dictionaryClient = dictionaryClient;
         SharedIndexInformer<Th2Dictionary> dictionaryInformer = sharedInformerFactory.sharedIndexInformerForCustomResource(
@@ -41,7 +39,8 @@ public class Th2DictionaryEventHandler implements ResourceEventHandler<Th2Dictio
         dictionaryInformer.addEventHandlerWithResyncPeriod(CustomResourceUtils.resourceEventHandlerFor(
                 res,
                 Th2Dictionary.class,
-                res.dictionaryClient.getCustomResourceDefinition()),
+                res.dictionaryClient.getCustomResourceDefinition(),
+                eventStorage),
                 0);
         return res;
     }

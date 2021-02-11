@@ -27,7 +27,9 @@ import static com.exactpro.th2.infraoperator.util.ExtractUtils.extractNamespace;
 public class Th2LinkEventHandler implements ResourceEventHandler<Th2Link> {
     private static final Logger logger = LoggerFactory.getLogger(Th2LinkEventHandler.class);
 
-    public static Th2LinkEventHandler newInstance(SharedInformerFactory sharedInformerFactory, KubernetesClient client) {
+    public static Th2LinkEventHandler newInstance(SharedInformerFactory sharedInformerFactory,
+                                                  KubernetesClient client,
+                                                  DefaultWatchManager.EventStorage<DefaultWatchManager.DispatcherEvent> eventStorage) {
         var linkClient = new LinkClient(client);
 
         SharedIndexInformer<Th2Link> linkInformer = sharedInformerFactory.sharedIndexInformerForCustomResource(
@@ -40,7 +42,8 @@ public class Th2LinkEventHandler implements ResourceEventHandler<Th2Link> {
         linkInformer.addEventHandlerWithResyncPeriod(CustomResourceUtils.resourceEventHandlerFor(
                 res,
                 Th2Link.class,
-                linkClient.getCustomResourceDefinition()),
+                linkClient.getCustomResourceDefinition(),
+                eventStorage),
                 0);
 
         return res;
