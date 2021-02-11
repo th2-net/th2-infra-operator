@@ -63,7 +63,7 @@ public class Th2LinkEventHandler implements ResourceEventHandler<Th2Link> {
 
             var linkResources = new ArrayList<>(operatorState.getLinkResources(namespace));
             Th2Link prevLink = getPreviousLink(th2Link, linkResources);
-            refreshBoxesIfNeeded(prevLink, th2Link);
+            refreshAffectedBoxes(prevLink, th2Link);
             linkResources.remove(th2Link);
             linkResources.add(th2Link);
 
@@ -87,7 +87,7 @@ public class Th2LinkEventHandler implements ResourceEventHandler<Th2Link> {
             var linkResources = new ArrayList<>(operatorState.getLinkResources(namespace));
 
             Th2Link prevLink = getPreviousLink(newTh2Link, linkResources);
-            refreshBoxesIfNeeded(prevLink, newTh2Link);
+            refreshAffectedBoxes(prevLink, newTh2Link);
             linkResources.remove(newTh2Link);
             linkResources.add(newTh2Link);
 
@@ -110,7 +110,7 @@ public class Th2LinkEventHandler implements ResourceEventHandler<Th2Link> {
 
             var linkResources = new ArrayList<>(operatorState.getLinkResources(namespace));
             Th2Link prevLink = getPreviousLink(th2Link, linkResources);
-            refreshBoxesIfNeeded(prevLink, Th2Link.newInstance());
+            refreshAffectedBoxes(prevLink, Th2Link.newInstance());
             linkResources.remove(th2Link);
 
             //TODO: Error case not covered
@@ -151,7 +151,7 @@ public class Th2LinkEventHandler implements ResourceEventHandler<Th2Link> {
     }
 
 
-    private int refreshBoxesIfNeeded(Th2Link prevLink, Th2Link newLink) {
+    private int refreshAffectedBoxes(Th2Link prevLink, Th2Link newLink) {
 
         String namespace = extractNamespace(newLink);
         Set<String> boxesNamesToUpdate = getAffectedBoxNames(prevLink, newLink);
