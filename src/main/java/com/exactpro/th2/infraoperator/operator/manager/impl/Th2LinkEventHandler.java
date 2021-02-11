@@ -46,14 +46,6 @@ public class Th2LinkEventHandler implements ResourceEventHandler<Th2Link> {
         return res;
     }
 
-    private <T extends Identifiable> void checkForDuplicateNames(List<T> links, String annotation) {
-        Set<String> linkNames = new HashSet<>();
-        for (var link : links) {
-            if (!linkNames.add(link.getName())) {
-                logger.warn("Link with name: {} already exists in {}", link.getName(), annotation);
-            }
-        }
-    }
 
     @Override
     public void onAdd(Th2Link th2Link) {
@@ -71,9 +63,7 @@ public class Th2LinkEventHandler implements ResourceEventHandler<Th2Link> {
 
             int refreshedBoxCount = 0;
 
-            checkForDuplicateNames(th2Link.getSpec().getBoxesRelation().getRouterMq(), annotationFor(th2Link));
-            checkForDuplicateNames(th2Link.getSpec().getBoxesRelation().getRouterGrpc(), annotationFor(th2Link));
-            checkForDuplicateNames(th2Link.getSpec().getDictionariesRelation(), annotationFor(th2Link));
+            checkForDuplicateNames(th2Link);
 
             logger.info("Updating all dependent boxes according to provided links ...");
 
@@ -105,9 +95,7 @@ public class Th2LinkEventHandler implements ResourceEventHandler<Th2Link> {
 
             int refreshedBoxCount = 0;
 
-            checkForDuplicateNames(newTh2Link.getSpec().getBoxesRelation().getRouterMq(), annotationFor(newTh2Link));
-            checkForDuplicateNames(newTh2Link.getSpec().getBoxesRelation().getRouterGrpc(), annotationFor(newTh2Link));
-            checkForDuplicateNames(newTh2Link.getSpec().getDictionariesRelation(), annotationFor(newTh2Link));
+            checkForDuplicateNames(newTh2Link);
 
 
             logger.info("Updating all dependent boxes according to updated links ...");
@@ -142,10 +130,7 @@ public class Th2LinkEventHandler implements ResourceEventHandler<Th2Link> {
 
             int refreshedBoxCount = 0;
 
-            checkForDuplicateNames(th2Link.getSpec().getBoxesRelation().getRouterMq(), annotationFor(th2Link));
-            checkForDuplicateNames(th2Link.getSpec().getBoxesRelation().getRouterGrpc(), annotationFor(th2Link));
-            checkForDuplicateNames(th2Link.getSpec().getDictionariesRelation(), annotationFor(th2Link));
-
+            checkForDuplicateNames(th2Link);
 
             logger.info("Updating all dependent boxes of destroyed links ...");
 
@@ -162,6 +147,27 @@ public class Th2LinkEventHandler implements ResourceEventHandler<Th2Link> {
             lock.unlock();
         }
     }
+
+
+    private <T extends Identifiable> void checkForDuplicateNames(List<T> links, String annotation) {
+        Set<String> linkNames = new HashSet<>();
+        for (var link : links) {
+            if (!linkNames.add(link.getName())) {
+                logger.warn("Link with name: \"{}\" already exists in \"{}\"", link.getName(), annotation);
+            }
+        }
+    }
+
+
+    private void checkForDuplicateNames(Th2Link th2Link) {
+        String resourceLabel = annotationFor(th2Link);
+        var spec = th2Link.getSpec();
+        checkForDuplicateNames(spec.getBoxesRelation().getRouterMq(), resourceLabel);
+        checkForDuplicateNames(spec.getBoxesRelation().getRouterGrpc(), resourceLabel);
+        checkForDuplicateNames(spec.getDictionariesRelation(), resourceLabel);
+
+    }
+
 
     private Th2Link getOldLink(Th2Link th2Link, List<Th2Link> resourceLinks) {
         var oldLinkIndex = resourceLinks.indexOf(th2Link);
