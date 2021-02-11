@@ -61,8 +61,7 @@ public final class PinCouplingGRPC implements PinCoupling {
         if (!(o instanceof PinCouplingGRPC))
             return false;
 
-        return Objects.equals(name, ((PinCouplingGRPC) o).name)
-                && Objects.equals(from, ((PinCouplingGRPC) o).from)
+        return Objects.equals(from, ((PinCouplingGRPC) o).from)
                 && Objects.equals(to, ((PinCouplingGRPC) o).to);
     }
 

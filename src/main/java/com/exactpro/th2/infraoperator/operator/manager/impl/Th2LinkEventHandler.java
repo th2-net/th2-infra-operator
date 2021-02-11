@@ -4,6 +4,9 @@ import com.exactpro.th2.infraoperator.OperatorState;
 import com.exactpro.th2.infraoperator.model.kubernetes.client.ipml.LinkClient;
 import com.exactpro.th2.infraoperator.spec.link.Th2Link;
 import com.exactpro.th2.infraoperator.spec.link.Th2LinkList;
+import com.exactpro.th2.infraoperator.spec.link.Th2LinkSpec;
+import com.exactpro.th2.infraoperator.spec.link.relation.dictionaries.DictionaryBinding;
+import com.exactpro.th2.infraoperator.spec.link.relation.pins.PinCoupling;
 import com.exactpro.th2.infraoperator.spec.shared.Identifiable;
 import com.exactpro.th2.infraoperator.util.CustomResourceUtils;
 import io.fabric8.kubernetes.client.KubernetesClient;
@@ -50,30 +53,21 @@ public class Th2LinkEventHandler implements ResourceEventHandler<Th2Link> {
     @Override
     public void onAdd(Th2Link th2Link) {
 
-        var linkNamespace = extractNamespace(th2Link);
-        var lock = OperatorState.INSTANCE.getLock(linkNamespace);
+        String namespace = extractNamespace(th2Link);
+        OperatorState operatorState = OperatorState.INSTANCE;
+        var lock = operatorState.getLock(namespace);
         try {
             lock.lock();
 
-            var linkSingleton = OperatorState.INSTANCE;
+            checkForDuplicates(th2Link);
 
-            var resourceLinks = new ArrayList<>(linkSingleton.getLinkResources(linkNamespace));
+            var linkResources = new ArrayList<>(operatorState.getLinkResources(namespace));
+            Th2Link prevLink = getPreviousLink(th2Link, linkResources);
+            refreshBoxesIfNeeded(prevLink, th2Link);
+            linkResources.remove(th2Link);
+            linkResources.add(th2Link);
 
-            var oldLinkRes = getOldLink(th2Link, resourceLinks);
-
-            int refreshedBoxCount = 0;
-
-            checkForDuplicateNames(th2Link);
-
-            logger.info("Updating all dependent boxes according to provided links ...");
-
-            refreshedBoxCount = refreshBoxesIfNeeded(oldLinkRes, th2Link);
-            resourceLinks.remove(th2Link);
-            resourceLinks.add(th2Link);
-
-            logger.info("{} box-definition(s) updated", refreshedBoxCount);
-
-            linkSingleton.setLinkResources(linkNamespace, resourceLinks);
+            operatorState.setLinkResources(namespace, linkResources);
         } finally {
             lock.unlock();
         }
@@ -82,33 +76,22 @@ public class Th2LinkEventHandler implements ResourceEventHandler<Th2Link> {
     @Override
     public void onUpdate(Th2Link oldTh2Link, Th2Link newTh2Link) {
 
-        var linkNamespace = extractNamespace(newTh2Link);
-        var lock = OperatorState.INSTANCE.getLock(linkNamespace);
+        String namespace = extractNamespace(newTh2Link);
+        OperatorState operatorState = OperatorState.INSTANCE;
+        var lock = operatorState.getLock(namespace);
         try {
             lock.lock();
 
-            var linkSingleton = OperatorState.INSTANCE;
+            checkForDuplicates(newTh2Link);
 
-            var resourceLinks = new ArrayList<>(linkSingleton.getLinkResources(linkNamespace));
+            var linkResources = new ArrayList<>(operatorState.getLinkResources(namespace));
 
-            var oldLinkRes = getOldLink(newTh2Link, resourceLinks);
+            Th2Link prevLink = getPreviousLink(newTh2Link, linkResources);
+            refreshBoxesIfNeeded(prevLink, newTh2Link);
+            linkResources.remove(newTh2Link);
+            linkResources.add(newTh2Link);
 
-            int refreshedBoxCount = 0;
-
-            checkForDuplicateNames(newTh2Link);
-
-
-            logger.info("Updating all dependent boxes according to updated links ...");
-
-            refreshedBoxCount = refreshBoxesIfNeeded(oldLinkRes, newTh2Link);
-
-            resourceLinks.remove(newTh2Link);
-
-            resourceLinks.add(newTh2Link);
-
-            logger.info("{} box-definition(s) updated", refreshedBoxCount);
-
-            linkSingleton.setLinkResources(linkNamespace, resourceLinks);
+            operatorState.setLinkResources(namespace, linkResources);
         } finally {
             lock.unlock();
         }
@@ -117,152 +100,117 @@ public class Th2LinkEventHandler implements ResourceEventHandler<Th2Link> {
     @Override
     public void onDelete(Th2Link th2Link, boolean deletedFinalStateUnknown) {
 
-        var linkNamespace = extractNamespace(th2Link);
-        var lock = OperatorState.INSTANCE.getLock(linkNamespace);
+        String namespace = extractNamespace(th2Link);
+        OperatorState operatorState = OperatorState.INSTANCE;
+        var lock = operatorState.getLock(namespace);
         try {
             lock.lock();
 
-            var linkSingleton = OperatorState.INSTANCE;
+            checkForDuplicates(th2Link);
 
-            var resourceLinks = new ArrayList<>(linkSingleton.getLinkResources(linkNamespace));
-
-            var oldLinkRes = getOldLink(th2Link, resourceLinks);
-
-            int refreshedBoxCount = 0;
-
-            checkForDuplicateNames(th2Link);
-
-            logger.info("Updating all dependent boxes of destroyed links ...");
-
-            refreshedBoxCount = refreshBoxesIfNeeded(oldLinkRes, Th2Link.newInstance());
-
-            resourceLinks.remove(th2Link);
+            var linkResources = new ArrayList<>(operatorState.getLinkResources(namespace));
+            Th2Link prevLink = getPreviousLink(th2Link, linkResources);
+            refreshBoxesIfNeeded(prevLink, Th2Link.newInstance());
+            linkResources.remove(th2Link);
 
             //TODO: Error case not covered
-
-            logger.info("{} box-definition(s) updated", refreshedBoxCount);
-
-            linkSingleton.setLinkResources(linkNamespace, resourceLinks);
+            operatorState.setLinkResources(namespace, linkResources);
         } finally {
             lock.unlock();
         }
     }
 
 
-    private <T extends Identifiable> void checkForDuplicateNames(List<T> links, String annotation) {
+    private <T extends Identifiable> void checkForDuplicates(List<T> links, String annotation) {
+
         Set<String> linkNames = new HashSet<>();
+        Set<String> linkIds = new HashSet<>();
         for (var link : links) {
-            if (!linkNames.add(link.getName())) {
-                logger.warn("Link with name: \"{}\" already exists in \"{}\"", link.getName(), annotation);
-            }
+            if (!linkNames.add(link.getName()))
+                logger.warn("Link with name \"{}\" already exists in the \"{}\"", link.getName(), annotation);
+            if (!linkIds.add(link.getId()))
+                logger.warn("Link with id \"{}\" already exists in the \"{}\"", link.getId(), annotation);
         }
     }
 
 
-    private void checkForDuplicateNames(Th2Link th2Link) {
+    private void checkForDuplicates(Th2Link th2Link) {
+
         String resourceLabel = annotationFor(th2Link);
-        var spec = th2Link.getSpec();
-        checkForDuplicateNames(spec.getBoxesRelation().getRouterMq(), resourceLabel);
-        checkForDuplicateNames(spec.getBoxesRelation().getRouterGrpc(), resourceLabel);
-        checkForDuplicateNames(spec.getDictionariesRelation(), resourceLabel);
-
+        Th2LinkSpec spec = th2Link.getSpec();
+        checkForDuplicates(spec.getBoxesRelation().getRouterMq(), resourceLabel);
+        checkForDuplicates(spec.getBoxesRelation().getRouterGrpc(), resourceLabel);
+        checkForDuplicates(spec.getDictionariesRelation(), resourceLabel);
     }
 
 
-    private Th2Link getOldLink(Th2Link th2Link, List<Th2Link> resourceLinks) {
-        var oldLinkIndex = resourceLinks.indexOf(th2Link);
-        return oldLinkIndex < 0 ? Th2Link.newInstance() : resourceLinks.get(oldLinkIndex);
+    private Th2Link getPreviousLink(Th2Link th2Link, List<Th2Link> linkResources) {
+
+        int index = linkResources.indexOf(th2Link);
+        return index < 0 ? Th2Link.newInstance() : linkResources.get(index);
     }
 
 
-    private int refreshBoxesIfNeeded(Th2Link oldLinkRes, Th2Link newLinkRes) {
+    private int refreshBoxesIfNeeded(Th2Link prevLink, Th2Link newLink) {
 
-        var linkNamespace = extractNamespace(oldLinkRes);
-
-        if (linkNamespace == null) {
-            linkNamespace = extractNamespace(newLinkRes);
+        String namespace = extractNamespace(newLink);
+        Set<String> boxesNamesToUpdate = getAffectedBoxNames(prevLink, newLink);
+        int items = boxesNamesToUpdate.size();
+        if (items == 0) {
+            logger.info("No boxes needs to be updated");
+            return 0;
+        } else {
+            logger.info("{} box(es) needs to be updated", items);
+            return DefaultWatchManager.getInstance().refreshBoxes(namespace, boxesNamesToUpdate);
         }
-
-        var boxesToUpdate = getBoxesToUpdate(oldLinkRes, newLinkRes);
-
-        logger.info("{} box(es) need updating", boxesToUpdate.size());
-
-        return DefaultWatchManager.getInstance().refreshBoxes(linkNamespace, boxesToUpdate);
     }
 
-    private Set<String> getBoxesToUpdate(Th2Link oldLinkRes, Th2Link newLinkRes) {
 
-        var oldBoxesLinks = oldLinkRes.getSpec().getBoxesRelation().getAllLinks();
-        var newBoxesLinks = newLinkRes.getSpec().getBoxesRelation().getAllLinks();
-        var fromBoxesLinks = getBoxesToUpdate(oldBoxesLinks, newBoxesLinks,
-                blb -> Set.of(blb.getFrom().getBoxName(), blb.getTo().getBoxName()));
-        Set<String> boxes = new HashSet<>(fromBoxesLinks);
+    private Set<String> getAffectedBoxNames(Th2Link prevLink, Th2Link newLink) {
 
-        var oldLinks = oldLinkRes.getSpec().getDictionariesRelation();
-        var newLinks = newLinkRes.getSpec().getDictionariesRelation();
-        var fromDicLinks = getBoxesToUpdate(oldLinks, newLinks, dlb -> Set.of(dlb.getBox()));
-        boxes.addAll(fromDicLinks);
+        // collect box names affected by router link changes
+        List<PinCoupling> prevLinkCouplings = prevLink.getSpec().getBoxesRelation().getAllLinks();
+        List<PinCoupling> newLinkCouplings = newLink.getSpec().getBoxesRelation().getAllLinks();
 
-        return boxes;
+        Set<String> affectedByRouterLinks = getAffectedBoxNamesByList(prevLinkCouplings, newLinkCouplings,
+                pinCoupling -> Set.of(pinCoupling.getFrom().getBoxName(), pinCoupling.getTo().getBoxName()));
+
+        // collect box names affected by dictionary binding changes
+        List<DictionaryBinding> prevDictionaryBindings = prevLink.getSpec().getDictionariesRelation();
+        List<DictionaryBinding> newDictionaryBindings = newLink.getSpec().getDictionariesRelation();
+
+        Set<String> affectedByDictionaryBindings = getAffectedBoxNamesByList(prevDictionaryBindings, newDictionaryBindings,
+                binding -> Set.of(binding.getBox()));
+
+        // join two sets
+        affectedByRouterLinks.addAll(affectedByDictionaryBindings);
+        return affectedByRouterLinks;
     }
 
-    private <T extends Identifiable> Set<String> getBoxesToUpdate(List<T> oldLinks, List<T> newLinks,
-                                                          Function<T, Set<String>> boxesExtractor) {
 
-        Set<String> boxes = new HashSet<>();
+    <T extends Identifiable> Set<String> getAffectedBoxNamesByList(List<T> prevLinks, List<T> newLinks,
+                                                                   Function<T, Set<String>> boxesExtractor) {
 
-        var or = new OrderedRelation<>(oldLinks, newLinks);
+        // filter out links that have not changed
+        // all the boxes that were associated with changed links needs to be updated
 
-        for (var maxLink : or.getMaxLinks()) {
-            var isLinkExist = false;
-            for (var minLink : or.getMinLinks()) {
-                if (minLink.getId().equals(maxLink.getId())) {
-                    if (!minLink.equals(maxLink)) {
-                        boxes.addAll(boxesExtractor.apply(minLink));
-                        boxes.addAll(boxesExtractor.apply(maxLink));
-                    }
-                    isLinkExist = true;
-                }
-            }
-            if (!isLinkExist) {
-                boxes.addAll(boxesExtractor.apply(maxLink));
-            }
-        }
+        Set<String> affectedBoxes = new HashSet<>();
 
-        var oldToUpdate = oldLinks.stream()
-                .filter(t -> newLinks.stream().noneMatch(t1 -> t1.getId().equals(t.getId())))
+        // collect box names from previous links, that will need to be updated
+        affectedBoxes.addAll(prevLinks.stream()
+                .filter(f -> newLinks.stream().noneMatch(s -> s.equals(f)))
                 .flatMap(t -> boxesExtractor.apply(t).stream())
-                .collect(Collectors.toSet());
+                .collect(Collectors.toSet())
+        );
 
-        boxes.addAll(oldToUpdate);
+        // collect box names from current links, that will need to be updated
+        affectedBoxes.addAll(newLinks.stream()
+                .filter(f -> prevLinks.stream().noneMatch(s -> s.equals(f)))
+                .flatMap(t -> boxesExtractor.apply(t).stream())
+                .collect(Collectors.toSet())
+        );
 
-        return boxes;
+        return affectedBoxes;
     }
-
-
-    private static class OrderedRelation<T> {
-
-        private List<T> maxLinks;
-        private List<T> minLinks;
-
-        public OrderedRelation(List<T> oldLinks, List<T> newLinks) {
-            if (newLinks.size() >= oldLinks.size()) {
-                this.maxLinks = newLinks;
-                this.minLinks = oldLinks;
-            } else {
-                this.maxLinks = oldLinks;
-                this.minLinks = newLinks;
-            }
-        }
-
-        public List<T> getMaxLinks() {
-            return this.maxLinks;
-        }
-
-        public List<T> getMinLinks() {
-            return this.minLinks;
-        }
-    }
-
 }
 

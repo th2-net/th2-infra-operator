@@ -162,13 +162,17 @@ public class DefaultWatchManager {
 
     int refreshBoxes(String linkNamespace, Set<String> boxes) {
 
-        var refreshedBoxes = 0;
-
-        if (!isWatching()) {
-            logger.info("Resources not watching yet");
-            return refreshedBoxes;
+        if (boxes != null && boxes.size() == 0) {
+            logger.warn("Empty set of boxes was given to refresh");
+            return 0;
         }
 
+        if (!isWatching()) {
+            logger.warn("Not watching for resources yet");
+            return 0;
+        }
+
+        var refreshedBoxes = 0;
         for (var rc : resourceClients) {
             var resClient = rc.getInstance();
             for (var res : resClient.inNamespace(linkNamespace).list().getItems()) {
@@ -179,6 +183,7 @@ public class DefaultWatchManager {
             }
         }
 
+        logger.info("{} boxes updated", refreshedBoxes);
         return refreshedBoxes;
     }
 
