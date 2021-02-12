@@ -234,29 +234,39 @@ public class DefaultWatchManager {
         });
     }
 
-    int refreshBoxes(String linkNamespace) {
-        return refreshBoxes(linkNamespace, null);
+    int refreshBoxes(String namespace) {
+        return refreshBoxes(namespace, null, true);
     }
 
-    int refreshBoxes(String linkNamespace, Set<String> boxes) {
+    int refreshBoxes(String namespace, Set<String> boxes) {
+        return refreshBoxes(namespace, boxes, false);
+    }
 
-        var refreshedBoxes = 0;
 
-        if (!isWatching()) {
-            logger.info("Resources not watching yet");
-            return refreshedBoxes;
+    private int refreshBoxes(String namespace, Set<String> boxes, boolean refreshAllBoxes) {
+
+        if (!refreshAllBoxes && (boxes == null || boxes.size() == 0)) {
+            logger.warn("Empty set of boxes was given to refresh");
+            return 0;
         }
 
-        for (var rc : resourceClients) {
-            var resClient = rc.getInstance();
-            for (var res : resClient.inNamespace(linkNamespace).list().getItems()) {
-                if (Objects.isNull(boxes) || boxes.contains(extractName(res))) {
-                    createResource(linkNamespace, res, rc);
+        if (!isWatching()) {
+            logger.warn("Not watching for resources yet");
+            return 0;
+        }
+
+        var refreshedBoxes = 0;
+        for (var resourceClient : resourceClients) {
+            var mixedOperation = resourceClient.getInstance();
+            for (var res : mixedOperation.inNamespace(namespace).list().getItems()) {
+                if (refreshAllBoxes || boxes.contains(extractName(res))) {
+                    createResource(namespace, res, resourceClient);
                     refreshedBoxes++;
                 }
             }
         }
 
+        logger.info("{} boxes updated", refreshedBoxes);
         return refreshedBoxes;
     }
 
@@ -268,6 +278,7 @@ public class DefaultWatchManager {
         resMeta.setAnnotations(Objects.nonNull(resMeta.getAnnotations()) ? resMeta.getAnnotations() : new HashMap<>());
         resMeta.getAnnotations().put(REFRESH_TOKEN_ALIAS, refreshToken);
         resClient.getInstance().inNamespace(linkNamespace).createOrReplace(resource);
+        logger.debug("refreshed \"{}\" with refresh-token={}", CustomResourceUtils.annotationFor(resource), refreshToken);
     }
 
     private void postInit() {

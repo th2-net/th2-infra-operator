@@ -106,6 +106,7 @@ public abstract class AbstractTh2Operator<CR extends Th2CustomResource, KO exten
                     logger.debug("No changes detected for \"{}\"", resourceLabel);
                     return;
                 }
+                logger.debug("refresh-token={}", resourceFingerprint.refreshToken);
 
                 processEvent(action, resource);
                 fingerprints.put(resourceLabel, resourceFingerprint);

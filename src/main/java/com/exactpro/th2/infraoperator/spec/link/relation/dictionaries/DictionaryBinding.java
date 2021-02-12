@@ -61,8 +61,7 @@ public final class DictionaryBinding implements Identifiable {
         if (this == o) return true;
         if (!(o instanceof DictionaryBinding)) return false;
         DictionaryBinding that = (DictionaryBinding) o;
-        return Objects.equals(name, that.name) &&
-                Objects.equals(box, that.box) &&
+        return Objects.equals(box, that.box) &&
                 Objects.equals(dictionary, that.dictionary);
     }
 

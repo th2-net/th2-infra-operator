@@ -5,6 +5,7 @@ import com.exactpro.th2.infraoperator.model.kubernetes.client.ipml.DictionaryCli
 import com.exactpro.th2.infraoperator.spec.dictionary.Th2Dictionary;
 import com.exactpro.th2.infraoperator.spec.dictionary.Th2DictionaryList;
 import com.exactpro.th2.infraoperator.util.CustomResourceUtils;
+import com.exactpro.th2.infraoperator.util.ExtractUtils;
 import io.fabric8.kubernetes.client.Watcher;
 import io.fabric8.kubernetes.client.WatcherException;
 import io.fabric8.kubernetes.client.dsl.base.CustomResourceDefinitionContext;
@@ -14,7 +15,9 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.HashSet;
+import java.util.Map;
 import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
 
 import static com.exactpro.th2.infraoperator.util.CustomResourceUtils.annotationFor;
 import static com.exactpro.th2.infraoperator.util.ExtractUtils.extractName;
@@ -45,15 +48,18 @@ public class Th2DictionaryEventHandler implements WatchHandler<Th2Dictionary> {
         return res;
     }
 
-    private Set<String> getLinkedResources(Th2Dictionary dictionary) {
+
+    private Set<String> getBoundResources(Th2Dictionary dictionary) {
+
         Set<String> resources = new HashSet<>();
+        String namespace = extractNamespace(dictionary);
 
-        var lSingleton = OperatorState.INSTANCE;
+        OperatorState operatorState = OperatorState.INSTANCE;
 
-        for (var linkRes : lSingleton.getLinkResources(extractNamespace(dictionary))) {
-            for (var dicLink : linkRes.getSpec().getDictionariesRelation()) {
-                if (dicLink.getDictionary().getName().contains(extractName(dictionary))) {
-                    resources.add(dicLink.getBox());
+        for (var th2link : operatorState.getLinkResources(namespace)) {
+            for (var dictionaryBinding : th2link.getSpec().getDictionariesRelation()) {
+                if (dictionaryBinding.getDictionary().getName().equals(extractName(dictionary))) {
+                    resources.add(dictionaryBinding.getBox());
                 }
             }
         }
@@ -61,17 +67,38 @@ public class Th2DictionaryEventHandler implements WatchHandler<Th2Dictionary> {
         return resources;
     }
 
+
+    private Map<String, String> sourceHashes = new ConcurrentHashMap<>();
+
     private void handleEvent (Watcher.Action action, Th2Dictionary dictionary) {
+
         String resourceLabel = annotationFor(dictionary);
-        logger.info("Updating all boxes that contains dictionary \"{}\"", resourceLabel);
+        String sourceHash = ExtractUtils.sourceHash(dictionary);
+        String prevHash = sourceHashes.get(resourceLabel);
 
-        var linkedResources = getLinkedResources(dictionary);
+        if (prevHash != null && prevHash.equals(sourceHash)) {
+            logger.info("Dictionary has not been changed");
+            return;
+        }
 
-        logger.info("{} box(es) need updating", linkedResources.size());
+        logger.info("Updating all boxes with bindings to \"{}\"", resourceLabel);
 
-        var refreshedBoxCount = DefaultWatchManager.getInstance().refreshBoxes(extractNamespace(dictionary), linkedResources);
+        var resources = getBoundResources(dictionary);
+        int items = resources.size();
 
-        logger.info("{} box-definition(s) updated", refreshedBoxCount);
+        if (items == 0)
+            logger.info("No boxes needs to be updated");
+        else {
+            logger.info("{} box(es) needs to be updated", items);
+            DefaultWatchManager.getInstance().refreshBoxes(extractNamespace(dictionary), resources);
+        }
+
+        if (action == Watcher.Action.DELETED || action == Watcher.Action.ERROR)
+            sourceHashes.remove(resourceLabel);
+        else
+            sourceHashes.put(resourceLabel, sourceHash);
+
+
     }
 
     @Override
