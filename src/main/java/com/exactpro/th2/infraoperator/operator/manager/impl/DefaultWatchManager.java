@@ -156,13 +156,18 @@ public class DefaultWatchManager {
         });
     }
 
-    int refreshBoxes(String linkNamespace) {
-        return refreshBoxes(linkNamespace, null);
+    int refreshBoxes(String namespace) {
+        return refreshBoxes(namespace, null, true);
     }
 
-    int refreshBoxes(String linkNamespace, Set<String> boxes) {
+    int refreshBoxes(String namespace, Set<String> boxes) {
+        return refreshBoxes(namespace, boxes, false);
+    }
 
-        if (boxes != null && boxes.size() == 0) {
+
+    private int refreshBoxes(String namespace, Set<String> boxes, boolean refreshAllBoxes) {
+
+        if (!refreshAllBoxes && (boxes == null || boxes.size() == 0)) {
             logger.warn("Empty set of boxes was given to refresh");
             return 0;
         }
@@ -173,11 +178,11 @@ public class DefaultWatchManager {
         }
 
         var refreshedBoxes = 0;
-        for (var rc : resourceClients) {
-            var resClient = rc.getInstance();
-            for (var res : resClient.inNamespace(linkNamespace).list().getItems()) {
-                if (Objects.isNull(boxes) || boxes.contains(extractName(res))) {
-                    createResource(linkNamespace, res, rc);
+        for (var resourceClient : resourceClients) {
+            var mixedOperation = resourceClient.getInstance();
+            for (var res : mixedOperation.inNamespace(namespace).list().getItems()) {
+                if (refreshAllBoxes || boxes.contains(extractName(res))) {
+                    createResource(namespace, res, resourceClient);
                     refreshedBoxes++;
                 }
             }
