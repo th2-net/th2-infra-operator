@@ -30,7 +30,7 @@ public class HelmReleaseEventHandler implements WatchHandler<HelmRelease> {
     public static HelmReleaseEventHandler newInstance(
             SharedInformerFactory factory,
             KubernetesClient client,
-            DefaultWatchManager.EventStorage<DefaultWatchManager.DispatcherEvent> eventStorage) {
+            DefaultWatchManager.EventContainer<DefaultWatchManager.DispatcherEvent> eventContainer) {
 
         var res = new HelmReleaseEventHandler(client);
         var helmReleaseCrd = CustomResourceUtils.getResourceCrd(client, HELM_RELEASE_CRD_NAME);
@@ -50,7 +50,7 @@ public class HelmReleaseEventHandler implements WatchHandler<HelmRelease> {
                 res,
                 HelmRelease.class,
                 helmReleaseCrd,
-                eventStorage),
+                eventContainer),
                 0);
         return res;
     }

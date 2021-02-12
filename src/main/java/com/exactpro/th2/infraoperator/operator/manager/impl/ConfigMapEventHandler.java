@@ -32,14 +32,14 @@ public class ConfigMapEventHandler implements WatchHandler<ConfigMap>{
 
     public static ConfigMapEventHandler newInstance(SharedInformerFactory sharedInformerFactory,
                                                     KubernetesClient client,
-                                                    DefaultWatchManager.EventStorage<DefaultWatchManager.DispatcherEvent> eventStorage) {
+                                                    DefaultWatchManager.EventContainer<DefaultWatchManager.DispatcherEvent> eventContainer) {
         SharedIndexInformer<ConfigMap> configMapInformer = sharedInformerFactory.sharedIndexInformerFor(
                 ConfigMap.class,
                 ConfigMapList.class,
                 CustomResourceUtils.RESYNC_TIME);
 
         var res = new ConfigMapEventHandler(client);
-        configMapInformer.addEventHandlerWithResyncPeriod(new GenericResourceEventHandler<>(res, eventStorage), 0);
+        configMapInformer.addEventHandlerWithResyncPeriod(new GenericResourceEventHandler<>(res, eventContainer), 0);
         return res;
     }
 

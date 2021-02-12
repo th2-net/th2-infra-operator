@@ -17,12 +17,12 @@ public class GenericResourceEventHandler<T extends HasMetadata> implements Resou
 
 
     private Watcher<T> watcher;
-    private DefaultWatchManager.EventStorage<DefaultWatchManager.DispatcherEvent> eventStorage;
+    private DefaultWatchManager.EventContainer<DefaultWatchManager.DispatcherEvent> eventContainer;
 
     public GenericResourceEventHandler(Watcher<T> watcher,
-                                       DefaultWatchManager.EventStorage<DefaultWatchManager.DispatcherEvent> eventStorage) {
+                                       DefaultWatchManager.EventContainer<DefaultWatchManager.DispatcherEvent> eventContainer) {
         this.watcher = watcher;
-        this.eventStorage = eventStorage;
+        this.eventContainer = eventContainer;
     }
 
     private String sourceHash(HasMetadata res) {
@@ -45,10 +45,11 @@ public class GenericResourceEventHandler<T extends HasMetadata> implements Resou
         // temp fix: change thread name for logging purposes
         // TODO: propagate event id logging in code
         String resourceLabel = CustomResourceUtils.annotationFor(obj);
-        logger.debug("Received ADDED event for \"{}\" {}", resourceLabel, sourceHash(obj));
+        String eventId = EventCounter.newEvent();
+        logger.debug("Received ADDED event ({}) for \"{}\" {}", eventId, resourceLabel, sourceHash(obj));
 
-        eventStorage.addEvent(new DefaultWatchManager.DispatcherEvent(
-                EventCounter.newEvent(),
+        eventContainer.addEvent(new DefaultWatchManager.DispatcherEvent(
+                eventId,
                 resourceLabel,
                 Action.ADDED,
                 obj,
@@ -67,10 +68,11 @@ public class GenericResourceEventHandler<T extends HasMetadata> implements Resou
         // temp fix: change thread name for logging purposes
         // TODO: propagate event id logging in code
         String resourceLabel = CustomResourceUtils.annotationFor(oldObj);
-        logger.debug("Received MODIFIED event for \"{}\" {}", resourceLabel, sourceHash(newObj));
+        String eventId = EventCounter.newEvent();
+        logger.debug("Received MODIFIED event ({}) for \"{}\" {}", eventId, resourceLabel, sourceHash(newObj));
 
-        eventStorage.addEvent(new DefaultWatchManager.DispatcherEvent(
-                EventCounter.newEvent(),
+        eventContainer.addEvent(new DefaultWatchManager.DispatcherEvent(
+                eventId,
                 resourceLabel,
                 Action.MODIFIED,
                 newObj,
@@ -88,10 +90,11 @@ public class GenericResourceEventHandler<T extends HasMetadata> implements Resou
         // temp fix: change thread name for logging purposes
         // TODO: propagate event id logging in code
         String resourceLabel = CustomResourceUtils.annotationFor(obj);
-        logger.debug("Received DELETED event for \"{}\" {}", resourceLabel, sourceHash(obj));
+        String eventId = EventCounter.newEvent();
+        logger.debug("Received DELETED event ({}) for \"{}\" {}", eventId, resourceLabel, sourceHash(obj));
 
-        eventStorage.addEvent(new DefaultWatchManager.DispatcherEvent(
-                EventCounter.newEvent(),
+        eventContainer.addEvent(new DefaultWatchManager.DispatcherEvent(
+                eventId,
                 resourceLabel,
                 Action.DELETED,
                 obj,

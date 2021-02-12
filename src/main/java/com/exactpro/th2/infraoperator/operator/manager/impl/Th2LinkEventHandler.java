@@ -32,7 +32,7 @@ public class Th2LinkEventHandler implements WatchHandler<Th2Link> {
 
     public static Th2LinkEventHandler newInstance(SharedInformerFactory sharedInformerFactory,
                                                   KubernetesClient client,
-                                                  DefaultWatchManager.EventStorage<DefaultWatchManager.DispatcherEvent> eventStorage) {
+                                                  DefaultWatchManager.EventContainer<DefaultWatchManager.DispatcherEvent> eventContainer) {
         var linkClient = new LinkClient(client);
 
         SharedIndexInformer<Th2Link> linkInformer = sharedInformerFactory.sharedIndexInformerForCustomResource(
@@ -46,7 +46,7 @@ public class Th2LinkEventHandler implements WatchHandler<Th2Link> {
                 res,
                 Th2Link.class,
                 linkClient.getCustomResourceDefinition(),
-                eventStorage),
+                eventContainer),
                 0);
 
         return res;

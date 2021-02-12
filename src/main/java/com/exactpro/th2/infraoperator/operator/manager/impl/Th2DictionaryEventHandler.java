@@ -30,7 +30,7 @@ public class Th2DictionaryEventHandler implements WatchHandler<Th2Dictionary> {
 
     public static Th2DictionaryEventHandler newInstance (SharedInformerFactory sharedInformerFactory,
                                                          DictionaryClient dictionaryClient,
-                                                         DefaultWatchManager.EventStorage<DefaultWatchManager.DispatcherEvent> eventStorage) {
+                                                         DefaultWatchManager.EventContainer<DefaultWatchManager.DispatcherEvent> eventContainer) {
         var res = new Th2DictionaryEventHandler();
         res.dictionaryClient = dictionaryClient;
         SharedIndexInformer<Th2Dictionary> dictionaryInformer = sharedInformerFactory.sharedIndexInformerForCustomResource(
@@ -43,7 +43,7 @@ public class Th2DictionaryEventHandler implements WatchHandler<Th2Dictionary> {
                 res,
                 Th2Dictionary.class,
                 res.dictionaryClient.getCustomResourceDefinition(),
-                eventStorage),
+                eventContainer),
                 0);
         return res;
     }

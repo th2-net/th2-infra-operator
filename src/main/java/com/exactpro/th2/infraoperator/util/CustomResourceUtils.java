@@ -99,13 +99,13 @@ public final class CustomResourceUtils {
     public static <T extends CustomResource> ResourceEventHandler resourceEventHandlerFor(
             ResourceClient<T> resourceClient,
             WatchHandler<T> handler,
-            DefaultWatchManager.EventStorage<DefaultWatchManager.DispatcherEvent> eventStorage) {
+            DefaultWatchManager.EventContainer<DefaultWatchManager.DispatcherEvent> eventContainer) {
 
         return resourceEventHandlerFor(
                 handler,
                 resourceClient.getResourceType(),
                 resourceClient.getCustomResourceDefinition(),
-                eventStorage);
+                eventContainer);
     }
 
 
@@ -113,7 +113,7 @@ public final class CustomResourceUtils {
             WatchHandler<T> watchHandler,
             Class<T> resourceType,
             CustomResourceDefinition crd,
-            DefaultWatchManager.EventStorage<DefaultWatchManager.DispatcherEvent> eventStorage) {
+            DefaultWatchManager.EventContainer<DefaultWatchManager.DispatcherEvent> eventContainer) {
         CustomResourceDefinitionSpec spec = crd.getSpec();
 
         String apiVersion = spec.getGroup() + "/" + spec.getVersions().get(0);
@@ -121,6 +121,6 @@ public final class CustomResourceUtils {
 
         KubernetesDeserializer.registerCustomKind(apiVersion, kind, resourceType);
 
-        return new GenericResourceEventHandler<>(watchHandler, eventStorage);
+        return new GenericResourceEventHandler<>(watchHandler, eventContainer);
     }
 }

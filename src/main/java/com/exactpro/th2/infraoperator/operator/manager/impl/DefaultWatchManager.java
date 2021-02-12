@@ -74,7 +74,7 @@ public class DefaultWatchManager {
 
     private static DefaultWatchManager instance;
 
-    private final EventStorage<DispatcherEvent> eventStorage;
+    private final EventContainer<DispatcherEvent> eventContainer;
 
     private final EventDispatcher eventDispatcher;
 
@@ -86,8 +86,8 @@ public class DefaultWatchManager {
         this.operatorBuilder = builder;
         this.sharedInformerFactory = builder.getClient().informers();
         this.dictionaryClient = new DictionaryClient(operatorBuilder.getClient());
-        this.eventStorage = new EventStorage<>();
-        this.eventDispatcher = new EventDispatcher(this.eventStorage);
+        this.eventContainer = new EventContainer<>();
+        this.eventDispatcher = new EventDispatcher(this.eventContainer);
 
         sharedInformerFactory.addSharedInformerEventListener(exception -> {
             logger.error("Exception in InformerFactory : {}", exception.getMessage());
@@ -114,51 +114,59 @@ public class DefaultWatchManager {
         }
     }
 
-    public static class EventStorage <T extends DispatcherEvent> {
+    public static class EventContainer<T extends DispatcherEvent> {
+
+        private static final Logger logger = LoggerFactory.getLogger(EventContainer.class);
+
         LinkedList<T> events;
 
-        public EventStorage () {
+        public EventContainer() {
             events = new LinkedList<>();
         }
 
         public synchronized void addEvent (T event) {
+
             for (int i = 0; i < events.size(); i ++) {
                 var el = events.get(i);
                 if (el.getAnnotation().equals(event.getAnnotation()) && !el.getAction().equals(event.getAction()))
                     break;
 
                 if (el.equals(event)) {
+                    logger.info("replacing event {} with event {}", el.getEventId(), event.getEventId());
                     events.remove(i);
                     events.add(i, event);
 
                     return;
                 }
             }
+
+            logger.info("adding {}", event.getEventId());
             events.addFirst(event);
         }
 
         public synchronized T popEvent(ArrayList<String> workingNamespaces) {
 
             if (events.size() == 0) {
-                logger.info("There are no events");
                 return null;
             }
-            logger.info("Event storage contains {} elements", events.size());
 
 
             if (!workingNamespaces.contains(events.getFirst().getCr().getMetadata().getNamespace())) {
-                return events.removeFirst();
+                logger.info("contains {} elements", events.size());
+                var event = events.removeFirst();
+                logger.info("returning {}", event.getEventId());
+                return event;
             }
 
             for (int i = 0; i < events.size(); i ++) {
                 if (!workingNamespaces.contains(events.get(i).getCr().getMetadata().getNamespace())) {
-                    return events.remove(i);
+                    logger.info("contains {} elements", events.size());
+                    var event = events.remove(i);
+                    logger.info("returning {}", event.getEventId());
+                    return event;
                 }
             }
 
-            logger.info("{}", workingNamespaces.toString());
-
-            logger.info("There are no free namespaces");
             return null;
         }
     }
@@ -187,9 +195,9 @@ public class DefaultWatchManager {
     private void registerInformers (SharedInformerFactory sharedInformerFactory) {
 
         KubernetesClient client = operatorBuilder.getClient();
-        Th2LinkEventHandler.newInstance(sharedInformerFactory, client, eventStorage);
-        Th2DictionaryEventHandler.newInstance(sharedInformerFactory, dictionaryClient, eventStorage);
-        ConfigMapEventHandler.newInstance(sharedInformerFactory, client, eventStorage);
+        Th2LinkEventHandler.newInstance(sharedInformerFactory, client, eventContainer);
+        Th2DictionaryEventHandler.newInstance(sharedInformerFactory, dictionaryClient, eventContainer);
+        ConfigMapEventHandler.newInstance(sharedInformerFactory, client, eventContainer);
         NamespaceEventHandler.newInstance(sharedInformerFactory);
         CRDEventHandler.newInstance(sharedInformerFactory);
         //HelmReleaseEventHandler.newInstance(sharedInformerFactory, client);
@@ -212,7 +220,7 @@ public class DefaultWatchManager {
             helmReleaseTh2Op.generateInformerFromFactory(getInformerFactory()).addEventHandlerWithResyncPeriod(
                     CustomResourceUtils.resourceEventHandlerFor(helmReleaseTh2Op.getResourceClient(),
                             helmReleaseTh2Op.generateResourceEventHandler(),
-                            eventStorage),
+                            eventContainer),
                     0);
         }
 

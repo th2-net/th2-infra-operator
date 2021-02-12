@@ -16,10 +16,10 @@ public class EventDispatcher extends Thread {
 
     private final ExecutorService executor;
     private final ArrayList<String> workingNamespaces;
-    private final DefaultWatchManager.EventStorage<DefaultWatchManager.DispatcherEvent> eventStorage;
+    private final DefaultWatchManager.EventContainer<DefaultWatchManager.DispatcherEvent> eventContainer;
 
-    public EventDispatcher (DefaultWatchManager.EventStorage<DefaultWatchManager.DispatcherEvent> eventStorage) {
-        this.eventStorage = eventStorage;
+    public EventDispatcher (DefaultWatchManager.EventContainer<DefaultWatchManager.DispatcherEvent> eventContainer) {
+        this.eventContainer = eventContainer;
         this.executor = Executors.newFixedThreadPool(N_THREADS);
         this.workingNamespaces = new ArrayList<>();
     }
@@ -37,7 +37,7 @@ public class EventDispatcher extends Thread {
             }
 
             synchronized (workingNamespaces) {
-                var el = this.eventStorage.popEvent(workingNamespaces);
+                var el = this.eventContainer.popEvent(workingNamespaces);
                 if (el == null) {
                     continue;
                 }
