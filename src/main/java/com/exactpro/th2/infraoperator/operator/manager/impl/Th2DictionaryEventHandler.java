@@ -6,8 +6,8 @@ import com.exactpro.th2.infraoperator.spec.dictionary.Th2Dictionary;
 import com.exactpro.th2.infraoperator.spec.dictionary.Th2DictionaryList;
 import com.exactpro.th2.infraoperator.util.CustomResourceUtils;
 import io.fabric8.kubernetes.client.Watcher;
+import io.fabric8.kubernetes.client.WatcherException;
 import io.fabric8.kubernetes.client.dsl.base.CustomResourceDefinitionContext;
-import io.fabric8.kubernetes.client.informers.ResourceEventHandler;
 import io.fabric8.kubernetes.client.informers.SharedIndexInformer;
 import io.fabric8.kubernetes.client.informers.SharedInformerFactory;
 import org.slf4j.Logger;
@@ -20,7 +20,7 @@ import static com.exactpro.th2.infraoperator.util.CustomResourceUtils.annotation
 import static com.exactpro.th2.infraoperator.util.ExtractUtils.extractName;
 import static com.exactpro.th2.infraoperator.util.ExtractUtils.extractNamespace;
 
-public class Th2DictionaryEventHandler implements ResourceEventHandler<Th2Dictionary> {
+public class Th2DictionaryEventHandler implements WatchHandler<Th2Dictionary> {
     private static final Logger logger = LoggerFactory.getLogger(Th2DictionaryEventHandler.class);
 
     private DictionaryClient dictionaryClient;
@@ -87,6 +87,16 @@ public class Th2DictionaryEventHandler implements ResourceEventHandler<Th2Dictio
     @Override
     public void onDelete(Th2Dictionary dictionary, boolean deletedFinalStateUnknown) {
         handleEvent(Watcher.Action.DELETED, dictionary);
+    }
+
+    @Override
+    public void eventReceived(Action action, Th2Dictionary resource) {
+        handleEvent(action, resource);
+    }
+
+    @Override
+    public void onClose(WatcherException cause) {
+
     }
 }
 

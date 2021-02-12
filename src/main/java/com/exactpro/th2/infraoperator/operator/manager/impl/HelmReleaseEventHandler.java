@@ -6,10 +6,10 @@ import com.exactpro.th2.infraoperator.util.CustomResourceUtils;
 import io.fabric8.kubernetes.api.model.Namespace;
 import io.fabric8.kubernetes.api.model.ObjectMeta;
 import io.fabric8.kubernetes.client.KubernetesClient;
+import io.fabric8.kubernetes.client.WatcherException;
 import io.fabric8.kubernetes.client.dsl.MixedOperation;
 import io.fabric8.kubernetes.client.dsl.Resource;
 import io.fabric8.kubernetes.client.dsl.base.CustomResourceDefinitionContext;
-import io.fabric8.kubernetes.client.informers.ResourceEventHandler;
 import io.fabric8.kubernetes.client.informers.SharedIndexInformer;
 import io.fabric8.kubernetes.client.informers.SharedInformerFactory;
 import org.slf4j.Logger;
@@ -19,7 +19,9 @@ import static com.exactpro.th2.infraoperator.operator.AbstractTh2Operator.ANTECE
 import static com.exactpro.th2.infraoperator.operator.HelmReleaseTh2Op.HELM_RELEASE_CRD_NAME;
 import static com.exactpro.th2.infraoperator.util.CustomResourceUtils.annotationFor;
 
-public class HelmReleaseEventHandler implements ResourceEventHandler<HelmRelease> {
+// TODO, this class needs rework
+public class HelmReleaseEventHandler implements WatchHandler<HelmRelease> {
+
     private static final Logger logger = LoggerFactory.getLogger(HelmReleaseEventHandler.class);
 
     private final KubernetesClient client;
@@ -106,5 +108,15 @@ public class HelmReleaseEventHandler implements ResourceEventHandler<HelmRelease
         helmReleaseClient.inNamespace(namespace).createOrReplace(helmRelease);
 
         logger.info("\"{}\" has been redeployed", resourceLabel);
+    }
+
+    @Override
+    public void eventReceived(Action action, HelmRelease resource) {
+
+    }
+
+    @Override
+    public void onClose(WatcherException cause) {
+
     }
 }

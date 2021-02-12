@@ -19,6 +19,7 @@ package com.exactpro.th2.infraoperator.util;
 import com.exactpro.th2.infraoperator.model.kubernetes.client.ResourceClient;
 import com.exactpro.th2.infraoperator.operator.manager.impl.DefaultWatchManager;
 import com.exactpro.th2.infraoperator.operator.manager.impl.GenericResourceEventHandler;
+import com.exactpro.th2.infraoperator.operator.manager.impl.WatchHandler;
 import io.fabric8.kubernetes.api.model.HasMetadata;
 import io.fabric8.kubernetes.api.model.apiextensions.v1.CustomResourceDefinition;
 import io.fabric8.kubernetes.api.model.apiextensions.v1.CustomResourceDefinitionSpec;
@@ -97,7 +98,7 @@ public final class CustomResourceUtils {
 
     public static <T extends CustomResource> ResourceEventHandler resourceEventHandlerFor(
             ResourceClient<T> resourceClient,
-            ResourceEventHandler<T> handler,
+            WatchHandler<T> handler,
             DefaultWatchManager.EventStorage<DefaultWatchManager.DispatcherEvent> eventStorage) {
 
         return resourceEventHandlerFor(
@@ -109,7 +110,7 @@ public final class CustomResourceUtils {
 
 
     public static <T extends CustomResource> ResourceEventHandler<T> resourceEventHandlerFor(
-            ResourceEventHandler<T> eventHandler,
+            WatchHandler<T> watchHandler,
             Class<T> resourceType,
             CustomResourceDefinition crd,
             DefaultWatchManager.EventStorage<DefaultWatchManager.DispatcherEvent> eventStorage) {
@@ -120,6 +121,6 @@ public final class CustomResourceUtils {
 
         KubernetesDeserializer.registerCustomKind(apiVersion, kind, resourceType);
 
-        return new GenericResourceEventHandler<>(eventHandler, eventStorage);
+        return new GenericResourceEventHandler<>(watchHandler, eventStorage);
     }
 }

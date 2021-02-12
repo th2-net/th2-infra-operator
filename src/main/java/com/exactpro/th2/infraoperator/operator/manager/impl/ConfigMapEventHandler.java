@@ -12,7 +12,7 @@ import io.fabric8.kubernetes.api.model.ConfigMapList;
 import io.fabric8.kubernetes.api.model.Secret;
 import io.fabric8.kubernetes.client.KubernetesClient;
 import io.fabric8.kubernetes.client.Watcher;
-import io.fabric8.kubernetes.client.informers.ResourceEventHandler;
+import io.fabric8.kubernetes.client.WatcherException;
 import io.fabric8.kubernetes.client.informers.SharedIndexInformer;
 import io.fabric8.kubernetes.client.informers.SharedInformerFactory;
 import org.slf4j.Logger;
@@ -24,7 +24,7 @@ import java.util.Objects;
 import static com.exactpro.th2.infraoperator.util.CustomResourceUtils.annotationFor;
 import static com.exactpro.th2.infraoperator.util.JsonUtils.JSON_READER;
 
-public class ConfigMapEventHandler implements ResourceEventHandler<ConfigMap> {
+public class ConfigMapEventHandler implements WatchHandler<ConfigMap>{
     public static final String SECRET_TYPE_OPAQUE = "Opaque";
 
     private static final Logger logger = LoggerFactory.getLogger(ConfigMapEventHandler.class);
@@ -48,11 +48,12 @@ public class ConfigMapEventHandler implements ResourceEventHandler<ConfigMap> {
         this.client = client;
     }
 
-    private void processEvent (Watcher.Action action, ConfigMap configMap) {
+    @Override
+    public void eventReceived(Action action, ConfigMap resource) {
 
-        String resourceLabel = annotationFor(configMap);
-        String namespace = configMap.getMetadata().getNamespace();
-        String configMapName = configMap.getMetadata().getName();
+        String resourceLabel = annotationFor(resource);
+        String namespace = resource.getMetadata().getNamespace();
+        String configMapName = resource.getMetadata().getName();
 
         if (!(configMapName.equals(OperatorConfig.INSTANCE.getRabbitMQConfigMapName())))
             return;
@@ -68,7 +69,7 @@ public class ConfigMapEventHandler implements ResourceEventHandler<ConfigMap> {
                     ConfigMaps configMaps = ConfigMaps.INSTANCE;
                     RabbitMQConfig rabbitMQConfig = configMaps.getRabbitMQConfig4Namespace(namespace);
 
-                    String configContent = configMap.getData().get(RabbitMQConfig.CONFIG_MAP_RABBITMQ_PROP_NAME);
+                    String configContent = resource.getData().get(RabbitMQConfig.CONFIG_MAP_RABBITMQ_PROP_NAME);
                     if (Strings.isNullOrEmpty(configContent)) {
                         logger.error("Key \"{}\" not found in \"{}\"", RabbitMQConfig.CONFIG_MAP_RABBITMQ_PROP_NAME,
                                 resourceLabel);
@@ -122,16 +123,23 @@ public class ConfigMapEventHandler implements ResourceEventHandler<ConfigMap> {
 
     @Override
     public void onAdd(ConfigMap configMap) {
-        processEvent(Watcher.Action.ADDED, configMap);
+        eventReceived(Watcher.Action.ADDED, configMap);
     }
 
     @Override
     public void onUpdate(ConfigMap oldConfigMap, ConfigMap newConfigMap) {
-        processEvent(Watcher.Action.MODIFIED, newConfigMap);
+        eventReceived(Watcher.Action.MODIFIED, newConfigMap);
     }
 
     @Override
     public void onDelete(ConfigMap configMap, boolean deletedFinalStateUnknown) {
+
+    }
+
+
+
+    @Override
+    public void onClose(WatcherException cause) {
 
     }
 }

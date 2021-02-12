@@ -76,6 +76,8 @@ public class DefaultWatchManager {
 
     private final EventStorage<DispatcherEvent> eventStorage;
 
+    private final EventDispatcher eventDispatcher;
+
     private synchronized SharedInformerFactory getInformerFactory() {
         return sharedInformerFactory;
     }
@@ -85,6 +87,7 @@ public class DefaultWatchManager {
         this.sharedInformerFactory = builder.getClient().informers();
         this.dictionaryClient = new DictionaryClient(operatorBuilder.getClient());
         this.eventStorage = new EventStorage<>();
+        this.eventDispatcher = new EventDispatcher(this.eventStorage);
 
         sharedInformerFactory.addSharedInformerEventListener(exception -> {
             logger.error("Exception in InformerFactory : {}", exception.getMessage());
@@ -107,11 +110,11 @@ public class DefaultWatchManager {
             if (this == o) return true;
             if (!(o instanceof DispatcherEvent)) return false;
 
-            return annotation.equals(((DispatcherEvent) o).annotation);
+            return (annotation.equals(((DispatcherEvent) o).annotation) && action.equals(((DispatcherEvent) o).action));
         }
     }
 
-    public static class EventStorage <T> {
+    public static class EventStorage <T extends DispatcherEvent> {
         LinkedList<T> events;
 
         public EventStorage () {
@@ -119,17 +122,44 @@ public class DefaultWatchManager {
         }
 
         public synchronized void addEvent (T event) {
-            events.removeFirstOccurrence(event);
-            events.addLast(event);
+            for (int i = 0; i < events.size(); i ++) {
+                var el = events.get(i);
+                if (el.getAnnotation().equals(event.getAnnotation()) && !el.getAction().equals(event.getAction()))
+                    break;
+
+                if (el.equals(event)) {
+                    events.remove(i);
+                    events.add(i, event);
+
+                    return;
+                }
+            }
+            events.addFirst(event);
         }
 
-        public synchronized T popEvent() {
+        public synchronized T popEvent(ArrayList<String> workingNamespaces) {
+
+            if (events.size() == 0) {
+                logger.info("There are no events");
+                return null;
+            }
             logger.info("Event storage contains {} elements", events.size());
 
-            var event = events.getFirst();
-            events.removeFirst();
 
-            return event;
+            if (!workingNamespaces.contains(events.getFirst().getCr().getMetadata().getNamespace())) {
+                return events.removeFirst();
+            }
+
+            for (int i = 0; i < events.size(); i ++) {
+                if (!workingNamespaces.contains(events.get(i).getCr().getMetadata().getNamespace())) {
+                    return events.remove(i);
+                }
+            }
+
+            logger.info("{}", workingNamespaces.toString());
+
+            logger.info("There are no free namespaces");
+            return null;
         }
     }
 
@@ -138,6 +168,7 @@ public class DefaultWatchManager {
 
         SharedInformerFactory sharedInformerFactory = getInformerFactory();
 
+        eventDispatcher.start();
         postInit();
         registerInformers (sharedInformerFactory);
 
@@ -321,6 +352,7 @@ public class DefaultWatchManager {
     }
 
     public void close () {
+        eventDispatcher.interrupt();
         operatorBuilder.getClient().close();
     }
 }

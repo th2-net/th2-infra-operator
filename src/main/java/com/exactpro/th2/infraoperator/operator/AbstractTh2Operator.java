@@ -19,6 +19,7 @@ package com.exactpro.th2.infraoperator.operator;
 import com.exactpro.th2.infraoperator.Th2CrdController;
 import com.exactpro.th2.infraoperator.model.http.HttpCode;
 import com.exactpro.th2.infraoperator.model.kubernetes.client.ResourceClient;
+import com.exactpro.th2.infraoperator.operator.manager.impl.WatchHandler;
 import com.exactpro.th2.infraoperator.spec.Th2CustomResource;
 import com.exactpro.th2.infraoperator.spec.strategy.redeploy.RetryableTaskQueue;
 import com.exactpro.th2.infraoperator.spec.strategy.redeploy.tasks.TriggerRedeployTask;
@@ -30,9 +31,7 @@ import io.fabric8.kubernetes.api.model.OwnerReference;
 import io.fabric8.kubernetes.api.model.OwnerReferenceBuilder;
 import io.fabric8.kubernetes.client.KubernetesClient;
 import io.fabric8.kubernetes.client.KubernetesClientException;
-import io.fabric8.kubernetes.client.Watcher;
 import io.fabric8.kubernetes.client.WatcherException;
-import io.fabric8.kubernetes.client.informers.ResourceEventHandler;
 import lombok.SneakyThrows;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -46,7 +45,7 @@ import java.util.concurrent.ConcurrentHashMap;
 
 import static io.fabric8.kubernetes.client.Watcher.Action.*;
 
-public abstract class AbstractTh2Operator<CR extends Th2CustomResource, KO extends HasMetadata> implements Watcher<CR> {
+public abstract class AbstractTh2Operator<CR extends Th2CustomResource, KO extends HasMetadata> implements WatchHandler<CR> {
 
     private static final Logger logger = LoggerFactory.getLogger(AbstractTh2Operator.class);
 
@@ -63,8 +62,18 @@ public abstract class AbstractTh2Operator<CR extends Th2CustomResource, KO exten
         this.fingerprints = new ConcurrentHashMap<>();
     }
 
-    public ResourceEventHandler<CR> generateResourceEventHandler () {
-        return new ResourceEventHandler<CR>() {
+    public WatchHandler<CR> generateResourceEventHandler () {
+        return new WatchHandler<CR>() {
+            @Override
+            public void eventReceived(Action action, CR resource) {
+                AbstractTh2Operator.this.eventReceived(action, resource);
+            }
+
+            @Override
+            public void onClose(WatcherException cause) {
+
+            }
+
             @Override
             public void onAdd(CR cr) {
                 eventReceived(ADDED, cr);

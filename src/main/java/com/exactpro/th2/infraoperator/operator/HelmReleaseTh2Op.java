@@ -773,4 +773,19 @@ public abstract class HelmReleaseTh2Op<CR extends Th2CustomResource> extends Abs
         }
 
     }
+
+    @Override
+    public void onAdd(CR obj) {
+
+    }
+
+    @Override
+    public void onUpdate(CR oldObj, CR newObj) {
+
+    }
+
+    @Override
+    public void onDelete(CR obj, boolean deletedFinalStateUnknown) {
+
+    }
 }

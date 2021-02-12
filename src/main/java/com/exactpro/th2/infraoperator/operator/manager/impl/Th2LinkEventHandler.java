@@ -7,8 +7,8 @@ import com.exactpro.th2.infraoperator.spec.link.Th2LinkList;
 import com.exactpro.th2.infraoperator.spec.shared.Identifiable;
 import com.exactpro.th2.infraoperator.util.CustomResourceUtils;
 import io.fabric8.kubernetes.client.KubernetesClient;
+import io.fabric8.kubernetes.client.WatcherException;
 import io.fabric8.kubernetes.client.dsl.base.CustomResourceDefinitionContext;
-import io.fabric8.kubernetes.client.informers.ResourceEventHandler;
 import io.fabric8.kubernetes.client.informers.SharedIndexInformer;
 import io.fabric8.kubernetes.client.informers.SharedInformerFactory;
 import org.slf4j.Logger;
@@ -24,7 +24,7 @@ import java.util.stream.Collectors;
 import static com.exactpro.th2.infraoperator.util.CustomResourceUtils.annotationFor;
 import static com.exactpro.th2.infraoperator.util.ExtractUtils.extractNamespace;
 
-public class Th2LinkEventHandler implements ResourceEventHandler<Th2Link> {
+public class Th2LinkEventHandler implements WatchHandler<Th2Link> {
     private static final Logger logger = LoggerFactory.getLogger(Th2LinkEventHandler.class);
 
     public static Th2LinkEventHandler newInstance(SharedInformerFactory sharedInformerFactory,
@@ -240,6 +240,16 @@ public class Th2LinkEventHandler implements ResourceEventHandler<Th2Link> {
         boxes.addAll(oldToUpdate);
 
         return boxes;
+    }
+
+    @Override
+    public void eventReceived(Action action, Th2Link resource) {
+
+    }
+
+    @Override
+    public void onClose(WatcherException cause) {
+
     }
 
 

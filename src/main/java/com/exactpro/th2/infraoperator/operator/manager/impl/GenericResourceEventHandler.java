@@ -16,12 +16,12 @@ public class GenericResourceEventHandler<T extends HasMetadata> implements Resou
     public static final String KEY_SOURCE_HASH = "th2.exactpro.com/source-hash";
 
 
-    private ResourceEventHandler<T> eventHandler;
+    private Watcher<T> watcher;
     private DefaultWatchManager.EventStorage<DefaultWatchManager.DispatcherEvent> eventStorage;
 
-    public GenericResourceEventHandler(ResourceEventHandler<T> eventHandler,
+    public GenericResourceEventHandler(Watcher<T> watcher,
                                        DefaultWatchManager.EventStorage<DefaultWatchManager.DispatcherEvent> eventStorage) {
-        this.eventHandler = eventHandler;
+        this.watcher = watcher;
         this.eventStorage = eventStorage;
     }
 
@@ -111,24 +111,11 @@ public class GenericResourceEventHandler<T extends HasMetadata> implements Resou
             try {
                 // temp fix: change thread name for logging purposes
                 // TODO: propagate event id logging in code
-                Thread.currentThread().setName(EventCounter.newEvent());
                 String resourceLabel = CustomResourceUtils.annotationFor(resource);
                 logger.debug("Received {} event for \"{}\" {}", action, resourceLabel, sourceHash(resource));
 
                 try {
-                    switch (action) {
-                        case ADDED:
-                            eventHandler.onAdd(resource);
-                            break;
-
-                        case MODIFIED:
-                            eventHandler.onUpdate(null, resource);
-                            break;
-
-                        case DELETED:
-                            eventHandler.onDelete(resource, false);
-                            break;
-                    }
+                    watcher.eventReceived(action, resource);
                 } catch (Exception e) {
                     logger.error("Exception processing event for \"{}\"", resourceLabel, e);
                 }
