@@ -99,11 +99,11 @@ public class DefaultWatchManager {
     @Getter
     @AllArgsConstructor
     public static class DispatcherEvent {
-        private final String eventId;
-        private final String annotation;
-        private final Watcher.Action action;
-        private final HasMetadata cr;
-        private final Watcher callback;
+        private String eventId;
+        private String annotation;
+        private Watcher.Action action;
+        private HasMetadata cr;
+        private Watcher callback;
 
         @Override
         public boolean equals(Object o) {
@@ -112,62 +112,76 @@ public class DefaultWatchManager {
 
             return (annotation.equals(((DispatcherEvent) o).annotation) && action.equals(((DispatcherEvent) o).action));
         }
+
+        /*
+            Replace should only happen when we have
+            two objects with same annotation and action
+         */
+        public void replace (DispatcherEvent dispatcherEvent) {
+            this.eventId = dispatcherEvent.eventId;
+            this.cr = dispatcherEvent.cr;
+        }
     }
 
     public static class EventContainer<T extends DispatcherEvent> {
 
         private static final Logger logger = LoggerFactory.getLogger(EventContainer.class);
 
-        LinkedList<T> events;
+        private final LinkedList<T> events;
+        private final LinkedList<String> workingNamespaces;
 
         public EventContainer() {
-            events = new LinkedList<>();
+            this.events = new LinkedList<>();
+            this.workingNamespaces = new LinkedList<>();
         }
 
         public synchronized void addEvent (T event) {
 
-            for (int i = 0; i < events.size(); i ++) {
-                var el = events.get(i);
+
+            for (var el : events) {
                 if (el.getAnnotation().equals(event.getAnnotation()) && !el.getAction().equals(event.getAction()))
                     break;
 
                 if (el.equals(event)) {
                     logger.info("replacing event {} with event {}", el.getEventId(), event.getEventId());
-                    events.remove(i);
-                    events.add(i, event);
-
-                    return;
+                    el.replace(event);
+                    return  ;
                 }
+            }
+            for (int i = events.size() - 1; i > -1; i ++) {
+                var el = events.get(i);
+
             }
 
             logger.info("adding {}", event.getEventId());
-            events.addFirst(event);
+            events.addLast(event);
         }
 
-        public synchronized T popEvent(ArrayList<String> workingNamespaces) {
+        public synchronized T popEvent() {
 
             if (events.size() == 0) {
                 return null;
-            }
-
-
-            if (!workingNamespaces.contains(events.getFirst().getCr().getMetadata().getNamespace())) {
-                logger.info("contains {} elements", events.size());
-                var event = events.removeFirst();
-                logger.info("returning {}", event.getEventId());
-                return event;
             }
 
             for (int i = 0; i < events.size(); i ++) {
                 if (!workingNamespaces.contains(events.get(i).getCr().getMetadata().getNamespace())) {
                     logger.info("contains {} elements", events.size());
                     var event = events.remove(i);
+                    addNamespace(event.getCr().getMetadata().getNamespace());
                     logger.info("returning {}", event.getEventId());
                     return event;
                 }
             }
 
             return null;
+        }
+
+        private void addNamespace (String namespace) {
+            workingNamespaces.add (namespace);
+        }
+
+        public synchronized void removeNamespace (String namespace) {
+            workingNamespaces.remove(namespace);
         }
     }
 

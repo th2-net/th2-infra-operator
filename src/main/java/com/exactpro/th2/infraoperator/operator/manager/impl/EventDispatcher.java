@@ -3,7 +3,6 @@ package com.exactpro.th2.infraoperator.operator.manager.impl;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.ArrayList;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
@@ -15,13 +14,11 @@ public class EventDispatcher extends Thread {
     private final int SUBMISSION_INTERVAL = 100;
 
     private final ExecutorService executor;
-    private final ArrayList<String> workingNamespaces;
     private final DefaultWatchManager.EventContainer<DefaultWatchManager.DispatcherEvent> eventContainer;
 
     public EventDispatcher (DefaultWatchManager.EventContainer<DefaultWatchManager.DispatcherEvent> eventContainer) {
         this.eventContainer = eventContainer;
         this.executor = Executors.newFixedThreadPool(N_THREADS);
-        this.workingNamespaces = new ArrayList<>();
     }
 
 
@@ -36,26 +33,21 @@ public class EventDispatcher extends Thread {
                 break;
             }
 
-            synchronized (workingNamespaces) {
-                var el = this.eventContainer.popEvent(workingNamespaces);
-                if (el == null) {
-                    continue;
-                }
-
-                workingNamespaces.add(el.getCr().getMetadata().getNamespace());
-                executor.submit(() -> {
-                    try {
-                        Thread.currentThread().setName(el.getEventId());
-                        el.getCallback().eventReceived(el.getAction(), el.getCr());
-                    } catch (Exception e) {
-                        logger.error(e.getMessage());
-                    } finally {
-                        synchronized (workingNamespaces) {
-                            workingNamespaces.remove(el.getCr().getMetadata().getNamespace());
-                        }
-                    }
-                });
+            var el = this.eventContainer.popEvent();
+            if (el == null) {
+                continue;
             }
+
+            executor.submit(() -> {
+                try {
+                    Thread.currentThread().setName(el.getEventId());
+                    el.getCallback().eventReceived(el.getAction(), el.getCr());
+                } catch (Exception e) {
+                    logger.error(e.getMessage());
+                } finally {
+                    eventContainer.removeNamespace(el.getCr().getMetadata().getNamespace());
+                }
+            });
         }
 
         logger.info("EventDispatcher worker thread interrupted, stopping executor.");
