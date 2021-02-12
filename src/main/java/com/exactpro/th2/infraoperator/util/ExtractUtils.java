@@ -32,6 +32,7 @@ import java.util.Map;
 public final class ExtractUtils {
 
     private static final Logger logger = LoggerFactory.getLogger(ExtractUtils.class);
+    private static final String KEY_SOURCE_HASH = "th2.exactpro.com/source-hash";
 
 
     private ExtractUtils() {
@@ -100,6 +101,14 @@ public final class ExtractUtils {
     public static boolean isStorageResource(String name) {
         return name.equals(StoreHelmTh2Op.MSG_ST_LINK_RESOURCE_NAME)
                 || name.equals(StoreHelmTh2Op.EVENT_ST_LINK_RESOURCE_NAME);
+    }
+
+
+    public static String sourceHash(HasMetadata res) {
+
+        if (res.getMetadata() != null && res.getMetadata().getAnnotations() != null)
+            return res.getMetadata().getAnnotations().get(KEY_SOURCE_HASH);
+        return null;
     }
 
 }
