@@ -200,6 +200,7 @@ public class DefaultWatchManager {
         resMeta.setAnnotations(Objects.nonNull(resMeta.getAnnotations()) ? resMeta.getAnnotations() : new HashMap<>());
         resMeta.getAnnotations().put(REFRESH_TOKEN_ALIAS, refreshToken);
         resClient.getInstance().inNamespace(linkNamespace).createOrReplace(resource);
+        logger.debug("refreshed \"{}\" with refresh-token={}", CustomResourceUtils.annotationFor(resource), refreshToken);
     }
 
     private void postInit() {
