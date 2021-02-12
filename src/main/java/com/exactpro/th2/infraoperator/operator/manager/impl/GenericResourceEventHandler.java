@@ -3,6 +3,7 @@ package com.exactpro.th2.infraoperator.operator.manager.impl;
 import com.exactpro.th2.infraoperator.configuration.OperatorConfig;
 import com.exactpro.th2.infraoperator.operator.context.EventCounter;
 import com.exactpro.th2.infraoperator.util.CustomResourceUtils;
+import com.exactpro.th2.infraoperator.util.ExtractUtils;
 import com.exactpro.th2.infraoperator.util.Strings;
 import io.fabric8.kubernetes.api.model.HasMetadata;
 import io.fabric8.kubernetes.client.Watcher;
@@ -17,21 +18,20 @@ public class GenericResourceEventHandler<T extends HasMetadata> implements Resou
 
 
     private Watcher<T> watcher;
-    private DefaultWatchManager.EventContainer<DefaultWatchManager.DispatcherEvent> eventContainer;
+    private DefaultWatchManager.EventQueue<DefaultWatchManager.DispatcherEvent> eventQueue;
 
     public GenericResourceEventHandler(Watcher<T> watcher,
-                                       DefaultWatchManager.EventContainer<DefaultWatchManager.DispatcherEvent> eventContainer) {
+                                       DefaultWatchManager.EventQueue<DefaultWatchManager.DispatcherEvent> eventQueue) {
         this.watcher = watcher;
-        this.eventContainer = eventContainer;
+        this.eventQueue = eventQueue;
     }
+
 
     private String sourceHash(HasMetadata res) {
 
-        if (res.getMetadata() != null && res.getMetadata().getAnnotations()!=null) {
-            String hash = res.getMetadata().getAnnotations().get(KEY_SOURCE_HASH);
-            if (hash != null)
-                return "[" + hash.substring(0, 8) + "]";
-        }
+        String hash = ExtractUtils.sourceHash(res);
+        if (hash != null)
+            return "[" + hash.substring(0, 8) + "]";
         return "";
     }
 
@@ -48,7 +48,7 @@ public class GenericResourceEventHandler<T extends HasMetadata> implements Resou
         String eventId = EventCounter.newEvent();
         logger.debug("Received ADDED event ({}) for \"{}\" {}", eventId, resourceLabel, sourceHash(obj));
 
-        eventContainer.addEvent(new DefaultWatchManager.DispatcherEvent(
+        eventQueue.addEvent(new DefaultWatchManager.DispatcherEvent(
                 eventId,
                 resourceLabel,
                 Action.ADDED,
@@ -71,7 +71,7 @@ public class GenericResourceEventHandler<T extends HasMetadata> implements Resou
         String eventId = EventCounter.newEvent();
         logger.debug("Received MODIFIED event ({}) for \"{}\" {}", eventId, resourceLabel, sourceHash(newObj));
 
-        eventContainer.addEvent(new DefaultWatchManager.DispatcherEvent(
+        eventQueue.addEvent(new DefaultWatchManager.DispatcherEvent(
                 eventId,
                 resourceLabel,
                 Action.MODIFIED,
@@ -93,7 +93,7 @@ public class GenericResourceEventHandler<T extends HasMetadata> implements Resou
         String eventId = EventCounter.newEvent();
         logger.debug("Received DELETED event ({}) for \"{}\" {}", eventId, resourceLabel, sourceHash(obj));
 
-        eventContainer.addEvent(new DefaultWatchManager.DispatcherEvent(
+        eventQueue.addEvent(new DefaultWatchManager.DispatcherEvent(
                 eventId,
                 resourceLabel,
                 Action.DELETED,

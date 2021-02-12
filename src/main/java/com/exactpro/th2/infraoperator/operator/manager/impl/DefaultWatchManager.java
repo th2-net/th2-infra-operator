@@ -74,7 +74,7 @@ public class DefaultWatchManager {
 
     private static DefaultWatchManager instance;
 
-    private final EventContainer<DispatcherEvent> eventContainer;
+    private final EventQueue<DispatcherEvent> eventQueue;
 
     private final EventDispatcher eventDispatcher;
 
@@ -86,8 +86,8 @@ public class DefaultWatchManager {
         this.operatorBuilder = builder;
         this.sharedInformerFactory = builder.getClient().informers();
         this.dictionaryClient = new DictionaryClient(operatorBuilder.getClient());
-        this.eventContainer = new EventContainer<>();
-        this.eventDispatcher = new EventDispatcher(this.eventContainer);
+        this.eventQueue = new EventQueue<>();
+        this.eventDispatcher = new EventDispatcher(this.eventQueue);
 
         sharedInformerFactory.addSharedInformerEventListener(exception -> {
             logger.error("Exception in InformerFactory : {}", exception.getMessage());
@@ -123,52 +123,64 @@ public class DefaultWatchManager {
         }
     }
 
-    public static class EventContainer<T extends DispatcherEvent> {
+    public static class EventQueue<T extends DispatcherEvent> {
 
-        private static final Logger logger = LoggerFactory.getLogger(EventContainer.class);
+        private static final Logger logger = LoggerFactory.getLogger(EventQueue.class);
 
-        private final LinkedList<T> events;
+        private final List<T> events;
         private final LinkedList<String> workingNamespaces;
 
-        public EventContainer() {
+        public EventQueue() {
             this.events = new LinkedList<>();
             this.workingNamespaces = new LinkedList<>();
         }
 
+
         public synchronized void addEvent (T event) {
 
-
+            // try to substitute old event with new one
             for (var el : events) {
                 if (el.getAnnotation().equals(event.getAnnotation()) && !el.getAction().equals(event.getAction()))
                     break;
 
                 if (el.equals(event)) {
-                    logger.info("replacing event {} with event {}", el.getEventId(), event.getEventId());
+                    logger.debug("Substituting {} with {}, {} event(s) present in the queue",
+                            el.getEventId(),
+                            event.getEventId(),
+                            events.size());
+
+                    try {
+                        var oldRV = el.getCr().getMetadata().getResourceVersion();
+                        var newRV = el.getCr().getMetadata().getResourceVersion();
+                        if (oldRV != null && newRV != null && Long.valueOf(newRV) < Long.valueOf(oldRV))
+                            logger.warn("Substituted with older resource (old.resourceVersion={}, new.resourceVersion={})",
+                                    oldRV,
+                                    newRV);
+                    } catch (Exception e) {
+                        logger.error("Exception checking resourceVersion", e);
+                    }
+
                     el.replace(event);
-                    return  ;
+                    return ;
                 }
             }
-            for (int i = events.size() - 1; i > -1; i ++) {
-                var el = events.get(i);
 
-            }
-
-            logger.info("adding {}", event.getEventId());
-            events.addLast(event);
+            // no event could be substituted, add it to the end
+            events.add(event);
+            logger.debug("Enqueued {}, {} event(s) present in the queue",
+                    event.getEventId(),
+                    events.size());
         }
 
-        public synchronized T popEvent() {
 
-            if (events.size() == 0) {
-                return null;
-            }
+        public synchronized T withdrawEvent() {
 
             for (int i = 0; i < events.size(); i ++) {
-                if (!workingNamespaces.contains(events.get(i).getCr().getMetadata().getNamespace())) {
-                    logger.info("contains {} elements", events.size());
+                String namespace = events.get(i).getCr().getMetadata().getNamespace();
+                if (!workingNamespaces.contains(namespace)) {
                     var event = events.remove(i);
-                    addNamespace(event.getCr().getMetadata().getNamespace());
-                    logger.info("returning {}", event.getEventId());
+                    addNamespace(namespace);
+                    logger.debug("{} withdrawn, {} event(s) remaining in the queue", event.getEventId(), events.size());
                     return event;
                 }
             }
@@ -180,8 +192,8 @@ public class DefaultWatchManager {
             workingNamespaces.add (namespace);
         }
 
-        public synchronized void removeNamespace (String namespace) {
-            workingNamespaces.remove(namespace);
+        public synchronized void closeEvent(T event) {
+            workingNamespaces.remove(event.getCr().getMetadata().getNamespace());
         }
     }
 
@@ -209,9 +221,9 @@ public class DefaultWatchManager {
     private void registerInformers (SharedInformerFactory sharedInformerFactory) {
 
         KubernetesClient client = operatorBuilder.getClient();
-        Th2LinkEventHandler.newInstance(sharedInformerFactory, client, eventContainer);
-        Th2DictionaryEventHandler.newInstance(sharedInformerFactory, dictionaryClient, eventContainer);
-        ConfigMapEventHandler.newInstance(sharedInformerFactory, client, eventContainer);
+        Th2LinkEventHandler.newInstance(sharedInformerFactory, client, eventQueue);
+        Th2DictionaryEventHandler.newInstance(sharedInformerFactory, dictionaryClient, eventQueue);
+        ConfigMapEventHandler.newInstance(sharedInformerFactory, client, eventQueue);
         NamespaceEventHandler.newInstance(sharedInformerFactory);
         CRDEventHandler.newInstance(sharedInformerFactory);
         //HelmReleaseEventHandler.newInstance(sharedInformerFactory, client);
@@ -234,7 +246,7 @@ public class DefaultWatchManager {
             helmReleaseTh2Op.generateInformerFromFactory(getInformerFactory()).addEventHandlerWithResyncPeriod(
                     CustomResourceUtils.resourceEventHandlerFor(helmReleaseTh2Op.getResourceClient(),
                             helmReleaseTh2Op.generateResourceEventHandler(),
-                            eventContainer),
+                            eventQueue),
                     0);
         }
 

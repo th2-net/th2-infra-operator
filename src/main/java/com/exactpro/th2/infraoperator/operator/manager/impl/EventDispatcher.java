@@ -11,13 +11,13 @@ public class EventDispatcher extends Thread {
     private static final Logger logger = LoggerFactory.getLogger(EventDispatcher.class);
 
     private final int N_THREADS = 10;
-    private final int SUBMISSION_INTERVAL = 100;
+    private final int EVENT_WAIT_TIME_MS = 100;
 
     private final ExecutorService executor;
-    private final DefaultWatchManager.EventContainer<DefaultWatchManager.DispatcherEvent> eventContainer;
+    private final DefaultWatchManager.EventQueue<DefaultWatchManager.DispatcherEvent> eventQueue;
 
-    public EventDispatcher (DefaultWatchManager.EventContainer<DefaultWatchManager.DispatcherEvent> eventContainer) {
-        this.eventContainer = eventContainer;
+    public EventDispatcher (DefaultWatchManager.EventQueue<DefaultWatchManager.DispatcherEvent> eventQueue) {
+        this.eventQueue = eventQueue;
         this.executor = Executors.newFixedThreadPool(N_THREADS);
     }
 
@@ -27,25 +27,27 @@ public class EventDispatcher extends Thread {
         logger.info("EventDispatcher has been started");
 
         while (!isInterrupted()) {
-            try {
-                Thread.sleep(SUBMISSION_INTERVAL);
-            } catch (InterruptedException e) {
-                break;
-            }
 
-            var el = this.eventContainer.popEvent();
+            var el = eventQueue.withdrawEvent();
             if (el == null) {
+                try {
+                    Thread.sleep(EVENT_WAIT_TIME_MS);
+                } catch (InterruptedException e) {
+                    break;
+                }
                 continue;
             }
 
             executor.submit(() -> {
+                String threadName = Thread.currentThread().getName();
                 try {
                     Thread.currentThread().setName(el.getEventId());
                     el.getCallback().eventReceived(el.getAction(), el.getCr());
                 } catch (Exception e) {
-                    logger.error(e.getMessage());
+                    logger.error("Exception dispatching event {}", el.getEventId(), e.getMessage());
                 } finally {
-                    eventContainer.removeNamespace(el.getCr().getMetadata().getNamespace());
+                    eventQueue.closeEvent(el);
+                    Thread.currentThread().setName(threadName);
                 }
             });
         }
