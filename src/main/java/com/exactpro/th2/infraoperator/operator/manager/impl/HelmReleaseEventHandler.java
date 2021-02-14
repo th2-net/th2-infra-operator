@@ -6,6 +6,7 @@ import com.exactpro.th2.infraoperator.util.CustomResourceUtils;
 import io.fabric8.kubernetes.api.model.Namespace;
 import io.fabric8.kubernetes.api.model.ObjectMeta;
 import io.fabric8.kubernetes.client.KubernetesClient;
+import io.fabric8.kubernetes.client.Watcher;
 import io.fabric8.kubernetes.client.WatcherException;
 import io.fabric8.kubernetes.client.dsl.MixedOperation;
 import io.fabric8.kubernetes.client.dsl.Resource;
@@ -20,7 +21,7 @@ import static com.exactpro.th2.infraoperator.operator.HelmReleaseTh2Op.HELM_RELE
 import static com.exactpro.th2.infraoperator.util.CustomResourceUtils.annotationFor;
 
 // TODO, this class needs rework
-public class HelmReleaseEventHandler implements WatchHandler<HelmRelease> {
+public class HelmReleaseEventHandler implements Watcher<HelmRelease> {
 
     private static final Logger logger = LoggerFactory.getLogger(HelmReleaseEventHandler.class);
 
@@ -75,20 +76,6 @@ public class HelmReleaseEventHandler implements WatchHandler<HelmRelease> {
     }
 
     @Override
-    public void onAdd(HelmRelease helmRelease) {
-
-    }
-
-    @Override
-    public void onUpdate(HelmRelease oldHelmRelease, HelmRelease newHelmRelease) {
-
-    }
-
-    @Override
-    public void onDelete(HelmRelease helmRelease, boolean deletedFinalStateUnknown) {
-    }
-
-    @Override
     public void eventReceived(Action action, HelmRelease helmRelease) {
         if (action != Action.DELETED)
             return;
@@ -116,8 +103,10 @@ public class HelmReleaseEventHandler implements WatchHandler<HelmRelease> {
         logger.info("\"{}\" has been redeployed", resourceLabel);
     }
 
+
     @Override
     public void onClose(WatcherException cause) {
-
+        throw new AssertionError("This method should not be called");
     }
+
 }

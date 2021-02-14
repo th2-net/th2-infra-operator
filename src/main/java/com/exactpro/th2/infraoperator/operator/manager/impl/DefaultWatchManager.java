@@ -245,7 +245,7 @@ public class DefaultWatchManager {
 
             helmReleaseTh2Op.generateInformerFromFactory(getInformerFactory()).addEventHandlerWithResyncPeriod(
                     CustomResourceUtils.resourceEventHandlerFor(helmReleaseTh2Op.getResourceClient(),
-                            helmReleaseTh2Op.generateResourceEventHandler(),
+                            helmReleaseTh2Op,
                             eventQueue),
                     0);
         }

@@ -19,12 +19,12 @@ package com.exactpro.th2.infraoperator.util;
 import com.exactpro.th2.infraoperator.model.kubernetes.client.ResourceClient;
 import com.exactpro.th2.infraoperator.operator.manager.impl.DefaultWatchManager;
 import com.exactpro.th2.infraoperator.operator.manager.impl.GenericResourceEventHandler;
-import com.exactpro.th2.infraoperator.operator.manager.impl.WatchHandler;
 import io.fabric8.kubernetes.api.model.HasMetadata;
 import io.fabric8.kubernetes.api.model.apiextensions.v1.CustomResourceDefinition;
 import io.fabric8.kubernetes.api.model.apiextensions.v1.CustomResourceDefinitionSpec;
 import io.fabric8.kubernetes.client.CustomResource;
 import io.fabric8.kubernetes.client.KubernetesClient;
+import io.fabric8.kubernetes.client.Watcher;
 import io.fabric8.kubernetes.client.informers.ResourceEventHandler;
 import io.fabric8.kubernetes.internal.KubernetesDeserializer;
 import org.slf4j.Logger;
@@ -98,7 +98,7 @@ public final class CustomResourceUtils {
 
     public static <T extends CustomResource> ResourceEventHandler resourceEventHandlerFor(
             ResourceClient<T> resourceClient,
-            WatchHandler<T> handler,
+            Watcher<T> handler,
             DefaultWatchManager.EventQueue<DefaultWatchManager.DispatcherEvent> eventQueue) {
 
         return resourceEventHandlerFor(
@@ -110,7 +110,7 @@ public final class CustomResourceUtils {
 
 
     public static <T extends CustomResource> ResourceEventHandler<T> resourceEventHandlerFor(
-            WatchHandler<T> watchHandler,
+            Watcher<T> watchHandler,
             Class<T> resourceType,
             CustomResourceDefinition crd,
             DefaultWatchManager.EventQueue<DefaultWatchManager.DispatcherEvent> eventQueue) {

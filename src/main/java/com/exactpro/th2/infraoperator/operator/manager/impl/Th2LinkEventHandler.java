@@ -10,6 +10,7 @@ import com.exactpro.th2.infraoperator.spec.link.relation.pins.PinCoupling;
 import com.exactpro.th2.infraoperator.spec.shared.Identifiable;
 import com.exactpro.th2.infraoperator.util.CustomResourceUtils;
 import io.fabric8.kubernetes.client.KubernetesClient;
+import io.fabric8.kubernetes.client.Watcher;
 import io.fabric8.kubernetes.client.WatcherException;
 import io.fabric8.kubernetes.client.dsl.base.CustomResourceDefinitionContext;
 import io.fabric8.kubernetes.client.informers.SharedIndexInformer;
@@ -27,7 +28,7 @@ import java.util.stream.Collectors;
 import static com.exactpro.th2.infraoperator.util.CustomResourceUtils.annotationFor;
 import static com.exactpro.th2.infraoperator.util.ExtractUtils.extractNamespace;
 
-public class Th2LinkEventHandler implements WatchHandler<Th2Link> {
+public class Th2LinkEventHandler implements Watcher<Th2Link> {
     private static final Logger logger = LoggerFactory.getLogger(Th2LinkEventHandler.class);
 
     public static Th2LinkEventHandler newInstance(SharedInformerFactory sharedInformerFactory,
@@ -51,20 +52,6 @@ public class Th2LinkEventHandler implements WatchHandler<Th2Link> {
 
         return res;
     }
-
-
-    @Override
-    public void onAdd(Th2Link th2Link) {
-    }
-
-    @Override
-    public void onUpdate(Th2Link oldTh2Link, Th2Link newTh2Link) {
-    }
-
-    @Override
-    public void onDelete(Th2Link th2Link, boolean deletedFinalStateUnknown) {
-    }
-
 
     private <T extends Identifiable> void checkForDuplicates(List<T> links, String annotation) {
 
@@ -158,11 +145,6 @@ public class Th2LinkEventHandler implements WatchHandler<Th2Link> {
 
     }
 
-    @Override
-    public void onClose(WatcherException cause) {
-
-    }
-
 
     <T extends Identifiable> Set<String> getAffectedBoxNamesByList(List<T> prevLinks, List<T> newLinks,
                                                                    Function<T, Set<String>> boxesExtractor) {
@@ -188,5 +170,11 @@ public class Th2LinkEventHandler implements WatchHandler<Th2Link> {
 
         return affectedBoxes;
     }
+
+    @Override
+    public void onClose(WatcherException cause) {
+        throw new AssertionError("This method should not be called");
+    }
+
 }
 

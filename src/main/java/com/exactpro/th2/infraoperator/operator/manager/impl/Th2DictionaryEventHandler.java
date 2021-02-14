@@ -23,7 +23,7 @@ import static com.exactpro.th2.infraoperator.util.CustomResourceUtils.annotation
 import static com.exactpro.th2.infraoperator.util.ExtractUtils.extractName;
 import static com.exactpro.th2.infraoperator.util.ExtractUtils.extractNamespace;
 
-public class Th2DictionaryEventHandler implements WatchHandler<Th2Dictionary> {
+public class Th2DictionaryEventHandler implements Watcher<Th2Dictionary> {
     private static final Logger logger = LoggerFactory.getLogger(Th2DictionaryEventHandler.class);
 
     private DictionaryClient dictionaryClient;
@@ -70,7 +70,8 @@ public class Th2DictionaryEventHandler implements WatchHandler<Th2Dictionary> {
 
     private Map<String, String> sourceHashes = new ConcurrentHashMap<>();
 
-    private void handleEvent (Watcher.Action action, Th2Dictionary dictionary) {
+    @Override
+    public void eventReceived(Action action, Th2Dictionary dictionary) {
 
         String resourceLabel = annotationFor(dictionary);
         String sourceHash = ExtractUtils.sourceHash(dictionary);
@@ -97,30 +98,11 @@ public class Th2DictionaryEventHandler implements WatchHandler<Th2Dictionary> {
             sourceHashes.remove(resourceLabel);
         else
             sourceHashes.put(resourceLabel, sourceHash);
-
-
-    }
-
-    @Override
-    public void onAdd(Th2Dictionary dictionary) {
-    }
-
-    @Override
-    public void onUpdate(Th2Dictionary oldDictionary, Th2Dictionary newDictionary) {
-    }
-
-    @Override
-    public void onDelete(Th2Dictionary dictionary, boolean deletedFinalStateUnknown) {
-    }
-
-    @Override
-    public void eventReceived(Action action, Th2Dictionary resource) {
-        handleEvent(action, resource);
     }
 
     @Override
     public void onClose(WatcherException cause) {
-
+        throw new AssertionError("This method should not be called");
     }
 }
 

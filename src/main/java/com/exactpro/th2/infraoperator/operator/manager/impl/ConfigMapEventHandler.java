@@ -24,7 +24,7 @@ import java.util.Objects;
 import static com.exactpro.th2.infraoperator.util.CustomResourceUtils.annotationFor;
 import static com.exactpro.th2.infraoperator.util.JsonUtils.JSON_READER;
 
-public class ConfigMapEventHandler implements WatchHandler<ConfigMap>{
+public class ConfigMapEventHandler implements Watcher<ConfigMap> {
     public static final String SECRET_TYPE_OPAQUE = "Opaque";
 
     private static final Logger logger = LoggerFactory.getLogger(ConfigMapEventHandler.class);
@@ -98,6 +98,11 @@ public class ConfigMapEventHandler implements WatchHandler<ConfigMap>{
         }
     }
 
+    @Override
+    public void onClose(WatcherException cause) {
+        throw new AssertionError("This method should not be called");
+    }
+
 
     private String readRabbitMQPasswordForSchema(String namespace, String secretName) throws Exception {
 
@@ -120,24 +125,5 @@ public class ConfigMapEventHandler implements WatchHandler<ConfigMap>{
         return password;
     }
 
-
-    @Override
-    public void onAdd(ConfigMap configMap) {
-    }
-
-    @Override
-    public void onUpdate(ConfigMap oldConfigMap, ConfigMap newConfigMap) {
-    }
-
-    @Override
-    public void onDelete(ConfigMap configMap, boolean deletedFinalStateUnknown) {
-    }
-
-
-
-    @Override
-    public void onClose(WatcherException cause) {
-
-    }
 }
 
