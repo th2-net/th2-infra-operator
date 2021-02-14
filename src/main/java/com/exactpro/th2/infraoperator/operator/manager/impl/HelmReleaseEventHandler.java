@@ -86,6 +86,12 @@ public class HelmReleaseEventHandler implements WatchHandler<HelmRelease> {
 
     @Override
     public void onDelete(HelmRelease helmRelease, boolean deletedFinalStateUnknown) {
+    }
+
+    @Override
+    public void eventReceived(Action action, HelmRelease helmRelease) {
+        if (action != Action.DELETED)
+            return;
         String resourceLabel = annotationFor(helmRelease);
         if (!helmRelease.getMetadata().getAnnotations().containsKey(ANTECEDENT_LABEL_KEY_ALIAS)) {
             logger.info("\"{}\" doesn't have ANTECEDENT annotation, probably operator deleted it. it won't be redeployed!", resourceLabel);
@@ -108,11 +114,6 @@ public class HelmReleaseEventHandler implements WatchHandler<HelmRelease> {
         helmReleaseClient.inNamespace(namespace).createOrReplace(helmRelease);
 
         logger.info("\"{}\" has been redeployed", resourceLabel);
-    }
-
-    @Override
-    public void eventReceived(Action action, HelmRelease resource) {
-
     }
 
     @Override

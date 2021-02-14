@@ -55,72 +55,14 @@ public class Th2LinkEventHandler implements WatchHandler<Th2Link> {
 
     @Override
     public void onAdd(Th2Link th2Link) {
-
-        String namespace = extractNamespace(th2Link);
-        OperatorState operatorState = OperatorState.INSTANCE;
-        var lock = operatorState.getLock(namespace);
-        try {
-            lock.lock();
-
-            checkForDuplicates(th2Link);
-
-            var linkResources = new ArrayList<>(operatorState.getLinkResources(namespace));
-            Th2Link prevLink = getPreviousLink(th2Link, linkResources);
-            refreshAffectedBoxes(prevLink, th2Link);
-            linkResources.remove(th2Link);
-            linkResources.add(th2Link);
-
-            operatorState.setLinkResources(namespace, linkResources);
-        } finally {
-            lock.unlock();
-        }
     }
 
     @Override
     public void onUpdate(Th2Link oldTh2Link, Th2Link newTh2Link) {
-
-        String namespace = extractNamespace(newTh2Link);
-        OperatorState operatorState = OperatorState.INSTANCE;
-        var lock = operatorState.getLock(namespace);
-        try {
-            lock.lock();
-
-            checkForDuplicates(newTh2Link);
-
-            var linkResources = new ArrayList<>(operatorState.getLinkResources(namespace));
-
-            Th2Link prevLink = getPreviousLink(newTh2Link, linkResources);
-            refreshAffectedBoxes(prevLink, newTh2Link);
-            linkResources.remove(newTh2Link);
-            linkResources.add(newTh2Link);
-
-            operatorState.setLinkResources(namespace, linkResources);
-        } finally {
-            lock.unlock();
-        }
     }
 
     @Override
     public void onDelete(Th2Link th2Link, boolean deletedFinalStateUnknown) {
-
-        String namespace = extractNamespace(th2Link);
-        OperatorState operatorState = OperatorState.INSTANCE;
-        var lock = operatorState.getLock(namespace);
-        try {
-            lock.lock();
-
-            checkForDuplicates(th2Link);
-
-            var linkResources = new ArrayList<>(operatorState.getLinkResources(namespace));
-            Th2Link prevLink = getPreviousLink(th2Link, linkResources);
-            refreshAffectedBoxes(prevLink, Th2Link.newInstance());
-            linkResources.remove(th2Link);
-
-            //TODO: Error case not covered
-            operatorState.setLinkResources(namespace, linkResources);
-        } finally {
-            lock.unlock();
-        }
     }
 
 
@@ -191,7 +133,28 @@ public class Th2LinkEventHandler implements WatchHandler<Th2Link> {
     }
 
     @Override
-    public void eventReceived(Action action, Th2Link resource) {
+    public void eventReceived(Action action, Th2Link th2Link) {
+
+        String namespace = extractNamespace(th2Link);
+        OperatorState operatorState = OperatorState.INSTANCE;
+        var lock = operatorState.getLock(namespace);
+        try {
+            lock.lock();
+
+            checkForDuplicates(th2Link);
+
+            var linkResources = new ArrayList<>(operatorState.getLinkResources(namespace));
+
+            Th2Link prevLink = getPreviousLink(th2Link, linkResources);
+            refreshAffectedBoxes(prevLink, th2Link);
+            linkResources.remove(th2Link);
+            if (action != Action.DELETED)
+                linkResources.add(th2Link);
+
+            operatorState.setLinkResources(namespace, linkResources);
+        } finally {
+            lock.unlock();
+        }
 
     }
 

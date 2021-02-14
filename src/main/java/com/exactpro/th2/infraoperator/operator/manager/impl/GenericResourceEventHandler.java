@@ -14,7 +14,7 @@ import org.slf4j.LoggerFactory;
 
 public class GenericResourceEventHandler<T extends HasMetadata> implements ResourceEventHandler<T>, Watcher<T> {
     private static final Logger logger = LoggerFactory.getLogger(GenericResourceEventHandler.class);
-    public static final String KEY_SOURCE_HASH = "th2.exactpro.com/source-hash";
+    public static final String REFRESH_TOKEN_ALIAS = "refresh-token";
 
 
     private Watcher<T> watcher;
@@ -26,6 +26,18 @@ public class GenericResourceEventHandler<T extends HasMetadata> implements Resou
         this.eventQueue = eventQueue;
     }
 
+
+    public String refreshToken(HasMetadata res) {
+
+        var metadata = res.getMetadata();
+        if (metadata == null)
+            return null;
+
+        var annotations= metadata.getAnnotations();
+        if (annotations != null)
+           return annotations.get(REFRESH_TOKEN_ALIAS);
+        return null;
+    }
 
     private String sourceHash(HasMetadata res) {
 
@@ -46,7 +58,11 @@ public class GenericResourceEventHandler<T extends HasMetadata> implements Resou
         // TODO: propagate event id logging in code
         String resourceLabel = CustomResourceUtils.annotationFor(obj);
         String eventId = EventCounter.newEvent();
-        logger.debug("Received ADDED event ({}) for \"{}\" {}", eventId, resourceLabel, sourceHash(obj));
+        logger.debug("Received ADDED event ({}) for \"{}\" {}, refresh-token={}",
+                eventId,
+                resourceLabel,
+                sourceHash(obj),
+                refreshToken(obj));
 
         eventQueue.addEvent(new DefaultWatchManager.DispatcherEvent(
                 eventId,
@@ -69,7 +85,11 @@ public class GenericResourceEventHandler<T extends HasMetadata> implements Resou
         // TODO: propagate event id logging in code
         String resourceLabel = CustomResourceUtils.annotationFor(oldObj);
         String eventId = EventCounter.newEvent();
-        logger.debug("Received MODIFIED event ({}) for \"{}\" {}", eventId, resourceLabel, sourceHash(newObj));
+        logger.debug("Received MODIFIED event ({}) for \"{}\" {}, refresh-token={}",
+                eventId,
+                resourceLabel,
+                sourceHash(newObj),
+                refreshToken(newObj));
 
         eventQueue.addEvent(new DefaultWatchManager.DispatcherEvent(
                 eventId,
@@ -91,7 +111,11 @@ public class GenericResourceEventHandler<T extends HasMetadata> implements Resou
         // TODO: propagate event id logging in code
         String resourceLabel = CustomResourceUtils.annotationFor(obj);
         String eventId = EventCounter.newEvent();
-        logger.debug("Received DELETED event ({}) for \"{}\" {}", eventId, resourceLabel, sourceHash(obj));
+        logger.debug("Received DELETED event ({}) for \"{}\" {}, refresh-token={}",
+                eventId,
+                resourceLabel,
+                sourceHash(obj),
+                refreshToken(obj));
 
         eventQueue.addEvent(new DefaultWatchManager.DispatcherEvent(
                 eventId,

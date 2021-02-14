@@ -43,7 +43,7 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.concurrent.ConcurrentHashMap;
 
-import static io.fabric8.kubernetes.client.Watcher.Action.*;
+import static io.fabric8.kubernetes.client.Watcher.Action.MODIFIED;
 
 public abstract class AbstractTh2Operator<CR extends Th2CustomResource, KO extends HasMetadata> implements WatchHandler<CR> {
 
@@ -71,22 +71,18 @@ public abstract class AbstractTh2Operator<CR extends Th2CustomResource, KO exten
 
             @Override
             public void onClose(WatcherException cause) {
-
             }
 
             @Override
             public void onAdd(CR cr) {
-                eventReceived(ADDED, cr);
             }
 
             @Override
             public void onUpdate(CR oldCr, CR newCr) {
-                eventReceived(MODIFIED, newCr);
             }
 
             @Override
             public void onDelete(CR cr, boolean deletedFinalStateUnknown) {
-                eventReceived(DELETED, cr);
             }
         };
     }

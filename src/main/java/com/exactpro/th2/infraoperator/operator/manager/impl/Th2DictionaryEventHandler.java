@@ -103,17 +103,14 @@ public class Th2DictionaryEventHandler implements WatchHandler<Th2Dictionary> {
 
     @Override
     public void onAdd(Th2Dictionary dictionary) {
-        handleEvent(Watcher.Action.ADDED, dictionary);
     }
 
     @Override
     public void onUpdate(Th2Dictionary oldDictionary, Th2Dictionary newDictionary) {
-        handleEvent(Watcher.Action.MODIFIED, newDictionary);
     }
 
     @Override
     public void onDelete(Th2Dictionary dictionary, boolean deletedFinalStateUnknown) {
-        handleEvent(Watcher.Action.DELETED, dictionary);
     }
 
     @Override

@@ -123,17 +123,14 @@ public class ConfigMapEventHandler implements WatchHandler<ConfigMap>{
 
     @Override
     public void onAdd(ConfigMap configMap) {
-        eventReceived(Watcher.Action.ADDED, configMap);
     }
 
     @Override
     public void onUpdate(ConfigMap oldConfigMap, ConfigMap newConfigMap) {
-        eventReceived(Watcher.Action.MODIFIED, newConfigMap);
     }
 
     @Override
     public void onDelete(ConfigMap configMap, boolean deletedFinalStateUnknown) {
-
     }
 
 
