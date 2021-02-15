@@ -227,7 +227,7 @@ public class DefaultWatchManager {
         ConfigMapEventHandler.newInstance(sharedInformerFactory, client, eventQueue);
         NamespaceEventHandler.newInstance(sharedInformerFactory);
         CRDEventHandler.newInstance(sharedInformerFactory);
-        //HelmReleaseEventHandler.newInstance(sharedInformerFactory, client);
+        HelmReleaseEventHandler.newInstance(sharedInformerFactory, client, eventQueue);
 
         /*
              resourceClients initialization should be done first
