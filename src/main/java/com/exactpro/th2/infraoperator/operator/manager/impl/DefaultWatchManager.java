@@ -139,7 +139,8 @@ public class DefaultWatchManager {
         public synchronized void addEvent (T event) {
 
             // try to substitute old event with new one
-            for (var el : events) {
+            for (int i = events.size() - 1; i >= 0; i--) {
+                var el = events.get(i);
                 if (el.getAnnotation().equals(event.getAnnotation()) && !el.getAction().equals(event.getAction()))
                     break;
 

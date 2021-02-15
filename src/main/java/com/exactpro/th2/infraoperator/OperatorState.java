@@ -21,8 +21,6 @@ import com.exactpro.th2.infraoperator.spec.link.Th2Link;
 import com.exactpro.th2.infraoperator.spec.link.relation.dictionaries.DictionaryBinding;
 import com.exactpro.th2.infraoperator.spec.link.relation.pins.PinCoupling;
 import com.exactpro.th2.infraoperator.spec.link.relation.pins.PinCouplingGRPC;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
@@ -37,7 +35,6 @@ import static com.exactpro.th2.infraoperator.operator.StoreHelmTh2Op.MESSAGE_STO
 public enum OperatorState {
     INSTANCE;
 
-    private static final Logger logger = LoggerFactory.getLogger(OperatorState.class);
     private Map<String, NamespaceState> namespaceStates = new ConcurrentHashMap<>();
 
 
@@ -149,17 +146,12 @@ public enum OperatorState {
         }
         @Override
         public void lock() {
-            logger.debug("Acquiring lock for NamespaceState[\"{}\"]", name);
-            long start = System.currentTimeMillis();
             lock.lock();
-            long end = System.currentTimeMillis();
-            logger.debug("Lock for NamespaceState[\"{}\"] acquired in {}ms", name, (end - start));
         }
 
         @Override
         public void unlock() {
             lock.unlock();
-            logger.debug("Lock for NamespaceState[\"{}\"] released", name);
         }
 
         public List<Th2Link> getLinkResources() {
