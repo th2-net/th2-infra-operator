@@ -16,15 +16,18 @@
 
 package com.exactpro.th2.infraoperator.operator.manager.impl;
 
+import com.exactpro.th2.infraoperator.configuration.OperatorConfig;
 import com.exactpro.th2.infraoperator.model.box.configuration.dictionary.factory.impl.DefaultDictionaryFactory;
 import com.exactpro.th2.infraoperator.model.box.configuration.dictionary.factory.impl.EmptyDictionaryFactory;
 import com.exactpro.th2.infraoperator.model.box.configuration.grpc.factory.impl.DefaultGrpcRouterConfigFactory;
 import com.exactpro.th2.infraoperator.model.box.configuration.grpc.factory.impl.EmptyGrpcRouterConfigFactory;
 import com.exactpro.th2.infraoperator.model.kubernetes.client.ResourceClient;
 import com.exactpro.th2.infraoperator.model.kubernetes.client.ipml.DictionaryClient;
+import com.exactpro.th2.infraoperator.model.kubernetes.client.ipml.LinkClient;
 import com.exactpro.th2.infraoperator.operator.HelmReleaseTh2Op;
 import com.exactpro.th2.infraoperator.operator.context.HelmOperatorContext;
 import com.exactpro.th2.infraoperator.spec.Th2CustomResource;
+import com.exactpro.th2.infraoperator.spec.link.Th2Link;
 import com.exactpro.th2.infraoperator.spec.strategy.linkResolver.dictionary.impl.DefaultDictionaryLinkResolver;
 import com.exactpro.th2.infraoperator.spec.strategy.linkResolver.dictionary.impl.EmptyDictionaryLinkResolver;
 import com.exactpro.th2.infraoperator.spec.strategy.linkResolver.grpc.impl.DefaultGrpcLinkResolver;
@@ -38,6 +41,7 @@ import com.exactpro.th2.infraoperator.spec.strategy.resFinder.dictionary.Diction
 import com.exactpro.th2.infraoperator.spec.strategy.resFinder.dictionary.impl.DefaultDictionaryResourceFinder;
 import com.exactpro.th2.infraoperator.spec.strategy.resFinder.dictionary.impl.EmptyDictionaryResourceFinder;
 import com.exactpro.th2.infraoperator.util.CustomResourceUtils;
+import com.exactpro.th2.infraoperator.util.Strings;
 import com.fasterxml.uuid.Generators;
 import io.fabric8.kubernetes.api.model.HasMetadata;
 import io.fabric8.kubernetes.client.DefaultKubernetesClient;
@@ -52,6 +56,7 @@ import org.slf4j.LoggerFactory;
 import java.util.*;
 import java.util.function.Function;
 import java.util.function.Supplier;
+import java.util.stream.Collectors;
 
 import static com.exactpro.th2.infraoperator.operator.AbstractTh2Operator.REFRESH_TOKEN_ALIAS;
 import static com.exactpro.th2.infraoperator.util.ExtractUtils.extractName;
@@ -65,6 +70,8 @@ public class DefaultWatchManager {
     private final Builder operatorBuilder;
 
     private DictionaryClient dictionaryClient;
+
+    private LinkClient linkClient;
 
     private final List<ResourceClient<Th2CustomResource>> resourceClients = new ArrayList<>();
 
@@ -86,6 +93,7 @@ public class DefaultWatchManager {
         this.operatorBuilder = builder;
         this.sharedInformerFactory = builder.getClient().informers();
         this.dictionaryClient = new DictionaryClient(operatorBuilder.getClient());
+        this.linkClient = new LinkClient(operatorBuilder.getClient());
         this.eventQueue = new EventQueue<>();
         this.eventDispatcher = new EventDispatcher(this.eventQueue);
 
@@ -218,11 +226,21 @@ public class DefaultWatchManager {
         getInformerFactory().stopAllRegisteredInformers();
     }
 
+    public void preloadLinks(Th2LinkEventHandler th2LinkEventHandler) {
+        List<Th2Link> th2LinkResources = linkClient.getInstance().inAnyNamespace().list().getItems();
+        th2LinkResources = th2LinkResources.stream()
+                .filter(th2Link -> !Strings.nonePrefixMatch(th2Link.getMetadata().getNamespace(), OperatorConfig.INSTANCE.getNamespacePrefixes()))
+                .collect(Collectors.toList());
+        for (var th2Link : th2LinkResources) {
+            th2LinkEventHandler.eventReceived(Watcher.Action.ADDED, th2Link);
+        }
+    }
 
     private void registerInformers (SharedInformerFactory sharedInformerFactory) {
 
         KubernetesClient client = operatorBuilder.getClient();
-        Th2LinkEventHandler.newInstance(sharedInformerFactory, client, eventQueue);
+        var th2LinkEventHandler = Th2LinkEventHandler.newInstance(sharedInformerFactory, client, eventQueue);
+        preloadLinks(th2LinkEventHandler);
         Th2DictionaryEventHandler.newInstance(sharedInformerFactory, dictionaryClient, eventQueue);
         ConfigMapEventHandler.newInstance(sharedInformerFactory, client, eventQueue);
         NamespaceEventHandler.newInstance(sharedInformerFactory);
