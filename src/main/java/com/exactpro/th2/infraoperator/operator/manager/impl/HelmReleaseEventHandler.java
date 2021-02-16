@@ -18,6 +18,7 @@ import org.slf4j.LoggerFactory;
 
 import static com.exactpro.th2.infraoperator.operator.AbstractTh2Operator.ANTECEDENT_LABEL_KEY_ALIAS;
 import static com.exactpro.th2.infraoperator.operator.HelmReleaseTh2Op.HELM_RELEASE_CRD_NAME;
+import static com.exactpro.th2.infraoperator.util.CustomResourceUtils.RESYNC_TIME;
 import static com.exactpro.th2.infraoperator.util.CustomResourceUtils.annotationFor;
 
 // TODO, this class needs rework
@@ -45,14 +46,14 @@ public class HelmReleaseEventHandler implements Watcher<HelmRelease> {
                         .build(),
                 HelmRelease.class,
                 HelmReleaseList.class,
-                CustomResourceUtils.RESYNC_TIME);
+                RESYNC_TIME);
 
         helmReleaseInformer.addEventHandlerWithResyncPeriod(CustomResourceUtils.resourceEventHandlerFor(
                 res,
                 HelmRelease.class,
                 helmReleaseCrd,
                 eventQueue),
-                0);
+                RESYNC_TIME);
         return res;
     }
 

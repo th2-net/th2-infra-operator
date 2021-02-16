@@ -59,6 +59,7 @@ import java.util.function.Supplier;
 import java.util.stream.Collectors;
 
 import static com.exactpro.th2.infraoperator.operator.AbstractTh2Operator.REFRESH_TOKEN_ALIAS;
+import static com.exactpro.th2.infraoperator.util.CustomResourceUtils.RESYNC_TIME;
 import static com.exactpro.th2.infraoperator.util.ExtractUtils.extractName;
 
 public class DefaultWatchManager {
@@ -266,7 +267,7 @@ public class DefaultWatchManager {
                     CustomResourceUtils.resourceEventHandlerFor(helmReleaseTh2Op.getResourceClient(),
                             helmReleaseTh2Op,
                             eventQueue),
-                    0);
+                    RESYNC_TIME);
         }
 
     }

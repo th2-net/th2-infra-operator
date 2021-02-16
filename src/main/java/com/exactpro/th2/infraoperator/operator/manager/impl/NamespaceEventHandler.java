@@ -13,6 +13,8 @@ import io.fabric8.kubernetes.client.informers.SharedInformerFactory;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import static com.exactpro.th2.infraoperator.util.CustomResourceUtils.RESYNC_TIME;
+
 public class NamespaceEventHandler implements ResourceEventHandler<Namespace> {
     private static final Logger logger = LoggerFactory.getLogger(NamespaceEventHandler.class);
 
@@ -20,10 +22,10 @@ public class NamespaceEventHandler implements ResourceEventHandler<Namespace> {
         SharedIndexInformer<Namespace> namespaceInformer = sharedInformerFactory.sharedIndexInformerFor(
                 Namespace.class,
                 NamespaceList.class,
-                CustomResourceUtils.RESYNC_TIME);
+                RESYNC_TIME);
 
         var res = new NamespaceEventHandler();
-        namespaceInformer.addEventHandlerWithResyncPeriod(res, 0);
+        namespaceInformer.addEventHandlerWithResyncPeriod(res, RESYNC_TIME);
         return res;
     }
 

@@ -21,6 +21,7 @@ import org.slf4j.LoggerFactory;
 import java.util.Base64;
 import java.util.Objects;
 
+import static com.exactpro.th2.infraoperator.util.CustomResourceUtils.RESYNC_TIME;
 import static com.exactpro.th2.infraoperator.util.CustomResourceUtils.annotationFor;
 import static com.exactpro.th2.infraoperator.util.JsonUtils.JSON_READER;
 
@@ -39,7 +40,7 @@ public class ConfigMapEventHandler implements Watcher<ConfigMap> {
                 CustomResourceUtils.RESYNC_TIME);
 
         var res = new ConfigMapEventHandler(client);
-        configMapInformer.addEventHandlerWithResyncPeriod(new GenericResourceEventHandler<>(res, eventQueue), 0);
+        configMapInformer.addEventHandlerWithResyncPeriod(new GenericResourceEventHandler<>(res, eventQueue), RESYNC_TIME);
         return res;
     }
 

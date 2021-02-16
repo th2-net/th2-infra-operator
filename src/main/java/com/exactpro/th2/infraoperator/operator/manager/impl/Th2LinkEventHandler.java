@@ -25,6 +25,7 @@ import java.util.Set;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
+import static com.exactpro.th2.infraoperator.util.CustomResourceUtils.RESYNC_TIME;
 import static com.exactpro.th2.infraoperator.util.CustomResourceUtils.annotationFor;
 import static com.exactpro.th2.infraoperator.util.ExtractUtils.extractNamespace;
 
@@ -40,7 +41,7 @@ public class Th2LinkEventHandler implements Watcher<Th2Link> {
                 CustomResourceDefinitionContext.fromCrd(linkClient.getCustomResourceDefinition()),
                 Th2Link.class,
                 Th2LinkList.class,
-                CustomResourceUtils.RESYNC_TIME);
+                RESYNC_TIME);
 
         var res = new Th2LinkEventHandler();
         linkInformer.addEventHandlerWithResyncPeriod(CustomResourceUtils.resourceEventHandlerFor(
@@ -48,7 +49,7 @@ public class Th2LinkEventHandler implements Watcher<Th2Link> {
                 Th2Link.class,
                 linkClient.getCustomResourceDefinition(),
                 eventQueue),
-                0);
+                RESYNC_TIME);
 
         return res;
     }

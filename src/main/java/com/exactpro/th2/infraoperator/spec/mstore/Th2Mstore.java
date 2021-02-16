@@ -19,10 +19,12 @@ package com.exactpro.th2.infraoperator.spec.mstore;
 import com.exactpro.th2.infraoperator.spec.Th2CustomResource;
 import com.fasterxml.jackson.annotation.JsonSetter;
 import io.fabric8.kubernetes.model.annotation.Group;
+import io.fabric8.kubernetes.model.annotation.Kind;
 import io.fabric8.kubernetes.model.annotation.Version;
 
 @Group("th2.exactpro.com")
 @Version("v1")
+@Kind("Th2Mstore")
 public class Th2Mstore extends Th2CustomResource {
 
     private Th2MstoreSpec spec;

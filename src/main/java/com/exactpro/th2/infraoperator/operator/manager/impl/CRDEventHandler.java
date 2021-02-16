@@ -11,6 +11,8 @@ import org.slf4j.LoggerFactory;
 
 import java.util.List;
 
+import static com.exactpro.th2.infraoperator.util.CustomResourceUtils.RESYNC_TIME;
+
 public
 class CRDEventHandler implements ResourceEventHandler<CustomResourceDefinition> {
     private static final Logger logger = LoggerFactory.getLogger(CRDEventHandler.class);
@@ -19,7 +21,7 @@ class CRDEventHandler implements ResourceEventHandler<CustomResourceDefinition> 
         SharedIndexInformer<CustomResourceDefinition> crdInformer = sharedInformerFactory.sharedIndexInformerFor(
                 CustomResourceDefinition.class,
                 CustomResourceDefinitionList.class,
-                CustomResourceUtils.RESYNC_TIME);
+                RESYNC_TIME);
 
         List<String> crdNames = List.of(
                 "th2boxes.th2.exactpro.com",
@@ -30,7 +32,7 @@ class CRDEventHandler implements ResourceEventHandler<CustomResourceDefinition> 
                 "th2mstores.th2.exactpro.com");
 
         var res = new CRDEventHandler(crdNames);
-        crdInformer.addEventHandlerWithResyncPeriod(res, 0);
+        crdInformer.addEventHandlerWithResyncPeriod(res, RESYNC_TIME);
         return res;
     }
 
