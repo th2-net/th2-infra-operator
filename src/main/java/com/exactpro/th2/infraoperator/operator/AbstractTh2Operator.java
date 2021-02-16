@@ -24,20 +24,25 @@ import com.exactpro.th2.infraoperator.spec.strategy.redeploy.RetryableTaskQueue;
 import com.exactpro.th2.infraoperator.spec.strategy.redeploy.tasks.TriggerRedeployTask;
 import com.exactpro.th2.infraoperator.util.CustomResourceUtils;
 import com.exactpro.th2.infraoperator.util.ExtractUtils;
-import io.fabric8.kubernetes.api.model.*;
+import io.fabric8.kubernetes.api.model.HasMetadata;
+import io.fabric8.kubernetes.api.model.Namespace;
+import io.fabric8.kubernetes.api.model.OwnerReference;
+import io.fabric8.kubernetes.api.model.OwnerReferenceBuilder;
 import io.fabric8.kubernetes.client.KubernetesClient;
 import io.fabric8.kubernetes.client.KubernetesClientException;
-import io.fabric8.kubernetes.client.Watch;
 import io.fabric8.kubernetes.client.Watcher;
+import io.fabric8.kubernetes.client.WatcherException;
 import lombok.SneakyThrows;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.InputStream;
-import java.util.*;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Objects;
 import java.util.concurrent.ConcurrentHashMap;
 
-import static io.fabric8.kubernetes.client.Watcher.Action.DELETED;
 import static io.fabric8.kubernetes.client.Watcher.Action.MODIFIED;
 
 public abstract class AbstractTh2Operator<CR extends Th2CustomResource, KO extends HasMetadata> implements Watcher<CR> {
@@ -45,79 +50,61 @@ public abstract class AbstractTh2Operator<CR extends Th2CustomResource, KO exten
     private static final Logger logger = LoggerFactory.getLogger(AbstractTh2Operator.class);
 
     private static final int REDEPLOY_DELAY = 120;
-
     public static final String REFRESH_TOKEN_ALIAS = "refresh-token";
-
     public static final String ANTECEDENT_LABEL_KEY_ALIAS = "th2.exactpro.com/antecedent";
-
     private final RetryableTaskQueue retryableTaskQueue = new RetryableTaskQueue();
 
-
-    protected Watch kubObjWatch;
-    protected final Set<String> targetCrFullNames;
     protected final KubernetesClient kubClient;
-    protected final Map<String, CR> bunches;
-
+    private final Map<String, ResourceFingerprint> fingerprints;
 
     protected AbstractTh2Operator(KubernetesClient kubClient) {
         this.kubClient = kubClient;
-        this.bunches = new ConcurrentHashMap<>();
-        this.targetCrFullNames = ConcurrentHashMap.newKeySet();
+        this.fingerprints = new ConcurrentHashMap<>();
     }
-
 
     @Override
     public void eventReceived(Action action, CR resource) {
 
-        logger.debug("Received {} event for \"{}\"", action, CustomResourceUtils.annotationFor(resource));
-        String resourceType = ExtractUtils.extractType(resource);
-
-        var resFullName = ExtractUtils.extractFullName(resource);
-
         try {
+            String resourceLabel = CustomResourceUtils.annotationFor(resource);
 
-            var existRes = bunches.get(resFullName);
+            try {
 
-            bunches.put(resFullName, resource);
+                var cachedFingerprint = fingerprints.get(resourceLabel);
+                var resourceFingerprint = new ResourceFingerprint(resource);
 
-            if (action.equals(MODIFIED)
-                    && Objects.nonNull(existRes)
-                    && ExtractUtils.compareRefreshTokens(existRes, resource)
-                    && ExtractUtils.extractGeneration(existRes).equals(ExtractUtils.extractGeneration(resource))) {
-                logger.debug("Received {} event for \"{}\", but no changes detected and exiting", action, CustomResourceUtils.annotationFor(resource));
+                if (cachedFingerprint != null && action.equals(MODIFIED) && cachedFingerprint.equals(resourceFingerprint)) {
+                    logger.debug("No changes detected for \"{}\"", resourceLabel);
+                    return;
+                }
+                logger.debug("refresh-token={}", resourceFingerprint.refreshToken);
 
-                return;
+                processEvent(action, resource);
+                fingerprints.put(resourceLabel, resourceFingerprint);
+
+            } catch (Exception e) {
+                logger.error("Exception processing {} event for \"{}\"", action, resourceLabel, e);
+
+                resource.getStatus().failed(e);
+                updateStatus(resource);
+
+                String namespace = resource.getMetadata().getNamespace();
+                Namespace namespaceObj = kubClient.namespaces().withName(namespace).get();
+                if (namespaceObj == null || !namespaceObj.getStatus().getPhase().equals("Active")) {
+                    logger.info("Namespace \"{}\" deleted or not active, cancelling", namespace);
+                    return;
+                }
+
+                //create and schedule task to redeploy failed component
+                TriggerRedeployTask triggerRedeployTask = new TriggerRedeployTask(this, getResourceClient(), kubClient, resource, action, REDEPLOY_DELAY);
+                retryableTaskQueue.add(triggerRedeployTask, true);
+
+                logger.info("Task \"{}\" added to scheduler, with delay \"{}\" seconds", triggerRedeployTask.getName(), REDEPLOY_DELAY);
             }
-
-            processEvent(action, resource);
 
         } catch (Exception e) {
-            logger.error("Something went wrong while processing [{}] event of [{}<{}>]",
-                    action, resourceType, resFullName, e);
-
-            resource.getStatus().failed(e);
-            updateStatus(resource);
-
-            String namespace = resource.getMetadata().getNamespace();
-            Namespace namespaceObj = kubClient.namespaces().withName(namespace).get();
-            if (namespaceObj == null || !namespaceObj.getStatus().getPhase().equals("Active")) {
-                logger.info("Namespace \"{}\" deleted or not active, cancelling", namespace);
-                return;
-            }
-            //create and schedule task to redeploy failed component
-            TriggerRedeployTask triggerRedeployTask = new TriggerRedeployTask(this, getResourceClient(), kubClient, resource, action, REDEPLOY_DELAY);
-            retryableTaskQueue.add(triggerRedeployTask, true);
-
-            logger.info("added task \"{}\" to scheduler, with delay \"{}\" seconds", triggerRedeployTask.getName(), REDEPLOY_DELAY);
+            logger.error("Exception processing {} event", action, e);
         }
-
-    }
-
-    @Override
-    public void onClose(KubernetesClientException cause) {
-
-        if (cause != null)
-            logger.error("Watcher[1] has been closed for {}", this.getClass().getSimpleName(), cause);
     }
 
 
@@ -130,11 +117,8 @@ public abstract class AbstractTh2Operator<CR extends Th2CustomResource, KO exten
         try (var somePodYml = Th2CrdController.class.getResourceAsStream(kubObjDefPath)) {
 
             var ko = parseStreamToKubObj(somePodYml);
-
             String kubObjType = ko.getClass().getSimpleName();
-
-            logger.info("[{}] from '{}' has been loaded", kubObjType, kubObjDefPath);
-
+            logger.info("{} from \"{}\" has been loaded", kubObjType, kubObjDefPath);
             return ko;
         }
 
@@ -147,54 +131,37 @@ public abstract class AbstractTh2Operator<CR extends Th2CustomResource, KO exten
 
     protected void processEvent(Action action, CR resource) {
 
-        logger.debug("Processing event {} for \"{}\"", action, CustomResourceUtils.annotationFor(resource));
+        String resourceLabel = CustomResourceUtils.annotationFor(resource);
+        logger.debug("Processing event {} for \"{}\"", action, resourceLabel);
 
         resource.getStatus().idle();
-
         resource = updateStatus(resource);
-
-
-        var resFullName = ExtractUtils.extractFullName(resource);
-
-        startWatchForKubObj(resource);
-
 
         switch (action) {
             case ADDED:
-                logger.info("Resource [{}] has been added", resFullName);
-
                 resource.getStatus().installing();
-
                 resource = updateStatus(resource);
-
                 addedEvent(resource);
-
+                logger.info("Resource \"{}\" has been added", resourceLabel);
                 break;
+
             case MODIFIED:
-                logger.info("Resource [{}] has been modified", resFullName);
-
                 resource.getStatus().upgrading();
-
                 resource = updateStatus(resource);
-
                 modifiedEvent(resource);
-
+                logger.info("Resource \"{}\" has been modified", resourceLabel);
                 break;
+
             case DELETED:
-                logger.info("Resource [{}] has been deleted", resFullName);
-
                 deletedEvent(resource);
-
+                logger.info("Resource \"{}\" has been deleted", resourceLabel);
                 break;
+
             case ERROR:
-                logger.warn("Some error occurred while processing [{}]", resFullName);
-
+                logger.warn("Error while processing \"{}\"", resourceLabel);
                 resource.getStatus().failed("Unknown error from kubernetes");
-
                 resource = updateStatus(resource);
-
                 errorEvent(resource);
-
                 break;
         }
     }
@@ -211,19 +178,20 @@ public abstract class AbstractTh2Operator<CR extends Th2CustomResource, KO exten
 
         // kubernetes objects will be removed when custom resource removed (through 'OwnerReference')
 
-        bunches.remove(ExtractUtils.extractFullName(resource));
-
+        String resourceLabel = CustomResourceUtils.annotationFor(resource);
+        fingerprints.remove(resourceLabel);
+//        removeKubObjAnnotation(resource);
     }
 
     protected void errorEvent(CR resource) {
-        bunches.remove(ExtractUtils.extractFullName(resource));
+        String resourceLabel = CustomResourceUtils.annotationFor(resource);
+        fingerprints.remove(resourceLabel);
     }
 
 
     protected CR updateStatus(CR resource) {
 
-        var resFullName = ExtractUtils.extractFullName(resource);
-
+        String resourceLabel = CustomResourceUtils.annotationFor(resource);
         var resClient = getResourceClient().getInstance();
 
         try {
@@ -231,8 +199,8 @@ public abstract class AbstractTh2Operator<CR extends Th2CustomResource, KO exten
         } catch (KubernetesClientException e) {
 
             if (HttpCode.ofCode(e.getCode()) == HttpCode.SERVER_CONFLICT) {
-                logger.warn("Failed to update status of [{}] resource to [{}] because it has been " +
-                        "already changed on the server. Trying to sync a resource...", resFullName, resource.getStatus().getPhase());
+                logger.warn("Failed to update status for \"{}\"  to \"{}\" because it has been " +
+                        "already changed on the server. Trying to sync a resource...", resourceLabel, resource.getStatus().getPhase());
                 var freshRes = resClient.inNamespace(ExtractUtils.extractNamespace(resource)).list().getItems().stream()
                         .filter(r -> ExtractUtils.extractName(r).equals(ExtractUtils.extractName(resource)))
                         .findFirst()
@@ -240,17 +208,23 @@ public abstract class AbstractTh2Operator<CR extends Th2CustomResource, KO exten
                 if (Objects.nonNull(freshRes)) {
                     freshRes.setStatus(resource.getStatus());
                     var updatedRes = updateStatus(freshRes);
-                    bunches.put(resFullName, updatedRes);
-                    logger.info("Status of [{}] resource successfully updated to [{}]", resFullName, resource.getStatus().getPhase());
+                    fingerprints.put(resourceLabel, new ResourceFingerprint(updatedRes));
+                    logger.info("Status for \"{}\" resource successfully updated to \"{}\"", resourceLabel, resource.getStatus().getPhase());
                     return updatedRes;
                 } else {
-                    logger.warn("Unable to update status of [{}] resource to [{}]: resource not present", resFullName, resource.getStatus().getPhase());
+                    logger.warn("Unable to update status for \"{}\" resource to \"{}\": resource not present", resourceLabel, resource.getStatus().getPhase());
                     return resource;
                 }
             }
 
             throw e;
         }
+    }
+
+    protected void removeKubObjAnnotation(CR resource) {
+        KO obj = loadKubObj(getKubObjDefPath((resource)));
+        obj.getMetadata().getAnnotations().remove(ANTECEDENT_LABEL_KEY_ALIAS);
+        createKubObj(resource.getMetadata().getName(), obj);
     }
 
     protected void setupAndCreateKubObj(CR resource) {
@@ -289,39 +263,20 @@ public abstract class AbstractTh2Operator<CR extends Th2CustomResource, KO exten
 
     }
 
-    protected void startWatchForKubObj(CR resource) {
-        targetCrFullNames.add(ExtractUtils.extractFullName(resource));
-        synchronized (this) {
-            if (kubObjWatch == null) {
-                kubObjWatch = setKubObjWatcher(ExtractUtils.extractNamespace(resource), new KubObjWatcher());
-            }
-        }
-    }
 
     protected void mapProperties(CR resource, KO kubObj) {
 
         var kubObjMD = kubObj.getMetadata();
-
         var resMD = resource.getMetadata();
-
         var resName = resMD.getName();
 
-        var resNamespace = ExtractUtils.extractNamespace(resource);
-
-
         kubObjMD.setName(resName);
-
         kubObjMD.setNamespace(ExtractUtils.extractNamespace(resource));
-
         kubObjMD.setLabels(resMD.getLabels());
-
         kubObjMD.setAnnotations(resMD.getAnnotations());
-
         kubObjMD.setAnnotations(kubObjMD.getAnnotations() != null ? kubObjMD.getAnnotations() : new HashMap<>());
 
-        String resourceType = ExtractUtils.extractType(resource);
-
-        kubObjMD.getAnnotations().put(ANTECEDENT_LABEL_KEY_ALIAS, resNamespace + ":" + resourceType + "/" + resName);
+        kubObjMD.getAnnotations().put(ANTECEDENT_LABEL_KEY_ALIAS, CustomResourceUtils.annotationFor(resource));
 
     }
 
@@ -335,63 +290,44 @@ public abstract class AbstractTh2Operator<CR extends Th2CustomResource, KO exten
                 .build();
     }
 
-    protected boolean isResourceExist(String resourceFullName) {
-        return Objects.nonNull(bunches.get(resourceFullName));
-    }
-
-
     protected abstract String getKubObjDefPath(CR resource);
 
     protected abstract void createKubObj(String namespace, KO kubObj);
 
-    protected abstract Watch setKubObjWatcher(String namespace, Watcher<KO> objWatcher);
-
-
-    protected class KubObjWatcher implements Watcher<KO> {
-
-        @Override
-        public void eventReceived(Action action, KO kubObj) {
-
-            String resourceLabel = CustomResourceUtils.annotationFor(kubObj);
-            logger.debug("Received {} event for \"{}\"", action, resourceLabel);
-
-            String currentOwnerFullName = ExtractUtils.extractOwnerFullName(kubObj);
-            if (Objects.isNull(currentOwnerFullName) || !targetCrFullNames.contains(currentOwnerFullName))
-                return;
-
-            logger.debug("Processing {} event for \"{}\"", action, resourceLabel);
-
-            if (action.equals(DELETED)) {
-                logger.info("\"{}\" has been deleted. Trying to redeploy", resourceLabel);
-
-                if (isResourceExist(currentOwnerFullName)) {
-
-                    String namespace = kubObj.getMetadata().getNamespace();
-                    Namespace namespaceObj = kubClient.namespaces().withName(namespace).get();
-                    if (namespaceObj == null || !namespaceObj.getStatus().getPhase().equals("Active")) {
-                        logger.info("Namespace \"{}\" deleted or not active, cancelling", namespace);
-                        return;
-                    }
-
-                    ObjectMeta kubObjMD = kubObj.getMetadata();
-                    kubObjMD.setUid(null);
-                    kubObjMD.setResourceVersion(null);
-                    createKubObj(namespace, kubObj);
-
-                    logger.info("\"{}\" has been redeployed", resourceLabel);
-
-                } else
-                    logger.warn("Owner for \"{}\" not found", resourceLabel);
-            }
-
-        }
-
-        @Override
-        public void onClose(KubernetesClientException cause) {
-            if (cause != null)
-                logger.error("Watcher[2] has been closed for {}", this.getClass().getSimpleName(), cause);
-        }
-
+    @Override
+    public void onClose(WatcherException cause) {
+        throw new AssertionError("This method should not be called");
     }
 
+    private static class ResourceFingerprint {
+        private String refreshToken;
+        private Long generation;
+
+        public ResourceFingerprint(HasMetadata res) {
+
+            var metadata = res.getMetadata();
+            if (metadata == null)
+                return;
+
+            generation = res.getMetadata().getGeneration();
+
+            var annotations= metadata.getAnnotations();
+            if (annotations != null)
+                refreshToken = annotations.get(REFRESH_TOKEN_ALIAS);
+        }
+
+
+        @Override
+        public boolean equals(Object o) {
+            if (this == o)
+                return true;
+
+            if (!(o instanceof ResourceFingerprint))
+                return false;
+
+            ResourceFingerprint that = (ResourceFingerprint) o;
+            return Objects.equals(refreshToken, that.refreshToken) &&
+                    Objects.equals(generation, that.generation);
+        }
+    }
 }

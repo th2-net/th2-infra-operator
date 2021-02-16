@@ -17,7 +17,6 @@
 package com.exactpro.th2.infraoperator.model.kubernetes.client.ipml;
 
 import com.exactpro.th2.infraoperator.model.kubernetes.client.DefaultResourceClient;
-import com.exactpro.th2.infraoperator.spec.estore.DoneableTh2Estore;
 import com.exactpro.th2.infraoperator.spec.estore.Th2Estore;
 import com.exactpro.th2.infraoperator.spec.estore.Th2EstoreList;
 import io.fabric8.kubernetes.client.KubernetesClient;
@@ -29,7 +28,6 @@ public class EstoreClient extends DefaultResourceClient<Th2Estore> {
                 client,
                 Th2Estore.class,
                 Th2EstoreList.class,
-                DoneableTh2Estore.class,
                 "th2estores.th2.exactpro.com"
         );
     }

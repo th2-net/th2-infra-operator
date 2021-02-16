@@ -16,10 +16,10 @@
 
 package com.exactpro.th2.infraoperator.spec.link;
 
+import com.fasterxml.jackson.annotation.JsonSetter;
 import io.fabric8.kubernetes.client.CustomResource;
-import lombok.Getter;
-import lombok.Setter;
-import lombok.ToString;
+import io.fabric8.kubernetes.model.annotation.Group;
+import io.fabric8.kubernetes.model.annotation.Version;
 
 import java.util.Objects;
 
@@ -27,13 +27,11 @@ import static com.exactpro.th2.infraoperator.util.ExtractUtils.extractName;
 import static com.exactpro.th2.infraoperator.util.ExtractUtils.extractNamespace;
 
 
-@Getter
-@Setter
-@ToString(callSuper = true)
+@Group("th2.exactpro.com")
+@Version("v1")
 public class Th2Link extends CustomResource {
 
     private Th2LinkSpec spec;
-
 
     private Th2Link() {
     }
@@ -63,5 +61,22 @@ public class Th2Link extends CustomResource {
         return Objects.hash(extractName(this), extractNamespace(this));
     }
 
+    @Override
+    public void setSpec (Object spec) {
+        throw new AssertionError("Setting spec with Object argument");
+    }
+
+    @JsonSetter
+    public void setSpec(Th2LinkSpec spec) {
+        this.spec = spec;
+    }
+
+    public Th2LinkSpec getSpec() {
+        return spec;
+    }
+
+    public String toString() {
+        return "Th2Link(super=" + super.toString() + ", spec=" + this.getSpec() + ")";
+    }
 }
 

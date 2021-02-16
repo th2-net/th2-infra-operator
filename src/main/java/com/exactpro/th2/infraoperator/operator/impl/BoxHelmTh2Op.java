@@ -21,7 +21,12 @@ import com.exactpro.th2.infraoperator.model.kubernetes.client.ipml.BoxClient;
 import com.exactpro.th2.infraoperator.operator.GenericHelmTh2Op;
 import com.exactpro.th2.infraoperator.operator.context.HelmOperatorContext;
 import com.exactpro.th2.infraoperator.spec.box.Th2Box;
+import com.exactpro.th2.infraoperator.spec.box.Th2BoxList;
+import com.exactpro.th2.infraoperator.util.CustomResourceUtils;
 import io.fabric8.kubernetes.client.KubernetesClient;
+import io.fabric8.kubernetes.client.dsl.base.CustomResourceDefinitionContext;
+import io.fabric8.kubernetes.client.informers.SharedIndexInformer;
+import io.fabric8.kubernetes.client.informers.SharedInformerFactory;
 
 public class BoxHelmTh2Op extends GenericHelmTh2Op<Th2Box> {
 
@@ -33,6 +38,14 @@ public class BoxHelmTh2Op extends GenericHelmTh2Op<Th2Box> {
         this.boxClient = new BoxClient(builder.getClient());
     }
 
+    @Override
+    public SharedIndexInformer<Th2Box> generateInformerFromFactory (SharedInformerFactory factory) {
+        return factory.sharedIndexInformerForCustomResource(
+                CustomResourceDefinitionContext.fromCrd(boxClient.getCustomResourceDefinition()),
+                Th2Box.class,
+                Th2BoxList.class,
+                CustomResourceUtils.RESYNC_TIME);
+    }
 
     @Override
     public ResourceClient<Th2Box> getResourceClient() {

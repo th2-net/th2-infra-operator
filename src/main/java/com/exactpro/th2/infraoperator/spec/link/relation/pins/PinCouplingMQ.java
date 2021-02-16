@@ -60,8 +60,7 @@ public final class PinCouplingMQ implements PinCoupling {
             return true;
         if (!(o instanceof PinCouplingMQ))
             return false;
-        return Objects.equals(name, ((PinCouplingMQ) o).name)
-                && Objects.equals(from, ((PinCouplingMQ) o).from)
+        return Objects.equals(from, ((PinCouplingMQ) o).from)
                 && Objects.equals(to, ((PinCouplingMQ) o).to);
     }
 

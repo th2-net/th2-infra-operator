@@ -16,27 +16,26 @@
 
 package com.exactpro.th2.infraoperator.util;
 
-import com.exactpro.th2.infraoperator.configuration.OperatorConfig;
 import com.exactpro.th2.infraoperator.model.kubernetes.client.ResourceClient;
-import io.fabric8.kubernetes.api.model.Doneable;
+import com.exactpro.th2.infraoperator.operator.manager.impl.DefaultWatchManager;
+import com.exactpro.th2.infraoperator.operator.manager.impl.GenericResourceEventHandler;
 import io.fabric8.kubernetes.api.model.HasMetadata;
-import io.fabric8.kubernetes.api.model.KubernetesResourceList;
 import io.fabric8.kubernetes.api.model.apiextensions.v1.CustomResourceDefinition;
 import io.fabric8.kubernetes.api.model.apiextensions.v1.CustomResourceDefinitionSpec;
-import io.fabric8.kubernetes.client.*;
-import io.fabric8.kubernetes.client.dsl.MixedOperation;
-import io.fabric8.kubernetes.client.dsl.Resource;
+import io.fabric8.kubernetes.client.CustomResource;
+import io.fabric8.kubernetes.client.KubernetesClient;
+import io.fabric8.kubernetes.client.Watcher;
+import io.fabric8.kubernetes.client.informers.ResourceEventHandler;
 import io.fabric8.kubernetes.internal.KubernetesDeserializer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-import java.util.List;
 
 
 public final class CustomResourceUtils {
 
     private static final String DEFAULT_NAMESPACE = "default";
     private static final Logger logger = LoggerFactory.getLogger(CustomResourceUtils.class);
+    public static long RESYNC_TIME = 180000;
 
     private CustomResourceUtils() {
         throw new AssertionError();
@@ -82,7 +81,7 @@ public final class CustomResourceUtils {
         final String extractedNamespace = ExtractUtils.extractNamespace(crd);
         final String crdNamespace = (extractedNamespace == null) ? DEFAULT_NAMESPACE : extractedNamespace;
 
-        return kubClient.customResourceDefinitions()
+            return kubClient.customResourceDefinitions()
                 .list()
                 .getItems()
                 .stream()
@@ -97,120 +96,31 @@ public final class CustomResourceUtils {
                 });
     }
 
+    public static <T extends CustomResource> ResourceEventHandler resourceEventHandlerFor(
+            ResourceClient<T> resourceClient,
+            Watcher<T> handler,
+            DefaultWatchManager.EventQueue<DefaultWatchManager.DispatcherEvent> eventQueue) {
 
-    public static <T extends CustomResource> Watch watchFor(ResourceClient<T> resourceClient, Watcher<T> watcher) {
-
-        return watchFor(
-                watcher,
+        return resourceEventHandlerFor(
+                handler,
                 resourceClient.getResourceType(),
                 resourceClient.getCustomResourceDefinition(),
-                resourceClient.getInstance()
-        );
+                eventQueue);
     }
 
 
-    private static class RecoveringWatch<T extends CustomResource, L extends KubernetesResourceList<T>, D extends Doneable<T>> implements Watcher<T>, Watch {
-
-        private Watch watch;
-        private String kind;
-        private Watcher<T> watcher;
-        MixedOperation<T, L, D, ? extends Resource<T, ? extends Doneable<T>>> crClient;
-
-
-        public RecoveringWatch(
-                Watcher<T> watcher,
-                Class<T> resourceType,
-                CustomResourceDefinition crd,
-                MixedOperation<T, L, D, ? extends Resource<T, ? extends Doneable<T>>> crClient
-        ) {
-
-            this.watcher = watcher;
-            this.crClient = crClient;
-
-            CustomResourceDefinitionSpec spec = crd.getSpec();
-
-            /*
-                Multiple versions in CRD specs in new lib
-                TODO: please check if getting the first version will suffice
-            */
-
-            String apiVersion = spec.getGroup() + "/" + spec.getVersions().get(0);
-            kind = spec.getNames().getKind();
-
-            KubernetesDeserializer.registerCustomKind(apiVersion, kind, resourceType);
-        }
-
-
-        public Watch watch() {
-            watch = crClient.inAnyNamespace().watch(this);
-            logger.info("Started watching for \"{}\" resources", kind);
-            return watch;
-        }
-
-        @Override
-        public void close() {
-            watch.close();
-            logger.info("Closed watch for \"{}\"", kind);
-        }
-
-        @Override
-        public void eventReceived(Action action, T resource) {
-            long startDateTime = System.currentTimeMillis();
-
-            String namespace = resource.getMetadata().getNamespace();
-            List<String> namespacePrefixes = OperatorConfig.INSTANCE.getNamespacePrefixes();
-            if (namespace != null
-                    && namespacePrefixes != null
-                    && namespacePrefixes.size() > 0
-                    && namespacePrefixes.stream().noneMatch(namespace::startsWith)) {
-                return;
-            }
-
-            try {
-                watcher.eventReceived(action, resource);
-            } catch (Exception e) {
-                logger.error("Exception processing event {} for \"{}\"", action, annotationFor(resource), e);
-            }
-
-            long endDateTime = System.currentTimeMillis();
-            logger.info("{} Event for {} processed in {}ms",
-                    action.toString(),
-                    annotationFor(resource),
-                    (endDateTime - startDateTime));
-        }
-
-        @Override
-        public void onClose(KubernetesClientException cause) {
-            watcher.onClose(cause);
-            if (cause != null) {
-                logger.error("Exception watching for \"{}\" resources", kind, cause);
-                watch();
-            }
-        }
-    }
-
-
-    public static <T extends CustomResource, L extends KubernetesResourceList<T>, D extends Doneable<T>> Watch watchFor(
-            Watcher<T> watcher,
+    public static <T extends CustomResource> ResourceEventHandler<T> resourceEventHandlerFor(
+            Watcher<T> watchHandler,
             Class<T> resourceType,
             CustomResourceDefinition crd,
-            MixedOperation<T, L, D, ? extends Resource<T, ? extends Doneable<T>>> crClient
-    ) {
+            DefaultWatchManager.EventQueue<DefaultWatchManager.DispatcherEvent> eventQueue) {
         CustomResourceDefinitionSpec spec = crd.getSpec();
-
-        /*
-            Multiple versions in CRD specs in new lib
-            TODO: please check if getting the first version will suffice
-         */
 
         String apiVersion = spec.getGroup() + "/" + spec.getVersions().get(0);
         String kind = spec.getNames().getKind();
 
         KubernetesDeserializer.registerCustomKind(apiVersion, kind, resourceType);
 
-        RecoveringWatch<T, L, D> watch = new RecoveringWatch<>(watcher, resourceType, crd, crClient);
-        watch.watch();
-        return watch;
+        return new GenericResourceEventHandler<>(watchHandler, eventQueue);
     }
-
 }

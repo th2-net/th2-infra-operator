@@ -16,30 +16,21 @@
 
 package com.exactpro.th2.infraoperator.operator.manager.impl;
 
-import com.exactpro.th2.infraoperator.OperatorState;
-import com.exactpro.th2.infraoperator.configuration.OperatorConfig;
-import com.exactpro.th2.infraoperator.configuration.RabbitMQConfig;
 import com.exactpro.th2.infraoperator.model.box.configuration.dictionary.factory.impl.DefaultDictionaryFactory;
 import com.exactpro.th2.infraoperator.model.box.configuration.dictionary.factory.impl.EmptyDictionaryFactory;
 import com.exactpro.th2.infraoperator.model.box.configuration.grpc.factory.impl.DefaultGrpcRouterConfigFactory;
 import com.exactpro.th2.infraoperator.model.box.configuration.grpc.factory.impl.EmptyGrpcRouterConfigFactory;
 import com.exactpro.th2.infraoperator.model.kubernetes.client.ResourceClient;
 import com.exactpro.th2.infraoperator.model.kubernetes.client.ipml.DictionaryClient;
-import com.exactpro.th2.infraoperator.model.kubernetes.client.ipml.LinkClient;
-import com.exactpro.th2.infraoperator.model.kubernetes.configmaps.ConfigMaps;
 import com.exactpro.th2.infraoperator.operator.HelmReleaseTh2Op;
 import com.exactpro.th2.infraoperator.operator.context.HelmOperatorContext;
 import com.exactpro.th2.infraoperator.spec.Th2CustomResource;
-import com.exactpro.th2.infraoperator.spec.dictionary.Th2Dictionary;
-import com.exactpro.th2.infraoperator.spec.link.Th2Link;
-import com.exactpro.th2.infraoperator.spec.shared.Identifiable;
 import com.exactpro.th2.infraoperator.spec.strategy.linkResolver.dictionary.impl.DefaultDictionaryLinkResolver;
 import com.exactpro.th2.infraoperator.spec.strategy.linkResolver.dictionary.impl.EmptyDictionaryLinkResolver;
 import com.exactpro.th2.infraoperator.spec.strategy.linkResolver.grpc.impl.DefaultGrpcLinkResolver;
 import com.exactpro.th2.infraoperator.spec.strategy.linkResolver.grpc.impl.EmptyGrpcLinkResolver;
 import com.exactpro.th2.infraoperator.spec.strategy.linkResolver.mq.impl.BindQueueLinkResolver;
 import com.exactpro.th2.infraoperator.spec.strategy.linkResolver.mq.impl.EmptyQueueLinkResolver;
-import com.exactpro.th2.infraoperator.spec.strategy.linkResolver.mq.impl.RabbitMQContext;
 import com.exactpro.th2.infraoperator.spec.strategy.resFinder.box.EmptyBoxResourceFinder;
 import com.exactpro.th2.infraoperator.spec.strategy.resFinder.box.impl.DefaultBoxResourceFinder;
 import com.exactpro.th2.infraoperator.spec.strategy.resFinder.box.impl.StoreDependentBoxResourceFinder;
@@ -47,15 +38,13 @@ import com.exactpro.th2.infraoperator.spec.strategy.resFinder.dictionary.Diction
 import com.exactpro.th2.infraoperator.spec.strategy.resFinder.dictionary.impl.DefaultDictionaryResourceFinder;
 import com.exactpro.th2.infraoperator.spec.strategy.resFinder.dictionary.impl.EmptyDictionaryResourceFinder;
 import com.exactpro.th2.infraoperator.util.CustomResourceUtils;
-import com.exactpro.th2.infraoperator.util.Strings;
 import com.fasterxml.uuid.Generators;
-import io.fabric8.kubernetes.api.model.ConfigMap;
-import io.fabric8.kubernetes.api.model.Namespace;
-import io.fabric8.kubernetes.api.model.Secret;
+import io.fabric8.kubernetes.api.model.HasMetadata;
+import io.fabric8.kubernetes.client.DefaultKubernetesClient;
 import io.fabric8.kubernetes.client.KubernetesClient;
-import io.fabric8.kubernetes.client.KubernetesClientException;
-import io.fabric8.kubernetes.client.Watch;
 import io.fabric8.kubernetes.client.Watcher;
+import io.fabric8.kubernetes.client.informers.SharedInformerFactory;
+import lombok.AllArgsConstructor;
 import lombok.Getter;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -63,70 +52,205 @@ import org.slf4j.LoggerFactory;
 import java.util.*;
 import java.util.function.Function;
 import java.util.function.Supplier;
-import java.util.stream.Collectors;
 
-import static com.exactpro.th2.infraoperator.configuration.RabbitMQConfig.CONFIG_MAP_RABBITMQ_PROP_NAME;
 import static com.exactpro.th2.infraoperator.operator.AbstractTh2Operator.REFRESH_TOKEN_ALIAS;
-import static com.exactpro.th2.infraoperator.util.CustomResourceUtils.annotationFor;
 import static com.exactpro.th2.infraoperator.util.ExtractUtils.extractName;
-import static com.exactpro.th2.infraoperator.util.ExtractUtils.extractNamespace;
-import static com.exactpro.th2.infraoperator.util.JsonUtils.JSON_READER;
 
 public class DefaultWatchManager {
 
     private static final Logger logger = LoggerFactory.getLogger(DefaultWatchManager.class);
-    public static final String SECRET_TYPE_OPAQUE = "Opaque";
 
     private boolean isWatching = false;
 
     private final Builder operatorBuilder;
 
-    private final LinkClient linkClient;
-
-    private final DictionaryClient dictionaryClient;
-
-    private final Set<Watch> watches = new HashSet<>();
+    private DictionaryClient dictionaryClient;
 
     private final List<ResourceClient<Th2CustomResource>> resourceClients = new ArrayList<>();
 
     private final List<Supplier<HelmReleaseTh2Op<Th2CustomResource>>> helmWatchersCommands = new ArrayList<>();
 
-    private DefaultWatchManager(Builder builder) {
-        this.operatorBuilder = builder;
-        this.linkClient = new LinkClient(operatorBuilder.getClient());
-        this.dictionaryClient = new DictionaryClient(operatorBuilder.getClient());
+    private final SharedInformerFactory sharedInformerFactory;
+
+    private static DefaultWatchManager instance;
+
+    private final EventQueue<DispatcherEvent> eventQueue;
+
+    private final EventDispatcher eventDispatcher;
+
+    private synchronized SharedInformerFactory getInformerFactory() {
+        return sharedInformerFactory;
     }
 
-    public void startWatching() {
-        logger.info("Starting watching all resources...");
+    private DefaultWatchManager(Builder builder) {
+        this.operatorBuilder = builder;
+        this.sharedInformerFactory = builder.getClient().informers();
+        this.dictionaryClient = new DictionaryClient(operatorBuilder.getClient());
+        this.eventQueue = new EventQueue<>();
+        this.eventDispatcher = new EventDispatcher(this.eventQueue);
 
+        sharedInformerFactory.addSharedInformerEventListener(exception -> {
+            logger.error("Exception in InformerFactory : {}", exception.getMessage());
+        });
+
+        instance = this;
+    }
+
+    @Getter
+    @AllArgsConstructor
+    public static class DispatcherEvent {
+        private String eventId;
+        private String annotation;
+        private Watcher.Action action;
+        private HasMetadata cr;
+        private Watcher callback;
+
+        @Override
+        public boolean equals(Object o) {
+            if (this == o) return true;
+            if (!(o instanceof DispatcherEvent)) return false;
+
+            return (annotation.equals(((DispatcherEvent) o).annotation) && action.equals(((DispatcherEvent) o).action));
+        }
+
+        /*
+            Replace should only happen when we have
+            two objects with same annotation and action
+         */
+        public void replace (DispatcherEvent dispatcherEvent) {
+            this.eventId = dispatcherEvent.eventId;
+            this.cr = dispatcherEvent.cr;
+        }
+    }
+
+    public static class EventQueue<T extends DispatcherEvent> {
+
+        private static final Logger logger = LoggerFactory.getLogger(EventQueue.class);
+
+        private final List<T> events;
+        private final LinkedList<String> workingNamespaces;
+
+        public EventQueue() {
+            this.events = new LinkedList<>();
+            this.workingNamespaces = new LinkedList<>();
+        }
+
+
+        public synchronized void addEvent (T event) {
+
+            // try to substitute old event with new one
+            for (int i = events.size() - 1; i >= 0; i--) {
+                var el = events.get(i);
+                if (el.getAnnotation().equals(event.getAnnotation()) && !el.getAction().equals(event.getAction()))
+                    break;
+
+                if (el.equals(event)) {
+                    logger.debug("Substituting {} with {}, {} event(s) present in the queue",
+                            el.getEventId(),
+                            event.getEventId(),
+                            events.size());
+
+                    try {
+                        var oldRV = el.getCr().getMetadata().getResourceVersion();
+                        var newRV = el.getCr().getMetadata().getResourceVersion();
+                        if (oldRV != null && newRV != null && Long.valueOf(newRV) < Long.valueOf(oldRV))
+                            logger.warn("Substituted with older resource (old.resourceVersion={}, new.resourceVersion={})",
+                                    oldRV,
+                                    newRV);
+                    } catch (Exception e) {
+                        logger.error("Exception checking resourceVersion", e);
+                    }
+
+                    el.replace(event);
+                    return ;
+                }
+            }
+
+            // no event could be substituted, add it to the end
+            events.add(event);
+            logger.debug("Enqueued {}, {} event(s) present in the queue",
+                    event.getEventId(),
+                    events.size());
+        }
+
+
+        public synchronized T withdrawEvent() {
+
+            for (int i = 0; i < events.size(); i ++) {
+                String namespace = events.get(i).getCr().getMetadata().getNamespace();
+                if (!workingNamespaces.contains(namespace)) {
+                    var event = events.remove(i);
+                    addNamespace(namespace);
+                    logger.debug("{} withdrawn, {} event(s) remaining in the queue", event.getEventId(), events.size());
+                    return event;
+                }
+            }
+
+            return null;
+        }
+
+        private void addNamespace (String namespace) {
+            workingNamespaces.add (namespace);
+        }
+
+        public synchronized void closeEvent(T event) {
+            workingNamespaces.remove(event.getCr().getMetadata().getNamespace());
+        }
+    }
+
+    public void startInformers () {
+        logger.info("Starting all informers...");
+
+        SharedInformerFactory sharedInformerFactory = getInformerFactory();
+
+        eventDispatcher.start();
         postInit();
-
-        start();
+        registerInformers (sharedInformerFactory);
 
         isWatching = true;
 
-        logger.info("All resources are watched");
+        sharedInformerFactory.startAllRegisteredInformers();
+        logger.info("All informers has been started");
     }
 
-    public void stopWatching() {
-        logger.info("Stopping all resource watchers...");
-
-        watches.forEach(Watch::close);
-        isWatching = false;
-
-        logger.info("All resource watchers have been stopped");
+    public void stopInformers () {
+        logger.info("Shutting down informers");
+        getInformerFactory().stopAllRegisteredInformers();
     }
 
-    private void addWatch(Watch watch) {
-        watches.add(watch);
-    }
 
-    private void removeWatch(Watch watch) {
-        if (watches.contains(watch))
-            watches.remove(watch);
-        else
-            throw new IllegalArgumentException("Watch to update was not found in the set");
+    private void registerInformers (SharedInformerFactory sharedInformerFactory) {
+
+        KubernetesClient client = operatorBuilder.getClient();
+        Th2LinkEventHandler.newInstance(sharedInformerFactory, client, eventQueue);
+        Th2DictionaryEventHandler.newInstance(sharedInformerFactory, dictionaryClient, eventQueue);
+        ConfigMapEventHandler.newInstance(sharedInformerFactory, client, eventQueue);
+        NamespaceEventHandler.newInstance(sharedInformerFactory);
+        CRDEventHandler.newInstance(sharedInformerFactory);
+        HelmReleaseEventHandler.newInstance(sharedInformerFactory, client, eventQueue);
+
+        /*
+             resourceClients initialization should be done first
+             for concurrency issues
+         */
+        for (var hwSup : helmWatchersCommands) {
+            HelmReleaseTh2Op<Th2CustomResource> helmReleaseTh2Op = hwSup.get();
+            resourceClients.add(helmReleaseTh2Op.getResourceClient());
+        }
+
+        /*
+            Appropriate informers will be registered afterwards
+         */
+        for (var hwSup : helmWatchersCommands) {
+            HelmReleaseTh2Op<Th2CustomResource> helmReleaseTh2Op = hwSup.get();
+
+            helmReleaseTh2Op.generateInformerFromFactory(getInformerFactory()).addEventHandlerWithResyncPeriod(
+                    CustomResourceUtils.resourceEventHandlerFor(helmReleaseTh2Op.getResourceClient(),
+                            helmReleaseTh2Op,
+                            eventQueue),
+                    0);
+        }
+
     }
 
     public boolean isWatching() {
@@ -145,98 +269,39 @@ public class DefaultWatchManager {
         });
     }
 
-    private int refreshBoxesIfNeeded(Th2Link oldLinkRes, Th2Link newLinkRes) {
+    int refreshBoxes(String namespace) {
+        return refreshBoxes(namespace, null, true);
+    }
 
-        var linkNamespace = extractNamespace(oldLinkRes);
+    int refreshBoxes(String namespace, Set<String> boxes) {
+        return refreshBoxes(namespace, boxes, false);
+    }
 
-        if (linkNamespace == null) {
-            linkNamespace = extractNamespace(newLinkRes);
+
+    private int refreshBoxes(String namespace, Set<String> boxes, boolean refreshAllBoxes) {
+
+        if (!refreshAllBoxes && (boxes == null || boxes.size() == 0)) {
+            logger.warn("Empty set of boxes was given to refresh");
+            return 0;
         }
-
-        var boxesToUpdate = getBoxesToUpdate(oldLinkRes, newLinkRes);
-
-        logger.info("{} box(es) need updating", boxesToUpdate.size());
-
-        return refreshBoxes(linkNamespace, boxesToUpdate);
-    }
-
-    private Th2Link getOldLink(Th2Link th2Link, List<Th2Link> resourceLinks) {
-        var oldLinkIndex = resourceLinks.indexOf(th2Link);
-        return oldLinkIndex < 0 ? Th2Link.newInstance() : resourceLinks.get(oldLinkIndex);
-    }
-
-    private Set<String> getBoxesToUpdate(Th2Link oldLinkRes, Th2Link newLinkRes) {
-
-        var oldBoxesLinks = oldLinkRes.getSpec().getBoxesRelation().getAllLinks();
-        var newBoxesLinks = newLinkRes.getSpec().getBoxesRelation().getAllLinks();
-        var fromBoxesLinks = getBoxesToUpdate(oldBoxesLinks, newBoxesLinks,
-                blb -> Set.of(blb.getFrom().getBoxName(), blb.getTo().getBoxName()));
-        Set<String> boxes = new HashSet<>(fromBoxesLinks);
-
-        var oldLinks = oldLinkRes.getSpec().getDictionariesRelation();
-        var newLinks = newLinkRes.getSpec().getDictionariesRelation();
-        var fromDicLinks = getBoxesToUpdate(oldLinks, newLinks, dlb -> Set.of(dlb.getBox()));
-        boxes.addAll(fromDicLinks);
-
-        return boxes;
-    }
-
-    private <T extends Identifiable> Set<String> getBoxesToUpdate(List<T> oldLinks, List<T> newLinks,
-                                                                  Function<T, Set<String>> boxesExtractor) {
-
-        Set<String> boxes = new HashSet<>();
-
-        var or = new OrderedRelation<>(oldLinks, newLinks);
-
-        for (var maxLink : or.getMaxLinks()) {
-            var isLinkExist = false;
-            for (var minLink : or.getMinLinks()) {
-                if (minLink.getId().equals(maxLink.getId())) {
-                    if (!minLink.equals(maxLink)) {
-                        boxes.addAll(boxesExtractor.apply(minLink));
-                        boxes.addAll(boxesExtractor.apply(maxLink));
-                    }
-                    isLinkExist = true;
-                }
-            }
-            if (!isLinkExist) {
-                boxes.addAll(boxesExtractor.apply(maxLink));
-            }
-        }
-
-        var oldToUpdate = oldLinks.stream()
-                .filter(t -> newLinks.stream().noneMatch(t1 -> t1.getId().equals(t.getId())))
-                .flatMap(t -> boxesExtractor.apply(t).stream())
-                .collect(Collectors.toSet());
-
-        boxes.addAll(oldToUpdate);
-
-        return boxes;
-    }
-
-    private int refreshBoxes(String linkNamespace) {
-        return refreshBoxes(linkNamespace, null);
-    }
-
-    private int refreshBoxes(String linkNamespace, Set<String> boxes) {
-
-        var refreshedBoxes = 0;
 
         if (!isWatching()) {
-            logger.info("Resources not watching yet");
-            return refreshedBoxes;
+            logger.warn("Not watching for resources yet");
+            return 0;
         }
 
-        for (var rc : resourceClients) {
-            var resClient = rc.getInstance();
-            for (var res : resClient.inNamespace(linkNamespace).list().getItems()) {
-                if (Objects.isNull(boxes) || boxes.contains(extractName(res))) {
-                    createResource(linkNamespace, res, rc);
+        var refreshedBoxes = 0;
+        for (var resourceClient : resourceClients) {
+            var mixedOperation = resourceClient.getInstance();
+            for (var res : mixedOperation.inNamespace(namespace).list().getItems()) {
+                if (refreshAllBoxes || boxes.contains(extractName(res))) {
+                    createResource(namespace, res, resourceClient);
                     refreshedBoxes++;
                 }
             }
         }
 
+        logger.info("{} boxes updated", refreshedBoxes);
         return refreshedBoxes;
     }
 
@@ -248,33 +313,7 @@ public class DefaultWatchManager {
         resMeta.setAnnotations(Objects.nonNull(resMeta.getAnnotations()) ? resMeta.getAnnotations() : new HashMap<>());
         resMeta.getAnnotations().put(REFRESH_TOKEN_ALIAS, refreshToken);
         resClient.getInstance().inNamespace(linkNamespace).createOrReplace(resource);
-    }
-
-    private void start() {
-
-        addWatch(CustomResourceUtils.watchFor(linkClient, new LinkWatcher()));
-        addWatch(CustomResourceUtils.watchFor(dictionaryClient, new DictionaryWatcher()));
-
-        new ConfigMapWatcher(operatorBuilder.getClient(), this).watch();
-        new NamespaceWatcher(operatorBuilder.getClient(), this).watch();
-        logger.info("Started watching for ConfigMaps");
-
-        /*
-             resourceClients initialization should be done first
-             for concurrency issues
-         */
-        for (var hwSup : helmWatchersCommands) {
-            HelmReleaseTh2Op<Th2CustomResource> helmReleaseTh2Op = hwSup.get();
-            resourceClients.add(helmReleaseTh2Op.getResourceClient());
-        }
-
-        /*
-            Appropriate watchers will be initialized afterwards
-         */
-        for (var hwSup : helmWatchersCommands) {
-            HelmReleaseTh2Op<Th2CustomResource> helmReleaseTh2Op = hwSup.get();
-            addWatch(CustomResourceUtils.watchFor(helmReleaseTh2Op.getResourceClient(), helmReleaseTh2Op));
-        }
+        logger.debug("refreshed \"{}\" with refresh-token={}", CustomResourceUtils.annotationFor(resource), refreshToken);
     }
 
     private void postInit() {
@@ -320,326 +359,21 @@ public class DefaultWatchManager {
         }
     }
 
-    private static class OrderedRelation<T> {
-
-        @Getter
-        private List<T> maxLinks;
-
-        @Getter
-        private List<T> minLinks;
-
-        private List<T> newLinks;
-
-        private List<T> oldLinks;
-
-        public OrderedRelation(List<T> oldLinks, List<T> newLinks) {
-            this.oldLinks = oldLinks;
-            this.newLinks = newLinks;
-            if (newLinks.size() >= oldLinks.size()) {
-                this.maxLinks = newLinks;
-                this.minLinks = oldLinks;
-            } else {
-                this.maxLinks = oldLinks;
-                this.minLinks = newLinks;
-            }
-        }
-    }
-
-    private static class NamespaceWatcher implements Watcher<Namespace> {
-
-        protected KubernetesClient client;
-        protected DefaultWatchManager manager;
-        protected Watch watch;
-
-        public NamespaceWatcher(KubernetesClient client, DefaultWatchManager manager) {
-            this.client = client;
-            this.manager = manager;
-        }
-
-        protected void watch() {
-            if (watch != null) {
-                watch.close();
-                manager.removeWatch(watch);
-            }
-
-            watch = client.namespaces().watch(this);
-            manager.addWatch(watch);
-            logger.info("Watch created ({})", this.getClass().getSimpleName());
-        }
-
-        @Override
-        public void eventReceived(Action action, Namespace namespace) {
-            String namespaceName = namespace.getMetadata().getName();
-            List<String> namespacePrefixes = OperatorConfig.INSTANCE.getNamespacePrefixes();
-            if (namespaceName != null
-                    && namespacePrefixes != null
-                    && namespacePrefixes.size() > 0
-                    && namespacePrefixes.stream().noneMatch(namespaceName::startsWith)) {
-                return;
-            }
-
-            logger.debug("Received {} event for namespace: \"{}\"", action, namespaceName);
-            if (action == Action.DELETED) {
-                synchronized (OperatorState.INSTANCE.getLock(namespaceName)) {
-                    logger.debug("Processing event DELETED for namespace: \"{}\"", namespaceName);
-                    RabbitMQContext.cleanupVHost(namespace.getMetadata().getName());
-                }
-            }
-        }
-
-        @Override
-        public final void onClose(KubernetesClientException cause) {
-            if (cause != null) {
-                logger.error("Watcher closed ({})", this.getClass().getSimpleName(), cause);
-                watch();
-            }
-        }
-    }
-
-    /**
-     * Designed only to watch one config map - {@link OperatorConfig#getRabbitMQConfigMapName()}
-     */
-    private class ConfigMapWatcher implements Watcher<ConfigMap> {
-
-        protected KubernetesClient client;
-        protected DefaultWatchManager manager;
-        protected Watch watch;
-
-        public ConfigMapWatcher(KubernetesClient client, DefaultWatchManager manager) {
-            this.client = client;
-            this.manager = manager;
-        }
-
-        protected void watch() {
-            if (watch != null) {
-                watch.close();
-                manager.removeWatch(watch);
-            }
-
-            watch = client.configMaps().inAnyNamespace().watch(this);
-            manager.addWatch(watch);
-            logger.info("Watch created ({})", this.getClass().getSimpleName());
-        }
-
-        @Override
-        public final void onClose(KubernetesClientException cause) {
-            if (cause != null) {
-                logger.error("Watcher closed ({})", this.getClass().getSimpleName(), cause);
-                watch();
-            }
-        }
-
-        @Override
-        public void eventReceived(Action action, ConfigMap configMap) {
-            long startDateTime = System.currentTimeMillis();
-
-            String namespace = configMap.getMetadata().getNamespace();
-            List<String> namespacePrefixes = OperatorConfig.INSTANCE.getNamespacePrefixes();
-            if (namespace != null
-                    && namespacePrefixes != null
-                    && namespacePrefixes.size() > 0
-                    && namespacePrefixes.stream().noneMatch(namespace::startsWith)) {
-                return;
-            }
-
-            String resourceLabel = annotationFor(configMap);
-            logger.debug("Received {} event for \"{}\"", action, resourceLabel);
-
-            if (action == Action.DELETED)
-                return;
-
-            String configMapName = configMap.getMetadata().getName();
-
-            if (!(configMapName.equals(OperatorConfig.INSTANCE.getRabbitMQConfigMapName())))
-                return;
-
-            try {
-                logger.info("Processing {} event for \"{}\"", action, resourceLabel);
-
-                if (configMapName.equals(OperatorConfig.INSTANCE.getRabbitMQConfigMapName())) {
-                    synchronized (OperatorState.INSTANCE.getLock(namespace)) {
-                        OperatorConfig opConfig = OperatorConfig.INSTANCE;
-                        ConfigMaps configMaps = ConfigMaps.INSTANCE;
-                        RabbitMQConfig rabbitMQConfig = configMaps.getRabbitMQConfig4Namespace(namespace);
-
-                        String configContent = configMap.getData().get(CONFIG_MAP_RABBITMQ_PROP_NAME);
-                        if (Strings.isNullOrEmpty(configContent)) {
-                            logger.error("Key \"{}\" not found in \"{}\"", CONFIG_MAP_RABBITMQ_PROP_NAME,
-                                    resourceLabel);
-                            return;
-                        }
-
-                        RabbitMQConfig newRabbitMQConfig = JSON_READER.readValue(configContent, RabbitMQConfig.class);
-                        newRabbitMQConfig.setPassword(readRabbitMQPasswordForSchema(client, namespace,
-                                opConfig.getSchemaSecrets().getRabbitMQ()));
-
-                        if (!Objects.equals(rabbitMQConfig, newRabbitMQConfig)) {
-                            configMaps.setRabbitMQConfig4Namespace(namespace, newRabbitMQConfig);
-                            RabbitMQContext.createVHostIfAbsent(namespace);
-                            logger.info("RabbitMQ ConfigMap has been updated in namespace \"{}\". Updating all boxes",
-                                    namespace);
-                            int refreshedBoxesCount = refreshBoxes(namespace);
-                            logger.info("{} box-definition(s) have been updated", refreshedBoxesCount);
-                        } else
-                            logger.info("RabbitMQ ConfigMap data hasn't changed");
-                    }
-                }
-            } catch (Exception e) {
-                logger.error("Exception processing {} event for \"{}\"", action, resourceLabel, e);
-            }
-
-            long endDateTime = System.currentTimeMillis();
-            logger.info("{} Event for {} processed in {}ms",
-                    action.toString(),
-                    resourceLabel,
-                    (endDateTime - startDateTime));
-        }
-    }
-
-    private String readRabbitMQPasswordForSchema(KubernetesClient client, String namespace, String secretName) throws Exception {
-
-        Secret secret = client.secrets().inNamespace(namespace).withName(secretName).get();
-        if (secret == null)
-            throw new Exception(String.format("Secret not found \"%s\"",
-                    annotationFor(namespace, "Secret", secretName)));
-        if (secret.getData() == null)
-            throw new Exception(String.format("Invalid secret \"%s\". No data",
-                    annotationFor(secret)));
-
-        String password = secret.getData().get(OperatorConfig.RABBITMQ_SECRET_PASSWORD_KEY);
-        if (password == null)
-            throw new Exception(String.format("Invalid secret \"%s\". No password was found with key \"%s\""
-                    , annotationFor(secret)
-                    , OperatorConfig.RABBITMQ_SECRET_PASSWORD_KEY));
-
-        if (secret.getType().equals(SECRET_TYPE_OPAQUE))
-            password = new String(Base64.getDecoder().decode(password.getBytes()));
-        return password;
-    }
-
-    private class DictionaryWatcher implements Watcher<Th2Dictionary> {
-
-        @Override
-        public void eventReceived(Action action, Th2Dictionary dictionary) {
-
-            String resourceLabel = annotationFor(dictionary);
-            logger.debug("Received {} event for \"{}\"", action, resourceLabel);
-            logger.info("Updating all boxes that contains dictionary \"{}\"", resourceLabel);
-
-            var linkedResources = getLinkedResources(dictionary);
-
-            logger.info("{} box(es) need updating", linkedResources.size());
-
-            var refreshedBoxCount = refreshBoxes(extractNamespace(dictionary), linkedResources);
-
-            logger.info("{} box-definition(s) updated", refreshedBoxCount);
-        }
-
-        @Override
-        public final void onClose(KubernetesClientException cause) {
-            if (cause != null)
-                logger.error("Watcher closed ({})", this.getClass().getSimpleName(), cause);
-        }
-
-        private Set<String> getLinkedResources(Th2Dictionary dictionary) {
-            Set<String> resources = new HashSet<>();
-
-            var lSingleton = OperatorState.INSTANCE;
-
-            for (var linkRes : lSingleton.getLinkResources(extractNamespace(dictionary))) {
-                for (var dicLink : linkRes.getSpec().getDictionariesRelation()) {
-                    if (dicLink.getDictionary().getName().contains(extractName(dictionary))) {
-                        resources.add(dicLink.getBox());
-                    }
-                }
-            }
-
-            return resources;
-        }
-    }
-
-    private class LinkWatcher implements Watcher<Th2Link> {
-
-        @Override
-        public void eventReceived(Action action, Th2Link th2Link) {
-            logger.debug("Received {} event for \"{}\"", action, annotationFor(th2Link));
-
-            var linkNamespace = extractNamespace(th2Link);
-            synchronized (OperatorState.INSTANCE.getLock(linkNamespace)) {
-
-                var linkSingleton = OperatorState.INSTANCE;
-
-                var resourceLinks = new ArrayList<>(linkSingleton.getLinkResources(linkNamespace));
-
-                var oldLinkRes = getOldLink(th2Link, resourceLinks);
-
-                int refreshedBoxCount = 0;
-
-                checkForSameName(th2Link.getSpec().getBoxesRelation().getRouterMq(), annotationFor(th2Link));
-                checkForSameName(th2Link.getSpec().getBoxesRelation().getRouterGrpc(), annotationFor(th2Link));
-                checkForSameName(th2Link.getSpec().getDictionariesRelation(), annotationFor(th2Link));
-
-                switch (action) {
-                    case ADDED:
-                        logger.info("Updating all dependent boxes according to provided links ...");
-
-                        refreshedBoxCount = refreshBoxesIfNeeded(oldLinkRes, th2Link);
-
-                        resourceLinks.remove(th2Link);
-
-                        resourceLinks.add(th2Link);
-
-                        break;
-                    case MODIFIED:
-                        logger.info("Updating all dependent boxes according to updated links ...");
-
-                        refreshedBoxCount = refreshBoxesIfNeeded(oldLinkRes, th2Link);
-
-                        resourceLinks.remove(th2Link);
-
-                        resourceLinks.add(th2Link);
-
-                        break;
-                    case DELETED:
-                    case ERROR:
-                        logger.info("Updating all dependent boxes of destroyed links ...");
-
-                        refreshedBoxCount = refreshBoxesIfNeeded(oldLinkRes, Th2Link.newInstance());
-
-                        resourceLinks.remove(th2Link);
-
-                        break;
-                }
-
-                logger.info("{} box-definition(s) updated", refreshedBoxCount);
-
-                linkSingleton.setLinkResources(linkNamespace, resourceLinks);
-            }
-        }
-
-        @Override
-        public void onClose(KubernetesClientException cause) {
-            if (cause != null)
-                logger.error("Watcher closed ({})", this.getClass().getSimpleName(), cause);
-        }
-
-        private <T extends Identifiable> void checkForSameName(List<T> links, String annotation) {
-            Set<String> linkNames = new HashSet<>();
-            for (var link : links) {
-                if (!linkNames.add(link.getName())) {
-                    logger.warn("Link with name: {} already exists in {}", link.getName(), annotation);
-                }
-            }
-        }
-
-    }
-
     public static Builder builder(KubernetesClient client) {
         return new Builder(client);
     }
 
+
+    public static synchronized DefaultWatchManager getInstance () {
+        if (instance == null) {
+            instance = DefaultWatchManager.builder(new DefaultKubernetesClient()).build();
+        }
+
+        return instance;
+    }
+
     @Getter
-    public static class Builder extends HelmOperatorContext.Builder<DefaultWatchManager, Builder> {
+    private static class Builder extends HelmOperatorContext.Builder<DefaultWatchManager, Builder> {
 
         private DictionaryResourceFinder dictionaryResourceFinder = new EmptyDictionaryResourceFinder();
 
@@ -661,5 +395,10 @@ public class DefaultWatchManager {
         public DefaultWatchManager build() {
             return new DefaultWatchManager(this);
         }
+    }
+
+    public void close () {
+        eventDispatcher.interrupt();
+        operatorBuilder.getClient().close();
     }
 }

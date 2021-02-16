@@ -16,19 +16,18 @@
 
 package com.exactpro.th2.infraoperator.spec.dictionary;
 
+import com.fasterxml.jackson.annotation.JsonSetter;
 import io.fabric8.kubernetes.client.CustomResource;
-import lombok.Getter;
-import lombok.Setter;
-import lombok.ToString;
+import io.fabric8.kubernetes.model.annotation.Group;
+import io.fabric8.kubernetes.model.annotation.Version;
 
 import java.util.Objects;
 
 import static com.exactpro.th2.infraoperator.util.ExtractUtils.extractName;
 import static com.exactpro.th2.infraoperator.util.ExtractUtils.extractNamespace;
 
-@Getter
-@Setter
-@ToString(callSuper = true)
+@Group("th2.exactpro.com")
+@Version("v1")
 public class Th2Dictionary extends CustomResource {
 
     private Th2DictionarySpec spec;
@@ -52,5 +51,22 @@ public class Th2Dictionary extends CustomResource {
         return Objects.hash(extractName(this), extractNamespace(this));
     }
 
+    public Th2DictionarySpec getSpec() {
+        return this.spec;
+    }
+
+    @JsonSetter
+    public void setSpec(Th2DictionarySpec spec) {
+        this.spec = spec;
+    }
+
+    @Override
+    public void setSpec (Object spec) {
+        throw new AssertionError("Setting spec with Object argument");
+    }
+
+    public String toString() {
+        return "Th2Dictionary(super=" + super.toString() + ", spec=" + this.getSpec() + ")";
+    }
 }
 

@@ -14,15 +14,24 @@
  * limitations under the License.
  */
 
-package com.exactpro.th2.infraoperator.spec.estore;
+package com.exactpro.th2.infraoperator.operator.context;
 
-import io.fabric8.kubernetes.api.builder.Function;
-import io.fabric8.kubernetes.client.CustomResourceDoneable;
+public class EventCounter {
+    private static volatile long counter;
 
-public class DoneableTh2Estore extends CustomResourceDoneable<Th2Estore> {
+    private static ThreadLocal<String> currentEvent = new ThreadLocal<>();
 
-    public DoneableTh2Estore(Th2Estore resource, Function<Th2Estore, Th2Estore> function) {
-        super(resource, function);
+    public static synchronized String newEvent() {
+        String id = String.format("event-%08d", ++counter);
+        currentEvent.set(id);
+        return id;
     }
 
+    public static void closeEvent() {
+        currentEvent.set(null);
+    }
+
+    public static String getCurrentEventId() {
+        return currentEvent.get();
+    }
 }

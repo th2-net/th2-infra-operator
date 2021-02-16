@@ -16,6 +16,7 @@
 
 package com.exactpro.th2.infraoperator.operator;
 
+import com.exactpro.th2.infraoperator.OperatorState;
 import com.exactpro.th2.infraoperator.configuration.OperatorConfig;
 import com.exactpro.th2.infraoperator.model.box.configuration.dictionary.DictionaryEntity;
 import com.exactpro.th2.infraoperator.model.box.configuration.dictionary.factory.DictionaryFactory;
@@ -27,17 +28,15 @@ import com.exactpro.th2.infraoperator.model.box.schema.link.EnqueuedLink;
 import com.exactpro.th2.infraoperator.operator.context.HelmOperatorContext;
 import com.exactpro.th2.infraoperator.spec.Th2CustomResource;
 import com.exactpro.th2.infraoperator.spec.Th2Spec;
-import com.exactpro.th2.infraoperator.spec.helmRelease.DoneableHelmRelease;
 import com.exactpro.th2.infraoperator.spec.helmRelease.HelmRelease;
 import com.exactpro.th2.infraoperator.spec.helmRelease.HelmReleaseList;
 import com.exactpro.th2.infraoperator.spec.helmRelease.HelmReleaseSecrets;
 import com.exactpro.th2.infraoperator.spec.link.Th2Link;
 import com.exactpro.th2.infraoperator.spec.link.relation.dictionaries.DictionaryBinding;
-import com.exactpro.th2.infraoperator.spec.link.relation.pins.PinMQ;
 import com.exactpro.th2.infraoperator.spec.link.relation.pins.PinCoupling;
 import com.exactpro.th2.infraoperator.spec.link.relation.pins.PinCouplingGRPC;
 import com.exactpro.th2.infraoperator.spec.link.relation.pins.PinCouplingMQ;
-import com.exactpro.th2.infraoperator.OperatorState;
+import com.exactpro.th2.infraoperator.spec.link.relation.pins.PinMQ;
 import com.exactpro.th2.infraoperator.spec.shared.PinAttribute;
 import com.exactpro.th2.infraoperator.spec.shared.PinSpec;
 import com.exactpro.th2.infraoperator.spec.shared.PrometheusConfiguration;
@@ -50,11 +49,11 @@ import com.exactpro.th2.infraoperator.util.CustomResourceUtils;
 import com.exactpro.th2.infraoperator.util.ExtractUtils;
 import com.exactpro.th2.infraoperator.util.JsonUtils;
 import io.fabric8.kubernetes.api.model.apiextensions.v1.CustomResourceDefinition;
-import io.fabric8.kubernetes.client.Watch;
-import io.fabric8.kubernetes.client.Watcher;
 import io.fabric8.kubernetes.client.dsl.MixedOperation;
 import io.fabric8.kubernetes.client.dsl.Resource;
 import io.fabric8.kubernetes.client.dsl.base.CustomResourceDefinitionContext;
+import io.fabric8.kubernetes.client.informers.SharedInformer;
+import io.fabric8.kubernetes.client.informers.SharedInformerFactory;
 import lombok.Getter;
 import lombok.SneakyThrows;
 import lombok.experimental.SuperBuilder;
@@ -95,8 +94,7 @@ public abstract class HelmReleaseTh2Op<CR extends Th2CustomResource> extends Abs
     protected final DictionaryFactory dictionaryFactory;
 
     protected final CustomResourceDefinition helmReleaseCrd;
-    protected final MixedOperation<HelmRelease, HelmReleaseList, DoneableHelmRelease,
-        Resource<HelmRelease, DoneableHelmRelease>> helmReleaseClient;
+    protected final MixedOperation<HelmRelease, HelmReleaseList, Resource<HelmRelease>> helmReleaseClient;
 
     protected final ActiveLinkUpdater activeLinkUpdaterOnDelete;
     protected final ActiveLinkUpdater activeLinkUpdaterOnAdd;
@@ -130,8 +128,7 @@ public abstract class HelmReleaseTh2Op<CR extends Th2CustomResource> extends Abs
         helmReleaseClient = kubClient.customResources(
             crdContext,
             HelmRelease.class,
-            HelmReleaseList.class,
-            DoneableHelmRelease.class
+            HelmReleaseList.class
         );
 
         var msgStContext = MsgStorageContext.builder()
@@ -155,6 +152,8 @@ public abstract class HelmReleaseTh2Op<CR extends Th2CustomResource> extends Abs
         this.activeLinkUpdaterOnDelete = new DeletedActiveLinkUpdater();
         this.activeLinkUpdaterOnAdd = new AddedActiveLinkUpdater();
     }
+
+    public abstract SharedInformer<CR> generateInformerFromFactory (SharedInformerFactory factory);
 
     @Override
     protected void mapProperties(CR resource, HelmRelease helmRelease) {
@@ -211,18 +210,18 @@ public abstract class HelmReleaseTh2Op<CR extends Th2CustomResource> extends Abs
     @Override
     protected void addedEvent(CR resource) {
 
-        synchronized (OperatorState.INSTANCE.getLock(ExtractUtils.extractNamespace(resource))) {
+        var lock = OperatorState.INSTANCE.getLock(ExtractUtils.extractNamespace(resource));
+        try {
+            lock.lock();
 
             updateEventStorageLinksBeforeAdd(resource);
-
             updateMsgStorageLinksBeforeAdd(resource);
-
             var linkedResources = updateActiveLinksBeforeAdd(resource);
-
             updateDependedResourcesIfNeeded(resource, linkedResources);
-
             super.addedEvent(resource);
 
+        } finally {
+            lock.unlock();
         }
 
     }
@@ -230,40 +229,40 @@ public abstract class HelmReleaseTh2Op<CR extends Th2CustomResource> extends Abs
     @Override
     protected void modifiedEvent(CR resource) {
 
-        synchronized (OperatorState.INSTANCE.getLock(ExtractUtils.extractNamespace(resource))) {
+        var lock = OperatorState.INSTANCE.getLock(ExtractUtils.extractNamespace(resource));
+        try {
+            lock.lock();
 
             updateEventStorageLinksBeforeAdd(resource);
-
             updateMsgStorageLinksBeforeAdd(resource);
-
             var linkedResources = updateActiveLinksBeforeAdd(resource);
-
             updateDependedResourcesIfNeeded(resource, linkedResources);
-
             super.modifiedEvent(resource);
 
+        } finally {
+            lock.unlock();
         }
-
     }
+
 
     @Override
     protected void deletedEvent(CR resource) {
 
-        synchronized (OperatorState.INSTANCE.getLock(ExtractUtils.extractNamespace(resource))) {
+        var lock = OperatorState.INSTANCE.getLock(ExtractUtils.extractNamespace(resource));
+        try {
+            lock.lock();
 
             super.deletedEvent(resource);
-
             updateEventStorageLinksAfterDelete(resource);
-
             updateMsgStorageLinksAfterDelete(resource);
-
             var linkedResources = updateActiveLinksAfterDelete(resource);
-
             updateDependedResourcesIfNeeded(resource, linkedResources);
 
+        } finally {
+            lock.unlock();
         }
-
     }
+
 
     @Override
     protected void setupKubObj(CR resource, HelmRelease helmRelease) {
@@ -279,11 +278,6 @@ public abstract class HelmReleaseTh2Op<CR extends Th2CustomResource> extends Abs
     @Override
     protected void createKubObj(String namespace, HelmRelease helmRelease) {
         helmReleaseClient.inNamespace(namespace).createOrReplace(helmRelease);
-    }
-
-    @Override
-    protected Watch setKubObjWatcher(String namespace, Watcher<HelmRelease> objWatcher) {
-        return CustomResourceUtils.watchFor(objWatcher, HelmRelease.class, helmReleaseCrd, helmReleaseClient);
     }
 
     @Override

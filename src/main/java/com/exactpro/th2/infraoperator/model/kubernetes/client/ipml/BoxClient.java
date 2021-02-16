@@ -17,7 +17,6 @@
 package com.exactpro.th2.infraoperator.model.kubernetes.client.ipml;
 
 import com.exactpro.th2.infraoperator.model.kubernetes.client.DefaultResourceClient;
-import com.exactpro.th2.infraoperator.spec.box.DoneableTh2Box;
 import com.exactpro.th2.infraoperator.spec.box.Th2Box;
 import com.exactpro.th2.infraoperator.spec.box.Th2BoxList;
 import io.fabric8.kubernetes.client.KubernetesClient;
@@ -29,7 +28,6 @@ public class BoxClient extends DefaultResourceClient<Th2Box> {
                 client,
                 Th2Box.class,
                 Th2BoxList.class,
-                DoneableTh2Box.class,
                 "th2boxes.th2.exactpro.com"
         );
     }

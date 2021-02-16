@@ -32,8 +32,7 @@ public class Th2CrdController {
     //TODO At the start, operator must check the status of the services and not reboot everything
     public static void main(String[] args) {
 
-        var client = new DefaultKubernetesClient();
-        var watchManager = DefaultWatchManager.builder(client).build();
+        var watchManager = DefaultWatchManager.getInstance();
 
         try {
             watchManager.addTarget(MstoreHelmTh2Op::new);
@@ -41,12 +40,12 @@ public class Th2CrdController {
             watchManager.addTarget(BoxHelmTh2Op::new);
             watchManager.addTarget(CoreBoxHelmTh2Op::new);
 
-            watchManager.startWatching();
+            watchManager.startInformers();
 
         } catch (Exception e) {
             logger.error("Exception in main thread", e);
-            watchManager.stopWatching();
-            client.close();
+            watchManager.stopInformers();
+            watchManager.close();
         }
     }
 }

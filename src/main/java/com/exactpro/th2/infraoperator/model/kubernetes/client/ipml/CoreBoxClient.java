@@ -17,7 +17,6 @@
 package com.exactpro.th2.infraoperator.model.kubernetes.client.ipml;
 
 import com.exactpro.th2.infraoperator.model.kubernetes.client.DefaultResourceClient;
-import com.exactpro.th2.infraoperator.spec.corebox.DoneableTh2CoreBox;
 import com.exactpro.th2.infraoperator.spec.corebox.Th2CoreBox;
 import com.exactpro.th2.infraoperator.spec.corebox.Th2CoreBoxList;
 import io.fabric8.kubernetes.client.KubernetesClient;
@@ -29,7 +28,6 @@ public class CoreBoxClient extends DefaultResourceClient<Th2CoreBox> {
                 client,
                 Th2CoreBox.class,
                 Th2CoreBoxList.class,
-                DoneableTh2CoreBox.class,
                 "th2coreboxes.th2.exactpro.com"
         );
     }

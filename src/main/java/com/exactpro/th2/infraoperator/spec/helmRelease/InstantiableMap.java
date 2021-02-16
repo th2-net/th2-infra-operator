@@ -14,15 +14,9 @@
  * limitations under the License.
  */
 
-package com.exactpro.th2.infraoperator.spec.mstore;
+package com.exactpro.th2.infraoperator.spec.helmRelease;
 
-import io.fabric8.kubernetes.api.builder.Function;
-import io.fabric8.kubernetes.client.CustomResourceDoneable;
+import java.util.HashMap;
 
-public class DoneableTh2Mstore extends CustomResourceDoneable<Th2Mstore> {
-
-    public DoneableTh2Mstore(Th2Mstore resource, Function<Th2Mstore, Th2Mstore> function) {
-        super(resource, function);
-    }
-
+class InstantiableMap extends HashMap<String, Object>{
 }

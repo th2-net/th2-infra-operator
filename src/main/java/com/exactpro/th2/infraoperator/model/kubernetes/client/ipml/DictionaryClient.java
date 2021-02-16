@@ -17,7 +17,6 @@
 package com.exactpro.th2.infraoperator.model.kubernetes.client.ipml;
 
 import com.exactpro.th2.infraoperator.model.kubernetes.client.DefaultResourceClient;
-import com.exactpro.th2.infraoperator.spec.dictionary.DoneableTh2Dictionary;
 import com.exactpro.th2.infraoperator.spec.dictionary.Th2Dictionary;
 import com.exactpro.th2.infraoperator.spec.dictionary.Th2DictionaryList;
 import io.fabric8.kubernetes.client.KubernetesClient;
@@ -29,7 +28,6 @@ public class DictionaryClient extends DefaultResourceClient<Th2Dictionary> {
                 client,
                 Th2Dictionary.class,
                 Th2DictionaryList.class,
-                DoneableTh2Dictionary.class,
                 "th2dictionaries.th2.exactpro.com"
         );
     }

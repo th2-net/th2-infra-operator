@@ -35,7 +35,6 @@ import static com.exactpro.th2.infraoperator.operator.StoreHelmTh2Op.MESSAGE_STO
 public enum OperatorState {
     INSTANCE;
 
-    private Map<String, Lock> locks = new ConcurrentHashMap<>();
     private Map<String, NamespaceState> namespaceStates = new ConcurrentHashMap<>();
 
 
@@ -116,24 +115,44 @@ public enum OperatorState {
     }
 
 
-    public Lock getLock(String namespace) {
-        return locks.computeIfAbsent(namespace, k -> new ReentrantLock());
+    public NamespaceLock getLock(String namespace) {
+        return computeIfAbsent(namespace);
     }
 
 
     private NamespaceState computeIfAbsent(String namespace) {
-        return namespaceStates.computeIfAbsent(namespace, s -> new NamespaceState());
+        return namespaceStates.computeIfAbsent(namespace, s -> new NamespaceState(namespace));
     }
 
 
 
-    public static class NamespaceState {
+    public interface NamespaceLock {
+        void lock();
+        void unlock();
+    }
 
+    public static class NamespaceState implements NamespaceLock {
+
+        private String name;
         private List<Th2Link> linkResources = new ArrayList<>();
         private List<EnqueuedLink> mqActiveLinks = new ArrayList<>();
         private List<PinCouplingGRPC> grpcActiveLinks = new ArrayList<>();
         private List<DictionaryBinding> dictionaryBindings = new ArrayList<>();
 
+        private Lock lock = new ReentrantLock(true);
+
+        public NamespaceState(String name) {
+            this.name = name;
+        }
+        @Override
+        public void lock() {
+            lock.lock();
+        }
+
+        @Override
+        public void unlock() {
+            lock.unlock();
+        }
 
         public List<Th2Link> getLinkResources() {
             return this.linkResources;

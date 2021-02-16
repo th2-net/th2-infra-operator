@@ -16,10 +16,9 @@
 
 package com.exactpro.th2.infraoperator.util;
 
+import com.exactpro.th2.infraoperator.operator.StoreHelmTh2Op;
 import com.exactpro.th2.infraoperator.spec.Th2CustomResource;
 import com.exactpro.th2.infraoperator.spec.shared.PinSpec;
-import com.exactpro.th2.infraoperator.operator.AbstractTh2Operator;
-import com.exactpro.th2.infraoperator.operator.StoreHelmTh2Op;
 import com.exactpro.th2.infraoperator.spec.shared.SchemaConnectionType;
 import io.fabric8.kubernetes.api.model.HasMetadata;
 import org.jetbrains.annotations.Nullable;
@@ -29,11 +28,11 @@ import org.slf4j.LoggerFactory;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
-import java.util.Objects;
 
 public final class ExtractUtils {
 
     private static final Logger logger = LoggerFactory.getLogger(ExtractUtils.class);
+    private static final String KEY_SOURCE_HASH = "th2.exactpro.com/source-hash";
 
 
     private ExtractUtils() {
@@ -51,10 +50,6 @@ public final class ExtractUtils {
 
     public static String extractNamespace(HasMetadata obj) {
         return obj.getMetadata().getNamespace();
-    }
-
-    public static Long extractGeneration(HasMetadata obj) {
-        return obj.getMetadata().getGeneration();
     }
 
     public static Map<String, String> extractAnnotations(HasMetadata obj) {
@@ -75,17 +70,6 @@ public final class ExtractUtils {
         return mqPins;
     }
 
-    @Nullable
-    public static String extractRefreshToken(HasMetadata obj) {
-        var annotations = obj.getMetadata().getAnnotations();
-
-        if (Objects.nonNull(annotations)) {
-            return annotations.get(AbstractTh2Operator.REFRESH_TOKEN_ALIAS);
-        }
-
-        return null;
-    }
-
     public static String extractType(Object object) {
         return object.getClass().getSimpleName();
     }
@@ -99,13 +83,6 @@ public final class ExtractUtils {
             logger.warn("[{}<{}>] doesn't have owner resource", extractType(obj), extractFullName(obj));
             return null;
         }
-    }
-
-    public static boolean compareRefreshTokens(HasMetadata objFirst, HasMetadata objSecond) {
-        var firstRT = extractRefreshToken(objFirst);
-        var secondRT = extractRefreshToken(objSecond);
-        return Objects.isNull(firstRT) && Objects.isNull(secondRT) ||
-                Objects.nonNull(firstRT) && Objects.nonNull(secondRT) && firstRT.equals(secondRT);
     }
 
     public static boolean isStorageBox(HasMetadata hasMetadata) {
@@ -124,6 +101,14 @@ public final class ExtractUtils {
     public static boolean isStorageResource(String name) {
         return name.equals(StoreHelmTh2Op.MSG_ST_LINK_RESOURCE_NAME)
                 || name.equals(StoreHelmTh2Op.EVENT_ST_LINK_RESOURCE_NAME);
+    }
+
+
+    public static String sourceHash(HasMetadata res) {
+
+        if (res.getMetadata() != null && res.getMetadata().getAnnotations() != null)
+            return res.getMetadata().getAnnotations().get(KEY_SOURCE_HASH);
+        return null;
     }
 
 }

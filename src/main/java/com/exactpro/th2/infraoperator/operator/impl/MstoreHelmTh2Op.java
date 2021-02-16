@@ -21,7 +21,12 @@ import com.exactpro.th2.infraoperator.model.kubernetes.client.ipml.MstoreClient;
 import com.exactpro.th2.infraoperator.operator.StoreHelmTh2Op;
 import com.exactpro.th2.infraoperator.operator.context.HelmOperatorContext;
 import com.exactpro.th2.infraoperator.spec.mstore.Th2Mstore;
+import com.exactpro.th2.infraoperator.spec.mstore.Th2MstoreList;
+import com.exactpro.th2.infraoperator.util.CustomResourceUtils;
 import io.fabric8.kubernetes.client.KubernetesClient;
+import io.fabric8.kubernetes.client.dsl.base.CustomResourceDefinitionContext;
+import io.fabric8.kubernetes.client.informers.SharedIndexInformer;
+import io.fabric8.kubernetes.client.informers.SharedInformerFactory;
 
 public class MstoreHelmTh2Op extends StoreHelmTh2Op<Th2Mstore> {
 
@@ -33,6 +38,14 @@ public class MstoreHelmTh2Op extends StoreHelmTh2Op<Th2Mstore> {
         this.mstoreClient = new MstoreClient(builder.getClient());
     }
 
+    @Override
+    public SharedIndexInformer<Th2Mstore> generateInformerFromFactory (SharedInformerFactory factory) {
+        return factory.sharedIndexInformerForCustomResource(
+                CustomResourceDefinitionContext.fromCrd(mstoreClient.getCustomResourceDefinition()),
+                Th2Mstore.class,
+                Th2MstoreList.class,
+                CustomResourceUtils.RESYNC_TIME);
+    }
 
     @Override
     public ResourceClient<Th2Mstore> getResourceClient() {

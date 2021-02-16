@@ -25,6 +25,8 @@ import com.exactpro.th2.infraoperator.spec.shared.SchemaConnectionType;
 import com.exactpro.th2.infraoperator.spec.strategy.resFinder.box.BoxResourceFinder;
 import com.exactpro.th2.infraoperator.util.ExtractUtils;
 import io.fabric8.kubernetes.api.model.ObjectMeta;
+import io.fabric8.kubernetes.model.annotation.Group;
+import io.fabric8.kubernetes.model.annotation.Version;
 import org.jetbrains.annotations.Nullable;
 
 import java.util.HashSet;
@@ -51,11 +53,15 @@ public class StoreDependentBoxResourceFinder implements BoxResourceFinder {
         var resource = resourceFinder.getResource(name, namespace, additionalSource);
         if (ExtractUtils.isStorageBox(name)) {
 
-            synchronized (OperatorState.INSTANCE.getLock(namespace)) {
+            var lock = OperatorState.INSTANCE.getLock(namespace);
+            try {
+                lock.lock();
                 if (resource != null)
                     return resource;
                 else
                     return generateFakeResource(name, namespace, generateStoragePins(namespace));
+            } finally {
+                lock.unlock();
             }
         }
 
@@ -100,34 +106,52 @@ public class StoreDependentBoxResourceFinder implements BoxResourceFinder {
                 }).collect(Collectors.toList());
     }
 
+    @Group("")
+    @Version("")
+    private class FakeCustomResource extends Th2CustomResource {
+
+        private String name;
+        private String namespace;
+        private List<PinSpec> stPins;
+
+        public FakeCustomResource (String name, String namespace, List<PinSpec> stPins) {
+            this.name = name;
+            this.namespace = namespace;
+            this.stPins = stPins;
+        }
+
+        @Override
+        public Th2Spec getSpec() {
+
+            return new Th2Spec() {
+                @Override
+                public List<PinSpec> getPins() {
+                    return stPins;
+                }
+
+            };
+        }
+
+        @Override
+        public ObjectMeta getMetadata() {
+            return new ObjectMeta() {
+                @Override
+                public String getName() {
+                    return name;
+                }
+
+                @Override
+                public String getNamespace() {
+                    return namespace;
+                }
+            };
+        }
+    };
+
     private Th2CustomResource generateFakeResource(String name, String namespace, List<PinSpec> stPins) {
-        return new Th2CustomResource() {
-            @Override
-            public Th2Spec getSpec() {
-                return new Th2Spec() {
-                    @Override
-                    public List<PinSpec> getPins() {
-                        return stPins;
-                    }
+        System.out.println(String.format("Printing face resource: %s, %s", name, namespace));
 
-                };
-            }
-
-            @Override
-            public ObjectMeta getMetadata() {
-                return new ObjectMeta() {
-                    @Override
-                    public String getName() {
-                        return name;
-                    }
-
-                    @Override
-                    public String getNamespace() {
-                        return namespace;
-                    }
-                };
-            }
-        };
+        return new FakeCustomResource(name, namespace, stPins);
     }
 
 }

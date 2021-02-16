@@ -17,7 +17,6 @@
 package com.exactpro.th2.infraoperator.model.kubernetes.client.ipml;
 
 import com.exactpro.th2.infraoperator.model.kubernetes.client.DefaultResourceClient;
-import com.exactpro.th2.infraoperator.spec.mstore.DoneableTh2Mstore;
 import com.exactpro.th2.infraoperator.spec.mstore.Th2Mstore;
 import com.exactpro.th2.infraoperator.spec.mstore.Th2MstoreList;
 import io.fabric8.kubernetes.client.KubernetesClient;
@@ -29,7 +28,6 @@ public class MstoreClient extends DefaultResourceClient<Th2Mstore> {
                 client,
                 Th2Mstore.class,
                 Th2MstoreList.class,
-                DoneableTh2Mstore.class,
                 "th2mstores.th2.exactpro.com"
         );
     }
