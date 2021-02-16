@@ -43,6 +43,7 @@ import com.exactpro.th2.infraoperator.spec.strategy.resFinder.dictionary.impl.Em
 import com.exactpro.th2.infraoperator.util.CustomResourceUtils;
 import com.exactpro.th2.infraoperator.util.Strings;
 import com.fasterxml.uuid.Generators;
+import io.fabric8.kubernetes.api.model.ConfigMap;
 import io.fabric8.kubernetes.api.model.HasMetadata;
 import io.fabric8.kubernetes.client.DefaultKubernetesClient;
 import io.fabric8.kubernetes.client.KubernetesClient;
@@ -60,6 +61,7 @@ import java.util.stream.Collectors;
 
 import static com.exactpro.th2.infraoperator.operator.AbstractTh2Operator.REFRESH_TOKEN_ALIAS;
 import static com.exactpro.th2.infraoperator.util.CustomResourceUtils.RESYNC_TIME;
+import static com.exactpro.th2.infraoperator.util.CustomResourceUtils.annotationFor;
 import static com.exactpro.th2.infraoperator.util.ExtractUtils.extractName;
 
 public class DefaultWatchManager {
@@ -71,8 +73,6 @@ public class DefaultWatchManager {
     private final Builder operatorBuilder;
 
     private DictionaryClient dictionaryClient;
-
-    private LinkClient linkClient;
 
     private final List<ResourceClient<Th2CustomResource>> resourceClients = new ArrayList<>();
 
@@ -94,7 +94,6 @@ public class DefaultWatchManager {
         this.operatorBuilder = builder;
         this.sharedInformerFactory = builder.getClient().informers();
         this.dictionaryClient = new DictionaryClient(operatorBuilder.getClient());
-        this.linkClient = new LinkClient(operatorBuilder.getClient());
         this.eventQueue = new EventQueue<>();
         this.eventDispatcher = new EventDispatcher(this.eventQueue);
 
@@ -214,6 +213,8 @@ public class DefaultWatchManager {
 
         eventDispatcher.start();
         postInit();
+        preloadLinks();
+        preloadConfigMaps();
         registerInformers (sharedInformerFactory);
 
         isWatching = true;
@@ -227,21 +228,43 @@ public class DefaultWatchManager {
         getInformerFactory().stopAllRegisteredInformers();
     }
 
-    public void preloadLinks(Th2LinkEventHandler th2LinkEventHandler) {
+
+    private void preloadLinks() {
+        KubernetesClient client = operatorBuilder.getClient();
+        var th2LinkEventHandler = Th2LinkEventHandler.newInstance(sharedInformerFactory, client, eventQueue);
+        var linkClient = new LinkClient(client);
         List<Th2Link> th2LinkResources = linkClient.getInstance().inAnyNamespace().list().getItems();
-        th2LinkResources = th2LinkResources.stream()
-                .filter(th2Link -> !Strings.nonePrefixMatch(th2Link.getMetadata().getNamespace(), OperatorConfig.INSTANCE.getNamespacePrefixes()))
-                .collect(Collectors.toList());
+        th2LinkResources = filterByNamespace(th2LinkResources);
+        logger.info("Trying to preload {} link resources from all watched namespaces", th2LinkResources.size());
         for (var th2Link : th2LinkResources) {
+            logger.debug("Preloading '{}'", annotationFor(th2Link));
             th2LinkEventHandler.eventReceived(Watcher.Action.ADDED, th2Link);
         }
     }
 
+    private void preloadConfigMaps() {
+        KubernetesClient client = operatorBuilder.getClient();
+        var configMapEventHandler = ConfigMapEventHandler.newInstance(sharedInformerFactory, client, eventQueue);
+        List<ConfigMap> configMaps =  client.configMaps().inAnyNamespace().list().getItems();
+        configMaps = filterByNamespace(configMaps);
+        logger.info("Trying to preload {} config maps from all watched namespaces", configMaps.size());
+        for (var configMap : configMaps) {
+            logger.debug("Preloading '{}'", annotationFor(configMap));
+            configMapEventHandler.eventReceived(Watcher.Action.ADDED, configMap);
+        }
+    }
+
+    private <E extends HasMetadata> List<E> filterByNamespace(List<E> resources){
+        return resources.stream()
+                .filter(resource -> !Strings.nonePrefixMatch(resource.getMetadata().getNamespace(), OperatorConfig.INSTANCE.getNamespacePrefixes()))
+                .collect(Collectors.toList());
+    }
+
+
     private void registerInformers (SharedInformerFactory sharedInformerFactory) {
 
         KubernetesClient client = operatorBuilder.getClient();
-        var th2LinkEventHandler = Th2LinkEventHandler.newInstance(sharedInformerFactory, client, eventQueue);
-        preloadLinks(th2LinkEventHandler);
+        Th2LinkEventHandler.newInstance(sharedInformerFactory, client, eventQueue);
         Th2DictionaryEventHandler.newInstance(sharedInformerFactory, dictionaryClient, eventQueue);
         ConfigMapEventHandler.newInstance(sharedInformerFactory, client, eventQueue);
         NamespaceEventHandler.newInstance(sharedInformerFactory);
