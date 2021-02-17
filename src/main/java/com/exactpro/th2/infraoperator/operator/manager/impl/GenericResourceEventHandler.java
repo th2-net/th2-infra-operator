@@ -161,6 +161,6 @@ public class GenericResourceEventHandler<T extends HasMetadata> implements Resou
 
     @Override
     public void onClose(WatcherException cause) {
-
+        throw new AssertionError("This method should not be called");
     }
 }

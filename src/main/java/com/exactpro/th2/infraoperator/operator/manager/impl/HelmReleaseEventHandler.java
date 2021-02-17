@@ -48,12 +48,11 @@ public class HelmReleaseEventHandler implements Watcher<HelmRelease> {
                 HelmReleaseList.class,
                 RESYNC_TIME);
 
-        helmReleaseInformer.addEventHandlerWithResyncPeriod(CustomResourceUtils.resourceEventHandlerFor(
+        helmReleaseInformer.addEventHandler(CustomResourceUtils.resourceEventHandlerFor(
                 res,
                 HelmRelease.class,
                 helmReleaseCrd,
-                eventQueue),
-                RESYNC_TIME);
+                eventQueue));
         return res;
     }
 

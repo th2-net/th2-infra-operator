@@ -21,7 +21,6 @@ import org.slf4j.LoggerFactory;
 import java.util.Base64;
 import java.util.Objects;
 
-import static com.exactpro.th2.infraoperator.util.CustomResourceUtils.RESYNC_TIME;
 import static com.exactpro.th2.infraoperator.util.CustomResourceUtils.annotationFor;
 import static com.exactpro.th2.infraoperator.util.JsonUtils.JSON_READER;
 
@@ -29,18 +28,24 @@ public class ConfigMapEventHandler implements Watcher<ConfigMap> {
     public static final String SECRET_TYPE_OPAQUE = "Opaque";
 
     private static final Logger logger = LoggerFactory.getLogger(ConfigMapEventHandler.class);
+
     private KubernetesClient client;
+    public KubernetesClient getClient() {
+        return  client;
+    }
 
     public static ConfigMapEventHandler newInstance(SharedInformerFactory sharedInformerFactory,
                                                     KubernetesClient client,
                                                     DefaultWatchManager.EventQueue<DefaultWatchManager.DispatcherEvent> eventQueue) {
+        var res = new ConfigMapEventHandler(client);
+        res.client = client;
+
         SharedIndexInformer<ConfigMap> configMapInformer = sharedInformerFactory.sharedIndexInformerFor(
                 ConfigMap.class,
                 ConfigMapList.class,
                 CustomResourceUtils.RESYNC_TIME);
 
-        var res = new ConfigMapEventHandler(client);
-        configMapInformer.addEventHandlerWithResyncPeriod(new GenericResourceEventHandler<>(res, eventQueue), RESYNC_TIME);
+        configMapInformer.addEventHandler(new GenericResourceEventHandler<>(res, eventQueue));
         return res;
     }
 

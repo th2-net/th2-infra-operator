@@ -23,7 +23,6 @@ import com.exactpro.th2.infraoperator.model.box.configuration.grpc.factory.impl.
 import com.exactpro.th2.infraoperator.model.box.configuration.grpc.factory.impl.EmptyGrpcRouterConfigFactory;
 import com.exactpro.th2.infraoperator.model.kubernetes.client.ResourceClient;
 import com.exactpro.th2.infraoperator.model.kubernetes.client.ipml.DictionaryClient;
-import com.exactpro.th2.infraoperator.model.kubernetes.client.ipml.LinkClient;
 import com.exactpro.th2.infraoperator.operator.HelmReleaseTh2Op;
 import com.exactpro.th2.infraoperator.operator.context.HelmOperatorContext;
 import com.exactpro.th2.infraoperator.spec.Th2CustomResource;
@@ -55,12 +54,12 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.*;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.Function;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
 
 import static com.exactpro.th2.infraoperator.operator.AbstractTh2Operator.REFRESH_TOKEN_ALIAS;
-import static com.exactpro.th2.infraoperator.util.CustomResourceUtils.RESYNC_TIME;
 import static com.exactpro.th2.infraoperator.util.CustomResourceUtils.annotationFor;
 import static com.exactpro.th2.infraoperator.util.ExtractUtils.extractName;
 
@@ -85,6 +84,7 @@ public class DefaultWatchManager {
     private final EventQueue<DispatcherEvent> eventQueue;
 
     private final EventDispatcher eventDispatcher;
+    private EventHandlerContext eventHandlerContext;
 
     private synchronized SharedInformerFactory getInformerFactory() {
         return sharedInformerFactory;
@@ -213,9 +213,8 @@ public class DefaultWatchManager {
 
         eventDispatcher.start();
         postInit();
-        preloadLinks();
-        preloadConfigMaps();
-        registerInformers (sharedInformerFactory);
+        this.eventHandlerContext = registerInformers (sharedInformerFactory);
+        loadResources(eventHandlerContext);
 
         isWatching = true;
 
@@ -229,30 +228,36 @@ public class DefaultWatchManager {
     }
 
 
-    private void preloadLinks() {
-        KubernetesClient client = operatorBuilder.getClient();
-        var th2LinkEventHandler = Th2LinkEventHandler.newInstance(sharedInformerFactory, client, eventQueue);
-        var linkClient = new LinkClient(client);
-        List<Th2Link> th2LinkResources = linkClient.getInstance().inAnyNamespace().list().getItems();
-        th2LinkResources = filterByNamespace(th2LinkResources);
-        logger.info("Trying to preload {} link resources from all watched namespaces", th2LinkResources.size());
-        for (var th2Link : th2LinkResources) {
-            logger.debug("Preloading '{}'", annotationFor(th2Link));
+    private void loadResources(EventHandlerContext context) {
+        loadLinks(context);
+        loadConfigMaps(context);
+    }
+
+    private void loadLinks(EventHandlerContext context) {
+
+        var th2LinkEventHandler = (Th2LinkEventHandler) context.getHandler(Th2LinkEventHandler.class);
+        var linkClient = th2LinkEventHandler.getLinkClient();
+        List<Th2Link> th2Links = linkClient.getInstance().inAnyNamespace().list().getItems();
+        th2Links = filterByNamespace(th2Links);
+        for (var th2Link : th2Links) {
+            logger.info("Loading \"{}\"", annotationFor(th2Link));
             th2LinkEventHandler.eventReceived(Watcher.Action.ADDED, th2Link);
         }
     }
 
-    private void preloadConfigMaps() {
+
+    private void loadConfigMaps(EventHandlerContext context) {
+
+        var configMapEventHandler = (ConfigMapEventHandler) context.getHandler(ConfigMapEventHandler.class);
         KubernetesClient client = operatorBuilder.getClient();
-        var configMapEventHandler = ConfigMapEventHandler.newInstance(sharedInformerFactory, client, eventQueue);
         List<ConfigMap> configMaps =  client.configMaps().inAnyNamespace().list().getItems();
         configMaps = filterByNamespace(configMaps);
-        logger.info("Trying to preload {} config maps from all watched namespaces", configMaps.size());
         for (var configMap : configMaps) {
-            logger.debug("Preloading '{}'", annotationFor(configMap));
+            logger.info("Loading \"{}\"", annotationFor(configMap));
             configMapEventHandler.eventReceived(Watcher.Action.ADDED, configMap);
         }
     }
+
 
     private <E extends HasMetadata> List<E> filterByNamespace(List<E> resources){
         return resources.stream()
@@ -261,15 +266,27 @@ public class DefaultWatchManager {
     }
 
 
-    private void registerInformers (SharedInformerFactory sharedInformerFactory) {
+    private class EventHandlerContext<T extends Watcher> {
+        Map<Class, Watcher> eventHandlers = new ConcurrentHashMap<>();
+        void addHandler(T eventHandler) {
+            eventHandlers.put(eventHandler.getClass(), eventHandler);
+        }
 
+        Watcher getHandler(Class<T> clazz) {
+            return eventHandlers.get(clazz);
+        }
+    }
+
+    private EventHandlerContext registerInformers (SharedInformerFactory sharedInformerFactory) {
+
+        EventHandlerContext context = new EventHandlerContext();
         KubernetesClient client = operatorBuilder.getClient();
-        Th2LinkEventHandler.newInstance(sharedInformerFactory, client, eventQueue);
-        Th2DictionaryEventHandler.newInstance(sharedInformerFactory, dictionaryClient, eventQueue);
-        ConfigMapEventHandler.newInstance(sharedInformerFactory, client, eventQueue);
-        NamespaceEventHandler.newInstance(sharedInformerFactory);
-        CRDEventHandler.newInstance(sharedInformerFactory);
-        HelmReleaseEventHandler.newInstance(sharedInformerFactory, client, eventQueue);
+
+        context.addHandler(NamespaceEventHandler.newInstance(sharedInformerFactory));
+        context.addHandler(Th2LinkEventHandler.newInstance(sharedInformerFactory, client, eventQueue));
+        context.addHandler(Th2DictionaryEventHandler.newInstance(sharedInformerFactory, dictionaryClient, eventQueue));
+        context.addHandler(ConfigMapEventHandler.newInstance(sharedInformerFactory, client, eventQueue));
+        context.addHandler(HelmReleaseEventHandler.newInstance(sharedInformerFactory, client, eventQueue));
 
         /*
              resourceClients initialization should be done first
@@ -286,13 +303,16 @@ public class DefaultWatchManager {
         for (var hwSup : helmWatchersCommands) {
             HelmReleaseTh2Op<Th2CustomResource> helmReleaseTh2Op = hwSup.get();
 
-            helmReleaseTh2Op.generateInformerFromFactory(getInformerFactory()).addEventHandlerWithResyncPeriod(
-                    CustomResourceUtils.resourceEventHandlerFor(helmReleaseTh2Op.getResourceClient(),
-                            helmReleaseTh2Op,
-                            eventQueue),
-                    RESYNC_TIME);
+            var handler = CustomResourceUtils.resourceEventHandlerFor(helmReleaseTh2Op.getResourceClient(),
+                    helmReleaseTh2Op,
+                    eventQueue);
+            helmReleaseTh2Op.generateInformerFromFactory(getInformerFactory()).addEventHandler(handler);
+            context.addHandler(handler);
         }
 
+        // needs to be converted to Watcher
+        CRDEventHandler.newInstance(sharedInformerFactory);
+        return  context;
     }
 
     public boolean isWatching() {

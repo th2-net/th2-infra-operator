@@ -32,7 +32,7 @@ class CRDEventHandler implements ResourceEventHandler<CustomResourceDefinition> 
                 "th2mstores.th2.exactpro.com");
 
         var res = new CRDEventHandler(crdNames);
-        crdInformer.addEventHandlerWithResyncPeriod(res, RESYNC_TIME);
+        crdInformer.addEventHandler(res);
         return res;
     }
 

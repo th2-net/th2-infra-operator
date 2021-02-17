@@ -40,12 +40,11 @@ public class Th2DictionaryEventHandler implements Watcher<Th2Dictionary> {
                 Th2DictionaryList.class,
                 RESYNC_TIME);
 
-        dictionaryInformer.addEventHandlerWithResyncPeriod(CustomResourceUtils.resourceEventHandlerFor(
+        dictionaryInformer.addEventHandler(CustomResourceUtils.resourceEventHandlerFor(
                 res,
                 Th2Dictionary.class,
                 res.dictionaryClient.getCustomResourceDefinition(),
-                eventQueue),
-                RESYNC_TIME);
+                eventQueue));
         return res;
     }
 
