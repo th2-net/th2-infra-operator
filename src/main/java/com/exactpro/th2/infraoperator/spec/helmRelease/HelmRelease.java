@@ -20,6 +20,7 @@ import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import io.fabric8.kubernetes.client.CustomResource;
 import io.fabric8.kubernetes.model.annotation.Group;
+import io.fabric8.kubernetes.model.annotation.Kind;
 import io.fabric8.kubernetes.model.annotation.Version;
 import lombok.SneakyThrows;
 
@@ -36,6 +37,7 @@ import static com.exactpro.th2.infraoperator.util.JsonUtils.YAML_READER;
 @JsonIgnoreProperties(ignoreUnknown = true)
 @Group("helm.fluxcd.io")
 @Version("v1")
+@Kind("HelmRelease")
 public class HelmRelease extends CustomResource<InstantiableMap, InstantiableMap> {
 
     private MergePutter mergePutter = new MergePutter();

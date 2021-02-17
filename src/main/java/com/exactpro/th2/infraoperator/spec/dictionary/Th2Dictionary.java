@@ -19,6 +19,7 @@ package com.exactpro.th2.infraoperator.spec.dictionary;
 import com.fasterxml.jackson.annotation.JsonSetter;
 import io.fabric8.kubernetes.client.CustomResource;
 import io.fabric8.kubernetes.model.annotation.Group;
+import io.fabric8.kubernetes.model.annotation.Kind;
 import io.fabric8.kubernetes.model.annotation.Version;
 
 import java.util.Objects;
@@ -28,6 +29,7 @@ import static com.exactpro.th2.infraoperator.util.ExtractUtils.extractNamespace;
 
 @Group("th2.exactpro.com")
 @Version("v1")
+@Kind("Th2Dictionary")
 public class Th2Dictionary extends CustomResource {
 
     private Th2DictionarySpec spec;

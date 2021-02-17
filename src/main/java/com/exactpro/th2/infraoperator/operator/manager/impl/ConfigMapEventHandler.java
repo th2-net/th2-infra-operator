@@ -28,18 +28,24 @@ public class ConfigMapEventHandler implements Watcher<ConfigMap> {
     public static final String SECRET_TYPE_OPAQUE = "Opaque";
 
     private static final Logger logger = LoggerFactory.getLogger(ConfigMapEventHandler.class);
+
     private KubernetesClient client;
+    public KubernetesClient getClient() {
+        return  client;
+    }
 
     public static ConfigMapEventHandler newInstance(SharedInformerFactory sharedInformerFactory,
                                                     KubernetesClient client,
                                                     DefaultWatchManager.EventQueue<DefaultWatchManager.DispatcherEvent> eventQueue) {
+        var res = new ConfigMapEventHandler(client);
+        res.client = client;
+
         SharedIndexInformer<ConfigMap> configMapInformer = sharedInformerFactory.sharedIndexInformerFor(
                 ConfigMap.class,
                 ConfigMapList.class,
                 CustomResourceUtils.RESYNC_TIME);
 
-        var res = new ConfigMapEventHandler(client);
-        configMapInformer.addEventHandlerWithResyncPeriod(new GenericResourceEventHandler<>(res, eventQueue), 0);
+        configMapInformer.addEventHandler(new GenericResourceEventHandler<>(res, eventQueue));
         return res;
     }
 

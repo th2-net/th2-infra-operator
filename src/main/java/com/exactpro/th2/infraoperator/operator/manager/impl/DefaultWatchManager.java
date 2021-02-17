@@ -16,6 +16,7 @@
 
 package com.exactpro.th2.infraoperator.operator.manager.impl;
 
+import com.exactpro.th2.infraoperator.configuration.OperatorConfig;
 import com.exactpro.th2.infraoperator.model.box.configuration.dictionary.factory.impl.DefaultDictionaryFactory;
 import com.exactpro.th2.infraoperator.model.box.configuration.dictionary.factory.impl.EmptyDictionaryFactory;
 import com.exactpro.th2.infraoperator.model.box.configuration.grpc.factory.impl.DefaultGrpcRouterConfigFactory;
@@ -25,6 +26,7 @@ import com.exactpro.th2.infraoperator.model.kubernetes.client.ipml.DictionaryCli
 import com.exactpro.th2.infraoperator.operator.HelmReleaseTh2Op;
 import com.exactpro.th2.infraoperator.operator.context.HelmOperatorContext;
 import com.exactpro.th2.infraoperator.spec.Th2CustomResource;
+import com.exactpro.th2.infraoperator.spec.link.Th2Link;
 import com.exactpro.th2.infraoperator.spec.strategy.linkResolver.dictionary.impl.DefaultDictionaryLinkResolver;
 import com.exactpro.th2.infraoperator.spec.strategy.linkResolver.dictionary.impl.EmptyDictionaryLinkResolver;
 import com.exactpro.th2.infraoperator.spec.strategy.linkResolver.grpc.impl.DefaultGrpcLinkResolver;
@@ -38,7 +40,9 @@ import com.exactpro.th2.infraoperator.spec.strategy.resFinder.dictionary.Diction
 import com.exactpro.th2.infraoperator.spec.strategy.resFinder.dictionary.impl.DefaultDictionaryResourceFinder;
 import com.exactpro.th2.infraoperator.spec.strategy.resFinder.dictionary.impl.EmptyDictionaryResourceFinder;
 import com.exactpro.th2.infraoperator.util.CustomResourceUtils;
+import com.exactpro.th2.infraoperator.util.Strings;
 import com.fasterxml.uuid.Generators;
+import io.fabric8.kubernetes.api.model.ConfigMap;
 import io.fabric8.kubernetes.api.model.HasMetadata;
 import io.fabric8.kubernetes.client.DefaultKubernetesClient;
 import io.fabric8.kubernetes.client.KubernetesClient;
@@ -50,10 +54,13 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.*;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.Function;
 import java.util.function.Supplier;
+import java.util.stream.Collectors;
 
 import static com.exactpro.th2.infraoperator.operator.AbstractTh2Operator.REFRESH_TOKEN_ALIAS;
+import static com.exactpro.th2.infraoperator.util.CustomResourceUtils.annotationFor;
 import static com.exactpro.th2.infraoperator.util.ExtractUtils.extractName;
 
 public class DefaultWatchManager {
@@ -77,6 +84,7 @@ public class DefaultWatchManager {
     private final EventQueue<DispatcherEvent> eventQueue;
 
     private final EventDispatcher eventDispatcher;
+    private EventHandlerContext eventHandlerContext;
 
     private synchronized SharedInformerFactory getInformerFactory() {
         return sharedInformerFactory;
@@ -205,7 +213,8 @@ public class DefaultWatchManager {
 
         eventDispatcher.start();
         postInit();
-        registerInformers (sharedInformerFactory);
+        this.eventHandlerContext = registerInformers (sharedInformerFactory);
+        loadResources(eventHandlerContext);
 
         isWatching = true;
 
@@ -219,15 +228,65 @@ public class DefaultWatchManager {
     }
 
 
-    private void registerInformers (SharedInformerFactory sharedInformerFactory) {
+    private void loadResources(EventHandlerContext context) {
+        loadLinks(context);
+        loadConfigMaps(context);
+    }
 
+    private void loadLinks(EventHandlerContext context) {
+
+        var th2LinkEventHandler = (Th2LinkEventHandler) context.getHandler(Th2LinkEventHandler.class);
+        var linkClient = th2LinkEventHandler.getLinkClient();
+        List<Th2Link> th2Links = linkClient.getInstance().inAnyNamespace().list().getItems();
+        th2Links = filterByNamespace(th2Links);
+        for (var th2Link : th2Links) {
+            logger.info("Loading \"{}\"", annotationFor(th2Link));
+            th2LinkEventHandler.eventReceived(Watcher.Action.ADDED, th2Link);
+        }
+    }
+
+
+    private void loadConfigMaps(EventHandlerContext context) {
+
+        var configMapEventHandler = (ConfigMapEventHandler) context.getHandler(ConfigMapEventHandler.class);
         KubernetesClient client = operatorBuilder.getClient();
-        Th2LinkEventHandler.newInstance(sharedInformerFactory, client, eventQueue);
-        Th2DictionaryEventHandler.newInstance(sharedInformerFactory, dictionaryClient, eventQueue);
-        ConfigMapEventHandler.newInstance(sharedInformerFactory, client, eventQueue);
-        NamespaceEventHandler.newInstance(sharedInformerFactory);
-        CRDEventHandler.newInstance(sharedInformerFactory);
-        HelmReleaseEventHandler.newInstance(sharedInformerFactory, client, eventQueue);
+        List<ConfigMap> configMaps =  client.configMaps().inAnyNamespace().list().getItems();
+        configMaps = filterByNamespace(configMaps);
+        for (var configMap : configMaps) {
+            logger.info("Loading \"{}\"", annotationFor(configMap));
+            configMapEventHandler.eventReceived(Watcher.Action.ADDED, configMap);
+        }
+    }
+
+
+    private <E extends HasMetadata> List<E> filterByNamespace(List<E> resources){
+        return resources.stream()
+                .filter(resource -> !Strings.nonePrefixMatch(resource.getMetadata().getNamespace(), OperatorConfig.INSTANCE.getNamespacePrefixes()))
+                .collect(Collectors.toList());
+    }
+
+
+    private class EventHandlerContext<T extends Watcher> {
+        Map<Class, Watcher> eventHandlers = new ConcurrentHashMap<>();
+        void addHandler(T eventHandler) {
+            eventHandlers.put(eventHandler.getClass(), eventHandler);
+        }
+
+        Watcher getHandler(Class<T> clazz) {
+            return eventHandlers.get(clazz);
+        }
+    }
+
+    private EventHandlerContext registerInformers (SharedInformerFactory sharedInformerFactory) {
+
+        EventHandlerContext context = new EventHandlerContext();
+        KubernetesClient client = operatorBuilder.getClient();
+
+        context.addHandler(NamespaceEventHandler.newInstance(sharedInformerFactory));
+        context.addHandler(Th2LinkEventHandler.newInstance(sharedInformerFactory, client, eventQueue));
+        context.addHandler(Th2DictionaryEventHandler.newInstance(sharedInformerFactory, dictionaryClient, eventQueue));
+        context.addHandler(ConfigMapEventHandler.newInstance(sharedInformerFactory, client, eventQueue));
+        context.addHandler(HelmReleaseEventHandler.newInstance(sharedInformerFactory, client, eventQueue));
 
         /*
              resourceClients initialization should be done first
@@ -244,13 +303,16 @@ public class DefaultWatchManager {
         for (var hwSup : helmWatchersCommands) {
             HelmReleaseTh2Op<Th2CustomResource> helmReleaseTh2Op = hwSup.get();
 
-            helmReleaseTh2Op.generateInformerFromFactory(getInformerFactory()).addEventHandlerWithResyncPeriod(
-                    CustomResourceUtils.resourceEventHandlerFor(helmReleaseTh2Op.getResourceClient(),
-                            helmReleaseTh2Op,
-                            eventQueue),
-                    0);
+            var handler = CustomResourceUtils.resourceEventHandlerFor(helmReleaseTh2Op.getResourceClient(),
+                    helmReleaseTh2Op,
+                    eventQueue);
+            helmReleaseTh2Op.generateInformerFromFactory(getInformerFactory()).addEventHandler(handler);
+            context.addHandler(handler);
         }
 
+        // needs to be converted to Watcher
+        CRDEventHandler.newInstance(sharedInformerFactory);
+        return  context;
     }
 
     public boolean isWatching() {

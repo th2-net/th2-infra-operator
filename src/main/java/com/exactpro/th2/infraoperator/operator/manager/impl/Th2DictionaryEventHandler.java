@@ -19,6 +19,7 @@ import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 
+import static com.exactpro.th2.infraoperator.util.CustomResourceUtils.RESYNC_TIME;
 import static com.exactpro.th2.infraoperator.util.CustomResourceUtils.annotationFor;
 import static com.exactpro.th2.infraoperator.util.ExtractUtils.extractName;
 import static com.exactpro.th2.infraoperator.util.ExtractUtils.extractNamespace;
@@ -37,14 +38,13 @@ public class Th2DictionaryEventHandler implements Watcher<Th2Dictionary> {
                 CustomResourceDefinitionContext.fromCrd(res.dictionaryClient.getCustomResourceDefinition()),
                 Th2Dictionary.class,
                 Th2DictionaryList.class,
-                CustomResourceUtils.RESYNC_TIME);
+                RESYNC_TIME);
 
-        dictionaryInformer.addEventHandlerWithResyncPeriod(CustomResourceUtils.resourceEventHandlerFor(
+        dictionaryInformer.addEventHandler(CustomResourceUtils.resourceEventHandlerFor(
                 res,
                 Th2Dictionary.class,
                 res.dictionaryClient.getCustomResourceDefinition(),
-                eventQueue),
-                0);
+                eventQueue));
         return res;
     }
 

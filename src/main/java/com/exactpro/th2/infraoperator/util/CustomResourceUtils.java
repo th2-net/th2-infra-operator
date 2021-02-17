@@ -96,7 +96,7 @@ public final class CustomResourceUtils {
                 });
     }
 
-    public static <T extends CustomResource> ResourceEventHandler resourceEventHandlerFor(
+    public static <T extends CustomResource> GenericResourceEventHandler resourceEventHandlerFor(
             ResourceClient<T> resourceClient,
             Watcher<T> handler,
             DefaultWatchManager.EventQueue<DefaultWatchManager.DispatcherEvent> eventQueue) {
@@ -109,7 +109,7 @@ public final class CustomResourceUtils {
     }
 
 
-    public static <T extends CustomResource> ResourceEventHandler<T> resourceEventHandlerFor(
+    public static <T extends CustomResource> GenericResourceEventHandler<T> resourceEventHandlerFor(
             Watcher<T> watchHandler,
             Class<T> resourceType,
             CustomResourceDefinition crd,

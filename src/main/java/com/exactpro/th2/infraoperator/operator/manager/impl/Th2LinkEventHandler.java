@@ -25,30 +25,36 @@ import java.util.Set;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
+import static com.exactpro.th2.infraoperator.util.CustomResourceUtils.RESYNC_TIME;
 import static com.exactpro.th2.infraoperator.util.CustomResourceUtils.annotationFor;
 import static com.exactpro.th2.infraoperator.util.ExtractUtils.extractNamespace;
 
 public class Th2LinkEventHandler implements Watcher<Th2Link> {
     private static final Logger logger = LoggerFactory.getLogger(Th2LinkEventHandler.class);
 
+    private LinkClient linkClient;
+    public LinkClient getLinkClient() {
+        return linkClient;
+    }
+
+
     public static Th2LinkEventHandler newInstance(SharedInformerFactory sharedInformerFactory,
                                                   KubernetesClient client,
                                                   DefaultWatchManager.EventQueue<DefaultWatchManager.DispatcherEvent> eventQueue) {
-        var linkClient = new LinkClient(client);
+        var res = new Th2LinkEventHandler();
+        res.linkClient = new LinkClient(client);
 
         SharedIndexInformer<Th2Link> linkInformer = sharedInformerFactory.sharedIndexInformerForCustomResource(
-                CustomResourceDefinitionContext.fromCrd(linkClient.getCustomResourceDefinition()),
+                CustomResourceDefinitionContext.fromCrd(res.linkClient.getCustomResourceDefinition()),
                 Th2Link.class,
                 Th2LinkList.class,
-                CustomResourceUtils.RESYNC_TIME);
+                RESYNC_TIME);
 
-        var res = new Th2LinkEventHandler();
-        linkInformer.addEventHandlerWithResyncPeriod(CustomResourceUtils.resourceEventHandlerFor(
+        linkInformer.addEventHandler(CustomResourceUtils.resourceEventHandlerFor(
                 res,
                 Th2Link.class,
-                linkClient.getCustomResourceDefinition(),
-                eventQueue),
-                0);
+                res.linkClient.getCustomResourceDefinition(),
+                eventQueue));
 
         return res;
     }
