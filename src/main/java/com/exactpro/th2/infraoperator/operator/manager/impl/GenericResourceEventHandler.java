@@ -26,27 +26,6 @@ public class GenericResourceEventHandler<T extends HasMetadata> implements Resou
         this.eventQueue = eventQueue;
     }
 
-
-    public String refreshToken(HasMetadata res) {
-
-        var metadata = res.getMetadata();
-        if (metadata == null)
-            return null;
-
-        var annotations= metadata.getAnnotations();
-        if (annotations != null)
-           return annotations.get(REFRESH_TOKEN_ALIAS);
-        return null;
-    }
-
-    private String sourceHash(HasMetadata res) {
-
-        String hash = ExtractUtils.sourceHash(res);
-        if (hash != null)
-            return "[" + hash.substring(0, 8) + "]";
-        return "";
-    }
-
     @Override
     public void onAdd(T obj) {
 
@@ -61,8 +40,8 @@ public class GenericResourceEventHandler<T extends HasMetadata> implements Resou
         logger.debug("Received ADDED event ({}) for \"{}\" {}, refresh-token={}",
                 eventId,
                 resourceLabel,
-                sourceHash(obj),
-                refreshToken(obj));
+                ExtractUtils.sourceHash(obj, true),
+                ExtractUtils.refreshToken(obj));
 
         eventQueue.addEvent(new DefaultWatchManager.DispatcherEvent(
                 eventId,
@@ -88,8 +67,8 @@ public class GenericResourceEventHandler<T extends HasMetadata> implements Resou
         logger.debug("Received MODIFIED event ({}) for \"{}\" {}, refresh-token={}",
                 eventId,
                 resourceLabel,
-                sourceHash(newObj),
-                refreshToken(newObj));
+                ExtractUtils.sourceHash(newObj, true),
+                ExtractUtils.refreshToken(newObj));
 
         eventQueue.addEvent(new DefaultWatchManager.DispatcherEvent(
                 eventId,
@@ -114,8 +93,8 @@ public class GenericResourceEventHandler<T extends HasMetadata> implements Resou
         logger.debug("Received DELETED event ({}) for \"{}\" {}, refresh-token={}",
                 eventId,
                 resourceLabel,
-                sourceHash(obj),
-                refreshToken(obj));
+                ExtractUtils.sourceHash(obj, true),
+                ExtractUtils.refreshToken(obj));
 
         eventQueue.addEvent(new DefaultWatchManager.DispatcherEvent(
                 eventId,
@@ -139,7 +118,7 @@ public class GenericResourceEventHandler<T extends HasMetadata> implements Resou
                 // temp fix: change thread name for logging purposes
                 // TODO: propagate event id logging in code
                 String resourceLabel = CustomResourceUtils.annotationFor(resource);
-                logger.debug("Received {} event for \"{}\" {}", action, resourceLabel, sourceHash(resource));
+                logger.debug("Received {} event for \"{}\" {}", action, resourceLabel, ExtractUtils.sourceHash(resource, true));
 
                 try {
                     watcher.eventReceived(action, resource);

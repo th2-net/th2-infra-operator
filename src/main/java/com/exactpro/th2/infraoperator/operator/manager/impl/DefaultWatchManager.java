@@ -44,6 +44,7 @@ import com.exactpro.th2.infraoperator.util.Strings;
 import com.fasterxml.uuid.Generators;
 import io.fabric8.kubernetes.api.model.ConfigMap;
 import io.fabric8.kubernetes.api.model.HasMetadata;
+import io.fabric8.kubernetes.api.model.Namespace;
 import io.fabric8.kubernetes.client.DefaultKubernetesClient;
 import io.fabric8.kubernetes.client.KubernetesClient;
 import io.fabric8.kubernetes.client.Watcher;
@@ -110,7 +111,7 @@ public class DefaultWatchManager {
         private String eventId;
         private String annotation;
         private Watcher.Action action;
-        private HasMetadata cr;
+        private HasMetadata resource;
         private Watcher callback;
 
         @Override
@@ -127,7 +128,7 @@ public class DefaultWatchManager {
          */
         public void replace (DispatcherEvent dispatcherEvent) {
             this.eventId = dispatcherEvent.eventId;
-            this.cr = dispatcherEvent.cr;
+            this.resource = dispatcherEvent.resource;
         }
     }
 
@@ -159,8 +160,8 @@ public class DefaultWatchManager {
                             events.size());
 
                     try {
-                        var oldRV = el.getCr().getMetadata().getResourceVersion();
-                        var newRV = el.getCr().getMetadata().getResourceVersion();
+                        var oldRV = el.getResource().getMetadata().getResourceVersion();
+                        var newRV = el.getResource().getMetadata().getResourceVersion();
                         if (oldRV != null && newRV != null && Long.valueOf(newRV) < Long.valueOf(oldRV))
                             logger.warn("Substituted with older resource (old.resourceVersion={}, new.resourceVersion={})",
                                     oldRV,
@@ -185,7 +186,15 @@ public class DefaultWatchManager {
         public synchronized T withdrawEvent() {
 
             for (int i = 0; i < events.size(); i ++) {
-                String namespace = events.get(i).getCr().getMetadata().getNamespace();
+                String namespace;
+                boolean isNamespace = false;
+                if (events.get(i).getResource() instanceof Namespace) {
+                    namespace = events.get(i).getResource().getMetadata().getName();
+                    isNamespace = true;
+                } else {
+                    namespace = events.get(i).getResource().getMetadata().getNamespace();
+                }
+
                 if (!workingNamespaces.contains(namespace)) {
                     var event = events.remove(i);
                     addNamespace(namespace);
@@ -202,7 +211,7 @@ public class DefaultWatchManager {
         }
 
         public synchronized void closeEvent(T event) {
-            workingNamespaces.remove(event.getCr().getMetadata().getNamespace());
+            workingNamespaces.remove(event.getResource().getMetadata().getNamespace());
         }
     }
 
@@ -282,7 +291,7 @@ public class DefaultWatchManager {
         EventHandlerContext context = new EventHandlerContext();
         KubernetesClient client = operatorBuilder.getClient();
 
-        context.addHandler(NamespaceEventHandler.newInstance(sharedInformerFactory));
+        context.addHandler(NamespaceEventHandler.newInstance(sharedInformerFactory, eventQueue));
         context.addHandler(Th2LinkEventHandler.newInstance(sharedInformerFactory, client, eventQueue));
         context.addHandler(Th2DictionaryEventHandler.newInstance(sharedInformerFactory, dictionaryClient, eventQueue));
         context.addHandler(ConfigMapEventHandler.newInstance(sharedInformerFactory, client, eventQueue));

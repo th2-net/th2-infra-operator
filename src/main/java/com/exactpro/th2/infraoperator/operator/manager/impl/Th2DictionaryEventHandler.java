@@ -74,7 +74,7 @@ public class Th2DictionaryEventHandler implements Watcher<Th2Dictionary> {
     public void eventReceived(Action action, Th2Dictionary dictionary) {
 
         String resourceLabel = annotationFor(dictionary);
-        String sourceHash = ExtractUtils.sourceHash(dictionary);
+        String sourceHash = ExtractUtils.sourceHash(dictionary, false);
         String prevHash = sourceHashes.get(resourceLabel);
 
         if (prevHash != null && prevHash.equals(sourceHash)) {

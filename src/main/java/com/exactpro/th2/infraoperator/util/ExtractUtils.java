@@ -33,6 +33,7 @@ public final class ExtractUtils {
 
     private static final Logger logger = LoggerFactory.getLogger(ExtractUtils.class);
     private static final String KEY_SOURCE_HASH = "th2.exactpro.com/source-hash";
+    public static final String REFRESH_TOKEN_ALIAS = "refresh-token";
 
 
     private ExtractUtils() {
@@ -103,12 +104,34 @@ public final class ExtractUtils {
                 || name.equals(StoreHelmTh2Op.EVENT_ST_LINK_RESOURCE_NAME);
     }
 
+    public static String refreshToken(HasMetadata res) {
 
-    public static String sourceHash(HasMetadata res) {
+        var metadata = res.getMetadata();
+        if (metadata == null)
+            return null;
+
+        var annotations= metadata.getAnnotations();
+        if (annotations != null)
+            return annotations.get(REFRESH_TOKEN_ALIAS);
+        return null;
+    }
+
+    private static String sourceHash(HasMetadata res) {
 
         if (res.getMetadata() != null && res.getMetadata().getAnnotations() != null)
             return res.getMetadata().getAnnotations().get(KEY_SOURCE_HASH);
         return null;
+    }
+
+    public static String sourceHash(HasMetadata res, boolean shortHash) {
+        if (!shortHash) {
+            return sourceHash(res);
+        }
+
+        String hash = ExtractUtils.sourceHash(res);
+        if (hash != null)
+            return "[" + hash.substring(0, 8) + "]";
+        return "";
     }
 
 }

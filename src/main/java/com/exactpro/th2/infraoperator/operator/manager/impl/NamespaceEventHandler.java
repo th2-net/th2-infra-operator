@@ -2,7 +2,10 @@ package com.exactpro.th2.infraoperator.operator.manager.impl;
 
 import com.exactpro.th2.infraoperator.OperatorState;
 import com.exactpro.th2.infraoperator.configuration.OperatorConfig;
+import com.exactpro.th2.infraoperator.operator.context.EventCounter;
 import com.exactpro.th2.infraoperator.spec.strategy.linkResolver.mq.impl.RabbitMQContext;
+import com.exactpro.th2.infraoperator.util.CustomResourceUtils;
+import com.exactpro.th2.infraoperator.util.ExtractUtils;
 import com.exactpro.th2.infraoperator.util.Strings;
 import io.fabric8.kubernetes.api.model.Namespace;
 import io.fabric8.kubernetes.api.model.NamespaceList;
@@ -19,15 +22,23 @@ import static com.exactpro.th2.infraoperator.util.CustomResourceUtils.RESYNC_TIM
 public class NamespaceEventHandler implements ResourceEventHandler<Namespace>, Watcher<Namespace> {
     private static final Logger logger = LoggerFactory.getLogger(NamespaceEventHandler.class);
 
-    public static NamespaceEventHandler newInstance(SharedInformerFactory sharedInformerFactory) {
+    private DefaultWatchManager.EventQueue<DefaultWatchManager.DispatcherEvent> eventQueue;
+
+    public static NamespaceEventHandler newInstance(SharedInformerFactory sharedInformerFactory,
+                                                    DefaultWatchManager.EventQueue<DefaultWatchManager.DispatcherEvent> eventQueue) {
         SharedIndexInformer<Namespace> namespaceInformer = sharedInformerFactory.sharedIndexInformerFor(
                 Namespace.class,
                 NamespaceList.class,
                 RESYNC_TIME);
 
-        var res = new NamespaceEventHandler();
+        var res = new NamespaceEventHandler(eventQueue);
         namespaceInformer.addEventHandler(res);
+
         return res;
+    }
+
+    public NamespaceEventHandler (DefaultWatchManager.EventQueue<DefaultWatchManager.DispatcherEvent> eventQueue) {
+        this.eventQueue = eventQueue;
     }
 
     @Override
@@ -57,23 +68,58 @@ public class NamespaceEventHandler implements ResourceEventHandler<Namespace>, W
             return;
         }
 
-        logger.debug("Received DELETED event for namespace: \"{}\"", namespaceName);
+        String resourceLabel = CustomResourceUtils.annotationFor(namespace);
+        String eventId = EventCounter.newEvent();
+        logger.debug("Received DELETED event ({}) for \"{}\" {}, refresh-token={}",
+                eventId,
+                resourceLabel,
+                ExtractUtils.sourceHash(namespace, true),
+                ExtractUtils.refreshToken(namespace));
 
-        var lock = OperatorState.INSTANCE.getLock(namespaceName);
-
-        try {
-            lock.lock();
-
-            logger.debug("Processing event DELETED for namespace: \"{}\"", namespaceName);
-            RabbitMQContext.cleanupVHost(namespaceName);
-        } finally {
-            lock.unlock();
-        }
+        eventQueue.addEvent(new DefaultWatchManager.DispatcherEvent(
+                eventId,
+                resourceLabel,
+                Action.DELETED,
+                namespace,
+                this));
     }
 
     @Override
     public void eventReceived(Action action, Namespace resource) {
+        String namespaceName = resource.getMetadata().getName();
 
+        var lock = OperatorState.INSTANCE.getLock(namespaceName);
+
+
+        try {
+            long startDateTime = System.currentTimeMillis();
+
+
+            try {
+                String resourceLabel = CustomResourceUtils.annotationFor(resource);
+
+                try {
+                    lock.lock();
+
+                    logger.debug("Processing event DELETED for namespace: \"{}\"", namespaceName);
+                    RabbitMQContext.cleanupVHost(namespaceName);
+                    logger.info("Deleted namespace {}", namespaceName);
+                } catch (Exception e) {
+                    logger.error("Exception processing event for \"{}\"", resourceLabel, e);
+                } finally {
+                    lock.unlock();
+                }
+
+                long duration = System.currentTimeMillis() - startDateTime;
+                logger.info("Event for \"{}\" processed in {}ms", resourceLabel, duration);
+
+            } finally {
+                EventCounter.closeEvent();
+                Thread.currentThread().setName("thread-" + Thread.currentThread().getId());
+            }
+        } catch (Exception e) {
+            logger.error("Exception processing event", e);
+        }
     }
 
     @Override

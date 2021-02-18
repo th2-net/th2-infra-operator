@@ -42,7 +42,7 @@ public class EventDispatcher extends Thread {
                 String threadName = Thread.currentThread().getName();
                 try {
                     Thread.currentThread().setName(el.getEventId());
-                    el.getCallback().eventReceived(el.getAction(), el.getCr());
+                    el.getCallback().eventReceived(el.getAction(), el.getResource());
                 } catch (Exception e) {
                     logger.error("Exception dispatching event {}", el.getEventId(), e.getMessage());
                 } finally {
