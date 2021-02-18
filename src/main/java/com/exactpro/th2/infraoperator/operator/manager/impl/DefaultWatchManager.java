@@ -111,6 +111,7 @@ public class DefaultWatchManager {
         private String eventId;
         private String annotation;
         private Watcher.Action action;
+        private String namespace;
         private HasMetadata resource;
         private Watcher callback;
 
@@ -199,12 +200,7 @@ public class DefaultWatchManager {
         public synchronized T withdrawEvent() {
 
             for (int i = 0; i < events.size(); i ++) {
-                String namespace;
-                if (events.get(i).getResource() instanceof Namespace) {
-                    namespace = events.get(i).getResource().getMetadata().getName();
-                } else {
-                    namespace = events.get(i).getResource().getMetadata().getNamespace();
-                }
+                String namespace = events.get(i).getNamespace();
 
                 if (!workingNamespaces.contains(namespace)) {
                     var event = events.remove(i);
@@ -222,7 +218,7 @@ public class DefaultWatchManager {
         }
 
         public synchronized void closeEvent(T event) {
-            workingNamespaces.remove(event.getResource().getMetadata().getNamespace());
+            workingNamespaces.remove(event.getNamespace());
         }
     }
 

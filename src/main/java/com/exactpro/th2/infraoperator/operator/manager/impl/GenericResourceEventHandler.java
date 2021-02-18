@@ -47,6 +47,7 @@ public class GenericResourceEventHandler<T extends HasMetadata> implements Resou
                 eventId,
                 resourceLabel,
                 Action.ADDED,
+                obj.getMetadata().getNamespace(),
                 obj,
                 this));
     }
@@ -74,6 +75,7 @@ public class GenericResourceEventHandler<T extends HasMetadata> implements Resou
                 eventId,
                 resourceLabel,
                 Action.MODIFIED,
+                newObj.getMetadata().getName(),
                 newObj,
                 this));
     }
@@ -100,6 +102,7 @@ public class GenericResourceEventHandler<T extends HasMetadata> implements Resou
                 eventId,
                 resourceLabel,
                 Action.DELETED,
+                obj.getMetadata().getNamespace(),
                 obj,
                 this));
     }

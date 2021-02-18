@@ -80,6 +80,7 @@ public class NamespaceEventHandler implements ResourceEventHandler<Namespace>, W
                 eventId,
                 resourceLabel,
                 Action.DELETED,
+                namespace.getMetadata().getName(),
                 namespace,
                 this));
     }
