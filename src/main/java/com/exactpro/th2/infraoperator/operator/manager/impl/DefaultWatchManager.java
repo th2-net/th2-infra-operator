@@ -146,12 +146,25 @@ public class DefaultWatchManager {
 
 
         public synchronized void addEvent (T event) {
+            // Namespace events should not be substituted
+            if (event.getResource() instanceof Namespace) {
+                events.add(event);
+                logger.debug("Enqueued {}, {} event(s) present in the queue",
+                        event.getEventId(),
+                        events.size());
+
+                return;
+            }
 
             // try to substitute old event with new one
             for (int i = events.size() - 1; i >= 0; i--) {
                 var el = events.get(i);
                 if (el.getAnnotation().equals(event.getAnnotation()) && !el.getAction().equals(event.getAction()))
                     break;
+                if (el.getResource() instanceof Namespace) {
+                    logger.info("Namespace event detected, can't enforce substitution logic further");
+                    break;
+                }
 
                 if (el.equals(event)) {
                     logger.debug("Substituting {} with {}, {} event(s) present in the queue",
