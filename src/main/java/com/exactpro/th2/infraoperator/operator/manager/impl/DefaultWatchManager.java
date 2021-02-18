@@ -187,10 +187,8 @@ public class DefaultWatchManager {
 
             for (int i = 0; i < events.size(); i ++) {
                 String namespace;
-                boolean isNamespace = false;
                 if (events.get(i).getResource() instanceof Namespace) {
                     namespace = events.get(i).getResource().getMetadata().getName();
-                    isNamespace = true;
                 } else {
                     namespace = events.get(i).getResource().getMetadata().getNamespace();
                 }
