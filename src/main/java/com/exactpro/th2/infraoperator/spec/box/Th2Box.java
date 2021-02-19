@@ -22,6 +22,8 @@ import io.fabric8.kubernetes.model.annotation.Group;
 import io.fabric8.kubernetes.model.annotation.Kind;
 import io.fabric8.kubernetes.model.annotation.Version;
 
+import static com.exactpro.th2.infraoperator.util.CustomResourceUtils.annotationFor;
+
 @Group("th2.exactpro.com")
 @Version("v1")
 @Kind("Th2Box")
@@ -39,6 +41,7 @@ public class Th2Box extends Th2CustomResource {
     @JsonSetter
     public void setSpec(Th2BoxSpec spec) {
         this.spec = spec;
+        this.spec.removeDuplicatedPins(annotationFor(this));
     }
 
     public boolean equals(final Object o) {

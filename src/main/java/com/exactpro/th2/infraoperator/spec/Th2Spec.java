@@ -26,6 +26,8 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import io.fabric8.kubernetes.api.model.KubernetesResource;
 import lombok.Data;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.util.*;
 
@@ -34,6 +36,8 @@ import java.util.*;
 @JsonInclude(JsonInclude.Include.NON_EMPTY)
 @JsonIgnoreProperties(ignoreUnknown = true)
 public abstract class Th2Spec implements KubernetesResource {
+
+    private static final Logger logger = LoggerFactory.getLogger(Th2Spec.class);
 
     private static final String CHART_CFG_ALIAS = "chart-cfg";
 
@@ -91,5 +95,17 @@ public abstract class Th2Spec implements KubernetesResource {
             .filter(p -> p.getName().equals(name))
             .findFirst()
             .orElse(null);
+    }
+
+
+    public void removeDuplicatedPins(String resourceName){
+        Map<String, PinSpec> pinsMap = new HashMap<>();
+        for(PinSpec pin: pins){
+            PinSpec oldValue = pinsMap.put(pin.getName(), pin);
+            if(oldValue != null){
+                logger.warn("Found duplicated pin: '{}.{}'. Rewriting with later occurrence.", resourceName, pin.getName());
+            }
+        }
+        this.pins = new ArrayList<>(pinsMap.values());
     }
 }
