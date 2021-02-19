@@ -162,7 +162,7 @@ public class DefaultWatchManager {
                 var el = events.get(i);
                 if (el.getAnnotation().equals(event.getAnnotation()) && !el.getAction().equals(event.getAction()))
                     break;
-                if (el.getResource() instanceof Namespace) {
+                if (el.getResource() instanceof Namespace && el.getNamespace().equals(event.getNamespace())) {
                     logger.info("Namespace event detected, can't enforce substitution logic further");
                     break;
                 }
