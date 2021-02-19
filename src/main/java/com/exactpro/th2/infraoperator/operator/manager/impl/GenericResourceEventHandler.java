@@ -18,10 +18,10 @@ public class GenericResourceEventHandler<T extends HasMetadata> implements Resou
 
 
     private Watcher<T> watcher;
-    private DefaultWatchManager.EventQueue<DefaultWatchManager.DispatcherEvent> eventQueue;
+    private EventQueue eventQueue;
 
     public GenericResourceEventHandler(Watcher<T> watcher,
-                                       DefaultWatchManager.EventQueue<DefaultWatchManager.DispatcherEvent> eventQueue) {
+                                       EventQueue eventQueue) {
         this.watcher = watcher;
         this.eventQueue = eventQueue;
     }
@@ -43,7 +43,7 @@ public class GenericResourceEventHandler<T extends HasMetadata> implements Resou
                 ExtractUtils.sourceHash(obj, true),
                 ExtractUtils.refreshToken(obj));
 
-        eventQueue.addEvent(new DefaultWatchManager.DispatcherEvent(
+        eventQueue.addEvent(new EventQueue.Event(
                 eventId,
                 resourceLabel,
                 Action.ADDED,
@@ -71,7 +71,7 @@ public class GenericResourceEventHandler<T extends HasMetadata> implements Resou
                 ExtractUtils.sourceHash(newObj, true),
                 ExtractUtils.refreshToken(newObj));
 
-        eventQueue.addEvent(new DefaultWatchManager.DispatcherEvent(
+        eventQueue.addEvent(new EventQueue.Event(
                 eventId,
                 resourceLabel,
                 Action.MODIFIED,
@@ -98,7 +98,7 @@ public class GenericResourceEventHandler<T extends HasMetadata> implements Resou
                 ExtractUtils.sourceHash(obj, true),
                 ExtractUtils.refreshToken(obj));
 
-        eventQueue.addEvent(new DefaultWatchManager.DispatcherEvent(
+        eventQueue.addEvent(new EventQueue.Event(
                 eventId,
                 resourceLabel,
                 Action.DELETED,

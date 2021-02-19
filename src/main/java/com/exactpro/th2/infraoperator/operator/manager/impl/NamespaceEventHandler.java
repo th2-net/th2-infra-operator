@@ -22,10 +22,10 @@ import static com.exactpro.th2.infraoperator.util.CustomResourceUtils.RESYNC_TIM
 public class NamespaceEventHandler implements ResourceEventHandler<Namespace>, Watcher<Namespace> {
     private static final Logger logger = LoggerFactory.getLogger(NamespaceEventHandler.class);
 
-    private DefaultWatchManager.EventQueue<DefaultWatchManager.DispatcherEvent> eventQueue;
+    private EventQueue eventQueue;
 
     public static NamespaceEventHandler newInstance(SharedInformerFactory sharedInformerFactory,
-                                                    DefaultWatchManager.EventQueue<DefaultWatchManager.DispatcherEvent> eventQueue) {
+                                                    EventQueue eventQueue) {
         SharedIndexInformer<Namespace> namespaceInformer = sharedInformerFactory.sharedIndexInformerFor(
                 Namespace.class,
                 NamespaceList.class,
@@ -37,7 +37,7 @@ public class NamespaceEventHandler implements ResourceEventHandler<Namespace>, W
         return res;
     }
 
-    public NamespaceEventHandler (DefaultWatchManager.EventQueue<DefaultWatchManager.DispatcherEvent> eventQueue) {
+    public NamespaceEventHandler (EventQueue eventQueue) {
         this.eventQueue = eventQueue;
     }
 
@@ -76,7 +76,7 @@ public class NamespaceEventHandler implements ResourceEventHandler<Namespace>, W
                 ExtractUtils.sourceHash(namespace, true),
                 ExtractUtils.refreshToken(namespace));
 
-        eventQueue.addEvent(new DefaultWatchManager.DispatcherEvent(
+        eventQueue.addEvent(new EventQueue.Event(
                 eventId,
                 resourceLabel,
                 Action.DELETED,

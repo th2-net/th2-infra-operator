@@ -14,9 +14,9 @@ public class EventDispatcher extends Thread {
     private final int EVENT_WAIT_TIME_MS = 100;
 
     private final ExecutorService executor;
-    private final DefaultWatchManager.EventQueue<DefaultWatchManager.DispatcherEvent> eventQueue;
+    private final EventQueue eventQueue;
 
-    public EventDispatcher (DefaultWatchManager.EventQueue<DefaultWatchManager.DispatcherEvent> eventQueue) {
+    public EventDispatcher (EventQueue eventQueue) {
         this.eventQueue = eventQueue;
         this.executor = Executors.newFixedThreadPool(N_THREADS);
     }

@@ -32,7 +32,7 @@ public class HelmReleaseEventHandler implements Watcher<HelmRelease> {
     public static HelmReleaseEventHandler newInstance(
             SharedInformerFactory factory,
             KubernetesClient client,
-            DefaultWatchManager.EventQueue<DefaultWatchManager.DispatcherEvent> eventQueue) {
+            EventQueue eventQueue) {
 
         var res = new HelmReleaseEventHandler(client);
         var helmReleaseCrd = CustomResourceUtils.getResourceCrd(client, HELM_RELEASE_CRD_NAME);

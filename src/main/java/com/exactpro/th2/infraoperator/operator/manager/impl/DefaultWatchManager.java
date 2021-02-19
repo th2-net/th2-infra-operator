@@ -44,12 +44,10 @@ import com.exactpro.th2.infraoperator.util.Strings;
 import com.fasterxml.uuid.Generators;
 import io.fabric8.kubernetes.api.model.ConfigMap;
 import io.fabric8.kubernetes.api.model.HasMetadata;
-import io.fabric8.kubernetes.api.model.Namespace;
 import io.fabric8.kubernetes.client.DefaultKubernetesClient;
 import io.fabric8.kubernetes.client.KubernetesClient;
 import io.fabric8.kubernetes.client.Watcher;
 import io.fabric8.kubernetes.client.informers.SharedInformerFactory;
-import lombok.AllArgsConstructor;
 import lombok.Getter;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -82,7 +80,7 @@ public class DefaultWatchManager {
 
     private static DefaultWatchManager instance;
 
-    private final EventQueue<DispatcherEvent> eventQueue;
+    private final EventQueue eventQueue;
 
     private final EventDispatcher eventDispatcher;
     private EventHandlerContext eventHandlerContext;
@@ -103,123 +101,6 @@ public class DefaultWatchManager {
         });
 
         instance = this;
-    }
-
-    @Getter
-    @AllArgsConstructor
-    public static class DispatcherEvent {
-        private String eventId;
-        private String annotation;
-        private Watcher.Action action;
-        private String namespace;
-        private HasMetadata resource;
-        private Watcher callback;
-
-        @Override
-        public boolean equals(Object o) {
-            if (this == o) return true;
-            if (!(o instanceof DispatcherEvent)) return false;
-
-            return (annotation.equals(((DispatcherEvent) o).annotation) && action.equals(((DispatcherEvent) o).action));
-        }
-
-        /*
-            Replace should only happen when we have
-            two objects with same annotation and action
-         */
-        public void replace (DispatcherEvent dispatcherEvent) {
-            this.eventId = dispatcherEvent.eventId;
-            this.resource = dispatcherEvent.resource;
-        }
-    }
-
-    public static class EventQueue<T extends DispatcherEvent> {
-
-        private static final Logger logger = LoggerFactory.getLogger(EventQueue.class);
-
-        private final List<T> events;
-        private final LinkedList<String> workingNamespaces;
-
-        public EventQueue() {
-            this.events = new LinkedList<>();
-            this.workingNamespaces = new LinkedList<>();
-        }
-
-
-        public synchronized void addEvent (T event) {
-            // Namespace events should not be substituted
-            if (event.getResource() instanceof Namespace) {
-                events.add(event);
-                logger.debug("Enqueued {}, {} event(s) present in the queue",
-                        event.getEventId(),
-                        events.size());
-
-                return;
-            }
-
-            // try to substitute old event with new one
-            for (int i = events.size() - 1; i >= 0; i--) {
-                var el = events.get(i);
-                if (el.getAnnotation().equals(event.getAnnotation()) && !el.getAction().equals(event.getAction()))
-                    break;
-                if (el.getResource() instanceof Namespace && el.getNamespace().equals(event.getNamespace())) {
-                    logger.info("Namespace event detected, can't enforce substitution logic further");
-                    break;
-                }
-
-                if (el.equals(event)) {
-                    logger.debug("Substituting {} with {}, {} event(s) present in the queue",
-                            el.getEventId(),
-                            event.getEventId(),
-                            events.size());
-
-                    try {
-                        var oldRV = el.getResource().getMetadata().getResourceVersion();
-                        var newRV = el.getResource().getMetadata().getResourceVersion();
-                        if (oldRV != null && newRV != null && Long.valueOf(newRV) < Long.valueOf(oldRV))
-                            logger.warn("Substituted with older resource (old.resourceVersion={}, new.resourceVersion={})",
-                                    oldRV,
-                                    newRV);
-                    } catch (Exception e) {
-                        logger.error("Exception checking resourceVersion", e);
-                    }
-
-                    el.replace(event);
-                    return ;
-                }
-            }
-
-            // no event could be substituted, add it to the end
-            events.add(event);
-            logger.debug("Enqueued {}, {} event(s) present in the queue",
-                    event.getEventId(),
-                    events.size());
-        }
-
-
-        public synchronized T withdrawEvent() {
-
-            for (int i = 0; i < events.size(); i ++) {
-                String namespace = events.get(i).getNamespace();
-
-                if (!workingNamespaces.contains(namespace)) {
-                    var event = events.remove(i);
-                    addNamespace(namespace);
-                    logger.debug("{} withdrawn, {} event(s) remaining in the queue", event.getEventId(), events.size());
-                    return event;
-                }
-            }
-
-            return null;
-        }
-
-        private void addNamespace (String namespace) {
-            workingNamespaces.add (namespace);
-        }
-
-        public synchronized void closeEvent(T event) {
-            workingNamespaces.remove(event.getNamespace());
-        }
     }
 
     public void startInformers () {

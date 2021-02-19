@@ -31,7 +31,7 @@ public class Th2DictionaryEventHandler implements Watcher<Th2Dictionary> {
 
     public static Th2DictionaryEventHandler newInstance (SharedInformerFactory sharedInformerFactory,
                                                          DictionaryClient dictionaryClient,
-                                                         DefaultWatchManager.EventQueue<DefaultWatchManager.DispatcherEvent> eventQueue) {
+                                                         EventQueue eventQueue) {
         var res = new Th2DictionaryEventHandler();
         res.dictionaryClient = dictionaryClient;
         SharedIndexInformer<Th2Dictionary> dictionaryInformer = sharedInformerFactory.sharedIndexInformerForCustomResource(
