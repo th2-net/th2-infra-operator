@@ -60,11 +60,6 @@ public class DefaultBoxResourceFinder implements BoxResourceFinder {
     }
 
     @Override
-    public List<Th2CustomResource> getResources() {
-        return getResources(rc -> rc.getInstance().inAnyNamespace().list());
-    }
-
-    @Override
     public List<Th2CustomResource> getResources(String namespace) {
         return getResources(rc -> rc.getInstance().inNamespace(namespace).list());
     }

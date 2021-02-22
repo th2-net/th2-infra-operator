@@ -2,6 +2,7 @@ package com.exactpro.th2.infraoperator.operator.manager.impl;
 
 import com.exactpro.th2.infraoperator.spec.helmRelease.HelmRelease;
 import com.exactpro.th2.infraoperator.spec.helmRelease.HelmReleaseList;
+import com.exactpro.th2.infraoperator.spec.strategy.resFinder.box.BoxResourceFinder;
 import com.exactpro.th2.infraoperator.util.CustomResourceUtils;
 import io.fabric8.kubernetes.api.model.Namespace;
 import io.fabric8.kubernetes.api.model.ObjectMeta;
@@ -16,7 +17,6 @@ import io.fabric8.kubernetes.client.informers.SharedInformerFactory;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import static com.exactpro.th2.infraoperator.operator.AbstractTh2Operator.ANTECEDENT_LABEL_KEY_ALIAS;
 import static com.exactpro.th2.infraoperator.operator.HelmReleaseTh2Op.HELM_RELEASE_CRD_NAME;
 import static com.exactpro.th2.infraoperator.util.CustomResourceUtils.RESYNC_TIME;
 import static com.exactpro.th2.infraoperator.util.CustomResourceUtils.annotationFor;
@@ -28,13 +28,15 @@ public class HelmReleaseEventHandler implements Watcher<HelmRelease> {
 
     private final KubernetesClient client;
     private final MixedOperation<HelmRelease, HelmReleaseList, Resource<HelmRelease>> helmReleaseClient;
+    private final BoxResourceFinder resourceFinder;
 
     public static HelmReleaseEventHandler newInstance(
             SharedInformerFactory factory,
             KubernetesClient client,
-            DefaultWatchManager.EventQueue<DefaultWatchManager.DispatcherEvent> eventQueue) {
+            DefaultWatchManager.EventQueue<DefaultWatchManager.DispatcherEvent> eventQueue,
+            BoxResourceFinder resourceFinder) {
 
-        var res = new HelmReleaseEventHandler(client);
+        var res = new HelmReleaseEventHandler(client, resourceFinder);
         var helmReleaseCrd = CustomResourceUtils.getResourceCrd(client, HELM_RELEASE_CRD_NAME);
 
         SharedIndexInformer<HelmRelease> helmReleaseInformer = factory.sharedIndexInformerForCustomResource(
@@ -56,8 +58,9 @@ public class HelmReleaseEventHandler implements Watcher<HelmRelease> {
         return res;
     }
 
-    private HelmReleaseEventHandler (KubernetesClient client) {
+    private HelmReleaseEventHandler(KubernetesClient client, BoxResourceFinder resourceFinder) {
         this.client = client;
+        this.resourceFinder = resourceFinder;
 
         var helmReleaseCrd = CustomResourceUtils.getResourceCrd(client, HELM_RELEASE_CRD_NAME);
 
@@ -80,15 +83,15 @@ public class HelmReleaseEventHandler implements Watcher<HelmRelease> {
         if (action != Action.DELETED)
             return;
         String resourceLabel = annotationFor(helmRelease);
-        if (!helmRelease.getMetadata().getAnnotations().containsKey(ANTECEDENT_LABEL_KEY_ALIAS)) {
-            logger.info("\"{}\" doesn't have ANTECEDENT annotation, probably operator deleted it. it won't be redeployed!", resourceLabel);
-
+        String name = helmRelease.getMetadata().getName();
+        String namespace = helmRelease.getMetadata().getNamespace();
+        if(resourceFinder.getResource(name, namespace) == null){
+            logger.info("\"{}\" Can't find associated CR, probably operator deleted it. it won't be redeployed!", resourceLabel);
             return;
         }
 
         logger.info("\"{}\" has been deleted. Trying to redeploy", resourceLabel);
 
-        String namespace = helmRelease.getMetadata().getNamespace();
         Namespace namespaceObj = client.namespaces().withName(namespace).get();
         if (namespaceObj == null || !namespaceObj.getStatus().getPhase().equals("Active")) {
             logger.info("Namespace \"{}\" deleted or not active, cancelling", namespace);
@@ -98,9 +101,17 @@ public class HelmReleaseEventHandler implements Watcher<HelmRelease> {
         ObjectMeta kubObjMD = helmRelease.getMetadata();
         kubObjMD.setUid(null);
         kubObjMD.setResourceVersion(null);
-        helmReleaseClient.inNamespace(namespace).createOrReplace(helmRelease);
-
-        logger.info("\"{}\" has been redeployed", resourceLabel);
+        try {
+            helmReleaseClient.inNamespace(namespace).create(helmRelease);
+            logger.info("\"{}\" has been redeployed", resourceLabel);
+        } catch (Exception e){
+            var hr = helmReleaseClient.inNamespace(namespace).withName(name).get();
+            if (hr != null) {
+                logger.warn("Exception redeploying \"{}\": resource already exists", resourceLabel);
+            } else {
+                logger.error("Exception redeploying HelmRelease", e);
+            }
+        }
     }
 
 
