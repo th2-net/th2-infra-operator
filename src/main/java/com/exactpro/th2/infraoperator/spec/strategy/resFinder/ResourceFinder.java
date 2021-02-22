@@ -39,8 +39,6 @@ public interface ResourceFinder<T extends CustomResource> {
     @SuppressWarnings("unchecked")
     T getResource(String name, String namespace, T... additionalSource);
 
-    List<T> getResources();
-
     List<T> getResources(String namespace);
 
 }

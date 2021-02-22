@@ -31,11 +31,6 @@ public class EmptyDictionaryResourceFinder implements DictionaryResourceFinder {
     }
 
     @Override
-    public List<Th2Dictionary> getResources() {
-        return List.of();
-    }
-
-    @Override
     public List<Th2Dictionary> getResources(String namespace) {
         return List.of();
     }

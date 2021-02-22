@@ -69,11 +69,6 @@ public class StoreDependentBoxResourceFinder implements BoxResourceFinder {
     }
 
     @Override
-    public List<Th2CustomResource> getResources() {
-        return resourceFinder.getResources();
-    }
-
-    @Override
     public List<Th2CustomResource> getResources(String namespace) {
         return resourceFinder.getResources(namespace);
     }

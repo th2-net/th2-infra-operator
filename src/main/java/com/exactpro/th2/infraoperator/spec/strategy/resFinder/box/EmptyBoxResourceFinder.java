@@ -30,11 +30,6 @@ public class EmptyBoxResourceFinder implements BoxResourceFinder {
     }
 
     @Override
-    public List<Th2CustomResource> getResources() {
-        return List.of();
-    }
-
-    @Override
     public List<Th2CustomResource> getResources(String namespace) {
         return List.of();
     }

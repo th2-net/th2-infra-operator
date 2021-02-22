@@ -55,11 +55,6 @@ public class DefaultDictionaryResourceFinder implements DictionaryResourceFinder
     }
 
     @Override
-    public List<Th2Dictionary> getResources() {
-        return dictionaryClient.getInstance().inAnyNamespace().list().getItems();
-    }
-
-    @Override
     public List<Th2Dictionary> getResources(String namespace) {
         return dictionaryClient.getInstance().inNamespace(namespace).list().getItems();
     }
