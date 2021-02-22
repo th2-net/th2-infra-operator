@@ -1,6 +1,5 @@
 package com.exactpro.th2.infraoperator.operator.manager.impl;
 
-import com.exactpro.th2.infraoperator.spec.Th2CustomResource;
 import com.exactpro.th2.infraoperator.spec.helmRelease.HelmRelease;
 import com.exactpro.th2.infraoperator.spec.helmRelease.HelmReleaseList;
 import com.exactpro.th2.infraoperator.spec.strategy.resFinder.box.BoxResourceFinder;
@@ -21,8 +20,6 @@ import org.slf4j.LoggerFactory;
 import static com.exactpro.th2.infraoperator.operator.HelmReleaseTh2Op.HELM_RELEASE_CRD_NAME;
 import static com.exactpro.th2.infraoperator.util.CustomResourceUtils.RESYNC_TIME;
 import static com.exactpro.th2.infraoperator.util.CustomResourceUtils.annotationFor;
-import static com.exactpro.th2.infraoperator.util.ExtractUtils.extractName;
-import static com.exactpro.th2.infraoperator.util.ExtractUtils.extractNamespace;
 
 // TODO, this class needs rework
 public class HelmReleaseEventHandler implements Watcher<HelmRelease> {
@@ -108,11 +105,11 @@ public class HelmReleaseEventHandler implements Watcher<HelmRelease> {
             helmReleaseClient.inNamespace(namespace).create(helmRelease);
             logger.info("\"{}\" has been redeployed", resourceLabel);
         } catch (Exception e){
-            var hr  = helmReleaseClient.inNamespace(namespace).withName(name);
-            if(hr != null){
-                logger.warn("Caught exception because \"{}\" was already present on cluster.", resourceLabel);
-            }else {
-                logger.error("Exception creating helmRelease", e);
+            var hr = helmReleaseClient.inNamespace(namespace).withName(name).get();
+            if (hr != null) {
+                logger.warn("Exception redeploying \"{}\": resource already exists", resourceLabel);
+            } else {
+                logger.error("Exception redeploying HelmRelease", e);
             }
         }
     }
