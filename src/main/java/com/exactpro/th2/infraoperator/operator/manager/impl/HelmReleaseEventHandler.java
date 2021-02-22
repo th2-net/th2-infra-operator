@@ -104,9 +104,17 @@ public class HelmReleaseEventHandler implements Watcher<HelmRelease> {
         ObjectMeta kubObjMD = helmRelease.getMetadata();
         kubObjMD.setUid(null);
         kubObjMD.setResourceVersion(null);
-        helmReleaseClient.inNamespace(namespace).createOrReplace(helmRelease);
-
-        logger.info("\"{}\" has been redeployed", resourceLabel);
+        try {
+            helmReleaseClient.inNamespace(namespace).create(helmRelease);
+            logger.info("\"{}\" has been redeployed", resourceLabel);
+        } catch (Exception e){
+            var hr  = helmReleaseClient.inNamespace(namespace).withName(name);
+            if(hr != null){
+                logger.warn("Caught exception because \"{}\" was already present on cluster.", resourceLabel);
+            }else {
+                logger.error("Exception creating helmRelease", e);
+            }
+        }
     }
 
 
