@@ -43,7 +43,7 @@ public class EventQueue {
             if (this == o) return true;
             if (!(o instanceof EventQueue.Event)) return false;
 
-            return (annotation.equals(((Event) o).annotation) && action.equals(((Event) o).action));
+            return (getAnnotation().equals(((Event) o).getAnnotation()) && getAction().equals(((Event) o).getAction()));
         }
 
         /*
@@ -65,6 +65,14 @@ public class EventQueue {
 
         public HPEvent(String eventId, String annotation, Watcher.Action action, String namespace, HasMetadata resource, Watcher callback) {
             super(eventId, annotation, action, namespace, resource, callback);
+        }
+
+        @Override
+        public boolean equals(Object o) {
+            if (this == o) return true;
+            if (!(o instanceof EventQueue.HPEvent)) return false;
+
+            return (getAnnotation().equals(((Event) o).getAnnotation()) && getAction().equals(((Event) o).getAction()));
         }
     }
 
@@ -132,7 +140,7 @@ public class EventQueue {
             events.add(event);
 
             // Log state of queues
-            logger.debug("Enqueued {}, {} event(s) present in the HP queue, {} event(s) in queue",
+            logger.debug("Enqueued {}, {} event(s) present in the HP queue, {} event(s) in the queue",
                     event.getEventId(),
                     hPEvents.size(),
                     events.size());
@@ -150,9 +158,9 @@ public class EventQueue {
             }
         } else {
             //event is instanceof Event
-            int index = getIndexForEvent(event, hPEvents);
+            int index = getIndexForEvent(event, events);
 
-            if (index == hPEvents.size()) {
+            if (index == events.size()) {
                 events.add(event);
             } else {
                 events.get(index).replace(event);
@@ -160,7 +168,7 @@ public class EventQueue {
         }
 
         // Log state of queues
-        logger.debug("Enqueued {}, {} event(s) present in the HP queue, {} event(s) in queue",
+        logger.debug("Enqueued {}, {} event(s) present in the HP queue, {} event(s) in the queue",
                 event.getEventId(),
                 hPEvents.size(),
                 events.size());
@@ -173,7 +181,6 @@ public class EventQueue {
             if (!workingNamespaces.contains(namespace)) {
                 Event event = eventQueue.remove(i);
                 addNamespace(namespace);
-                logger.debug("{} withdrawn, {} event(s) remaining in the queue", event.getEventId(), eventQueue.size());
                 return event;
             }
         }
@@ -195,7 +202,7 @@ public class EventQueue {
 
         event = withdrawEventFromQueue(hPEvents);
 
-                /*
+        /*
             Since namespace events are being added in both queue,
             we need to remove namespace event from other queue as well
          */
@@ -209,6 +216,13 @@ public class EventQueue {
          */
         if (event == null) {
             event = withdrawEventFromQueue(events);
+        }
+
+        if (event != null) {
+            logger.debug("Withdrawn {}, {} event(s) present in the HP queue, {} event(s) in queue",
+                    event.getEventId(),
+                    hPEvents.size(),
+                    events.size());
         }
 
         return event;

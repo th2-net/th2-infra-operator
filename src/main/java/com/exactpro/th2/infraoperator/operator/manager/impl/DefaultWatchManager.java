@@ -93,7 +93,7 @@ public class DefaultWatchManager {
         this.operatorBuilder = builder;
         this.sharedInformerFactory = builder.getClient().informers();
         this.dictionaryClient = new DictionaryClient(operatorBuilder.getClient());
-        this.eventQueue = new EventQueue<>();
+        this.eventQueue = new EventQueue();
         this.eventDispatcher = new EventDispatcher(this.eventQueue);
 
         sharedInformerFactory.addSharedInformerEventListener(exception -> {

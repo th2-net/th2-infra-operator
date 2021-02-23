@@ -76,7 +76,7 @@ public class NamespaceEventHandler implements ResourceEventHandler<Namespace>, W
                 ExtractUtils.sourceHash(namespace, true),
                 ExtractUtils.refreshToken(namespace));
 
-        eventQueue.addEvent(new EventQueue.Event(
+        eventQueue.addEvent(EventQueue.generateEvent(
                 eventId,
                 resourceLabel,
                 Action.DELETED,

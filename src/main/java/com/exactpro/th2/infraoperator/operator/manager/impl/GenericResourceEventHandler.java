@@ -43,7 +43,7 @@ public class GenericResourceEventHandler<T extends HasMetadata> implements Resou
                 ExtractUtils.sourceHash(obj, true),
                 ExtractUtils.refreshToken(obj));
 
-        eventQueue.addEvent(new EventQueue.Event(
+        eventQueue.addEvent(EventQueue.generateEvent(
                 eventId,
                 resourceLabel,
                 Action.ADDED,
@@ -71,7 +71,7 @@ public class GenericResourceEventHandler<T extends HasMetadata> implements Resou
                 ExtractUtils.sourceHash(newObj, true),
                 ExtractUtils.refreshToken(newObj));
 
-        eventQueue.addEvent(new EventQueue.Event(
+        eventQueue.addEvent(EventQueue.generateEvent(
                 eventId,
                 resourceLabel,
                 Action.MODIFIED,
@@ -98,7 +98,7 @@ public class GenericResourceEventHandler<T extends HasMetadata> implements Resou
                 ExtractUtils.sourceHash(obj, true),
                 ExtractUtils.refreshToken(obj));
 
-        eventQueue.addEvent(new EventQueue.Event(
+        eventQueue.addEvent(EventQueue.generateEvent(
                 eventId,
                 resourceLabel,
                 Action.DELETED,
@@ -121,7 +121,7 @@ public class GenericResourceEventHandler<T extends HasMetadata> implements Resou
                 // temp fix: change thread name for logging purposes
                 // TODO: propagate event id logging in code
                 String resourceLabel = CustomResourceUtils.annotationFor(resource);
-                logger.debug("Received {} event for \"{}\" {}", action, resourceLabel, ExtractUtils.sourceHash(resource, true));
+                logger.debug("Processing {} event for \"{}\" {}", action, resourceLabel, ExtractUtils.sourceHash(resource, true));
 
                 try {
                     watcher.eventReceived(action, resource);
