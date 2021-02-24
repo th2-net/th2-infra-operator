@@ -33,7 +33,6 @@ public class NamespaceEventHandler implements ResourceEventHandler<Namespace>, W
 
         var res = new NamespaceEventHandler(eventQueue);
         namespaceInformer.addEventHandler(res);
-
         return res;
     }
 

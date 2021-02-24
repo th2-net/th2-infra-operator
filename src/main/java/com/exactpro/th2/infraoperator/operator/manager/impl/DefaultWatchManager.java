@@ -183,7 +183,7 @@ public class DefaultWatchManager {
         context.addHandler(Th2LinkEventHandler.newInstance(sharedInformerFactory, client, eventQueue));
         context.addHandler(Th2DictionaryEventHandler.newInstance(sharedInformerFactory, dictionaryClient, eventQueue));
         context.addHandler(ConfigMapEventHandler.newInstance(sharedInformerFactory, client, eventQueue));
-        context.addHandler(HelmReleaseEventHandler.newInstance(sharedInformerFactory, client, eventQueue));
+        context.addHandler(HelmReleaseEventHandler.newInstance(sharedInformerFactory, client, eventQueue, operatorBuilder.getResourceFinder()));
 
         /*
              resourceClients initialization should be done first
