@@ -54,6 +54,15 @@ public class EventQueue {
             this.eventId = event.eventId;
             this.resource = event.resource;
         }
+
+        @Override
+        public String toString() {
+            return "Event{" +
+                    "eventId='" + getEventId() + '\'' +
+                    ", annotation='" + getAnnotation() + '\'' +
+                    ", action=" + getAction() +
+                    '}';
+        }
     }
 
     /*
@@ -73,6 +82,15 @@ public class EventQueue {
             if (!(o instanceof EventQueue.HPEvent)) return false;
 
             return (getAnnotation().equals(((Event) o).getAnnotation()) && getAction().equals(((Event) o).getAction()));
+        }
+
+        @Override
+        public String toString() {
+            return "HPEvent{" +
+                    "eventId='" + getEventId() + '\'' +
+                    ", annotation='" + getAnnotation() + '\'' +
+                    ", action=" + getAction() +
+                    '}';
         }
     }
 
