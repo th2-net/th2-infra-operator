@@ -75,7 +75,7 @@ public class GenericResourceEventHandler<T extends HasMetadata> implements Resou
                 eventId,
                 resourceLabel,
                 Action.MODIFIED,
-                newObj.getMetadata().getName(),
+                newObj.getMetadata().getNamespace(),
                 newObj,
                 this));
     }

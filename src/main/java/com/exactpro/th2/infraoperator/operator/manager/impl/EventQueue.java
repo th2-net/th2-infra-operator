@@ -6,7 +6,6 @@ import io.fabric8.kubernetes.api.model.ConfigMap;
 import io.fabric8.kubernetes.api.model.HasMetadata;
 import io.fabric8.kubernetes.api.model.Namespace;
 import io.fabric8.kubernetes.client.Watcher;
-import lombok.AllArgsConstructor;
 import lombok.Getter;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -29,7 +28,6 @@ public class EventQueue {
     }
 
     @Getter
-    @AllArgsConstructor
     public static class Event {
         private String eventId;
         private String annotation;
@@ -37,6 +35,15 @@ public class EventQueue {
         private String namespace;
         private HasMetadata resource;
         private Watcher callback;
+
+        public Event(String eventId, String annotation, Watcher.Action action, String namespace, HasMetadata resource, Watcher callback) {
+            this.eventId = eventId;
+            this.annotation = annotation;
+            this.action = action;
+            this.namespace = namespace;
+            this.resource = resource;
+            this.callback = callback;
+        }
 
         @Override
         public boolean equals(Object o) {
@@ -186,12 +193,10 @@ public class EventQueue {
         }
 
         // Log state of queues
-        logger.debug("Enqueued {}, {} event(s) present in the HP queue, {} event(s) in the queue\n HPEvents {}\n Events {}",
+        logger.debug("Enqueued {}, {} event(s) present in the HP queue, {} event(s) in the queue",
                 event.getEventId(),
                 hPEvents.size(),
-                events.size(),
-                hPEvents.toString(),
-                events.toString());
+                events.size());
     }
 
     private Event withdrawEventFromQueue (List<? extends Event> eventQueue) {
