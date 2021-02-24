@@ -168,10 +168,12 @@ public class EventQueue {
         }
 
         // Log state of queues
-        logger.debug("Enqueued {}, {} event(s) present in the HP queue, {} event(s) in the queue",
+        logger.debug("Enqueued {}, {} event(s) present in the HP queue, {} event(s) in the queue\n HPEvents {}\n Events {}",
                 event.getEventId(),
                 hPEvents.size(),
-                events.size());
+                events.size(),
+                hPEvents.toString(),
+                events.toString());
     }
 
     private Event withdrawEventFromQueue (List<? extends Event> eventQueue) {
