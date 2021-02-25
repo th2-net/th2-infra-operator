@@ -113,29 +113,18 @@ public class GenericResourceEventHandler<T extends HasMetadata> implements Resou
         try {
             long startDateTime = System.currentTimeMillis();
 
-            if (Strings.nonePrefixMatch(resource.getMetadata().getNamespace(), OperatorConfig.INSTANCE.getNamespacePrefixes())) {
-                return;
-            }
+            String resourceLabel = CustomResourceUtils.annotationFor(resource);
+            logger.debug("Processing {} event for \"{}\" {}", action, resourceLabel, ExtractUtils.sourceHash(resource, true));
 
             try {
-                // temp fix: change thread name for logging purposes
-                // TODO: propagate event id logging in code
-                String resourceLabel = CustomResourceUtils.annotationFor(resource);
-                logger.debug("Processing {} event for \"{}\" {}", action, resourceLabel, ExtractUtils.sourceHash(resource, true));
-
-                try {
-                    watcher.eventReceived(action, resource);
-                } catch (Exception e) {
-                    logger.error("Exception processing event for \"{}\"", resourceLabel, e);
-                }
-
-                long duration = System.currentTimeMillis() - startDateTime;
-                logger.info("Event for \"{}\" processed in {}ms", resourceLabel, duration);
-
-            } finally {
-                EventCounter.closeEvent();
-                Thread.currentThread().setName("thread-" + Thread.currentThread().getId());
+                watcher.eventReceived(action, resource);
+            } catch (Exception e) {
+                logger.error("Exception processing event for \"{}\"", resourceLabel, e);
             }
+
+            long duration = System.currentTimeMillis() - startDateTime;
+            logger.info("Event for \"{}\" processed in {}ms", resourceLabel, duration);
+
         } catch (Exception e) {
             logger.error("Exception processing event", e);
         }

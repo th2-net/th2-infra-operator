@@ -94,29 +94,23 @@ public class NamespaceEventHandler implements ResourceEventHandler<Namespace>, W
         try {
             long startDateTime = System.currentTimeMillis();
 
+            String resourceLabel = CustomResourceUtils.annotationFor(resource);
 
             try {
-                String resourceLabel = CustomResourceUtils.annotationFor(resource);
+                lock.lock();
 
-                try {
-                    lock.lock();
-
-                    logger.debug("Processing event DELETED for namespace: \"{}\"", namespaceName);
-                    RabbitMQContext.cleanupVHost(namespaceName);
-                    logger.info("Deleted namespace {}", namespaceName);
-                } catch (Exception e) {
-                    logger.error("Exception processing event for \"{}\"", resourceLabel, e);
-                } finally {
-                    lock.unlock();
-                }
-
-                long duration = System.currentTimeMillis() - startDateTime;
-                logger.info("Event for \"{}\" processed in {}ms", resourceLabel, duration);
-
+                logger.debug("Processing {} event for namespace: \"{}\"", action, namespaceName);
+                RabbitMQContext.cleanupVHost(namespaceName);
+                logger.info("Deleted namespace {}", namespaceName);
+            } catch (Exception e) {
+                logger.error("Exception processing event for \"{}\"", resourceLabel, e);
             } finally {
-                EventCounter.closeEvent();
-                Thread.currentThread().setName("thread-" + Thread.currentThread().getId());
+                lock.unlock();
             }
+
+            long duration = System.currentTimeMillis() - startDateTime;
+            logger.info("Event for \"{}\" processed in {}ms", resourceLabel, duration);
+
         } catch (Exception e) {
             logger.error("Exception processing event", e);
         }
