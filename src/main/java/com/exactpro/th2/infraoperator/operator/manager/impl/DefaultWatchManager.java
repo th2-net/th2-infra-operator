@@ -80,8 +80,6 @@ public class DefaultWatchManager {
 
     private static DefaultWatchManager instance;
 
-    private final EventQueue eventQueue;
-
     private final EventDispatcher eventDispatcher;
     private EventHandlerContext eventHandlerContext;
 
@@ -93,8 +91,7 @@ public class DefaultWatchManager {
         this.operatorBuilder = builder;
         this.sharedInformerFactory = builder.getClient().informers();
         this.dictionaryClient = new DictionaryClient(operatorBuilder.getClient());
-        this.eventQueue = new EventQueue();
-        this.eventDispatcher = new EventDispatcher(this.eventQueue);
+        this.eventDispatcher = new EventDispatcher();
 
         sharedInformerFactory.addSharedInformerEventListener(exception -> {
             logger.error("Exception in InformerFactory : {}", exception.getMessage());
@@ -179,11 +176,11 @@ public class DefaultWatchManager {
         EventHandlerContext context = new EventHandlerContext();
         KubernetesClient client = operatorBuilder.getClient();
 
-        context.addHandler(NamespaceEventHandler.newInstance(sharedInformerFactory, eventQueue));
-        context.addHandler(Th2LinkEventHandler.newInstance(sharedInformerFactory, client, eventQueue));
-        context.addHandler(Th2DictionaryEventHandler.newInstance(sharedInformerFactory, dictionaryClient, eventQueue));
-        context.addHandler(ConfigMapEventHandler.newInstance(sharedInformerFactory, client, eventQueue));
-        context.addHandler(HelmReleaseEventHandler.newInstance(sharedInformerFactory, client, eventQueue, operatorBuilder.getResourceFinder()));
+        context.addHandler(NamespaceEventHandler.newInstance(sharedInformerFactory, eventDispatcher.getEventQueue()));
+        context.addHandler(Th2LinkEventHandler.newInstance(sharedInformerFactory, client, eventDispatcher.getEventQueue()));
+        context.addHandler(Th2DictionaryEventHandler.newInstance(sharedInformerFactory, dictionaryClient, eventDispatcher.getEventQueue()));
+        context.addHandler(ConfigMapEventHandler.newInstance(sharedInformerFactory, client, eventDispatcher.getEventQueue()));
+        context.addHandler(HelmReleaseEventHandler.newInstance(sharedInformerFactory, client, eventDispatcher.getEventQueue(), operatorBuilder.getResourceFinder()));
 
         /*
              resourceClients initialization should be done first
@@ -202,7 +199,7 @@ public class DefaultWatchManager {
 
             var handler = CustomResourceUtils.resourceEventHandlerFor(helmReleaseTh2Op.getResourceClient(),
                     helmReleaseTh2Op,
-                    eventQueue);
+                    eventDispatcher.getEventQueue());
             helmReleaseTh2Op.generateInformerFromFactory(getInformerFactory()).addEventHandler(handler);
             context.addHandler(handler);
         }

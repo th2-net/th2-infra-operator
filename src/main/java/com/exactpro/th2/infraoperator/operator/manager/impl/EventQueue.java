@@ -20,11 +20,13 @@ public class EventQueue {
     private final List<HPEvent> hPEvents;
     private final List<Event> events;
     private final LinkedList<String> workingNamespaces;
+    private final Awareable monitor;
 
-    public EventQueue() {
+    public EventQueue(Awareable monitor) {
         this.hPEvents = new LinkedList<>();
         this.events = new LinkedList<>();
         this.workingNamespaces = new LinkedList<>();
+        this.monitor = monitor;
     }
 
     @Getter
@@ -160,43 +162,54 @@ public class EventQueue {
     }
 
     public synchronized void addEvent(Event event) {
-        if (event.getResource() instanceof Namespace) {
-            hPEvents.add((HPEvent) event);
-            events.add(event);
+        try {
+            if (event.getResource() instanceof Namespace) {
+                hPEvents.add((HPEvent) event);
+                events.add(event);
+
+                // Log state of queues
+                logger.debug("Enqueued {}, {} event(s) present in the HP queue, {} event(s) in the queue",
+                        event.getEventId(),
+                        hPEvents.size(),
+                        events.size());
+
+                return;
+            }
+
+            if (event instanceof HPEvent) {
+                int index = getIndexForEvent(event, hPEvents);
+
+                if (index == hPEvents.size()) {
+                    hPEvents.add((HPEvent) event);
+                } else {
+                    hPEvents.get(index).replace(event);
+                }
+            } else {
+                //event is instanceof Event
+                int index = getIndexForEvent(event, events);
+
+                if (index == events.size()) {
+                    events.add(event);
+                } else {
+                    events.get(index).replace(event);
+                }
+            }
 
             // Log state of queues
             logger.debug("Enqueued {}, {} event(s) present in the HP queue, {} event(s) in the queue",
                     event.getEventId(),
                     hPEvents.size(),
                     events.size());
-
-            return;
+        } catch (Exception e) {
+            logger.error("Exception enqueueing {}, {} event(s) present in the HP queue, {} event(s) in the queue",
+                    event.getEventId(),
+                    hPEvents.size(),
+                    events.size(),
+                    e);
+        } finally {
+            if (monitor != null)
+                monitor.beAware();
         }
-
-        if (event instanceof HPEvent) {
-            int index = getIndexForEvent(event, hPEvents);
-
-            if (index == hPEvents.size()) {
-                hPEvents.add((HPEvent) event);
-            } else {
-                hPEvents.get(index).replace(event);
-            }
-        } else {
-            //event is instanceof Event
-            int index = getIndexForEvent(event, events);
-
-            if (index == events.size()) {
-                events.add(event);
-            } else {
-                events.get(index).replace(event);
-            }
-        }
-
-        // Log state of queues
-        logger.debug("Enqueued {}, {} event(s) present in the HP queue, {} event(s) in the queue",
-                event.getEventId(),
-                hPEvents.size(),
-                events.size());
     }
 
     private Event withdrawEventFromQueue (List<? extends Event> eventQueue) {
@@ -259,5 +272,9 @@ public class EventQueue {
 
     public synchronized void closeEvent(Event event) {
         workingNamespaces.remove(event.getNamespace());
+    }
+
+    public interface Awareable {
+        void beAware();
     }
 }
