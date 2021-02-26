@@ -14,14 +14,11 @@ import org.slf4j.LoggerFactory;
 
 public class GenericResourceEventHandler<T extends HasMetadata> implements ResourceEventHandler<T>, Watcher<T> {
     private static final Logger logger = LoggerFactory.getLogger(GenericResourceEventHandler.class);
-    public static final String REFRESH_TOKEN_ALIAS = "refresh-token";
-
 
     private Watcher<T> watcher;
     private EventQueue eventQueue;
 
-    public GenericResourceEventHandler(Watcher<T> watcher,
-                                       EventQueue eventQueue) {
+    public GenericResourceEventHandler(Watcher<T> watcher, EventQueue eventQueue) {
         this.watcher = watcher;
         this.eventQueue = eventQueue;
     }
@@ -33,8 +30,6 @@ public class GenericResourceEventHandler<T extends HasMetadata> implements Resou
                 return;
         }
 
-        // temp fix: change thread name for logging purposes
-        // TODO: propagate event id logging in code
         String resourceLabel = CustomResourceUtils.annotationFor(obj);
         String eventId = EventCounter.newEvent();
         logger.debug("Received ADDED event ({}) for \"{}\" {}, refresh-token={}",
@@ -61,8 +56,6 @@ public class GenericResourceEventHandler<T extends HasMetadata> implements Resou
             return;
         }
 
-        // temp fix: change thread name for logging purposes
-        // TODO: propagate event id logging in code
         String resourceLabel = CustomResourceUtils.annotationFor(oldObj);
         String eventId = EventCounter.newEvent();
         logger.debug("Received MODIFIED event ({}) for \"{}\" {}, refresh-token={}",
@@ -88,8 +81,6 @@ public class GenericResourceEventHandler<T extends HasMetadata> implements Resou
             return;
         }
 
-        // temp fix: change thread name for logging purposes
-        // TODO: propagate event id logging in code
         String resourceLabel = CustomResourceUtils.annotationFor(obj);
         String eventId = EventCounter.newEvent();
         logger.debug("Received DELETED event ({}) for \"{}\" {}, refresh-token={}",
@@ -117,6 +108,7 @@ public class GenericResourceEventHandler<T extends HasMetadata> implements Resou
             logger.debug("Processing {} event for \"{}\" {}", action, resourceLabel, ExtractUtils.sourceHash(resource, true));
 
             try {
+                // let handler process the message
                 watcher.eventReceived(action, resource);
             } catch (Exception e) {
                 logger.error("Exception processing event for \"{}\"", resourceLabel, e);

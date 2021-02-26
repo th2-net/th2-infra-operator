@@ -17,14 +17,14 @@ public class EventQueue {
 
     private static final Logger logger = LoggerFactory.getLogger(EventQueue.class);
 
-    private final List<HPEvent> hPEvents;
-    private final List<Event> events;
+    private final List<PriorityEvent> priorityEvents;
+    private final List<Event> regularEvents;
     private final LinkedList<String> workingNamespaces;
     private final Awareable monitor;
 
     public EventQueue(Awareable monitor) {
-        this.hPEvents = new LinkedList<>();
-        this.events = new LinkedList<>();
+        this.priorityEvents = new LinkedList<>();
+        this.regularEvents = new LinkedList<>();
         this.workingNamespaces = new LinkedList<>();
         this.monitor = monitor;
     }
@@ -52,14 +52,17 @@ public class EventQueue {
             if (this == o) return true;
             if (!(o instanceof EventQueue.Event)) return false;
 
-            return (getAnnotation().equals(((Event) o).getAnnotation()) && getAction().equals(((Event) o).getAction()));
+            return getAnnotation().equals(((Event) o).getAnnotation()) &&
+                    getAction().equals(((Event) o).getAction());
         }
 
         /*
             Replace should only happen when we have
             two objects with same annotation and action
          */
-        public void replace (Event event) {
+        public void replace(Event event) {
+            if (!this.equals(event))
+                throw new IllegalArgumentException("Wrong event to replace with");
             this.eventId = event.eventId;
             this.resource = event.resource;
         }
@@ -79,23 +82,24 @@ public class EventQueue {
         in high priority queue
      */
     @Getter
-    public static class HPEvent extends Event {
+    public static class PriorityEvent extends Event {
 
-        public HPEvent(String eventId, String annotation, Watcher.Action action, String namespace, HasMetadata resource, Watcher callback) {
+        public PriorityEvent(String eventId, String annotation, Watcher.Action action, String namespace, HasMetadata resource, Watcher callback) {
             super(eventId, annotation, action, namespace, resource, callback);
         }
 
         @Override
         public boolean equals(Object o) {
             if (this == o) return true;
-            if (!(o instanceof EventQueue.HPEvent)) return false;
+            if (!(o instanceof PriorityEvent)) return false;
 
-            return (getAnnotation().equals(((Event) o).getAnnotation()) && getAction().equals(((Event) o).getAction()));
+            return getAnnotation().equals(((PriorityEvent) o).getAnnotation()) &&
+                    getAction().equals(((PriorityEvent) o).getAction());
         }
 
         @Override
         public String toString() {
-            return "HPEvent{" +
+            return "PriorityEvent{" +
                     "eventId='" + getEventId() + '\'' +
                     ", annotation='" + getAnnotation() + '\'' +
                     ", action=" + getAction() +
@@ -110,11 +114,12 @@ public class EventQueue {
             String namespace,
             HasMetadata resource,
             Watcher callback) {
+
         if (resource instanceof ConfigMap
                 || resource instanceof Th2Link
                 || resource instanceof Th2Dictionary
                 || resource instanceof Namespace) {
-            return new HPEvent (eventId, annotation, action, namespace, resource, callback);
+            return new PriorityEvent(eventId, annotation, action, namespace, resource, callback);
         }
 
         return new Event(eventId, annotation, action, namespace, resource, callback);
@@ -128,29 +133,29 @@ public class EventQueue {
 
         // try to substitute old event with new one
         for (int i = eventQueue.size() - 1; i >= 0; i--) {
-            Event el = eventQueue.get(i);
-            if (el.getAnnotation().equals(event.getAnnotation()) && !el.getAction().equals(event.getAction()))
-                break;
-            if (el.getResource() instanceof Namespace && el.getNamespace().equals(event.getNamespace())) {
-                logger.info("Namespace event detected, can't enforce substitution logic further");
-                break;
-            }
+            Event e = eventQueue.get(i);
 
-            if (el.equals(event)) {
-                logger.debug("Substituting {} with {}, {} event(s) present in the queue",
-                        el.getEventId(),
-                        event.getEventId(),
-                        eventQueue.size());
+            if (e.getAnnotation().equals(event.getAnnotation()) && !e.getAction().equals(event.getAction()))
+                break;
+
+            // TODO: check, can we substitude namespace events?
+            if (e.getResource() instanceof Namespace && e.getNamespace().equals(event.getNamespace()))
+                break;
+
+            if (e.equals(event)) {
+                logger.debug("Substituting {} with {}",
+                        e.getEventId(),
+                        event.getEventId());
 
                 try {
-                    var oldRV = el.getResource().getMetadata().getResourceVersion();
-                    var newRV = el.getResource().getMetadata().getResourceVersion();
+                    var oldRV = e.getResource().getMetadata().getResourceVersion();
+                    var newRV = e.getResource().getMetadata().getResourceVersion();
                     if (oldRV != null && newRV != null && Long.valueOf(newRV) < Long.valueOf(oldRV))
                         logger.warn("Substituted with older resource (old.resourceVersion={}, new.resourceVersion={})",
                                 oldRV,
                                 newRV);
-                } catch (Exception e) {
-                    logger.error("Exception checking resourceVersion", e);
+                } catch (Exception ex) {
+                    logger.error("Exception checking resourceVersion", ex);
                 }
 
                 return i;
@@ -161,50 +166,51 @@ public class EventQueue {
         return eventQueue.size();
     }
 
+
     public synchronized void addEvent(Event event) {
         try {
             if (event.getResource() instanceof Namespace) {
-                hPEvents.add((HPEvent) event);
-                events.add(event);
+                priorityEvents.add((PriorityEvent) event);
+                regularEvents.add(event);
 
                 // Log state of queues
-                logger.debug("Enqueued {}, {} event(s) present in the HP queue, {} event(s) in the queue",
+                logger.debug("Enqueued {}, {} event(s) present in the priority queue, {} event(s) in the regular queue",
                         event.getEventId(),
-                        hPEvents.size(),
-                        events.size());
+                        priorityEvents.size(),
+                        regularEvents.size());
 
                 return;
             }
 
-            if (event instanceof HPEvent) {
-                int index = getIndexForEvent(event, hPEvents);
+            if (event instanceof PriorityEvent) {
+                int index = getIndexForEvent(event, priorityEvents);
 
-                if (index == hPEvents.size()) {
-                    hPEvents.add((HPEvent) event);
+                if (index == priorityEvents.size()) {
+                    priorityEvents.add((PriorityEvent) event);
                 } else {
-                    hPEvents.get(index).replace(event);
+                    priorityEvents.get(index).replace(event);
                 }
             } else {
                 //event is instanceof Event
-                int index = getIndexForEvent(event, events);
+                int index = getIndexForEvent(event, regularEvents);
 
-                if (index == events.size()) {
-                    events.add(event);
+                if (index == regularEvents.size()) {
+                    regularEvents.add(event);
                 } else {
-                    events.get(index).replace(event);
+                    regularEvents.get(index).replace(event);
                 }
             }
 
             // Log state of queues
-            logger.debug("Enqueued {}, {} event(s) present in the HP queue, {} event(s) in the queue",
+            logger.debug("Enqueued {}, {} event(s) present in the priority queue, {} event(s) in the regular queue",
                     event.getEventId(),
-                    hPEvents.size(),
-                    events.size());
+                    priorityEvents.size(),
+                    regularEvents.size());
         } catch (Exception e) {
-            logger.error("Exception enqueueing {}, {} event(s) present in the HP queue, {} event(s) in the queue",
+            logger.error("Exception enqueueing {}, {} event(s) present in the priority queue, {} event(s) in the regular queue",
                     event.getEventId(),
-                    hPEvents.size(),
-                    events.size(),
+                    priorityEvents.size(),
+                    regularEvents.size(),
                     e);
         } finally {
             if (monitor != null)
@@ -218,7 +224,7 @@ public class EventQueue {
 
             if (!workingNamespaces.contains(namespace)) {
                 Event event = eventQueue.remove(i);
-                addNamespace(namespace);
+                lockNamespace(namespace);
                 return event;
             }
         }
@@ -227,20 +233,22 @@ public class EventQueue {
     }
 
     private void removeFirstNamespaceEvent () {
-        for (int i = 0; i < events.size(); i++) {
-            if (events.get(i).getResource() instanceof Namespace) {
-                events.remove(i);
+        for (int i = 0; i < regularEvents.size(); i++) {
+            if (regularEvents.get(i).getResource() instanceof Namespace) {
+                regularEvents.remove(i);
                 break;
             }
         }
     }
 
     public synchronized Event withdrawEvent() {
+
         Event event;
 
-        event = withdrawEventFromQueue(hPEvents);
+        event = withdrawEventFromQueue(priorityEvents);
 
         /*
+            TODO: namespace event should be retracted simultaneously from both queues
             Since namespace events are being added in both queue,
             we need to remove namespace event from other queue as well
          */
@@ -253,20 +261,20 @@ public class EventQueue {
             we should check other queue
          */
         if (event == null) {
-            event = withdrawEventFromQueue(events);
+            event = withdrawEventFromQueue(regularEvents);
         }
 
         if (event != null) {
-            logger.debug("Withdrawn {}, {} event(s) present in the HP queue, {} event(s) in queue",
+            logger.debug("Withdrawn {}, {} event(s) present in the priority queue, {} event(s) in the regular queue",
                     event.getEventId(),
-                    hPEvents.size(),
-                    events.size());
+                    priorityEvents.size(),
+                    regularEvents.size());
         }
 
         return event;
     }
 
-    private void addNamespace(String namespace) {
+    private void lockNamespace(String namespace) {
         workingNamespaces.add(namespace);
     }
 

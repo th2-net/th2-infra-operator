@@ -63,23 +63,23 @@ public class NamespaceEventHandler implements ResourceEventHandler<Namespace>, W
     public void onDelete(Namespace namespace, boolean deletedFinalStateUnknown) {
         String namespaceName = namespace.getMetadata().getName();
 
-        if (Strings.nonePrefixMatch(namespace.getMetadata().getName(), OperatorConfig.INSTANCE.getNamespacePrefixes())) {
+        if (Strings.nonePrefixMatch(namespaceName, OperatorConfig.INSTANCE.getNamespacePrefixes())) {
             return;
         }
 
         String resourceLabel = CustomResourceUtils.annotationFor(namespace);
         String eventId = EventCounter.newEvent();
-        logger.debug("Received DELETED event ({}) for \"{}\" {}, refresh-token={}",
+        logger.debug("Received DELETED event ({}) for \"{}\" {}",
                 eventId,
                 resourceLabel,
                 ExtractUtils.sourceHash(namespace, true),
-                ExtractUtils.refreshToken(namespace));
+                null);
 
         eventQueue.addEvent(EventQueue.generateEvent(
                 eventId,
                 resourceLabel,
                 Action.DELETED,
-                namespace.getMetadata().getName(),
+                namespaceName,
                 namespace,
                 this));
     }
