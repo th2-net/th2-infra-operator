@@ -138,7 +138,7 @@ public class EventQueue {
             if (e.getAnnotation().equals(event.getAnnotation()) && !e.getAction().equals(event.getAction()))
                 break;
 
-            // TODO: check, can we substitude namespace events?
+            // TODO: check, can we substitute namespace events?
             if (e.getResource() instanceof Namespace && e.getNamespace().equals(event.getNamespace()))
                 break;
 
@@ -232,13 +232,35 @@ public class EventQueue {
         return null;
     }
 
-    private void removeFirstNamespaceEvent () {
-        for (int i = 0; i < regularEvents.size(); i++) {
-            if (regularEvents.get(i).getResource() instanceof Namespace) {
-                regularEvents.remove(i);
+    public void preemptEventsForQueue (List<? extends Event> queue, String namespace) {
+        var iterator = queue.iterator();
+        while (iterator.hasNext()) {
+            var event = iterator.next();
+
+
+            if (event.getNamespace().equals(namespace)) {
+                iterator.remove();
+            }
+
+            /*
+                If this event is namespace deletion itself
+                we should delete this event and preemption should stop
+             */
+            if (event.getNamespace().equals(namespace)
+                    && event.getAction().equals(Watcher.Action.DELETED)
+                    && event.getResource() instanceof Namespace) {
+
                 break;
             }
         }
+    }
+
+    public void preemptAllEventsForNamespace (String namespace) {
+        /*
+            TODO: in case we want preemption to happen after addition we need to empty priorityQueue as well
+         */
+
+        preemptEventsForQueue(regularEvents, namespace);
     }
 
     public synchronized Event withdrawEvent() {
@@ -252,8 +274,8 @@ public class EventQueue {
             Since namespace events are being added in both queue,
             we need to remove namespace event from other queue as well
          */
-        if (event != null && event.getResource() instanceof Namespace) {
-            removeFirstNamespaceEvent();
+        if (event != null && event.getResource() instanceof Namespace && event.getAction().equals(Watcher.Action.DELETED)) {
+            preemptAllEventsForNamespace(event.getNamespace());
         }
 
         /*
