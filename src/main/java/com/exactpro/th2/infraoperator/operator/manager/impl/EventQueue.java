@@ -126,20 +126,11 @@ public class EventQueue {
     }
 
     private int getIndexForEvent(Event event, List<? extends Event> eventQueue) {
-        // Namespace events should not be substituted
-        if (event.getResource() instanceof Namespace) {
-            return eventQueue.size();
-        }
-
         // try to substitute old event with new one
         for (int i = eventQueue.size() - 1; i >= 0; i--) {
             Event e = eventQueue.get(i);
 
             if (e.getAnnotation().equals(event.getAnnotation()) && !e.getAction().equals(event.getAction()))
-                break;
-
-            // TODO: check, can we substitute namespace events?
-            if (e.getResource() instanceof Namespace && e.getNamespace().equals(event.getNamespace()))
                 break;
 
             if (e.equals(event)) {
@@ -168,13 +159,17 @@ public class EventQueue {
 
 
     public synchronized void addEvent(Event event) {
+
         try {
             if (event.getResource() instanceof Namespace) {
+                if (event.action.equals(Watcher.Action.DELETED)) {
+                    preemptAllEventsForNamespace(event.getNamespace());
+                }
+
                 priorityEvents.add((PriorityEvent) event);
-                regularEvents.add(event);
 
                 // Log state of queues
-                logger.debug("Enqueued {}, {} event(s) present in the priority queue, {} event(s) in the regular queue",
+                logger.debug("Preempted namespace {}, {} event(s) present in the priority queue, {} event(s) in the regular queue",
                         event.getEventId(),
                         priorityEvents.size(),
                         regularEvents.size());
@@ -240,53 +235,29 @@ public class EventQueue {
         while (iterator.hasNext()) {
             var event = iterator.next();
 
-
             if (event.getNamespace().equals(namespace)) {
                 cnt ++;
                 iterator.remove();
             }
 
-            /*
-                If this event is namespace deletion itself
-                we should delete this event and preemption should stop
-             */
-            if (event.getNamespace().equals(namespace)
-                    && event.getAction().equals(Watcher.Action.DELETED)
-                    && event.getResource() instanceof Namespace) {
-
-                break;
-            }
         }
 
         logger.info("Preempted {} events from queue", cnt);
     }
 
     public void preemptAllEventsForNamespace (String namespace) {
-        /*
-            TODO: in case we want preemption to happen after addition we need to empty priorityQueue as well
-         */
 
+        preemptEventsForQueue(priorityEvents, namespace);
         preemptEventsForQueue(regularEvents, namespace);
     }
 
     public synchronized Event withdrawEvent() {
 
-        Event event;
-
-        event = withdrawEventFromQueue(priorityEvents);
+        Event event = withdrawEventFromQueue(priorityEvents);
 
         /*
-            TODO: namespace event should be retracted simultaneously from both queues
-            Since namespace events are being added in both queue,
-            we need to remove namespace event from other queue as well
-         */
-        if (event != null && event.getResource() instanceof Namespace && event.getAction().equals(Watcher.Action.DELETED)) {
-            preemptAllEventsForNamespace(event.getNamespace());
-        }
-
-        /*
-            If hp queue doesn't contain valid elements,
-            we should check other queue
+            If priorityQueue queue doesn't contain valid elements,
+            we should check regularQueue
          */
         if (event == null) {
             event = withdrawEventFromQueue(regularEvents);
