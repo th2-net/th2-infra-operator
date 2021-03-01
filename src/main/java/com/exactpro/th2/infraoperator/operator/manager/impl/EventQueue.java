@@ -233,12 +233,16 @@ public class EventQueue {
     }
 
     public void preemptEventsForQueue (List<? extends Event> queue, String namespace) {
+        logger.info("Preempting events for namespace {}", namespace);
+
+        int cnt = 0;
         var iterator = queue.iterator();
         while (iterator.hasNext()) {
             var event = iterator.next();
 
 
             if (event.getNamespace().equals(namespace)) {
+                cnt ++;
                 iterator.remove();
             }
 
@@ -253,6 +257,8 @@ public class EventQueue {
                 break;
             }
         }
+
+        logger.info("Preempted {} events from queue", cnt);
     }
 
     public void preemptAllEventsForNamespace (String namespace) {
