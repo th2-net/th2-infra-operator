@@ -1,4 +1,4 @@
-package com.exactpro.th2.infraoperator.operator;
+package com.exactpro.th2.infraoperator.operator.helm;
 
 import com.exactpro.th2.infraoperator.OperatorState;
 import com.exactpro.th2.infraoperator.model.box.schema.link.EnqueuedLink;
@@ -14,7 +14,7 @@ import org.slf4j.LoggerFactory;
 import java.util.ArrayList;
 import java.util.List;
 
-abstract class ActiveLinkUpdater {
+public abstract class ActiveLinkUpdater {
     private static final Logger logger = LoggerFactory.getLogger(ActiveLinkUpdater.class);
 
     public List<Th2CustomResource> updateLinks(Th2CustomResource resource) {

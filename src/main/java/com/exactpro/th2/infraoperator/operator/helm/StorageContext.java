@@ -1,4 +1,4 @@
-package com.exactpro.th2.infraoperator.operator;
+package com.exactpro.th2.infraoperator.operator.helm;
 
 import lombok.Getter;
 import lombok.experimental.SuperBuilder;
@@ -7,7 +7,7 @@ import java.util.Set;
 
 @Getter
 @SuperBuilder
-abstract class StorageContext {
+public abstract class StorageContext {
 
     private String linkResourceName;
 
@@ -17,6 +17,6 @@ abstract class StorageContext {
 
     private String pinName;
 
-    protected abstract boolean checkAttributes(Set<String> attributes);
+    public abstract boolean checkAttributes(Set<String> attributes);
 
 }

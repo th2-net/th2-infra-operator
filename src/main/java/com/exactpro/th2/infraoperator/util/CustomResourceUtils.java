@@ -25,7 +25,6 @@ import io.fabric8.kubernetes.api.model.apiextensions.v1.CustomResourceDefinition
 import io.fabric8.kubernetes.client.CustomResource;
 import io.fabric8.kubernetes.client.KubernetesClient;
 import io.fabric8.kubernetes.client.Watcher;
-import io.fabric8.kubernetes.client.informers.ResourceEventHandler;
 import io.fabric8.kubernetes.internal.KubernetesDeserializer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -81,7 +80,7 @@ public final class CustomResourceUtils {
         final String extractedNamespace = ExtractUtils.extractNamespace(crd);
         final String crdNamespace = (extractedNamespace == null) ? DEFAULT_NAMESPACE : extractedNamespace;
 
-            return kubClient.customResourceDefinitions()
+            return kubClient.apiextensions().v1beta1().customResourceDefinitions()
                 .list()
                 .getItems()
                 .stream()

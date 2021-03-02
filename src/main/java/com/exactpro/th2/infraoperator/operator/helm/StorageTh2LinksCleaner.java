@@ -1,4 +1,4 @@
-package com.exactpro.th2.infraoperator.operator;
+package com.exactpro.th2.infraoperator.operator.helm;
 
 import com.exactpro.th2.infraoperator.spec.Th2CustomResource;
 import com.exactpro.th2.infraoperator.spec.link.relation.pins.PinCouplingMQ;
@@ -6,7 +6,7 @@ import com.exactpro.th2.infraoperator.spec.link.relation.pins.PinCouplingMQ;
 import java.util.ArrayList;
 import java.util.List;
 
-class StorageTh2LinksCleaner<CR extends Th2CustomResource> extends StorageTh2LinksRefresher<CR> {
+public class StorageTh2LinksCleaner<CR extends Th2CustomResource> extends StorageTh2LinksRefresher<CR> {
 
     public StorageTh2LinksCleaner(StorageContext context) {
         super(context);

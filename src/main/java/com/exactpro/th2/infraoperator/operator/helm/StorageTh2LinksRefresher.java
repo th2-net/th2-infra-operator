@@ -1,4 +1,4 @@
-package com.exactpro.th2.infraoperator.operator;
+package com.exactpro.th2.infraoperator.operator.helm;
 
 import com.exactpro.th2.infraoperator.OperatorState;
 import com.exactpro.th2.infraoperator.spec.Th2CustomResource;
@@ -16,7 +16,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
 
-abstract class StorageTh2LinksRefresher <CR extends Th2CustomResource> {
+public abstract class StorageTh2LinksRefresher <CR extends Th2CustomResource> {
     private static final Logger logger = LoggerFactory.getLogger(StorageTh2LinksRefresher.class);
 
     private StorageContext context;

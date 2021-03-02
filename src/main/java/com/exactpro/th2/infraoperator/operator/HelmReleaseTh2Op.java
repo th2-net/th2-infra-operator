@@ -25,6 +25,7 @@ import com.exactpro.th2.infraoperator.model.box.configuration.grpc.factory.GrpcR
 import com.exactpro.th2.infraoperator.model.box.configuration.mq.MessageRouterConfiguration;
 import com.exactpro.th2.infraoperator.model.box.configuration.mq.factory.MessageRouterConfigFactory;
 import com.exactpro.th2.infraoperator.operator.context.HelmOperatorContext;
+import com.exactpro.th2.infraoperator.operator.helm.*;
 import com.exactpro.th2.infraoperator.spec.Th2CustomResource;
 import com.exactpro.th2.infraoperator.spec.Th2Spec;
 import com.exactpro.th2.infraoperator.spec.helmRelease.HelmRelease;
@@ -353,7 +354,7 @@ public abstract class HelmReleaseTh2Op<CR extends Th2CustomResource> extends Abs
         }
     }
 
-    protected List<Th2CustomResource> getAllLinkedResources(Th2CustomResource resource, List<PinCoupling> links) {
+    public List<Th2CustomResource> getAllLinkedResources(Th2CustomResource resource, List<PinCoupling> links) {
         Map<String, Th2CustomResource> resources = new HashMap<>();
 
         var boxName = ExtractUtils.extractName(resource);
