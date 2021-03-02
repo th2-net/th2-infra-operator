@@ -48,7 +48,10 @@ public class EventQueue {
         }
 
         public boolean canReplaceWithEvent(Event event) {
-            return this.getAnnotation().equals(event.annotation)
+            logger.info("{}", this.getAnnotation().equals(event.getAnnotation())
+                    && !this.getAction().equals(Watcher.Action.DELETED)
+                    && !event.equals(Watcher.Action.DELETED));
+            return this.getAnnotation().equals(event.getAnnotation())
                     && !this.getAction().equals(Watcher.Action.DELETED)
                     && !event.equals(Watcher.Action.DELETED);
         }
@@ -130,9 +133,6 @@ public class EventQueue {
         // try to substitute old event with new one
         for (int i = eventQueue.size() - 1; i >= 0; i--) {
             Event e = eventQueue.get(i);
-
-            if (e.getAnnotation().equals(event.getAnnotation()) && !e.getAction().equals(event.getAction()))
-                break;
 
             if (e.canReplaceWithEvent(event)) {
                 logger.debug("Substituting {} with {}",
