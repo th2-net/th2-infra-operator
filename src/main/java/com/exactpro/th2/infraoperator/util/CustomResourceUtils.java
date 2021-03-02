@@ -80,7 +80,7 @@ public final class CustomResourceUtils {
         final String extractedNamespace = ExtractUtils.extractNamespace(crd);
         final String crdNamespace = (extractedNamespace == null) ? DEFAULT_NAMESPACE : extractedNamespace;
 
-            return kubClient.apiextensions().v1beta1().customResourceDefinitions()
+            return kubClient.customResourceDefinitions()
                 .list()
                 .getItems()
                 .stream()
