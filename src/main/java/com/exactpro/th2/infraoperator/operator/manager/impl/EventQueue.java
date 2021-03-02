@@ -58,8 +58,6 @@ public class EventQueue {
             two objects with same annotation and action
          */
         public void replace(Event event) {
-            if (!this.equals(event))
-                throw new IllegalArgumentException("Wrong event to replace with");
             this.eventId = event.eventId;
             this.annotation = event.annotation;
             this.resource = event.resource;
