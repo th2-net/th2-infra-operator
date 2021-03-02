@@ -47,13 +47,10 @@ public class EventQueue {
             this.callback = callback;
         }
 
-        @Override
-        public boolean equals(Object o) {
-            if (this == o) return true;
-            if (!(o instanceof EventQueue.Event)) return false;
-
-            return getAnnotation().equals(((Event) o).getAnnotation()) &&
-                    getAction().equals(((Event) o).getAction());
+        public boolean canReplaceWithEvent(Event event) {
+            return this.getAnnotation().equals(event.annotation)
+                    && !this.getAction().equals(Watcher.Action.DELETED)
+                    && !event.equals(Watcher.Action.DELETED);
         }
 
         /*
@@ -64,6 +61,7 @@ public class EventQueue {
             if (!this.equals(event))
                 throw new IllegalArgumentException("Wrong event to replace with");
             this.eventId = event.eventId;
+            this.annotation = event.annotation;
             this.resource = event.resource;
         }
 
@@ -95,6 +93,11 @@ public class EventQueue {
 
             return getAnnotation().equals(((PriorityEvent) o).getAnnotation()) &&
                     getAction().equals(((PriorityEvent) o).getAction());
+        }
+
+        @Override
+        public boolean canReplaceWithEvent(Event event) {
+            return this.equals(event);
         }
 
         @Override
@@ -133,7 +136,7 @@ public class EventQueue {
             if (e.getAnnotation().equals(event.getAnnotation()) && !e.getAction().equals(event.getAction()))
                 break;
 
-            if (e.equals(event)) {
+            if (e.canReplaceWithEvent(event)) {
                 logger.debug("Substituting {} with {}",
                         e.getEventId(),
                         event.getEventId());
