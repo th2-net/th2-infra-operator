@@ -170,7 +170,7 @@ public class EventQueue {
 
                 // Log state of queues
                 logger.debug("Preempted namespace {}, {} event(s) present in the priority queue, {} event(s) in the regular queue",
-                        event.getEventId(),
+                        event.getNamespace(),
                         priorityEvents.size(),
                         regularEvents.size());
 
@@ -228,7 +228,7 @@ public class EventQueue {
     }
 
     public void preemptEventsForQueue (List<? extends Event> queue, String namespace) {
-        logger.info("Preempting events for namespace {}", namespace);
+        logger.debug("Preempting events for namespace {}", namespace);
 
         int cnt = 0;
         var iterator = queue.iterator();
@@ -242,12 +242,14 @@ public class EventQueue {
 
         }
 
-        logger.info("Preempted {} events from queue", cnt);
+        logger.debug("Preempted {} events from queue", cnt);
     }
 
     public void preemptAllEventsForNamespace (String namespace) {
 
+        logger.debug("Preempting priorityEvents");
         preemptEventsForQueue(priorityEvents, namespace);
+        logger.debug("Preempting regularEvents");
         preemptEventsForQueue(regularEvents, namespace);
     }
 
