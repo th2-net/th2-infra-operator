@@ -44,7 +44,6 @@ import io.fabric8.kubernetes.api.model.KubernetesResourceList;
 import io.fabric8.kubernetes.api.model.apiextensions.v1.CustomResourceDefinition;
 import io.fabric8.kubernetes.client.dsl.MixedOperation;
 import io.fabric8.kubernetes.client.dsl.Resource;
-import io.fabric8.kubernetes.client.dsl.base.CustomResourceDefinitionContext;
 import io.fabric8.kubernetes.client.informers.SharedInformer;
 import io.fabric8.kubernetes.client.informers.SharedInformerFactory;
 import org.slf4j.Logger;
@@ -107,13 +106,6 @@ public abstract class HelmReleaseTh2Op<CR extends Th2CustomResource> extends Abs
         this.dictionaryFactory = builder.getDictionaryFactory();
 
         helmReleaseCrd = CustomResourceUtils.getResourceCrd(kubClient, HELM_RELEASE_CRD_NAME);
-
-        CustomResourceDefinitionContext crdContext = new CustomResourceDefinitionContext.Builder()
-            .withGroup(helmReleaseCrd.getSpec().getGroup())
-            .withVersion(helmReleaseCrd.getSpec().getVersions().get(0).getName())
-            .withScope(helmReleaseCrd.getSpec().getScope())
-            .withPlural(helmReleaseCrd.getSpec().getNames().getPlural())
-            .build();
 
         helmReleaseClient = kubClient.customResources(HelmRelease.class);
 
