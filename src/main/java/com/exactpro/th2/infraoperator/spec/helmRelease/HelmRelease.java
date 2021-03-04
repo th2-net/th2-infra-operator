@@ -18,6 +18,7 @@ package com.exactpro.th2.infraoperator.spec.helmRelease;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+import io.fabric8.kubernetes.api.model.Namespaced;
 import io.fabric8.kubernetes.client.CustomResource;
 import io.fabric8.kubernetes.model.annotation.Group;
 import io.fabric8.kubernetes.model.annotation.Kind;
@@ -38,7 +39,7 @@ import static com.exactpro.th2.infraoperator.util.JsonUtils.YAML_READER;
 @Group("helm.fluxcd.io")
 @Version("v1")
 @Kind("HelmRelease")
-public class HelmRelease extends CustomResource<InstantiableMap, InstantiableMap> {
+public class HelmRelease extends CustomResource<InstantiableMap, InstantiableMap> implements Namespaced {
 
     private MergePutter mergePutter = new MergePutter();
 
