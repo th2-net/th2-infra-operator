@@ -257,10 +257,8 @@ public abstract class HelmReleaseTh2Op<CR extends Th2CustomResource> extends Abs
     protected void setupKubObj(CR resource, HelmRelease helmRelease) {
         super.setupKubObj(resource, helmRelease);
 
-        if (!CustomResourceUtils.isResourceCrdExist(kubClient, helmReleaseCrd)) {
-            String kubObjType = helmRelease.getClass().getSimpleName();
-            CustomResourceUtils.createResourceCrd(kubClient, helmReleaseCrd, kubObjType);
-        }
+        String kubObjType = helmRelease.getClass().getSimpleName();
+        CustomResourceUtils.createResourceCrd(kubClient, helmReleaseCrd, kubObjType);
 
     }
 

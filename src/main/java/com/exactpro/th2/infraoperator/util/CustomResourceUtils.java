@@ -16,16 +16,9 @@
 
 package com.exactpro.th2.infraoperator.util;
 
-import com.exactpro.th2.infraoperator.model.kubernetes.client.ResourceClient;
-import com.exactpro.th2.infraoperator.operator.manager.impl.EventQueue;
-import com.exactpro.th2.infraoperator.operator.manager.impl.GenericResourceEventHandler;
 import io.fabric8.kubernetes.api.model.HasMetadata;
 import io.fabric8.kubernetes.api.model.apiextensions.v1.CustomResourceDefinition;
-import io.fabric8.kubernetes.api.model.apiextensions.v1.CustomResourceDefinitionSpec;
-import io.fabric8.kubernetes.client.CustomResource;
 import io.fabric8.kubernetes.client.KubernetesClient;
-import io.fabric8.kubernetes.client.Watcher;
-import io.fabric8.kubernetes.internal.KubernetesDeserializer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -71,55 +64,5 @@ public final class CustomResourceUtils {
         } catch (Exception e) {
             logger.error("Exception creating CRD for '{}'", resourceType, e);
         }
-    }
-
-
-    public static boolean isResourceCrdExist(KubernetesClient kubClient, CustomResourceDefinition crd) {
-
-        final String crdName = ExtractUtils.extractName(crd);
-        final String extractedNamespace = ExtractUtils.extractNamespace(crd);
-        final String crdNamespace = (extractedNamespace == null) ? DEFAULT_NAMESPACE : extractedNamespace;
-
-            return kubClient.apiextensions().v1().customResourceDefinitions()
-                .list()
-                .getItems()
-                .stream()
-                .anyMatch(inCrd -> {
-
-                    String inCrdName = ExtractUtils.extractName(inCrd);
-                    String inCrdNamespace = ExtractUtils.extractNamespace(inCrd);
-                    if (inCrdNamespace == null)
-                        inCrdNamespace = DEFAULT_NAMESPACE;
-                    return inCrdName.equals(crdName) && inCrdNamespace.equals(crdNamespace);
-
-                });
-    }
-
-    public static <T extends CustomResource> GenericResourceEventHandler resourceEventHandlerFor(
-            ResourceClient<T> resourceClient,
-            Watcher<T> handler,
-            EventQueue eventQueue) {
-
-        return resourceEventHandlerFor(
-                handler,
-                resourceClient.getResourceType(),
-                resourceClient.getCustomResourceDefinition(),
-                eventQueue);
-    }
-
-
-    public static <T extends CustomResource> GenericResourceEventHandler<T> resourceEventHandlerFor(
-            Watcher<T> watchHandler,
-            Class<T> resourceType,
-            CustomResourceDefinition crd,
-            EventQueue eventQueue) {
-        CustomResourceDefinitionSpec spec = crd.getSpec();
-
-        String apiVersion = spec.getGroup() + "/" + spec.getVersions().get(0);
-        String kind = spec.getNames().getKind();
-
-        KubernetesDeserializer.registerCustomKind(apiVersion, kind, resourceType);
-
-        return new GenericResourceEventHandler<>(watchHandler, eventQueue);
     }
 }
