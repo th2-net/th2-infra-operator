@@ -11,7 +11,6 @@ import io.fabric8.kubernetes.client.Watcher;
 import io.fabric8.kubernetes.client.WatcherException;
 import io.fabric8.kubernetes.client.dsl.MixedOperation;
 import io.fabric8.kubernetes.client.dsl.Resource;
-import io.fabric8.kubernetes.client.dsl.base.CustomResourceDefinitionContext;
 import io.fabric8.kubernetes.client.informers.SharedIndexInformer;
 import io.fabric8.kubernetes.client.informers.SharedInformerFactory;
 import org.slf4j.Logger;
@@ -37,13 +36,16 @@ public class HelmReleaseEventHandler implements Watcher<HelmRelease> {
             BoxResourceFinder resourceFinder) {
 
         var res = new HelmReleaseEventHandler(client, resourceFinder);
+        var helmReleaseCrd = CustomResourceUtils.getResourceCrd(client, HELM_RELEASE_CRD_NAME);
 
         SharedIndexInformer<HelmRelease> helmReleaseInformer = factory.sharedIndexInformerForCustomResource(
                 HelmRelease.class,
                 RESYNC_TIME);
 
-        helmReleaseInformer.addEventHandler(new GenericResourceEventHandler<>(
+        helmReleaseInformer.addEventHandler(CustomResourceUtils.resourceEventHandlerFor(
                 res,
+                HelmRelease.class,
+                helmReleaseCrd,
                 eventQueue));
         return res;
     }
@@ -51,15 +53,6 @@ public class HelmReleaseEventHandler implements Watcher<HelmRelease> {
     private HelmReleaseEventHandler(KubernetesClient client, BoxResourceFinder resourceFinder) {
         this.client = client;
         this.resourceFinder = resourceFinder;
-
-        var helmReleaseCrd = CustomResourceUtils.getResourceCrd(client, HELM_RELEASE_CRD_NAME);
-
-        CustomResourceDefinitionContext crdContext = new CustomResourceDefinitionContext.Builder()
-                .withGroup(helmReleaseCrd.getSpec().getGroup())
-                .withVersion(helmReleaseCrd.getSpec().getVersions().get(0).getName())
-                .withScope(helmReleaseCrd.getSpec().getScope())
-                .withPlural(helmReleaseCrd.getSpec().getNames().getPlural())
-                .build();
 
         helmReleaseClient = client.customResources(HelmRelease.class);
     }

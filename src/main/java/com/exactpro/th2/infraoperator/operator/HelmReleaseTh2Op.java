@@ -29,7 +29,6 @@ import com.exactpro.th2.infraoperator.operator.helm.*;
 import com.exactpro.th2.infraoperator.spec.Th2CustomResource;
 import com.exactpro.th2.infraoperator.spec.Th2Spec;
 import com.exactpro.th2.infraoperator.spec.helmRelease.HelmRelease;
-import com.exactpro.th2.infraoperator.spec.helmRelease.HelmReleaseList;
 import com.exactpro.th2.infraoperator.spec.helmRelease.HelmReleaseSecrets;
 import com.exactpro.th2.infraoperator.spec.link.relation.pins.PinCoupling;
 import com.exactpro.th2.infraoperator.spec.shared.PrometheusConfiguration;
@@ -41,10 +40,10 @@ import com.exactpro.th2.infraoperator.spec.strategy.resFinder.box.BoxResourceFin
 import com.exactpro.th2.infraoperator.util.CustomResourceUtils;
 import com.exactpro.th2.infraoperator.util.ExtractUtils;
 import com.exactpro.th2.infraoperator.util.JsonUtils;
+import io.fabric8.kubernetes.api.model.KubernetesResourceList;
 import io.fabric8.kubernetes.api.model.apiextensions.v1.CustomResourceDefinition;
 import io.fabric8.kubernetes.client.dsl.MixedOperation;
 import io.fabric8.kubernetes.client.dsl.Resource;
-import io.fabric8.kubernetes.client.dsl.base.CustomResourceDefinitionContext;
 import io.fabric8.kubernetes.client.informers.SharedInformer;
 import io.fabric8.kubernetes.client.informers.SharedInformerFactory;
 import org.slf4j.Logger;
@@ -84,7 +83,7 @@ public abstract class HelmReleaseTh2Op<CR extends Th2CustomResource> extends Abs
     protected final DictionaryFactory dictionaryFactory;
 
     protected final CustomResourceDefinition helmReleaseCrd;
-    protected final MixedOperation<HelmRelease, HelmReleaseList, Resource<HelmRelease>> helmReleaseClient;
+    protected final MixedOperation<HelmRelease, KubernetesResourceList<HelmRelease>, Resource<HelmRelease>> helmReleaseClient;
 
     protected final ActiveLinkUpdater activeLinkUpdaterOnDelete;
     protected final ActiveLinkUpdater activeLinkUpdaterOnAdd;
@@ -108,17 +107,7 @@ public abstract class HelmReleaseTh2Op<CR extends Th2CustomResource> extends Abs
 
         helmReleaseCrd = CustomResourceUtils.getResourceCrd(kubClient, HELM_RELEASE_CRD_NAME);
 
-        CustomResourceDefinitionContext crdContext = new CustomResourceDefinitionContext.Builder()
-            .withGroup(helmReleaseCrd.getSpec().getGroup())
-            .withVersion(helmReleaseCrd.getSpec().getVersions().get(0).getName())
-            .withScope(helmReleaseCrd.getSpec().getScope())
-            .withPlural(helmReleaseCrd.getSpec().getNames().getPlural())
-            .build();
-
-        helmReleaseClient = kubClient.customResources(
-            HelmRelease.class,
-            HelmReleaseList.class
-        );
+        helmReleaseClient = kubClient.customResources(HelmRelease.class);
 
         var msgStContext = MsgStorageContext.builder()
             .linkResourceName(StoreHelmTh2Op.MSG_ST_LINK_RESOURCE_NAME)
