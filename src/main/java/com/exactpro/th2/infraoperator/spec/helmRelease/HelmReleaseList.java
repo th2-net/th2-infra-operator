@@ -18,6 +18,14 @@ package com.exactpro.th2.infraoperator.spec.helmRelease;
 
 import io.fabric8.kubernetes.client.CustomResourceList;
 
+/*
+    TODO: Delete this class
+    Currently this can't be deleted since fabric8 has partially deleted
+    usage of List classes, there are some places where it is being used
+    Current usages of lists:
+       client.customResources()
+       MixedOperation (T, L, Operation)
+ */
 public class HelmReleaseList extends CustomResourceList<HelmRelease> {
 
 }

@@ -17,14 +17,12 @@
 package com.exactpro.th2.infraoperator.operator.impl;
 
 import com.exactpro.th2.infraoperator.model.kubernetes.client.ResourceClient;
-import com.exactpro.th2.infraoperator.model.kubernetes.client.ipml.CoreBoxClient;
+import com.exactpro.th2.infraoperator.model.kubernetes.client.impl.CoreBoxClient;
 import com.exactpro.th2.infraoperator.operator.GenericHelmTh2Op;
 import com.exactpro.th2.infraoperator.operator.context.HelmOperatorContext;
 import com.exactpro.th2.infraoperator.spec.corebox.Th2CoreBox;
-import com.exactpro.th2.infraoperator.spec.corebox.Th2CoreBoxList;
 import com.exactpro.th2.infraoperator.util.CustomResourceUtils;
 import io.fabric8.kubernetes.client.KubernetesClient;
-import io.fabric8.kubernetes.client.dsl.base.CustomResourceDefinitionContext;
 import io.fabric8.kubernetes.client.informers.SharedIndexInformer;
 import io.fabric8.kubernetes.client.informers.SharedInformerFactory;
 
@@ -47,9 +45,7 @@ public class CoreBoxHelmTh2Op extends GenericHelmTh2Op<Th2CoreBox> {
     @Override
     public SharedIndexInformer<Th2CoreBox> generateInformerFromFactory (SharedInformerFactory factory) {
         return factory.sharedIndexInformerForCustomResource(
-                CustomResourceDefinitionContext.fromCrd(coreBoxClient.getCustomResourceDefinition()),
                 Th2CoreBox.class,
-                Th2CoreBoxList.class,
                 CustomResourceUtils.RESYNC_TIME);
     }
     @Override

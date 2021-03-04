@@ -35,7 +35,13 @@ public class Th2Link extends CustomResource {
 
     private Th2LinkSpec spec;
 
-    private Th2Link() {
+    /*
+        It's not recommended to instantiate objects via
+        constructor, it's made public because of Fabric8,
+        You should use `newInstance` method instead!
+     */
+    @Deprecated
+    public Th2Link() {
     }
 
 

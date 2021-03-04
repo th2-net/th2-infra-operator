@@ -40,14 +40,7 @@ public class HelmReleaseEventHandler implements Watcher<HelmRelease> {
         var helmReleaseCrd = CustomResourceUtils.getResourceCrd(client, HELM_RELEASE_CRD_NAME);
 
         SharedIndexInformer<HelmRelease> helmReleaseInformer = factory.sharedIndexInformerForCustomResource(
-                new CustomResourceDefinitionContext.Builder()
-                        .withGroup(helmReleaseCrd.getSpec().getGroup())
-                        .withVersion(helmReleaseCrd.getSpec().getVersions().get(0).getName())
-                        .withScope(helmReleaseCrd.getSpec().getScope())
-                        .withPlural(helmReleaseCrd.getSpec().getNames().getPlural())
-                        .build(),
                 HelmRelease.class,
-                HelmReleaseList.class,
                 RESYNC_TIME);
 
         helmReleaseInformer.addEventHandler(CustomResourceUtils.resourceEventHandlerFor(

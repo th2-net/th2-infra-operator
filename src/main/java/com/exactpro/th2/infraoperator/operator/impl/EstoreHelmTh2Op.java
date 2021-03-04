@@ -17,14 +17,12 @@
 package com.exactpro.th2.infraoperator.operator.impl;
 
 import com.exactpro.th2.infraoperator.model.kubernetes.client.ResourceClient;
-import com.exactpro.th2.infraoperator.model.kubernetes.client.ipml.EstoreClient;
+import com.exactpro.th2.infraoperator.model.kubernetes.client.impl.EstoreClient;
 import com.exactpro.th2.infraoperator.operator.StoreHelmTh2Op;
 import com.exactpro.th2.infraoperator.operator.context.HelmOperatorContext;
 import com.exactpro.th2.infraoperator.spec.estore.Th2Estore;
-import com.exactpro.th2.infraoperator.spec.estore.Th2EstoreList;
 import com.exactpro.th2.infraoperator.util.CustomResourceUtils;
 import io.fabric8.kubernetes.client.KubernetesClient;
-import io.fabric8.kubernetes.client.dsl.base.CustomResourceDefinitionContext;
 import io.fabric8.kubernetes.client.informers.SharedIndexInformer;
 import io.fabric8.kubernetes.client.informers.SharedInformerFactory;
 
@@ -41,9 +39,7 @@ public class EstoreHelmTh2Op extends StoreHelmTh2Op<Th2Estore> {
     @Override
     public SharedIndexInformer<Th2Estore> generateInformerFromFactory (SharedInformerFactory factory) {
         return factory.sharedIndexInformerForCustomResource(
-                CustomResourceDefinitionContext.fromCrd(estoreClient.getCustomResourceDefinition()),
                 Th2Estore.class,
-                Th2EstoreList.class,
                 CustomResourceUtils.RESYNC_TIME);
     }
 

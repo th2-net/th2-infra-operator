@@ -14,9 +14,20 @@
  * limitations under the License.
  */
 
-package com.exactpro.th2.infraoperator.spec.estore;
+package com.exactpro.th2.infraoperator.model.kubernetes.client.impl;
 
-import io.fabric8.kubernetes.client.CustomResourceList;
+import com.exactpro.th2.infraoperator.model.kubernetes.client.DefaultResourceClient;
+import com.exactpro.th2.infraoperator.spec.link.Th2Link;
+import io.fabric8.kubernetes.client.KubernetesClient;
 
-public class Th2EstoreList extends CustomResourceList<Th2Estore> {
+public class LinkClient extends DefaultResourceClient<Th2Link> {
+
+    public LinkClient(KubernetesClient client) {
+        super(
+                client,
+                Th2Link.class,
+                "th2links.th2.exactpro.com"
+        );
+    }
+
 }

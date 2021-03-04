@@ -116,7 +116,6 @@ public abstract class HelmReleaseTh2Op<CR extends Th2CustomResource> extends Abs
             .build();
 
         helmReleaseClient = kubClient.customResources(
-            crdContext,
             HelmRelease.class,
             HelmReleaseList.class
         );

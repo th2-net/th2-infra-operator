@@ -14,10 +14,20 @@
  * limitations under the License.
  */
 
-package com.exactpro.th2.infraoperator.spec.corebox;
+package com.exactpro.th2.infraoperator.model.kubernetes.client.impl;
 
-import io.fabric8.kubernetes.client.CustomResourceList;
+import com.exactpro.th2.infraoperator.model.kubernetes.client.DefaultResourceClient;
+import com.exactpro.th2.infraoperator.spec.dictionary.Th2Dictionary;
+import io.fabric8.kubernetes.client.KubernetesClient;
 
-public class Th2CoreBoxList extends CustomResourceList<Th2CoreBox> {
+public class DictionaryClient extends DefaultResourceClient<Th2Dictionary> {
+
+    public DictionaryClient(KubernetesClient client) {
+        super(
+                client,
+                Th2Dictionary.class,
+                "th2dictionaries.th2.exactpro.com"
+        );
+    }
 
 }
