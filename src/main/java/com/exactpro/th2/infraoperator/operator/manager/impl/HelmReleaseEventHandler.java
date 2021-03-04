@@ -2,7 +2,6 @@ package com.exactpro.th2.infraoperator.operator.manager.impl;
 
 import com.exactpro.th2.infraoperator.spec.helmRelease.HelmRelease;
 import com.exactpro.th2.infraoperator.spec.strategy.resFinder.box.BoxResourceFinder;
-import com.exactpro.th2.infraoperator.util.CustomResourceUtils;
 import io.fabric8.kubernetes.api.model.KubernetesResourceList;
 import io.fabric8.kubernetes.api.model.Namespace;
 import io.fabric8.kubernetes.api.model.ObjectMeta;
@@ -16,7 +15,6 @@ import io.fabric8.kubernetes.client.informers.SharedInformerFactory;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import static com.exactpro.th2.infraoperator.operator.HelmReleaseTh2Op.HELM_RELEASE_CRD_NAME;
 import static com.exactpro.th2.infraoperator.util.CustomResourceUtils.RESYNC_TIME;
 import static com.exactpro.th2.infraoperator.util.CustomResourceUtils.annotationFor;
 
@@ -36,17 +34,12 @@ public class HelmReleaseEventHandler implements Watcher<HelmRelease> {
             BoxResourceFinder resourceFinder) {
 
         var res = new HelmReleaseEventHandler(client, resourceFinder);
-        var helmReleaseCrd = CustomResourceUtils.getResourceCrd(client, HELM_RELEASE_CRD_NAME);
 
         SharedIndexInformer<HelmRelease> helmReleaseInformer = factory.sharedIndexInformerForCustomResource(
                 HelmRelease.class,
                 RESYNC_TIME);
 
-        helmReleaseInformer.addEventHandler(CustomResourceUtils.resourceEventHandlerFor(
-                res,
-                HelmRelease.class,
-                helmReleaseCrd,
-                eventQueue));
+        helmReleaseInformer.addEventHandler(new GenericResourceEventHandler<>(res, eventQueue));
         return res;
     }
 

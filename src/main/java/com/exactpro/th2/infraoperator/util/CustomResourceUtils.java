@@ -54,15 +54,4 @@ public final class CustomResourceUtils {
             throw new IllegalStateException(String.format("CRD with name '%s' not found", crdName));
         return crd;
     }
-
-
-    public static void createResourceCrd(KubernetesClient kubClient, CustomResourceDefinition crd, String resourceType) {
-
-        try {
-            kubClient.apiextensions().v1().customResourceDefinitions().createOrReplace(crd);
-            logger.info("Created CRD for '{}'", resourceType);
-        } catch (Exception e) {
-            logger.error("Exception creating CRD for '{}'", resourceType, e);
-        }
-    }
 }

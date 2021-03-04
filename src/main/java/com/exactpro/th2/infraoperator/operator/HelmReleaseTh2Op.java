@@ -41,7 +41,6 @@ import com.exactpro.th2.infraoperator.util.CustomResourceUtils;
 import com.exactpro.th2.infraoperator.util.ExtractUtils;
 import com.exactpro.th2.infraoperator.util.JsonUtils;
 import io.fabric8.kubernetes.api.model.KubernetesResourceList;
-import io.fabric8.kubernetes.api.model.apiextensions.v1.CustomResourceDefinition;
 import io.fabric8.kubernetes.client.dsl.MixedOperation;
 import io.fabric8.kubernetes.client.dsl.Resource;
 import io.fabric8.kubernetes.client.informers.SharedInformer;
@@ -82,7 +81,6 @@ public abstract class HelmReleaseTh2Op<CR extends Th2CustomResource> extends Abs
     protected final GrpcRouterConfigFactory grpcConfigFactory;
     protected final DictionaryFactory dictionaryFactory;
 
-    protected final CustomResourceDefinition helmReleaseCrd;
     protected final MixedOperation<HelmRelease, KubernetesResourceList<HelmRelease>, Resource<HelmRelease>> helmReleaseClient;
 
     protected final ActiveLinkUpdater activeLinkUpdaterOnDelete;
@@ -104,8 +102,6 @@ public abstract class HelmReleaseTh2Op<CR extends Th2CustomResource> extends Abs
         this.dictionaryLinkResolver = builder.getDictionaryLinkResolver();
         this.grpcConfigFactory = builder.getGrpcConfigFactory();
         this.dictionaryFactory = builder.getDictionaryFactory();
-
-        helmReleaseCrd = CustomResourceUtils.getResourceCrd(kubClient, HELM_RELEASE_CRD_NAME);
 
         helmReleaseClient = kubClient.customResources(HelmRelease.class);
 
@@ -245,10 +241,6 @@ public abstract class HelmReleaseTh2Op<CR extends Th2CustomResource> extends Abs
     @Override
     protected void setupKubObj(CR resource, HelmRelease helmRelease) {
         super.setupKubObj(resource, helmRelease);
-
-        String kubObjType = helmRelease.getClass().getSimpleName();
-        CustomResourceUtils.createResourceCrd(kubClient, helmReleaseCrd, kubObjType);
-
     }
 
     @Override
