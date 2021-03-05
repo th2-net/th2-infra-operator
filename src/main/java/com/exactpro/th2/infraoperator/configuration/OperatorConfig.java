@@ -175,18 +175,16 @@ public enum OperatorConfig {
 
         @Override
         public boolean equals(Object o) {
-            if (this == o)
-                return true;
-            if (!(o instanceof Configuration))
-                return false;
-
+            if (this == o) return true;
+            if (!(o instanceof Configuration)) return false;
             Configuration that = (Configuration) o;
-            return Objects.equals(getChartConfig(), that.getChartConfig()) &&
-                Objects.equals(getRabbitMQManagementConfig(), that.getRabbitMQManagementConfig()) &&
-                Objects.equals(getSchemaSecrets(), that.getSchemaSecrets()) &&
-                Objects.equals(getNamespacePrefixes(), that.getNamespacePrefixes()) &&
-                Objects.equals(getRabbitMQConfigMapName(), that.getRabbitMQConfigMapName()) &&
-                Objects.equals(getK8sUrl(), that.getK8sUrl());
+            return Objects.equals(getChartConfig(), that.getChartConfig())
+                && Objects.equals(getRabbitMQManagementConfig(), that.getRabbitMQManagementConfig())
+                && Objects.equals(getSchemaSecrets(), that.getSchemaSecrets())
+                && Objects.equals(getNamespacePrefixes(), that.getNamespacePrefixes())
+                && Objects.equals(getRabbitMQConfigMapName(), that.getRabbitMQConfigMapName())
+                && Objects.equals(getK8sUrl(), that.getK8sUrl())
+                && Objects.equals(getIngressHost(), that.getIngressHost());
         }
     }
 }
