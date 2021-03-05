@@ -54,6 +54,10 @@ public enum OperatorConfig {
         return getConfig().getK8sUrl();
     }
 
+    public String getIngressHost() {
+        return getConfig().getIngressHost();
+    }
+
     public SchemaSecrets getSchemaSecrets() {
         return getConfig().getSchemaSecrets();
     }
@@ -95,6 +99,7 @@ public enum OperatorConfig {
         private List<String> namespacePrefixes;
         private String rabbitMQConfigMapName;
         private String k8sUrl;
+        private String ingressHost;
 
         public Configuration() {
             chartConfig = new ChartConfig();
@@ -147,6 +152,10 @@ public enum OperatorConfig {
 
         public void setK8sUrl(String k8sUrl) {
             this.k8sUrl = k8sUrl;
+        }
+
+        public String getIngressHost() {
+            return ingressHost;
         }
 
         public String getRabbitMQConfigMapName() {

@@ -72,6 +72,7 @@ public abstract class HelmReleaseTh2Op<CR extends Th2CustomResource> extends Abs
     public static final String DOCKER_IMAGE_ALIAS = "image";
     public static final String COMPONENT_NAME_ALIAS = "name";
     public static final String RELEASE_NAME_ALIAS = "releaseName";
+    public static final String INGRESS_HOST_ALIAS = "ingressHost";
     public static final String HELM_RELEASE_CRD_NAME = "helmreleases.helm.fluxcd.io";
 
     protected final BoxResourceFinder resourceFinder;
@@ -165,7 +166,8 @@ public abstract class HelmReleaseTh2Op<CR extends Th2CustomResource> extends Abs
             COMPONENT_NAME_ALIAS, resource.getMetadata().getName(),
             CUSTOM_CONFIG_ALIAS, resource.getSpec().getCustomConfig(),
             MQ_CONFIG_ALIAS, JsonUtils.writeValueAsDeepMap(mqConfig),
-            GRPC_CONFIG_ALIAS, JsonUtils.writeValueAsDeepMap(grpcConfig)
+            GRPC_CONFIG_ALIAS, JsonUtils.writeValueAsDeepMap(grpcConfig),
+            INGRESS_HOST_ALIAS, OperatorConfig.INSTANCE.getIngressHost()
         ));
 
         PrometheusConfiguration prometheusConfig = resource.getSpec().getPrometheusConfiguration();
