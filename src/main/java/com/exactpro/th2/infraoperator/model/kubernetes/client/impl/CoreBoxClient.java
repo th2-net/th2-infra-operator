@@ -14,21 +14,19 @@
  * limitations under the License.
  */
 
-package com.exactpro.th2.infraoperator.model.kubernetes.client.ipml;
+package com.exactpro.th2.infraoperator.model.kubernetes.client.impl;
 
 import com.exactpro.th2.infraoperator.model.kubernetes.client.DefaultResourceClient;
-import com.exactpro.th2.infraoperator.spec.estore.Th2Estore;
-import com.exactpro.th2.infraoperator.spec.estore.Th2EstoreList;
+import com.exactpro.th2.infraoperator.spec.corebox.Th2CoreBox;
 import io.fabric8.kubernetes.client.KubernetesClient;
 
-public class EstoreClient extends DefaultResourceClient<Th2Estore> {
+public class CoreBoxClient extends DefaultResourceClient<Th2CoreBox> {
 
-    public EstoreClient(KubernetesClient client) {
+    public CoreBoxClient(KubernetesClient client) {
         super(
                 client,
-                Th2Estore.class,
-                Th2EstoreList.class,
-                "th2estores.th2.exactpro.com"
+                Th2CoreBox.class,
+                "th2coreboxes.th2.exactpro.com"
         );
     }
 

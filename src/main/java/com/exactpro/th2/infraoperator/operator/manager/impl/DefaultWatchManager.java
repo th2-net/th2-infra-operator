@@ -22,7 +22,7 @@ import com.exactpro.th2.infraoperator.model.box.configuration.dictionary.factory
 import com.exactpro.th2.infraoperator.model.box.configuration.grpc.factory.impl.DefaultGrpcRouterConfigFactory;
 import com.exactpro.th2.infraoperator.model.box.configuration.grpc.factory.impl.EmptyGrpcRouterConfigFactory;
 import com.exactpro.th2.infraoperator.model.kubernetes.client.ResourceClient;
-import com.exactpro.th2.infraoperator.model.kubernetes.client.ipml.DictionaryClient;
+import com.exactpro.th2.infraoperator.model.kubernetes.client.impl.DictionaryClient;
 import com.exactpro.th2.infraoperator.operator.HelmReleaseTh2Op;
 import com.exactpro.th2.infraoperator.operator.context.HelmOperatorContext;
 import com.exactpro.th2.infraoperator.spec.Th2CustomResource;

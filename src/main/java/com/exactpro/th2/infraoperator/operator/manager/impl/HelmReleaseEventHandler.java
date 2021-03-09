@@ -1,9 +1,9 @@
 package com.exactpro.th2.infraoperator.operator.manager.impl;
 
 import com.exactpro.th2.infraoperator.spec.helmRelease.HelmRelease;
-import com.exactpro.th2.infraoperator.spec.helmRelease.HelmReleaseList;
 import com.exactpro.th2.infraoperator.spec.strategy.resFinder.box.BoxResourceFinder;
 import com.exactpro.th2.infraoperator.util.CustomResourceUtils;
+import io.fabric8.kubernetes.api.model.KubernetesResourceList;
 import io.fabric8.kubernetes.api.model.Namespace;
 import io.fabric8.kubernetes.api.model.ObjectMeta;
 import io.fabric8.kubernetes.client.KubernetesClient;
@@ -11,7 +11,6 @@ import io.fabric8.kubernetes.client.Watcher;
 import io.fabric8.kubernetes.client.WatcherException;
 import io.fabric8.kubernetes.client.dsl.MixedOperation;
 import io.fabric8.kubernetes.client.dsl.Resource;
-import io.fabric8.kubernetes.client.dsl.base.CustomResourceDefinitionContext;
 import io.fabric8.kubernetes.client.informers.SharedIndexInformer;
 import io.fabric8.kubernetes.client.informers.SharedInformerFactory;
 import org.slf4j.Logger;
@@ -27,7 +26,7 @@ public class HelmReleaseEventHandler implements Watcher<HelmRelease> {
     private static final Logger logger = LoggerFactory.getLogger(HelmReleaseEventHandler.class);
 
     private final KubernetesClient client;
-    private final MixedOperation<HelmRelease, HelmReleaseList, Resource<HelmRelease>> helmReleaseClient;
+    private final MixedOperation<HelmRelease, KubernetesResourceList<HelmRelease>, Resource<HelmRelease>> helmReleaseClient;
     private final BoxResourceFinder resourceFinder;
 
     public static HelmReleaseEventHandler newInstance(
@@ -40,14 +39,7 @@ public class HelmReleaseEventHandler implements Watcher<HelmRelease> {
         var helmReleaseCrd = CustomResourceUtils.getResourceCrd(client, HELM_RELEASE_CRD_NAME);
 
         SharedIndexInformer<HelmRelease> helmReleaseInformer = factory.sharedIndexInformerForCustomResource(
-                new CustomResourceDefinitionContext.Builder()
-                        .withGroup(helmReleaseCrd.getSpec().getGroup())
-                        .withVersion(helmReleaseCrd.getSpec().getVersions().get(0).getName())
-                        .withScope(helmReleaseCrd.getSpec().getScope())
-                        .withPlural(helmReleaseCrd.getSpec().getNames().getPlural())
-                        .build(),
                 HelmRelease.class,
-                HelmReleaseList.class,
                 RESYNC_TIME);
 
         helmReleaseInformer.addEventHandler(CustomResourceUtils.resourceEventHandlerFor(
@@ -62,20 +54,7 @@ public class HelmReleaseEventHandler implements Watcher<HelmRelease> {
         this.client = client;
         this.resourceFinder = resourceFinder;
 
-        var helmReleaseCrd = CustomResourceUtils.getResourceCrd(client, HELM_RELEASE_CRD_NAME);
-
-        CustomResourceDefinitionContext crdContext = new CustomResourceDefinitionContext.Builder()
-                .withGroup(helmReleaseCrd.getSpec().getGroup())
-                .withVersion(helmReleaseCrd.getSpec().getVersions().get(0).getName())
-                .withScope(helmReleaseCrd.getSpec().getScope())
-                .withPlural(helmReleaseCrd.getSpec().getNames().getPlural())
-                .build();
-
-        helmReleaseClient = client.customResources(
-                crdContext,
-                HelmRelease.class,
-                HelmReleaseList.class
-        );
+        helmReleaseClient = client.customResources(HelmRelease.class);
     }
 
     @Override

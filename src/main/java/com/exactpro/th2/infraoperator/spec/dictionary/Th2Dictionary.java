@@ -35,7 +35,7 @@ public class Th2Dictionary extends CustomResource {
     private Th2DictionarySpec spec;
 
 
-    private Th2Dictionary() {
+    public Th2Dictionary() {
     }
 
 

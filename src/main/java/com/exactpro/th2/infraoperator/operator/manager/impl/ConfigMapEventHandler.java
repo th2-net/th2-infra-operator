@@ -8,7 +8,6 @@ import com.exactpro.th2.infraoperator.spec.strategy.linkResolver.mq.impl.RabbitM
 import com.exactpro.th2.infraoperator.util.CustomResourceUtils;
 import com.exactpro.th2.infraoperator.util.Strings;
 import io.fabric8.kubernetes.api.model.ConfigMap;
-import io.fabric8.kubernetes.api.model.ConfigMapList;
 import io.fabric8.kubernetes.api.model.Secret;
 import io.fabric8.kubernetes.client.KubernetesClient;
 import io.fabric8.kubernetes.client.Watcher;
@@ -42,7 +41,6 @@ public class ConfigMapEventHandler implements Watcher<ConfigMap> {
 
         SharedIndexInformer<ConfigMap> configMapInformer = sharedInformerFactory.sharedIndexInformerFor(
                 ConfigMap.class,
-                ConfigMapList.class,
                 CustomResourceUtils.RESYNC_TIME);
 
         configMapInformer.addEventHandler(new GenericResourceEventHandler<>(res, eventQueue));

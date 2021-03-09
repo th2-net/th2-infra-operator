@@ -8,7 +8,6 @@ import com.exactpro.th2.infraoperator.util.CustomResourceUtils;
 import com.exactpro.th2.infraoperator.util.ExtractUtils;
 import com.exactpro.th2.infraoperator.util.Strings;
 import io.fabric8.kubernetes.api.model.Namespace;
-import io.fabric8.kubernetes.api.model.NamespaceList;
 import io.fabric8.kubernetes.client.Watcher;
 import io.fabric8.kubernetes.client.WatcherException;
 import io.fabric8.kubernetes.client.informers.ResourceEventHandler;
@@ -28,7 +27,6 @@ public class NamespaceEventHandler implements ResourceEventHandler<Namespace>, W
                                                     EventQueue eventQueue) {
         SharedIndexInformer<Namespace> namespaceInformer = sharedInformerFactory.sharedIndexInformerFor(
                 Namespace.class,
-                NamespaceList.class,
                 RESYNC_TIME);
 
         var res = new NamespaceEventHandler(eventQueue);

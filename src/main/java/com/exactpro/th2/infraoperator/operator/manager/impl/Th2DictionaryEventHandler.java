@@ -1,14 +1,12 @@
 package com.exactpro.th2.infraoperator.operator.manager.impl;
 
 import com.exactpro.th2.infraoperator.OperatorState;
-import com.exactpro.th2.infraoperator.model.kubernetes.client.ipml.DictionaryClient;
+import com.exactpro.th2.infraoperator.model.kubernetes.client.impl.DictionaryClient;
 import com.exactpro.th2.infraoperator.spec.dictionary.Th2Dictionary;
-import com.exactpro.th2.infraoperator.spec.dictionary.Th2DictionaryList;
 import com.exactpro.th2.infraoperator.util.CustomResourceUtils;
 import com.exactpro.th2.infraoperator.util.ExtractUtils;
 import io.fabric8.kubernetes.client.Watcher;
 import io.fabric8.kubernetes.client.WatcherException;
-import io.fabric8.kubernetes.client.dsl.base.CustomResourceDefinitionContext;
 import io.fabric8.kubernetes.client.informers.SharedIndexInformer;
 import io.fabric8.kubernetes.client.informers.SharedInformerFactory;
 import org.slf4j.Logger;
@@ -35,9 +33,7 @@ public class Th2DictionaryEventHandler implements Watcher<Th2Dictionary> {
         var res = new Th2DictionaryEventHandler();
         res.dictionaryClient = dictionaryClient;
         SharedIndexInformer<Th2Dictionary> dictionaryInformer = sharedInformerFactory.sharedIndexInformerForCustomResource(
-                CustomResourceDefinitionContext.fromCrd(res.dictionaryClient.getCustomResourceDefinition()),
                 Th2Dictionary.class,
-                Th2DictionaryList.class,
                 RESYNC_TIME);
 
         dictionaryInformer.addEventHandler(CustomResourceUtils.resourceEventHandlerFor(
