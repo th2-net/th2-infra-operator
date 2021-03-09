@@ -34,9 +34,9 @@ public final class CustomResourceUtils {
 
     public static String annotationFor(HasMetadata resource) {
         return annotationFor(
-                  resource.getMetadata().getNamespace()
-                , resource.getKind()
-                , resource.getMetadata().getName()
+                resource.getMetadata().getNamespace(),
+                resource.getKind(),
+                resource.getMetadata().getName()
         );
     }
 }
