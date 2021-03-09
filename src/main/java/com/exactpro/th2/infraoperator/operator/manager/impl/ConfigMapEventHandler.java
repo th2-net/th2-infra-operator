@@ -36,7 +36,7 @@ public class ConfigMapEventHandler implements Watcher<ConfigMap> {
 
     public static ConfigMapEventHandler newInstance(SharedInformerFactory sharedInformerFactory,
                                                     KubernetesClient client,
-                                                    DefaultWatchManager.EventQueue<DefaultWatchManager.DispatcherEvent> eventQueue) {
+                                                    EventQueue eventQueue) {
         var res = new ConfigMapEventHandler(client);
         res.client = client;
 

@@ -40,7 +40,7 @@ public class Th2LinkEventHandler implements Watcher<Th2Link> {
 
     public static Th2LinkEventHandler newInstance(SharedInformerFactory sharedInformerFactory,
                                                   KubernetesClient client,
-                                                  DefaultWatchManager.EventQueue<DefaultWatchManager.DispatcherEvent> eventQueue) {
+                                                  EventQueue eventQueue) {
         var res = new Th2LinkEventHandler();
         res.linkClient = new LinkClient(client);
 
