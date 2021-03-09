@@ -71,6 +71,7 @@ public abstract class HelmReleaseTh2Op<CR extends Th2CustomResource> extends Abs
     public static final String DOCKER_IMAGE_ALIAS = "image";
     public static final String COMPONENT_NAME_ALIAS = "name";
     public static final String RELEASE_NAME_ALIAS = "releaseName";
+    public static final String INGRESS_HOST_ALIAS = "ingressHost";
     public static final String HELM_RELEASE_CRD_NAME = "helmreleases.helm.fluxcd.io";
 
     protected final BoxResourceFinder resourceFinder;
@@ -131,7 +132,7 @@ public abstract class HelmReleaseTh2Op<CR extends Th2CustomResource> extends Abs
         this.activeLinkUpdaterOnAdd = new AddedActiveLinkUpdater(this, grpcLinkResolver, queueGenLinkResolver, dictionaryLinkResolver, declareQueueResolver);
     }
 
-    public abstract SharedInformer<CR> generateInformerFromFactory (SharedInformerFactory factory);
+    public abstract SharedInformer<CR> generateInformerFromFactory(SharedInformerFactory factory);
 
     @Override
     protected void mapProperties(CR resource, HelmRelease helmRelease) {
@@ -160,7 +161,7 @@ public abstract class HelmReleaseTh2Op<CR extends Th2CustomResource> extends Abs
         if (prometheusConfig == null)
             prometheusConfig = PrometheusConfiguration.createDefault();
         helmRelease.mergeValue(PROPERTIES_MERGE_DEPTH, ROOT_PROPERTIES_ALIAS,
-                Map.of(PROMETHEUS_CONFIG_ALIAS, prometheusConfig));
+            Map.of(PROMETHEUS_CONFIG_ALIAS, prometheusConfig));
 
         if (!dictionaries.isEmpty())
             helmRelease.mergeValue(PROPERTIES_MERGE_DEPTH, ROOT_PROPERTIES_ALIAS,
@@ -170,6 +171,11 @@ public abstract class HelmReleaseTh2Op<CR extends Th2CustomResource> extends Abs
         if (extendedSettings != null)
             helmRelease.mergeValue(PROPERTIES_MERGE_DEPTH, ROOT_PROPERTIES_ALIAS,
                 Map.of(EXTENDED_SETTINGS_ALIAS, extendedSettings));
+
+        String ingressHost = OperatorConfig.INSTANCE.getIngressHost();
+        if (ingressHost != null && !ingressHost.isEmpty())
+            helmRelease.mergeValue(PROPERTIES_MERGE_DEPTH, ROOT_PROPERTIES_ALIAS,
+                Map.of(INGRESS_HOST_ALIAS, ingressHost));
 
         HelmReleaseSecrets secrets = new HelmReleaseSecrets(OperatorConfig.INSTANCE.getSchemaSecrets());
         helmRelease.mergeValue(PROPERTIES_MERGE_DEPTH, ROOT_PROPERTIES_ALIAS,
@@ -222,7 +228,6 @@ public abstract class HelmReleaseTh2Op<CR extends Th2CustomResource> extends Abs
         }
     }
 
-
     @Override
     protected void deletedEvent(CR resource) {
 
@@ -240,7 +245,6 @@ public abstract class HelmReleaseTh2Op<CR extends Th2CustomResource> extends Abs
             lock.unlock();
         }
     }
-
 
     @Override
     protected void setupKubObj(CR resource, HelmRelease helmRelease) {

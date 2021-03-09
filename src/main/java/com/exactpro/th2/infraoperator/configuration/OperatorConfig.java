@@ -54,6 +54,10 @@ public enum OperatorConfig {
         return getConfig().getK8sUrl();
     }
 
+    public String getIngressHost() {
+        return getConfig().getIngressHost();
+    }
+
     public SchemaSecrets getSchemaSecrets() {
         return getConfig().getSchemaSecrets();
     }
@@ -95,6 +99,7 @@ public enum OperatorConfig {
         private List<String> namespacePrefixes;
         private String rabbitMQConfigMapName;
         private String k8sUrl;
+        private String ingressHost;
 
         public Configuration() {
             chartConfig = new ChartConfig();
@@ -149,6 +154,10 @@ public enum OperatorConfig {
             this.k8sUrl = k8sUrl;
         }
 
+        public String getIngressHost() {
+            return ingressHost;
+        }
+
         public String getRabbitMQConfigMapName() {
             return rabbitMQConfigMapName;
         }
@@ -166,18 +175,16 @@ public enum OperatorConfig {
 
         @Override
         public boolean equals(Object o) {
-            if (this == o)
-                return true;
-            if (!(o instanceof Configuration))
-                return false;
-
+            if (this == o) return true;
+            if (!(o instanceof Configuration)) return false;
             Configuration that = (Configuration) o;
-            return Objects.equals(getChartConfig(), that.getChartConfig()) &&
-                Objects.equals(getRabbitMQManagementConfig(), that.getRabbitMQManagementConfig()) &&
-                Objects.equals(getSchemaSecrets(), that.getSchemaSecrets()) &&
-                Objects.equals(getNamespacePrefixes(), that.getNamespacePrefixes()) &&
-                Objects.equals(getRabbitMQConfigMapName(), that.getRabbitMQConfigMapName()) &&
-                Objects.equals(getK8sUrl(), that.getK8sUrl());
+            return Objects.equals(getChartConfig(), that.getChartConfig())
+                && Objects.equals(getRabbitMQManagementConfig(), that.getRabbitMQManagementConfig())
+                && Objects.equals(getSchemaSecrets(), that.getSchemaSecrets())
+                && Objects.equals(getNamespacePrefixes(), that.getNamespacePrefixes())
+                && Objects.equals(getRabbitMQConfigMapName(), that.getRabbitMQConfigMapName())
+                && Objects.equals(getK8sUrl(), that.getK8sUrl())
+                && Objects.equals(getIngressHost(), that.getIngressHost());
         }
     }
 }
