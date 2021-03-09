@@ -81,7 +81,6 @@ public class DefaultWatchManager {
     private static DefaultWatchManager instance;
 
     private final EventDispatcher eventDispatcher;
-    private EventHandlerContext eventHandlerContext;
 
     private synchronized SharedInformerFactory getInformerFactory() {
         return sharedInformerFactory;
@@ -105,9 +104,10 @@ public class DefaultWatchManager {
 
         SharedInformerFactory sharedInformerFactory = getInformerFactory();
 
+
         eventDispatcher.start();
         postInit();
-        this.eventHandlerContext = registerInformers (sharedInformerFactory);
+        EventHandlerContext eventHandlerContext = registerInformers (sharedInformerFactory);
         loadResources(eventHandlerContext);
 
         isWatching = true;

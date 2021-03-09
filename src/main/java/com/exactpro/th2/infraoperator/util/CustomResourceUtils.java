@@ -17,16 +17,10 @@
 package com.exactpro.th2.infraoperator.util;
 
 import io.fabric8.kubernetes.api.model.HasMetadata;
-import io.fabric8.kubernetes.api.model.apiextensions.v1.CustomResourceDefinition;
-import io.fabric8.kubernetes.client.KubernetesClient;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 
 public final class CustomResourceUtils {
 
-    private static final String DEFAULT_NAMESPACE = "default";
-    private static final Logger logger = LoggerFactory.getLogger(CustomResourceUtils.class);
     public static long RESYNC_TIME = 180000;
 
     private CustomResourceUtils() {
@@ -44,14 +38,5 @@ public final class CustomResourceUtils {
                 , resource.getKind()
                 , resource.getMetadata().getName()
         );
-    }
-
-
-    public static CustomResourceDefinition getResourceCrd(KubernetesClient client, String crdName) {
-
-        CustomResourceDefinition crd = client.apiextensions().v1().customResourceDefinitions().withName(crdName).get();
-        if (crd == null)
-            throw new IllegalStateException(String.format("CRD with name '%s' not found", crdName));
-        return crd;
     }
 }

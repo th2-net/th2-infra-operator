@@ -50,7 +50,7 @@ public class EventQueue {
         public boolean canReplaceWithEvent(Event event) {
             return this.getAnnotation().equals(event.getAnnotation())
                     && !this.getAction().equals(Watcher.Action.DELETED)
-                    && !event.equals(Watcher.Action.DELETED);
+                    && !event.getAction().equals(Watcher.Action.DELETED);
         }
 
         /*

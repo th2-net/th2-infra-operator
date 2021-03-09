@@ -70,7 +70,6 @@ public abstract class HelmReleaseTh2Op<CR extends Th2CustomResource> extends Abs
     public static final String DOCKER_IMAGE_ALIAS = "image";
     public static final String COMPONENT_NAME_ALIAS = "name";
     public static final String RELEASE_NAME_ALIAS = "releaseName";
-    public static final String HELM_RELEASE_CRD_NAME = "helmreleases.helm.fluxcd.io";
 
     protected final BoxResourceFinder resourceFinder;
     protected final GrpcLinkResolver grpcLinkResolver;

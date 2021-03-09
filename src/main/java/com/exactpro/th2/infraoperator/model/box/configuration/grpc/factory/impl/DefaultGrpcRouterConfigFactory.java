@@ -20,13 +20,13 @@ import com.exactpro.th2.infraoperator.configuration.OperatorConfig;
 import com.exactpro.th2.infraoperator.model.box.configuration.grpc.*;
 import com.exactpro.th2.infraoperator.model.box.configuration.grpc.factory.GrpcRouterConfigFactory;
 import com.exactpro.th2.infraoperator.spec.Th2CustomResource;
-import com.exactpro.th2.infraoperator.spec.link.relation.pins.PinGRPC;
 import com.exactpro.th2.infraoperator.spec.link.relation.pins.PinCouplingGRPC;
+import com.exactpro.th2.infraoperator.spec.link.relation.pins.PinGRPC;
 import com.exactpro.th2.infraoperator.spec.shared.FilterSpec;
 import com.exactpro.th2.infraoperator.spec.shared.PinSpec;
+import com.exactpro.th2.infraoperator.spec.shared.SchemaConnectionType;
 import com.exactpro.th2.infraoperator.spec.strategy.linkResolver.ConfigNotFoundException;
 import com.exactpro.th2.infraoperator.spec.strategy.resFinder.box.BoxResourceFinder;
-import com.exactpro.th2.infraoperator.spec.shared.SchemaConnectionType;
 import com.exactpro.th2.infraoperator.util.SchemeMappingUtils;
 import com.exactpro.th2.infraoperator.util.Strings;
 import com.fasterxml.jackson.core.type.TypeReference;
@@ -38,7 +38,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.*;
-import java.util.List;
 import java.util.stream.Collectors;
 
 import static com.exactpro.th2.infraoperator.model.box.configuration.grpc.StrategyType.FILTER;
