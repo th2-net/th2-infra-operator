@@ -17,6 +17,7 @@
 package com.exactpro.th2.infraoperator;
 
 import com.exactpro.th2.infraoperator.model.box.schema.link.EnqueuedLink;
+import com.exactpro.th2.infraoperator.spec.Th2CustomResource;
 import com.exactpro.th2.infraoperator.spec.link.Th2Link;
 import com.exactpro.th2.infraoperator.spec.link.relation.dictionaries.DictionaryBinding;
 import com.exactpro.th2.infraoperator.spec.link.relation.pins.PinCoupling;
@@ -124,6 +125,10 @@ public enum OperatorState {
         return namespaceStates.computeIfAbsent(namespace, s -> new NamespaceState(namespace));
     }
 
+    public HashMap<String, Th2CustomResource> getTh2Resources (String namespace) {
+        return computeIfAbsent(namespace).th2CustomResourceHashMap;
+    }
+
 
 
     public interface NamespaceLock {
@@ -134,6 +139,7 @@ public enum OperatorState {
     public static class NamespaceState implements NamespaceLock {
 
         private String name;
+        private HashMap<String, Th2CustomResource> th2CustomResourceHashMap;
         private List<Th2Link> linkResources = new ArrayList<>();
         private List<EnqueuedLink> mqActiveLinks = new ArrayList<>();
         private List<PinCouplingGRPC> grpcActiveLinks = new ArrayList<>();
@@ -143,7 +149,9 @@ public enum OperatorState {
 
         public NamespaceState(String name) {
             this.name = name;
+            this.th2CustomResourceHashMap = new HashMap<>();
         }
+
         @Override
         public void lock() {
             lock.lock();

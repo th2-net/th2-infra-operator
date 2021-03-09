@@ -16,6 +16,7 @@
 
 package com.exactpro.th2.infraoperator.spec.strategy.linkResolver.mq.impl;
 
+import com.exactpro.th2.infraoperator.OperatorState;
 import com.exactpro.th2.infraoperator.configuration.OperatorConfig;
 import com.exactpro.th2.infraoperator.configuration.RabbitMQManagementConfig;
 import com.exactpro.th2.infraoperator.model.box.schema.link.EnqueuedLink;
@@ -186,6 +187,12 @@ public class BindQueueLinkResolver implements QueueLinkResolver {
 
         var namespace = ExtractUtils.extractNamespace(linkRes);
 
+        var th2Resources = OperatorState.INSTANCE.getTh2Resources(namespace);
+
+        if (!th2Resources.containsKey(link.getFrom().getBoxName())
+                || !th2Resources.containsKey(link.getTo().getBoxName())) {
+           return null;
+        }
 
         var fromBoxSpec = link.getFrom();
 
@@ -212,7 +219,6 @@ public class BindQueueLinkResolver implements QueueLinkResolver {
                 .boxPinName(toBoxSpec.getPinName())
                 .boxDirection(BoxDirection.to)
                 .build();
-
 
         var fromRes = resourceFinder.getResource(fromBoxName, namespace, additionalSource);
 
