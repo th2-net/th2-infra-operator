@@ -1,9 +1,8 @@
 package com.exactpro.th2.infraoperator.operator.manager.impl;
 
 import com.exactpro.th2.infraoperator.OperatorState;
-import com.exactpro.th2.infraoperator.model.kubernetes.client.ipml.LinkClient;
+import com.exactpro.th2.infraoperator.model.kubernetes.client.impl.LinkClient;
 import com.exactpro.th2.infraoperator.spec.link.Th2Link;
-import com.exactpro.th2.infraoperator.spec.link.Th2LinkList;
 import com.exactpro.th2.infraoperator.spec.link.Th2LinkSpec;
 import com.exactpro.th2.infraoperator.spec.link.relation.dictionaries.DictionaryBinding;
 import com.exactpro.th2.infraoperator.spec.link.relation.pins.PinCoupling;
@@ -12,7 +11,6 @@ import com.exactpro.th2.infraoperator.util.CustomResourceUtils;
 import io.fabric8.kubernetes.client.KubernetesClient;
 import io.fabric8.kubernetes.client.Watcher;
 import io.fabric8.kubernetes.client.WatcherException;
-import io.fabric8.kubernetes.client.dsl.base.CustomResourceDefinitionContext;
 import io.fabric8.kubernetes.client.informers.SharedIndexInformer;
 import io.fabric8.kubernetes.client.informers.SharedInformerFactory;
 import org.slf4j.Logger;
@@ -45,9 +43,7 @@ public class Th2LinkEventHandler implements Watcher<Th2Link> {
         res.linkClient = new LinkClient(client);
 
         SharedIndexInformer<Th2Link> linkInformer = sharedInformerFactory.sharedIndexInformerForCustomResource(
-                CustomResourceDefinitionContext.fromCrd(res.linkClient.getCustomResourceDefinition()),
                 Th2Link.class,
-                Th2LinkList.class,
                 RESYNC_TIME);
 
         linkInformer.addEventHandler(CustomResourceUtils.resourceEventHandlerFor(

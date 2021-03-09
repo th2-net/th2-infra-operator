@@ -19,10 +19,10 @@ package com.exactpro.th2.infraoperator.model.kubernetes.client;
 import com.exactpro.th2.infraoperator.util.CustomResourceUtils;
 import io.fabric8.kubernetes.api.model.KubernetesResourceList;
 import io.fabric8.kubernetes.api.model.apiextensions.v1.CustomResourceDefinition;
-import io.fabric8.kubernetes.client.*;
+import io.fabric8.kubernetes.client.CustomResource;
+import io.fabric8.kubernetes.client.KubernetesClient;
 import io.fabric8.kubernetes.client.dsl.MixedOperation;
 import io.fabric8.kubernetes.client.dsl.Resource;
-import io.fabric8.kubernetes.client.dsl.base.CustomResourceDefinitionContext;
 import lombok.Data;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -42,7 +42,6 @@ public abstract class DefaultResourceClient<CR extends CustomResource> implement
     public DefaultResourceClient(
             KubernetesClient client,
             Class<CR> resourceType,
-            Class<? extends KubernetesResourceList<CR>> listClass,
             String crdName
     ) {
         this.client = client;
@@ -50,14 +49,7 @@ public abstract class DefaultResourceClient<CR extends CustomResource> implement
         this.customResourceDefinition = CustomResourceUtils.getResourceCrd(client, crdName);
         this.crdName = crdName;
 
-        CustomResourceDefinitionContext crdContext = new CustomResourceDefinitionContext.Builder()
-                .withGroup(customResourceDefinition.getSpec().getGroup())
-                .withVersion(customResourceDefinition.getSpec().getVersions().get(0).getName())
-                .withScope(customResourceDefinition.getSpec().getScope())
-                .withPlural(customResourceDefinition.getSpec().getNames().getPlural())
-                .build();
-
-        instance = client.customResources(crdContext, resourceType, listClass);
+        instance = client.customResources(resourceType);
     }
 
 

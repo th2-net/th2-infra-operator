@@ -14,21 +14,19 @@
  * limitations under the License.
  */
 
-package com.exactpro.th2.infraoperator.model.kubernetes.client.ipml;
+package com.exactpro.th2.infraoperator.model.kubernetes.client.impl;
 
 import com.exactpro.th2.infraoperator.model.kubernetes.client.DefaultResourceClient;
-import com.exactpro.th2.infraoperator.spec.dictionary.Th2Dictionary;
-import com.exactpro.th2.infraoperator.spec.dictionary.Th2DictionaryList;
+import com.exactpro.th2.infraoperator.spec.box.Th2Box;
 import io.fabric8.kubernetes.client.KubernetesClient;
 
-public class DictionaryClient extends DefaultResourceClient<Th2Dictionary> {
+public class BoxClient extends DefaultResourceClient<Th2Box> {
 
-    public DictionaryClient(KubernetesClient client) {
+    public BoxClient(KubernetesClient client) {
         super(
                 client,
-                Th2Dictionary.class,
-                Th2DictionaryList.class,
-                "th2dictionaries.th2.exactpro.com"
+                Th2Box.class,
+                "th2boxes.th2.exactpro.com"
         );
     }
 

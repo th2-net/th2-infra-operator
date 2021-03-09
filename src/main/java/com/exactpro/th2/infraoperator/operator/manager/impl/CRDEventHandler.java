@@ -2,7 +2,6 @@ package com.exactpro.th2.infraoperator.operator.manager.impl;
 
 import com.exactpro.th2.infraoperator.util.CustomResourceUtils;
 import io.fabric8.kubernetes.api.model.apiextensions.v1.CustomResourceDefinition;
-import io.fabric8.kubernetes.api.model.apiextensions.v1.CustomResourceDefinitionList;
 import io.fabric8.kubernetes.client.informers.ResourceEventHandler;
 import io.fabric8.kubernetes.client.informers.SharedIndexInformer;
 import io.fabric8.kubernetes.client.informers.SharedInformerFactory;
@@ -20,7 +19,6 @@ class CRDEventHandler implements ResourceEventHandler<CustomResourceDefinition> 
     public static CRDEventHandler newInstance (SharedInformerFactory sharedInformerFactory) {
         SharedIndexInformer<CustomResourceDefinition> crdInformer = sharedInformerFactory.sharedIndexInformerFor(
                 CustomResourceDefinition.class,
-                CustomResourceDefinitionList.class,
                 RESYNC_TIME);
 
         List<String> crdNames = List.of(

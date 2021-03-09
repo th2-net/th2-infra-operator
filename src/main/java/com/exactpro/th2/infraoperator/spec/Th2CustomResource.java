@@ -17,9 +17,10 @@
 package com.exactpro.th2.infraoperator.spec;
 
 import com.exactpro.th2.infraoperator.spec.shared.status.StatusSpec;
+import io.fabric8.kubernetes.api.model.Namespaced;
 import io.fabric8.kubernetes.client.CustomResource;
 
-public abstract class Th2CustomResource extends CustomResource {
+public abstract class Th2CustomResource extends CustomResource implements Namespaced {
 
     protected StatusSpec status = new StatusSpec();
 
