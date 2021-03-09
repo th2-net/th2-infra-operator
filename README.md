@@ -109,7 +109,10 @@ schemaSecrets:
 
   cassandra: cassandra
   # secret name to connect to cassandra database
-
   
+ingressHost: hostName
+# host name that will be used inside ingress rules
+
+
 ```
 

@@ -233,4 +233,11 @@ public class ConfigurationTests {
         Assertions.assertEquals(new RabbitMQNamespacePermissions(),
             OperatorConfig.INSTANCE.loadConfiguration().getRabbitMQManagementConfig().getRabbitMQNamespacePermissions());
     }
+
+    @Test
+    void testIngressHostConfig() {
+        beforeEach("src/test/resources/ingressHostConfig.yml");
+
+        Assertions.assertEquals("ingress", OperatorConfig.INSTANCE.loadConfiguration().getIngressHost());
+    }
 }
