@@ -79,6 +79,8 @@ public abstract class AbstractTh2Operator<CR extends Th2CustomResource, KO exten
                 }
                 logger.debug("refresh-token={}", resourceFingerprint.refreshToken);
 
+                CustomResourceUtils.removeDuplicatedPins(resource);
+
                 processEvent(action, resource);
                 fingerprints.put(resourceLabel, resourceFingerprint);
 
