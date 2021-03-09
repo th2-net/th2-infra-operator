@@ -164,7 +164,6 @@ public final class RabbitMQContext {
                 logger.info("Created vHost in RabbitMQ for namespace \"{}\"", namespace);
             } else {
                 logger.info("vHost \"{}\" was already present in RabbitMQ", vHostName);
-                return;
             }
 
             // check user
