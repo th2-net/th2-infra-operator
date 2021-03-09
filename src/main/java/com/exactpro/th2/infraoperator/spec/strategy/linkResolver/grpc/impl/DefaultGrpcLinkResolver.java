@@ -26,18 +26,18 @@ import com.exactpro.th2.infraoperator.spec.link.validator.chain.impl.ResourceExi
 import com.exactpro.th2.infraoperator.spec.link.validator.chain.impl.StrategyExist;
 import com.exactpro.th2.infraoperator.spec.link.validator.model.DirectionalLinkContext;
 import com.exactpro.th2.infraoperator.spec.shared.BoxDirection;
+import com.exactpro.th2.infraoperator.spec.shared.SchemaConnectionType;
+import com.exactpro.th2.infraoperator.spec.strategy.linkResolver.GenericLinkResolver;
 import com.exactpro.th2.infraoperator.spec.strategy.linkResolver.grpc.GrpcLinkResolver;
 import com.exactpro.th2.infraoperator.spec.strategy.resFinder.box.BoxResourceFinder;
-import com.exactpro.th2.infraoperator.spec.shared.SchemaConnectionType;
 import com.exactpro.th2.infraoperator.util.ExtractUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.ArrayList;
 import java.util.List;
 
 
-public class DefaultGrpcLinkResolver implements GrpcLinkResolver {
+public class DefaultGrpcLinkResolver extends GenericLinkResolver<PinCouplingGRPC> implements GrpcLinkResolver {
 
     private static final Logger logger = LoggerFactory.getLogger(DefaultGrpcLinkResolver.class);
 
@@ -47,21 +47,6 @@ public class DefaultGrpcLinkResolver implements GrpcLinkResolver {
 
     public DefaultGrpcLinkResolver(BoxResourceFinder resourceFinder) {
         this.resourceFinder = resourceFinder;
-    }
-
-
-    @Override
-    public List<PinCouplingGRPC> resolve(List<Th2Link> linkResources) {
-        List<PinCouplingGRPC> resolvedLinks = new ArrayList<>();
-
-        resolve(linkResources, resolvedLinks);
-
-        return resolvedLinks;
-    }
-
-    @Override
-    public void resolve(List<Th2Link> linkResources, List<PinCouplingGRPC> grpcActiveLinks) {
-        resolve(linkResources, grpcActiveLinks, new Th2CustomResource[]{});
     }
 
     @Override
@@ -85,6 +70,11 @@ public class DefaultGrpcLinkResolver implements GrpcLinkResolver {
 
         var namespace = ExtractUtils.extractNamespace(linkRes);
 
+        if (th2PinEndpointPreValidation(namespace,
+                link.getFrom().getBoxName(),
+                link.getTo().getBoxName())) {
+            return false;
+        }
 
         var fromBoxSpec = link.getFrom();
 

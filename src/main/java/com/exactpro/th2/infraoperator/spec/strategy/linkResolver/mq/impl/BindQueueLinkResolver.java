@@ -16,7 +16,6 @@
 
 package com.exactpro.th2.infraoperator.spec.strategy.linkResolver.mq.impl;
 
-import com.exactpro.th2.infraoperator.OperatorState;
 import com.exactpro.th2.infraoperator.configuration.OperatorConfig;
 import com.exactpro.th2.infraoperator.configuration.RabbitMQManagementConfig;
 import com.exactpro.th2.infraoperator.model.box.schema.link.EnqueuedLink;
@@ -34,6 +33,7 @@ import com.exactpro.th2.infraoperator.spec.link.validator.model.DirectionalLinkC
 import com.exactpro.th2.infraoperator.spec.shared.BoxDirection;
 import com.exactpro.th2.infraoperator.spec.shared.PinSettings;
 import com.exactpro.th2.infraoperator.spec.shared.SchemaConnectionType;
+import com.exactpro.th2.infraoperator.spec.strategy.linkResolver.GenericLinkResolver;
 import com.exactpro.th2.infraoperator.spec.strategy.linkResolver.mq.QueueLinkResolver;
 import com.exactpro.th2.infraoperator.spec.strategy.linkResolver.queue.QueueName;
 import com.exactpro.th2.infraoperator.spec.strategy.linkResolver.queue.RoutingKeyName;
@@ -51,7 +51,7 @@ import java.util.List;
 import java.util.Objects;
 
 
-public class BindQueueLinkResolver implements QueueLinkResolver {
+public class BindQueueLinkResolver  extends GenericLinkResolver<EnqueuedLink> implements QueueLinkResolver {
 
     private static final Logger logger = LoggerFactory.getLogger(BindQueueLinkResolver.class);
     private final BoxResourceFinder resourceFinder;
@@ -61,22 +61,6 @@ public class BindQueueLinkResolver implements QueueLinkResolver {
     public BindQueueLinkResolver(BoxResourceFinder resourceFinder) {
         this.rabbitMQManagementConfig = OperatorConfig.INSTANCE.getRabbitMQManagementConfig();
         this.resourceFinder = resourceFinder;
-    }
-
-
-    @Override
-    public List<EnqueuedLink> resolve(List<Th2Link> linkResources) {
-
-        List<EnqueuedLink> qAssignedLinks = new ArrayList<>();
-
-        resolve(linkResources, qAssignedLinks);
-
-        return qAssignedLinks;
-    }
-
-    @Override
-    public void resolve(List<Th2Link> linkResources, List<EnqueuedLink> activeLinks) {
-        resolve(linkResources, activeLinks, new Th2CustomResource[]{});
     }
 
     @Override
@@ -187,15 +171,11 @@ public class BindQueueLinkResolver implements QueueLinkResolver {
 
         var namespace = ExtractUtils.extractNamespace(linkRes);
 
-        var th2Resources = OperatorState.INSTANCE.getTh2Resources(namespace);
-
-        if (true)  {
+        if (!th2PinEndpointPreValidation(namespace,
+                link.getFrom().getBoxName(),
+                link.getTo().getBoxName())) {
             return null;
         }
-//        if (!th2Resources.containsKey(link.getFrom().getBoxName())
-//                || !th2Resources.containsKey(link.getTo().getBoxName())) {
-//           return null;
-//        }
 
         var fromBoxSpec = link.getFrom();
 
