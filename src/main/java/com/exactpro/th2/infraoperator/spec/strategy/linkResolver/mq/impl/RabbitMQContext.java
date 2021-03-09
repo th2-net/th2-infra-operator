@@ -17,9 +17,9 @@
 package com.exactpro.th2.infraoperator.spec.strategy.linkResolver.mq.impl;
 
 import com.exactpro.th2.infraoperator.configuration.OperatorConfig;
+import com.exactpro.th2.infraoperator.configuration.RabbitMQConfig;
 import com.exactpro.th2.infraoperator.configuration.RabbitMQManagementConfig;
 import com.exactpro.th2.infraoperator.configuration.RabbitMQNamespacePermissions;
-import com.exactpro.th2.infraoperator.configuration.RabbitMQConfig;
 import com.exactpro.th2.infraoperator.model.kubernetes.configmaps.ConfigMaps;
 import com.exactpro.th2.infraoperator.spec.shared.PinSettings;
 import com.exactpro.th2.infraoperator.spec.strategy.linkResolver.ConfigNotFoundException;
@@ -162,8 +162,10 @@ public final class RabbitMQContext {
             if (rmqClient.getVhost(vHostName) == null) {
                 rmqClient.createVhost(vHostName);
                 logger.info("Created vHost in RabbitMQ for namespace \"{}\"", namespace);
-            } else
+            } else {
                 logger.info("vHost \"{}\" was already present in RabbitMQ", vHostName);
+                return;
+            }
 
             // check user
 //            if (rmqClient.getUser(username) == null) {

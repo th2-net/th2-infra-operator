@@ -20,59 +20,38 @@ public abstract class ActiveLinkUpdater {
     public List<Th2CustomResource> updateLinks(Th2CustomResource resource) {
 
         var resourceName = ExtractUtils.extractName(resource);
-
         var resNamespace = ExtractUtils.extractNamespace(resource);
 
         var lSingleton = OperatorState.INSTANCE;
-
         var linkResources = lSingleton.getLinkResources(resNamespace);
-
         var allActiveLinksOld = new ArrayList<>(lSingleton.getAllBoxesActiveLinks(resNamespace));
-
         var mqActiveLinks = new ArrayList<>(lSingleton.getMqActiveLinks(resNamespace));
-
         var grpcActiveLinks = new ArrayList<>(lSingleton.getGrpcActiveLinks(resNamespace));
-
         var dictionaryActiveLinks = new ArrayList<>(lSingleton.getDictionaryActiveLinks(resNamespace));
 
         var oldMsgStSize = lSingleton.getMsgStorageActiveLinks(resNamespace).size();
-
         var oldEventStSize = lSingleton.getEventStorageActiveLinks(resNamespace).size();
-
         var oldMqSize = lSingleton.getGeneralMqActiveLinks(resNamespace).size();
-
         var oldGrpcSize = grpcActiveLinks.size();
-
         var oldDicSize = dictionaryActiveLinks.size();
 
         refreshQueues(resource);
-
         refreshMqLinks(linkResources, mqActiveLinks, resource);
-
         refreshGrpcLinks(linkResources, grpcActiveLinks, resource);
-
         refreshDictionaryLinks(linkResources, dictionaryActiveLinks, resource);
 
         lSingleton.setMqActiveLinks(resNamespace, mqActiveLinks);
-
         lSingleton.setGrpcActiveLinks(resNamespace, grpcActiveLinks);
-
         lSingleton.setDictionaryActiveLinks(resNamespace, dictionaryActiveLinks);
 
         var newMsgStSize = lSingleton.getMsgStorageActiveLinks(resNamespace).size();
-
         var newEventStSize = lSingleton.getEventStorageActiveLinks(resNamespace).size();
-
         var newMqSize = lSingleton.getGeneralMqActiveLinks(resNamespace).size();
-
         var newGrpcSize = grpcActiveLinks.size();
-
         var newDicSize = dictionaryActiveLinks.size();
 
         var allActiveLinksNew = new ArrayList<>(lSingleton.getAllBoxesActiveLinks(resNamespace));
-
         var hiddenLinks = newMsgStSize + newEventStSize;
-
         var allSize = allActiveLinksNew.size() + newDicSize - hiddenLinks;
 
         logger.info(String.format(
