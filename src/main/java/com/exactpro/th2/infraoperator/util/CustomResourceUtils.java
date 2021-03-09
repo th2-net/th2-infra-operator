@@ -16,11 +16,21 @@
 
 package com.exactpro.th2.infraoperator.util;
 
+import com.exactpro.th2.infraoperator.spec.Th2CustomResource;
+import com.exactpro.th2.infraoperator.spec.shared.PinSpec;
 import io.fabric8.kubernetes.api.model.HasMetadata;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 
 
 public final class CustomResourceUtils {
 
+    private static final Logger logger = LoggerFactory.getLogger(CustomResourceUtils.class);
     public static long RESYNC_TIME = 180000;
 
     private CustomResourceUtils() {
@@ -38,5 +48,17 @@ public final class CustomResourceUtils {
                 resource.getKind(),
                 resource.getMetadata().getName()
         );
+    }
+
+    public static void removeDuplicatedPins(Th2CustomResource resource) {
+        List<PinSpec> pins = resource.getSpec().getPins();
+        Map<String, PinSpec> uniquePins = new HashMap<>();
+        for (PinSpec pin : pins) {
+            if (uniquePins.put(pin.getName(), pin) != null) {
+                logger.warn("Detected duplicated pin: \"{}\" in \"{}\". will be substituted by the last ocurrence",
+                        pin.getName(), annotationFor(resource));
+            }
+        }
+        resource.getSpec().setPins(new ArrayList<>(uniquePins.values()));
     }
 }
