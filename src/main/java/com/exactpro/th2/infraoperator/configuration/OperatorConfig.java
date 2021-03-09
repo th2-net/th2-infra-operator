@@ -108,6 +108,7 @@ public enum OperatorConfig {
             namespacePrefixes = new ArrayList<>();
             rabbitMQConfigMapName = DEFAULT_RABBITMQ_CONFIGMAP_NAME;
             k8sUrl = "";
+            ingressHost = "";
         }
 
         public ChartConfig getChartConfig() {
@@ -156,6 +157,11 @@ public enum OperatorConfig {
 
         public String getIngressHost() {
             return ingressHost;
+        }
+
+        public void setIngressHost(String ingressHost) {
+            if (ingressHost != null)
+                this.ingressHost = ingressHost;
         }
 
         public String getRabbitMQConfigMapName() {
