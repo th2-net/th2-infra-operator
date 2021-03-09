@@ -17,7 +17,6 @@
 package com.exactpro.th2.infraoperator;
 
 import com.exactpro.th2.infraoperator.model.box.schema.link.EnqueuedLink;
-import com.exactpro.th2.infraoperator.spec.Th2CustomResource;
 import com.exactpro.th2.infraoperator.spec.link.Th2Link;
 import com.exactpro.th2.infraoperator.spec.link.relation.dictionaries.DictionaryBinding;
 import com.exactpro.th2.infraoperator.spec.link.relation.pins.PinCoupling;
@@ -125,11 +124,17 @@ public enum OperatorState {
         return namespaceStates.computeIfAbsent(namespace, s -> new NamespaceState(namespace));
     }
 
-    public HashMap<String, Th2CustomResource> getTh2Resources (String namespace) {
-        return computeIfAbsent(namespace).th2CustomResourceHashMap;
+    public void addActiveTh2Resource (String namespace, String resourceName) {
+        computeIfAbsent(namespace).availableTh2Resources.add(resourceName);
     }
 
+    public void removeActiveResource(String namespace, String resourceName) {
+        computeIfAbsent(namespace).availableTh2Resources.remove(resourceName);
+    }
 
+    public boolean checkActiveTh2Resource (String namespace, String resourceName) {
+        return computeIfAbsent(namespace).availableTh2Resources.contains(resourceName);
+    }
 
     public interface NamespaceLock {
         void lock();
@@ -139,7 +144,7 @@ public enum OperatorState {
     public static class NamespaceState implements NamespaceLock {
 
         private String name;
-        private HashMap<String, Th2CustomResource> th2CustomResourceHashMap;
+        private Set<String> availableTh2Resources;
         private List<Th2Link> linkResources = new ArrayList<>();
         private List<EnqueuedLink> mqActiveLinks = new ArrayList<>();
         private List<PinCouplingGRPC> grpcActiveLinks = new ArrayList<>();
@@ -149,7 +154,7 @@ public enum OperatorState {
 
         public NamespaceState(String name) {
             this.name = name;
-            this.th2CustomResourceHashMap = new HashMap<>();
+            this.availableTh2Resources = new HashSet<>();
         }
 
         @Override

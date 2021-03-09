@@ -26,9 +26,7 @@ public abstract class GenericLinkResolver<T> implements LinkResolver<T> {
     public abstract void resolve(List<Th2Link> linkResources, List<T> grpcActiveLinks, Th2CustomResource... newResources);
 
     public boolean th2PinEndpointPreValidation (String namespace, String endpointName1, String endpointName2) {
-        var th2Resources = OperatorState.INSTANCE.getTh2Resources(namespace);
-
-        return th2Resources.containsKey(endpointName1)
-                && th2Resources.containsKey(endpointName2);
+        return OperatorState.INSTANCE.checkActiveTh2Resource(namespace, endpointName1)
+                && OperatorState.INSTANCE.checkActiveTh2Resource(namespace, endpointName2);
     }
 }
