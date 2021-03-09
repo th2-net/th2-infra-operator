@@ -189,10 +189,13 @@ public class BindQueueLinkResolver implements QueueLinkResolver {
 
         var th2Resources = OperatorState.INSTANCE.getTh2Resources(namespace);
 
-        if (!th2Resources.containsKey(link.getFrom().getBoxName())
-                || !th2Resources.containsKey(link.getTo().getBoxName())) {
-           return null;
+        if (true)  {
+            return null;
         }
+//        if (!th2Resources.containsKey(link.getFrom().getBoxName())
+//                || !th2Resources.containsKey(link.getTo().getBoxName())) {
+//           return null;
+//        }
 
         var fromBoxSpec = link.getFrom();
 
