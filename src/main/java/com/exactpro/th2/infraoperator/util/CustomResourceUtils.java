@@ -19,6 +19,8 @@ package com.exactpro.th2.infraoperator.util;
 import com.exactpro.th2.infraoperator.model.kubernetes.client.ResourceClient;
 import com.exactpro.th2.infraoperator.operator.manager.impl.EventQueue;
 import com.exactpro.th2.infraoperator.operator.manager.impl.GenericResourceEventHandler;
+import com.exactpro.th2.infraoperator.spec.Th2CustomResource;
+import com.exactpro.th2.infraoperator.spec.shared.PinSpec;
 import io.fabric8.kubernetes.api.model.HasMetadata;
 import io.fabric8.kubernetes.api.model.apiextensions.v1.CustomResourceDefinition;
 import io.fabric8.kubernetes.api.model.apiextensions.v1.CustomResourceDefinitionSpec;
@@ -28,6 +30,11 @@ import io.fabric8.kubernetes.client.Watcher;
 import io.fabric8.kubernetes.internal.KubernetesDeserializer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 
 
 public final class CustomResourceUtils {
@@ -47,7 +54,7 @@ public final class CustomResourceUtils {
 
     public static String annotationFor(HasMetadata resource) {
         return annotationFor(
-                  resource.getMetadata().getNamespace()
+                resource.getMetadata().getNamespace()
                 , resource.getKind()
                 , resource.getMetadata().getName()
         );
@@ -80,7 +87,7 @@ public final class CustomResourceUtils {
         final String extractedNamespace = ExtractUtils.extractNamespace(crd);
         final String crdNamespace = (extractedNamespace == null) ? DEFAULT_NAMESPACE : extractedNamespace;
 
-            return kubClient.apiextensions().v1().customResourceDefinitions()
+        return kubClient.apiextensions().v1().customResourceDefinitions()
                 .list()
                 .getItems()
                 .stream()
@@ -121,5 +128,17 @@ public final class CustomResourceUtils {
         KubernetesDeserializer.registerCustomKind(apiVersion, kind, resourceType);
 
         return new GenericResourceEventHandler<>(watchHandler, eventQueue);
+    }
+
+    public static void removeDuplicatedPins(Th2CustomResource resource) {
+        List<PinSpec> pins = resource.getSpec().getPins();
+        Map<String, PinSpec> uniquePins = new HashMap<>();
+        for (PinSpec pin : pins) {
+            if (uniquePins.put(pin.getName(), pin) != null) {
+                logger.warn("Detected duplicated pin: \"{}\" in \"{}\". will be substituted by the last ocurrence",
+                        pin.getName(), annotationFor(resource));
+            }
+        }
+        resource.getSpec().setPins(new ArrayList<>(uniquePins.values()));
     }
 }
