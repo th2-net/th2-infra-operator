@@ -14,37 +14,13 @@ import org.slf4j.LoggerFactory;
 
 public class GenericResourceEventHandler<T extends HasMetadata> implements ResourceEventHandler<T>, Watcher<T> {
     private static final Logger logger = LoggerFactory.getLogger(GenericResourceEventHandler.class);
-    public static final String REFRESH_TOKEN_ALIAS = "refresh-token";
-
 
     private Watcher<T> watcher;
-    private DefaultWatchManager.EventQueue<DefaultWatchManager.DispatcherEvent> eventQueue;
+    private EventQueue eventQueue;
 
-    public GenericResourceEventHandler(Watcher<T> watcher,
-                                       DefaultWatchManager.EventQueue<DefaultWatchManager.DispatcherEvent> eventQueue) {
+    public GenericResourceEventHandler(Watcher<T> watcher, EventQueue eventQueue) {
         this.watcher = watcher;
         this.eventQueue = eventQueue;
-    }
-
-
-    public String refreshToken(HasMetadata res) {
-
-        var metadata = res.getMetadata();
-        if (metadata == null)
-            return null;
-
-        var annotations= metadata.getAnnotations();
-        if (annotations != null)
-           return annotations.get(REFRESH_TOKEN_ALIAS);
-        return null;
-    }
-
-    private String sourceHash(HasMetadata res) {
-
-        String hash = ExtractUtils.sourceHash(res);
-        if (hash != null)
-            return "[" + hash.substring(0, 8) + "]";
-        return "";
     }
 
     @Override
@@ -54,20 +30,19 @@ public class GenericResourceEventHandler<T extends HasMetadata> implements Resou
                 return;
         }
 
-        // temp fix: change thread name for logging purposes
-        // TODO: propagate event id logging in code
         String resourceLabel = CustomResourceUtils.annotationFor(obj);
         String eventId = EventCounter.newEvent();
         logger.debug("Received ADDED event ({}) for \"{}\" {}, refresh-token={}",
                 eventId,
                 resourceLabel,
-                sourceHash(obj),
-                refreshToken(obj));
+                ExtractUtils.sourceHash(obj, true),
+                ExtractUtils.refreshToken(obj));
 
-        eventQueue.addEvent(new DefaultWatchManager.DispatcherEvent(
+        eventQueue.addEvent(EventQueue.generateEvent(
                 eventId,
                 resourceLabel,
                 Action.ADDED,
+                obj.getMetadata().getNamespace(),
                 obj,
                 this));
     }
@@ -81,20 +56,19 @@ public class GenericResourceEventHandler<T extends HasMetadata> implements Resou
             return;
         }
 
-        // temp fix: change thread name for logging purposes
-        // TODO: propagate event id logging in code
         String resourceLabel = CustomResourceUtils.annotationFor(oldObj);
         String eventId = EventCounter.newEvent();
         logger.debug("Received MODIFIED event ({}) for \"{}\" {}, refresh-token={}",
                 eventId,
                 resourceLabel,
-                sourceHash(newObj),
-                refreshToken(newObj));
+                ExtractUtils.sourceHash(newObj, true),
+                ExtractUtils.refreshToken(newObj));
 
-        eventQueue.addEvent(new DefaultWatchManager.DispatcherEvent(
+        eventQueue.addEvent(EventQueue.generateEvent(
                 eventId,
                 resourceLabel,
                 Action.MODIFIED,
+                newObj.getMetadata().getNamespace(),
                 newObj,
                 this));
     }
@@ -107,20 +81,19 @@ public class GenericResourceEventHandler<T extends HasMetadata> implements Resou
             return;
         }
 
-        // temp fix: change thread name for logging purposes
-        // TODO: propagate event id logging in code
         String resourceLabel = CustomResourceUtils.annotationFor(obj);
         String eventId = EventCounter.newEvent();
         logger.debug("Received DELETED event ({}) for \"{}\" {}, refresh-token={}",
                 eventId,
                 resourceLabel,
-                sourceHash(obj),
-                refreshToken(obj));
+                ExtractUtils.sourceHash(obj, true),
+                ExtractUtils.refreshToken(obj));
 
-        eventQueue.addEvent(new DefaultWatchManager.DispatcherEvent(
+        eventQueue.addEvent(EventQueue.generateEvent(
                 eventId,
                 resourceLabel,
                 Action.DELETED,
+                obj.getMetadata().getNamespace(),
                 obj,
                 this));
     }
@@ -131,29 +104,19 @@ public class GenericResourceEventHandler<T extends HasMetadata> implements Resou
         try {
             long startDateTime = System.currentTimeMillis();
 
-            if (Strings.nonePrefixMatch(resource.getMetadata().getNamespace(), OperatorConfig.INSTANCE.getNamespacePrefixes())) {
-                return;
-            }
+            String resourceLabel = CustomResourceUtils.annotationFor(resource);
+            logger.debug("Processing {} event for \"{}\" {}", action, resourceLabel, ExtractUtils.sourceHash(resource, true));
 
             try {
-                // temp fix: change thread name for logging purposes
-                // TODO: propagate event id logging in code
-                String resourceLabel = CustomResourceUtils.annotationFor(resource);
-                logger.debug("Received {} event for \"{}\" {}", action, resourceLabel, sourceHash(resource));
-
-                try {
-                    watcher.eventReceived(action, resource);
-                } catch (Exception e) {
-                    logger.error("Exception processing event for \"{}\"", resourceLabel, e);
-                }
-
-                long duration = System.currentTimeMillis() - startDateTime;
-                logger.info("Event for \"{}\" processed in {}ms", resourceLabel, duration);
-
-            } finally {
-                EventCounter.closeEvent();
-                Thread.currentThread().setName("thread-" + Thread.currentThread().getId());
+                // let handler process the message
+                watcher.eventReceived(action, resource);
+            } catch (Exception e) {
+                logger.error("Exception processing event for \"{}\"", resourceLabel, e);
             }
+
+            long duration = System.currentTimeMillis() - startDateTime;
+            logger.info("Event for \"{}\" processed in {}ms", resourceLabel, duration);
+
         } catch (Exception e) {
             logger.error("Exception processing event", e);
         }

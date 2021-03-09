@@ -19,19 +19,9 @@ package com.exactpro.th2.infraoperator.operator.context;
 public class EventCounter {
     private static volatile long counter;
 
-    private static ThreadLocal<String> currentEvent = new ThreadLocal<>();
-
     public static synchronized String newEvent() {
-        String id = String.format("event-%08d", ++counter);
-        currentEvent.set(id);
+        String id = String.format("evt-%08d", ++counter);
         return id;
     }
 
-    public static void closeEvent() {
-        currentEvent.set(null);
-    }
-
-    public static String getCurrentEventId() {
-        return currentEvent.get();
-    }
 }

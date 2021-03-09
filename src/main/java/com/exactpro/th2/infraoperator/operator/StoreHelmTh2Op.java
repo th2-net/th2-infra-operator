@@ -53,10 +53,7 @@ public abstract class StoreHelmTh2Op<CR extends Th2CustomResource> extends HelmR
         super(builder);
     }
 
-
-    @Override
-    protected void addedEvent(CR resource) {
-
+    private void nameCheck (CR resource) {
         var msNamespace = extractNamespace(resource);
         var lock = OperatorState.INSTANCE.getLock(msNamespace);
 
@@ -81,7 +78,16 @@ public abstract class StoreHelmTh2Op<CR extends Th2CustomResource> extends HelmR
         } finally {
             lock.unlock();
         }
+    }
 
+    @Override
+    protected void addedEvent(CR resource) {
+        nameCheck(resource);
+    }
+
+    @Override
+    protected void modifiedEvent(CR resource) {
+        nameCheck(resource);
     }
 
     @Override

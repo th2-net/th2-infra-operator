@@ -33,7 +33,7 @@ public class HelmReleaseEventHandler implements Watcher<HelmRelease> {
     public static HelmReleaseEventHandler newInstance(
             SharedInformerFactory factory,
             KubernetesClient client,
-            DefaultWatchManager.EventQueue<DefaultWatchManager.DispatcherEvent> eventQueue,
+            EventQueue eventQueue,
             BoxResourceFinder resourceFinder) {
 
         var res = new HelmReleaseEventHandler(client, resourceFinder);

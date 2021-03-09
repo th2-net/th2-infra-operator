@@ -17,7 +17,7 @@
 package com.exactpro.th2.infraoperator.util;
 
 import com.exactpro.th2.infraoperator.model.kubernetes.client.ResourceClient;
-import com.exactpro.th2.infraoperator.operator.manager.impl.DefaultWatchManager;
+import com.exactpro.th2.infraoperator.operator.manager.impl.EventQueue;
 import com.exactpro.th2.infraoperator.operator.manager.impl.GenericResourceEventHandler;
 import io.fabric8.kubernetes.api.model.HasMetadata;
 import io.fabric8.kubernetes.api.model.apiextensions.v1.CustomResourceDefinition;
@@ -98,7 +98,7 @@ public final class CustomResourceUtils {
     public static <T extends CustomResource> GenericResourceEventHandler resourceEventHandlerFor(
             ResourceClient<T> resourceClient,
             Watcher<T> handler,
-            DefaultWatchManager.EventQueue<DefaultWatchManager.DispatcherEvent> eventQueue) {
+            EventQueue eventQueue) {
 
         return resourceEventHandlerFor(
                 handler,
@@ -112,7 +112,7 @@ public final class CustomResourceUtils {
             Watcher<T> watchHandler,
             Class<T> resourceType,
             CustomResourceDefinition crd,
-            DefaultWatchManager.EventQueue<DefaultWatchManager.DispatcherEvent> eventQueue) {
+            EventQueue eventQueue) {
         CustomResourceDefinitionSpec spec = crd.getSpec();
 
         String apiVersion = spec.getGroup() + "/" + spec.getVersions().get(0);
