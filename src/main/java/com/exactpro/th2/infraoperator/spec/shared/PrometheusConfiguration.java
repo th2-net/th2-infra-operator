@@ -31,13 +31,13 @@ public final class PrometheusConfiguration {
 
     private String host;
     private String port;
-    private String enabled;
+    private Boolean enabled;
 
 
     private PrometheusConfiguration(String host, String port, String enabled) {
         this.host = host;
         this.port = port;
-        this.enabled = enabled;
+        this.enabled = Boolean.valueOf(enabled);
     }
 
 
@@ -71,7 +71,7 @@ public final class PrometheusConfiguration {
         return this.port;
     }
 
-    public String getEnabled() {
+    public Boolean getEnabled() {
         return this.enabled;
     }
 

@@ -146,4 +146,14 @@ public class ExtendedSettingsUtils {
             }
         }
     }
+
+    public static <R> void convertExternalBoxEnabled(Map<String, Object> extendedSettings, Function<String, R> converter) {
+        Map<String, Object> service = getSectionReference(extendedSettings, EXTERNAL_BOX_ALIAS);
+        if (service != null) {
+            var currentValue = service.get(ENABLED_ALIAS);
+            if (currentValue != null) {
+                service.put(ENABLED_ALIAS, converter.apply(currentValue.toString()));
+            }
+        }
+    }
 }
