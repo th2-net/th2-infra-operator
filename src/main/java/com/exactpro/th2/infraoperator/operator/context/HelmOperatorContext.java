@@ -19,7 +19,6 @@ package com.exactpro.th2.infraoperator.operator.context;
 import com.exactpro.th2.infraoperator.model.box.configuration.dictionary.factory.DictionaryFactory;
 import com.exactpro.th2.infraoperator.model.box.configuration.grpc.factory.GrpcRouterConfigFactory;
 import com.exactpro.th2.infraoperator.model.box.configuration.mq.factory.MessageRouterConfigFactory;
-import com.exactpro.th2.infraoperator.model.box.configuration.mq.factory.impl.DefaultMessageRouterConfigFactory;
 import com.exactpro.th2.infraoperator.spec.strategy.linkResolver.dictionary.DictionaryLinkResolver;
 import com.exactpro.th2.infraoperator.spec.strategy.linkResolver.grpc.GrpcLinkResolver;
 import com.exactpro.th2.infraoperator.spec.strategy.linkResolver.mq.QueueLinkResolver;
@@ -66,7 +65,7 @@ public class HelmOperatorContext {
         protected GrpcLinkResolver grpcLinkResolver = null;
         protected DictionaryLinkResolver dictionaryLinkResolver = null;
         protected QueueLinkResolver queueGenLinkResolver = null;
-        protected MessageRouterConfigFactory mqConfigFactory = new DefaultMessageRouterConfigFactory();
+        protected MessageRouterConfigFactory mqConfigFactory = new MessageRouterConfigFactory();
         protected GrpcRouterConfigFactory grpcConfigFactory = null;
         protected DictionaryFactory dictionaryFactory = null;
 

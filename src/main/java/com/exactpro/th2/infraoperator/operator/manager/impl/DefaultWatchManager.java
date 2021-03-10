@@ -17,21 +17,20 @@
 package com.exactpro.th2.infraoperator.operator.manager.impl;
 
 import com.exactpro.th2.infraoperator.configuration.OperatorConfig;
-import com.exactpro.th2.infraoperator.model.box.configuration.dictionary.factory.impl.DefaultDictionaryFactory;
-import com.exactpro.th2.infraoperator.model.box.configuration.grpc.factory.impl.DefaultGrpcRouterConfigFactory;
+import com.exactpro.th2.infraoperator.model.box.configuration.dictionary.factory.DictionaryFactory;
+import com.exactpro.th2.infraoperator.model.box.configuration.grpc.factory.GrpcRouterConfigFactory;
 import com.exactpro.th2.infraoperator.model.kubernetes.client.ResourceClient;
 import com.exactpro.th2.infraoperator.model.kubernetes.client.impl.DictionaryClient;
 import com.exactpro.th2.infraoperator.operator.HelmReleaseTh2Op;
 import com.exactpro.th2.infraoperator.operator.context.HelmOperatorContext;
 import com.exactpro.th2.infraoperator.spec.Th2CustomResource;
 import com.exactpro.th2.infraoperator.spec.link.Th2Link;
-import com.exactpro.th2.infraoperator.spec.strategy.linkResolver.dictionary.impl.DefaultDictionaryLinkResolver;
-import com.exactpro.th2.infraoperator.spec.strategy.linkResolver.grpc.impl.DefaultGrpcLinkResolver;
+import com.exactpro.th2.infraoperator.spec.strategy.linkResolver.dictionary.DictionaryLinkResolver;
+import com.exactpro.th2.infraoperator.spec.strategy.linkResolver.grpc.GrpcLinkResolver;
 import com.exactpro.th2.infraoperator.spec.strategy.linkResolver.mq.impl.BindQueueLinkResolver;
 import com.exactpro.th2.infraoperator.spec.strategy.resFinder.box.impl.DefaultBoxResourceFinder;
 import com.exactpro.th2.infraoperator.spec.strategy.resFinder.box.impl.StoreDependentBoxResourceFinder;
 import com.exactpro.th2.infraoperator.spec.strategy.resFinder.dictionary.DictionaryResourceFinder;
-import com.exactpro.th2.infraoperator.spec.strategy.resFinder.dictionary.impl.DefaultDictionaryResourceFinder;
 import com.exactpro.th2.infraoperator.util.CustomResourceUtils;
 import com.exactpro.th2.infraoperator.util.Strings;
 import com.fasterxml.uuid.Generators;
@@ -276,19 +275,19 @@ public class DefaultWatchManager {
         var msgStResFinder = new StoreDependentBoxResourceFinder(resFinder);
         operatorBuilder.resourceFinder(msgStResFinder);
 
-        operatorBuilder.dictionaryResourceFinder(new DefaultDictionaryResourceFinder(dictionaryClient));
+        operatorBuilder.dictionaryResourceFinder(new DictionaryResourceFinder(dictionaryClient));
 
-        operatorBuilder.grpcLinkResolver(new DefaultGrpcLinkResolver(operatorBuilder.getResourceFinder()));
+        operatorBuilder.grpcLinkResolver(new GrpcLinkResolver(operatorBuilder.getResourceFinder()));
 
         operatorBuilder.queueGenLinkResolver(new BindQueueLinkResolver(operatorBuilder.getResourceFinder()));
 
         var boxResFinder = operatorBuilder.getResourceFinder();
         var dicResFinder = operatorBuilder.getDictionaryResourceFinder();
-        operatorBuilder.dictionaryLinkResolver(new DefaultDictionaryLinkResolver(boxResFinder, dicResFinder));
+        operatorBuilder.dictionaryLinkResolver(new DictionaryLinkResolver(boxResFinder, dicResFinder));
 
-        operatorBuilder.grpcConfigFactory(new DefaultGrpcRouterConfigFactory(operatorBuilder.getResourceFinder()));
+        operatorBuilder.grpcConfigFactory(new GrpcRouterConfigFactory(operatorBuilder.getResourceFinder()));
 
-        operatorBuilder.dictionaryFactory(new DefaultDictionaryFactory(operatorBuilder.getDictionaryResourceFinder()));
+        operatorBuilder.dictionaryFactory(new DictionaryFactory(operatorBuilder.getDictionaryResourceFinder()));
     }
 
     public static Builder builder(KubernetesClient client) {
@@ -313,7 +312,7 @@ public class DefaultWatchManager {
             super(client);
         }
 
-        public Builder dictionaryResourceFinder(DefaultDictionaryResourceFinder dictionaryResourceFinder) {
+        public Builder dictionaryResourceFinder(DictionaryResourceFinder dictionaryResourceFinder) {
             this.dictionaryResourceFinder = dictionaryResourceFinder;
             return this;
         }
