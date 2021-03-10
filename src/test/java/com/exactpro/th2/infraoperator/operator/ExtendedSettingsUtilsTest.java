@@ -5,6 +5,7 @@ import org.junit.jupiter.api.Test;
 
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 import static org.junit.jupiter.api.Assertions.*;
@@ -24,6 +25,14 @@ public class ExtendedSettingsUtilsTest {
     void testServiceEmptyMap(){
         Map<String, Object> extendedSettings = Collections.singletonMap(SERVICE_ALIAS, Collections.emptyMap());
         assertDoesNotThrow(() -> ExtendedSettingsUtils.convertServiceEnabled(extendedSettings, Boolean::valueOf));
+    }
+
+    @Test
+    void testNonMapElement(){
+        Map<String, Object> service = Collections.emptyMap();
+        List<Object> notMap = Collections.singletonList(service);
+        Map<String, Object> extendedSettings = Collections.singletonMap(SERVICE_ALIAS, notMap);
+        assertThrows(ClassCastException.class, () -> ExtendedSettingsUtils.convertServiceEnabled(extendedSettings, Boolean::valueOf));
     }
 
     @Test
