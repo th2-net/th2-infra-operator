@@ -38,6 +38,7 @@ import com.exactpro.th2.infraoperator.spec.strategy.linkResolver.mq.QueueLinkRes
 import com.exactpro.th2.infraoperator.spec.strategy.linkResolver.mq.impl.DeclareQueueResolver;
 import com.exactpro.th2.infraoperator.spec.strategy.resFinder.box.BoxResourceFinder;
 import com.exactpro.th2.infraoperator.util.CustomResourceUtils;
+import com.exactpro.th2.infraoperator.util.ExtendedSettingsUtils;
 import com.exactpro.th2.infraoperator.util.ExtractUtils;
 import com.exactpro.th2.infraoperator.util.JsonUtils;
 import io.fabric8.kubernetes.api.model.KubernetesResourceList;
@@ -163,9 +164,11 @@ public abstract class HelmReleaseTh2Op<CR extends Th2CustomResource> extends Abs
                 Map.of(DICTIONARIES_ALIAS, dictionaries));
 
         Map<String, Object> extendedSettings = resSpec.getExtendedSettings();
-        if (extendedSettings != null)
+        if (extendedSettings != null) {
+            ExtendedSettingsUtils.convertServiceEnabled(extendedSettings, Boolean::valueOf);
             helmRelease.mergeValue(PROPERTIES_MERGE_DEPTH, ROOT_PROPERTIES_ALIAS,
-                Map.of(EXTENDED_SETTINGS_ALIAS, extendedSettings));
+                    Map.of(EXTENDED_SETTINGS_ALIAS, extendedSettings));
+        }
 
         String ingressHost = OperatorConfig.INSTANCE.getIngressHost();
         if (ingressHost != null && !ingressHost.isEmpty())
