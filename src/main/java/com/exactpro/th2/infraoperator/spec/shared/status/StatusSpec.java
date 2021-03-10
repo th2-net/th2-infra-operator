@@ -16,8 +16,6 @@
 
 package com.exactpro.th2.infraoperator.spec.shared.status;
 
-import com.exactpro.th2.infraoperator.spec.strategy.linkResolver.ConfigNotFoundException;
-import com.exactpro.th2.infraoperator.spec.strategy.linkResolver.VHostCreateException;
 import com.fasterxml.jackson.annotation.JsonInclude;
 
 import java.time.Instant;
@@ -42,7 +40,6 @@ public class StatusSpec {
 
     public void idle(String message) {
         refreshCondition(Condition.Type.DEPLOYED, RolloutPhase.IDLE, false, message);
-        refreshCondition(Condition.Type.ENQUEUED, RolloutPhase.IDLE, false, message);
     }
 
     public void installing() {
@@ -51,7 +48,6 @@ public class StatusSpec {
 
     public void installing(String message) {
         refreshCondition(Condition.Type.DEPLOYED, RolloutPhase.INSTALLING, false, message);
-        refreshCondition(Condition.Type.ENQUEUED, RolloutPhase.INSTALLING, true, message);
     }
 
     public void upgrading() {
@@ -68,7 +64,6 @@ public class StatusSpec {
 
     public void deleting(String message) {
         refreshCondition(Condition.Type.DEPLOYED, RolloutPhase.DELETING, false, message);
-        refreshCondition(Condition.Type.ENQUEUED, RolloutPhase.DELETING, false, message);
     }
 
     public void succeeded() {
@@ -77,32 +72,10 @@ public class StatusSpec {
 
     public void succeeded(String message, String subResourceName) {
         refreshCondition(Condition.Type.DEPLOYED, RolloutPhase.SUCCEEDED, subResourceName, true, message);
-        refreshCondition(Condition.Type.ENQUEUED, RolloutPhase.SUCCEEDED, subResourceName, true, message);
-    }
-
-    public void failed(Exception e) {
-        if (e instanceof VHostCreateException) {
-            failedVHost(e.getMessage());
-        } else if (e instanceof ConfigNotFoundException) {
-            failedConfig(e.getMessage());
-        } else {
-            failed(e.getMessage());
-        }
     }
 
     public void failed(String message) {
         refreshCondition(Condition.Type.DEPLOYED, RolloutPhase.FAILED, false, message);
-        refreshCondition(Condition.Type.ENQUEUED, RolloutPhase.FAILED, false, message);
-    }
-
-    public void failedVHost(String message) {
-        refreshCondition(Condition.Type.DEPLOYED, RolloutPhase.FAILED, false, message);
-        refreshCondition(Condition.Type.ENQUEUED, RolloutPhase.FAILED_VHOST, false, message);
-    }
-
-    public void failedConfig(String message) {
-        refreshCondition(Condition.Type.DEPLOYED, RolloutPhase.FAILED, false, message);
-        refreshCondition(Condition.Type.ENQUEUED, RolloutPhase.FAILED_CONFIG, false, message);
     }
 
     private void refreshCondition(Condition.Type type, RolloutPhase phase, boolean status, String message) {
@@ -117,13 +90,7 @@ public class StatusSpec {
             condition = Condition.builder().type(type.toString()).build();
             this.conditions.add(condition);
         } else {
-            condition = conditions.stream()
-                    .filter(con -> con.getType().equals(type.toString()))
-                    .findFirst().orElse(null);
-            if (condition == null) {
-                condition = Condition.builder().type(type.toString()).build();
-                this.conditions.add(condition);
-            }
+            condition = conditions.get(0);
         }
 
 
