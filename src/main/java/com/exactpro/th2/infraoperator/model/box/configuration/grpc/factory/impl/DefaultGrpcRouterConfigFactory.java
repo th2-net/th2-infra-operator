@@ -29,8 +29,6 @@ import com.exactpro.th2.infraoperator.spec.strategy.resFinder.box.BoxResourceFin
 import com.exactpro.th2.infraoperator.spec.shared.SchemaConnectionType;
 import com.exactpro.th2.infraoperator.util.SchemeMappingUtils;
 import com.exactpro.th2.infraoperator.util.Strings;
-import com.fasterxml.jackson.core.type.TypeReference;
-import com.fasterxml.jackson.databind.JsonNode;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import org.apache.commons.lang3.StringUtils;
@@ -38,15 +36,14 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.*;
-import java.util.List;
 import java.util.stream.Collectors;
 
 import static com.exactpro.th2.infraoperator.model.box.configuration.grpc.StrategyType.FILTER;
 import static com.exactpro.th2.infraoperator.model.box.configuration.grpc.StrategyType.ROBIN;
 import static com.exactpro.th2.infraoperator.util.CustomResourceUtils.annotationFor;
+import static com.exactpro.th2.infraoperator.util.ExtendedSettingsUtils.*;
 import static com.exactpro.th2.infraoperator.util.ExtractUtils.extractName;
 import static com.exactpro.th2.infraoperator.util.ExtractUtils.extractNamespace;
-import static com.exactpro.th2.infraoperator.util.JsonUtils.JSON_READER;
 
 
 public class DefaultGrpcRouterConfigFactory implements GrpcRouterConfigFactory {
@@ -57,16 +54,6 @@ public class DefaultGrpcRouterConfigFactory implements GrpcRouterConfigFactory {
     private static final int DEFAULT_SERVER_WORKERS_COUNT = 5;
     private static final String ENDPOINT_ALIAS_SUFFIX = "-endpoint";
     private static final String SERVICE_CLASS_PLACEHOLDER = "unknown";
-    private static final String EXTENDED_SETTINGS_ALIAS = "extended-settings";
-    private static final String EXTERNAL_BOX_ALIAS = "externalBox";
-    private static final String HOST_NETWORK_ALIAS = "hostNetwork";
-    private static final String SERVICE_ALIAS = "service";
-    private static final String ENDPOINTS_ALIAS = "endpoints";
-    private static final String GRPC_ALIAS = "grpc";
-    private static final String ENABLED_ALIAS = "enabled";
-    private static final String ADDRESS_ALIAS = "address";
-    private static final String SEPARATOR = ".";
-    private static final String SPLIT_CHARACTER = "\\.";
     private static final GrpcServerConfiguration DEFAULT_SERVER = createServer();
     private final BoxResourceFinder resourceFinder;
 
@@ -299,104 +286,5 @@ public class DefaultGrpcRouterConfigFactory implements GrpcRouterConfigFactory {
             targetBox.setExternalBox(false);
             logger.debug("link [from \"{}\" to \"{}\"] does NOT need external gRPC mapping", annotationFor(fromBox), annotationFor(toBox));
         }
-    }
-
-    private boolean isHostNetwork(Map<String, Object> boxExtendedSettings) {
-        return boxExtendedSettings != null && getFieldAsBoolean(boxExtendedSettings, HOST_NETWORK_ALIAS);
-    }
-
-    private boolean isExternalBox(Map<String, Object> boxExtendedSettings) {
-        String path = EXTERNAL_BOX_ALIAS + SEPARATOR + ENABLED_ALIAS;
-        return boxExtendedSettings != null && getFieldAsBoolean(boxExtendedSettings, path);
-    }
-
-    private GrpcEndpointMapping getGrpcMapping(Map<String, Object> boxSettings) {
-        if (boxSettings == null) {
-            return null;
-        }
-        String path = SERVICE_ALIAS + SEPARATOR + ENDPOINTS_ALIAS;
-        JsonNode endpointsNode = getFieldAsNode(boxSettings, path);
-        if (endpointsNode != null) {
-            List<GrpcEndpointMapping> grpcEndpointMappings = JSON_READER.convertValue(endpointsNode, new TypeReference<>() {
-            });
-            for (GrpcEndpointMapping grpcEndpointMapping : grpcEndpointMappings) {
-                if (grpcEndpointMapping.getName().equals(GRPC_ALIAS)) {
-                    return grpcEndpointMapping;
-                }
-            }
-        }
-        return null;
-    }
-
-    private GrpcExternalEndpointMapping getGrpcExternalMapping(Map<String, Object> boxSettings) {
-        if (boxSettings == null) {
-            return null;
-        }
-        String path = EXTERNAL_BOX_ALIAS + SEPARATOR + ENDPOINTS_ALIAS;
-        JsonNode endpointsNode = getFieldAsNode(boxSettings, path);
-        if (endpointsNode != null) {
-            List<GrpcExternalEndpointMapping> externalEndpoints = JSON_READER.convertValue(endpointsNode, new TypeReference<>() {
-            });
-            for (GrpcExternalEndpointMapping grpcExternalEndpointMapping : externalEndpoints) {
-                if (grpcExternalEndpointMapping.getName().equals(GRPC_ALIAS)) {
-                    return grpcExternalEndpointMapping;
-                }
-            }
-        }
-        return null;
-    }
-
-    private String getExternalHost(Map<String, Object> boxSettings) {
-        if (boxSettings == null) {
-            return null;
-        }
-        String path = EXTERNAL_BOX_ALIAS + SEPARATOR + ADDRESS_ALIAS;
-        JsonNode address = getFieldAsNode(boxSettings, path);
-        if (address != null) {
-            return JSON_READER.convertValue(address, String.class);
-        }
-        return null;
-    }
-
-    private JsonNode getFieldAsNode(Object sourceObj, String path) {
-        String[] fields = path.split(SPLIT_CHARACTER);
-        JsonNode currentField = JSON_READER.convertValue(sourceObj, JsonNode.class);
-        for (String field : fields) {
-            currentField = currentField.get(field);
-            if (currentField == null) {
-                return null;
-            }
-        }
-        return currentField;
-    }
-
-    private boolean getFieldAsBoolean(Object sourceObj, String path) {
-        return getFieldAsBoolean(sourceObj, path, false);
-    }
-
-    private boolean getFieldAsBoolean(Object sourceObj, String path, boolean defaultValue) {
-        String[] fields = path.split(SPLIT_CHARACTER);
-        JsonNode currentField = JSON_READER.convertValue(sourceObj, JsonNode.class);
-        for (String field : fields) {
-            currentField = currentField.get(field);
-            if (currentField == null) {
-                return defaultValue;
-            }
-        }
-        return JSON_READER.convertValue(currentField, Boolean.class);
-    }
-
-    private void hostNetworkEndpointNotFound(Th2CustomResource box) throws ConfigNotFoundException {
-        String message = String.format(
-                "Could not find HostNetworkEndpoint configuration for [%S], please check '%s' section in CR",
-                annotationFor(box), EXTENDED_SETTINGS_ALIAS + SEPARATOR + SERVICE_ALIAS + SEPARATOR + ENDPOINTS_ALIAS);
-        throw new ConfigNotFoundException(message);
-    }
-
-    private void externalBoxEndpointNotFound(Th2CustomResource box) throws ConfigNotFoundException {
-        String message = String.format(
-                "Could not find ExternalBoxEndpoint configuration for [%S], please check '%s' section in CR",
-                annotationFor(box), EXTENDED_SETTINGS_ALIAS + SEPARATOR + EXTERNAL_BOX_ALIAS + SEPARATOR + ENDPOINTS_ALIAS);
-        throw new ConfigNotFoundException(message);
     }
 }
