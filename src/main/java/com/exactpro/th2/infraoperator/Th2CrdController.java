@@ -21,7 +21,6 @@ import com.exactpro.th2.infraoperator.operator.impl.CoreBoxHelmTh2Op;
 import com.exactpro.th2.infraoperator.operator.impl.EstoreHelmTh2Op;
 import com.exactpro.th2.infraoperator.operator.impl.MstoreHelmTh2Op;
 import com.exactpro.th2.infraoperator.operator.manager.impl.DefaultWatchManager;
-import io.fabric8.kubernetes.client.DefaultKubernetesClient;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
