@@ -3,6 +3,7 @@ package com.exactpro.th2.infraoperator.util;
 import com.exactpro.th2.infraoperator.model.box.configuration.grpc.GrpcEndpointMapping;
 import com.exactpro.th2.infraoperator.model.box.configuration.grpc.GrpcExternalEndpointMapping;
 import com.exactpro.th2.infraoperator.spec.Th2CustomResource;
+import com.exactpro.th2.infraoperator.spec.shared.PrometheusConfiguration;
 import com.exactpro.th2.infraoperator.spec.strategy.linkResolver.ConfigNotFoundException;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.JsonNode;
@@ -18,14 +19,16 @@ public class ExtendedSettingsUtils {
     private static final String SPLIT_CHARACTER = "\\.";
     private static final String SEPARATOR = ".";
 
-    private static final String EXTENDED_SETTINGS_ALIAS = "extended-settings";
+    private static final String COMPONENT_ALIAS = "component";
+    private static final String EXTENDED_SETTINGS_ALIAS = "extendedSettings";
+
     private static final String EXTERNAL_BOX_ALIAS = "externalBox";
     private static final String HOST_NETWORK_ALIAS = "hostNetwork";
-    private static final String SERVICE_ALIAS = "service";
     private static final String ENDPOINTS_ALIAS = "endpoints";
-    private static final String GRPC_ALIAS = "grpc";
-    private static final String ENABLED_ALIAS = "enabled";
     private static final String ADDRESS_ALIAS = "address";
+    private static final String ENABLED_ALIAS = "enabled";
+    private static final String SERVICE_ALIAS = "service";
+    private static final String GRPC_ALIAS = "grpc";
 
     private ExtendedSettingsUtils() {
     }
@@ -129,31 +132,34 @@ public class ExtendedSettingsUtils {
         return JSON_READER.convertValue(currentField, Boolean.class);
     }
 
-    private static Map<String, Object> getSectionReference(Map<String, Object> extendedSettings, String... fields) {
-        Map<String, Object> currentSection = (Map<String, Object>) extendedSettings.get(fields[0]);
+    private static Map<String, Object> getSectionReference(Map<String, Object> values, String... fields) {
+        Map<String, Object> currentSection = (Map<String, Object>) values.get(fields[0]);
         for (int i = 1; i < fields.length; i++) {
-            currentSection = (Map<String, Object>) currentSection.get(fields[i]);
+            if (currentSection != null) {
+                currentSection = (Map<String, Object>) currentSection.get(fields[i]);
+            }
         }
         return currentSection;
     }
 
-    public static <R> void convertServiceEnabled(Map<String, Object> extendedSettings, Function<String, R> converter) {
-        Map<String, Object> service = getSectionReference(extendedSettings, SERVICE_ALIAS);
-        if (service != null) {
-            var currentValue = service.get(ENABLED_ALIAS);
+    private static <R> void convertField(Map<String, Object> section, String fieldName, Function<String, R> converter) {
+        if (section != null) {
+            var currentValue = section.get(fieldName);
             if (currentValue != null) {
-                service.put(ENABLED_ALIAS, converter.apply(currentValue.toString()));
+                section.put(fieldName, converter.apply(currentValue.toString()));
             }
         }
     }
 
-    public static <R> void convertExternalBoxEnabled(Map<String, Object> extendedSettings, Function<String, R> converter) {
-        Map<String, Object> service = getSectionReference(extendedSettings, EXTERNAL_BOX_ALIAS);
-        if (service != null) {
-            var currentValue = service.get(ENABLED_ALIAS);
-            if (currentValue != null) {
-                service.put(ENABLED_ALIAS, converter.apply(currentValue.toString()));
-            }
-        }
+
+    public static <R> void convertAllBooleans(Map<String, Object> values, Function<String, R> converter) {
+        Map<String, Object> service = getSectionReference(values, COMPONENT_ALIAS, EXTENDED_SETTINGS_ALIAS, SERVICE_ALIAS);
+        Map<String, Object> externalBox = getSectionReference(values, COMPONENT_ALIAS, EXTENDED_SETTINGS_ALIAS, EXTERNAL_BOX_ALIAS);
+
+        convertField(service, ENABLED_ALIAS, converter);
+        convertField(externalBox, ENABLED_ALIAS, converter);
     }
+
+
+
 }

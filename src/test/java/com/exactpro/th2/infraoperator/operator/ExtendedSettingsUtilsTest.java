@@ -12,50 +12,67 @@ import static org.junit.jupiter.api.Assertions.*;
 
 public class ExtendedSettingsUtilsTest {
 
+    private static final String EXTENDED_SETTINGS_ALIAS = "extended-settings";
+    private static final String EXTERNAL_BOX_ALIAS = "externalBox";
     private static final String SERVICE_ALIAS = "service";
     private static final String ENABLED_ALIAS = "enabled";
 
     @Test
-    void testServiceNull(){
-        Map<String, Object> extendedSettings = Collections.singletonMap(SERVICE_ALIAS, null);
-        assertDoesNotThrow(() -> ExtendedSettingsUtils.convertServiceEnabled(extendedSettings, Boolean::valueOf));
+    void testNull() {
+        Map<String, Object> values = new HashMap<>();
+        values.put(EXTENDED_SETTINGS_ALIAS, null);
+        assertDoesNotThrow(() -> ExtendedSettingsUtils.convertAllBooleans(values, Boolean::valueOf));
     }
 
     @Test
-    void testServiceEmptyMap(){
-        Map<String, Object> extendedSettings = Collections.singletonMap(SERVICE_ALIAS, Collections.emptyMap());
-        assertDoesNotThrow(() -> ExtendedSettingsUtils.convertServiceEnabled(extendedSettings, Boolean::valueOf));
+    void testServiceEmptyMap() {
+        Map<String, Object> values = new HashMap<>();
+        values.put(EXTENDED_SETTINGS_ALIAS, Collections.emptyMap());
+        assertDoesNotThrow(() -> ExtendedSettingsUtils.convertAllBooleans(values, Boolean::valueOf));
     }
 
     @Test
-    void testNonMapElement(){
+    void testNonMapElement() {
+
         Map<String, Object> service = Collections.emptyMap();
         List<Object> notMap = Collections.singletonList(service);
         Map<String, Object> extendedSettings = Collections.singletonMap(SERVICE_ALIAS, notMap);
-        assertThrows(ClassCastException.class, () -> ExtendedSettingsUtils.convertServiceEnabled(extendedSettings, Boolean::valueOf));
+        Map<String, Object> values = new HashMap<>();
+        values.put(EXTENDED_SETTINGS_ALIAS, extendedSettings);
+        assertThrows(ClassCastException.class, () -> ExtendedSettingsUtils.convertAllBooleans(values, Boolean::valueOf));
     }
 
     @Test
-    void testServiceEnabledTrue(){
+    void testEnabledTrue() {
         Map<String, Object> service = new HashMap<>();
         service.put(ENABLED_ALIAS, "true");
-        Map<String, Object> extendedSettings = Map.of(SERVICE_ALIAS, service);
-        assertDoesNotThrow(() -> ExtendedSettingsUtils.convertServiceEnabled(extendedSettings, Boolean::valueOf));
+        Map<String, Object> externalBox = new HashMap<>();
+        externalBox.put(ENABLED_ALIAS, "true");
+        Map<String, Object> extendedSettings = Map.of(SERVICE_ALIAS, service, EXTERNAL_BOX_ALIAS, externalBox);
+        Map<String, Object> values = Map.of(EXTENDED_SETTINGS_ALIAS, extendedSettings);
 
-        Map<String, Object> serviceModified = (Map<String, Object>)extendedSettings.get(SERVICE_ALIAS);
-        assertTrue(serviceModified.get(ENABLED_ALIAS) instanceof Boolean);
-        assertTrue((Boolean)serviceModified.get(ENABLED_ALIAS));
+        assertDoesNotThrow(() -> ExtendedSettingsUtils.convertAllBooleans(values, Boolean::valueOf));
+
+        assertTrue(service.get(ENABLED_ALIAS) instanceof Boolean);
+        assertTrue((Boolean) service.get(ENABLED_ALIAS));
+        assertTrue(externalBox.get(ENABLED_ALIAS) instanceof Boolean);
+        assertTrue((Boolean) externalBox.get(ENABLED_ALIAS));
     }
 
     @Test
-    void testServiceEnabledFalse(){
+    void testServiceEnabledFalse() {
         Map<String, Object> service = new HashMap<>();
         service.put(ENABLED_ALIAS, "false");
-        Map<String, Object> extendedSettings = Map.of(SERVICE_ALIAS, service);
-        assertDoesNotThrow(() -> ExtendedSettingsUtils.convertServiceEnabled(extendedSettings, Boolean::valueOf));
+        Map<String, Object> externalBox = new HashMap<>();
+        externalBox.put(ENABLED_ALIAS, "false");
+        Map<String, Object> extendedSettings = Map.of(SERVICE_ALIAS, service, EXTERNAL_BOX_ALIAS, externalBox);
+        Map<String, Object> values = Map.of(EXTENDED_SETTINGS_ALIAS, extendedSettings);
 
-        Map<String, Object> serviceModified = (Map<String, Object>)extendedSettings.get(SERVICE_ALIAS);
-        assertTrue(serviceModified.get(ENABLED_ALIAS) instanceof Boolean);
-        assertFalse((Boolean)serviceModified.get(ENABLED_ALIAS));
+        assertDoesNotThrow(() -> ExtendedSettingsUtils.convertAllBooleans(values, Boolean::valueOf));
+
+        assertTrue(service.get(ENABLED_ALIAS) instanceof Boolean);
+        assertFalse((Boolean) service.get(ENABLED_ALIAS));
+        assertTrue(externalBox.get(ENABLED_ALIAS) instanceof Boolean);
+        assertFalse((Boolean) externalBox.get(ENABLED_ALIAS));
     }
 }

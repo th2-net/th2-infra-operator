@@ -74,6 +74,7 @@ public abstract class HelmReleaseTh2Op<CR extends Th2CustomResource> extends Abs
     public static final String RELEASE_NAME_ALIAS = "releaseName";
     public static final String INGRESS_HOST_ALIAS = "ingressHost";
     public static final String HELM_RELEASE_CRD_NAME = "helmreleases.helm.fluxcd.io";
+    public static final String DEFAULT_VALUE_ENABLED = Boolean.TRUE.toString();
 
     protected final BoxResourceFinder resourceFinder;
     protected final GrpcLinkResolver grpcLinkResolver;
@@ -158,11 +159,17 @@ public abstract class HelmReleaseTh2Op<CR extends Th2CustomResource> extends Abs
             GRPC_CONFIG_ALIAS, JsonUtils.writeValueAsDeepMap(grpcConfig)
         ));
 
-        PrometheusConfiguration prometheusConfig = resource.getSpec().getPrometheusConfiguration();
-        if (prometheusConfig == null)
-            prometheusConfig = PrometheusConfiguration.createDefault();
+        PrometheusConfiguration<String> prometheusConfig = resource.getSpec().getPrometheusConfiguration();
+        if (prometheusConfig == null) {
+            prometheusConfig = PrometheusConfiguration.createDefault(DEFAULT_VALUE_ENABLED);
+        }
+        PrometheusConfiguration<Boolean> prometheusConfigForRelease = PrometheusConfiguration.<Boolean>builder()
+            .port(prometheusConfig.getPort())
+            .host(prometheusConfig.getHost())
+            .enabled(Boolean.valueOf(prometheusConfig.getEnabled()))
+            .build();
         helmRelease.mergeValue(PROPERTIES_MERGE_DEPTH, ROOT_PROPERTIES_ALIAS,
-            Map.of(PROMETHEUS_CONFIG_ALIAS, prometheusConfig));
+            Map.of(PROMETHEUS_CONFIG_ALIAS, prometheusConfigForRelease));
 
         if (!dictionaries.isEmpty())
             helmRelease.mergeValue(PROPERTIES_MERGE_DEPTH, ROOT_PROPERTIES_ALIAS,
@@ -170,10 +177,8 @@ public abstract class HelmReleaseTh2Op<CR extends Th2CustomResource> extends Abs
 
         Map<String, Object> extendedSettings = resSpec.getExtendedSettings();
         if (extendedSettings != null) {
-            ExtendedSettingsUtils.convertServiceEnabled(extendedSettings, Boolean::valueOf);
-            ExtendedSettingsUtils.convertExternalBoxEnabled(extendedSettings, Boolean::valueOf);
             helmRelease.mergeValue(PROPERTIES_MERGE_DEPTH, ROOT_PROPERTIES_ALIAS,
-                    Map.of(EXTENDED_SETTINGS_ALIAS, extendedSettings));
+                Map.of(EXTENDED_SETTINGS_ALIAS, extendedSettings));
         }
 
         String ingressHost = OperatorConfig.INSTANCE.getIngressHost();
@@ -193,6 +198,7 @@ public abstract class HelmReleaseTh2Op<CR extends Th2CustomResource> extends Abs
 
         helmRelease.mergeSpecProp(CHART_PROPERTIES_ALIAS, defaultChartConfig.toMap());
         helmRelease.mergeValue(Map.of(ANNOTATIONS_ALIAS, ExtractUtils.extractAnnotations(resource).get(ANTECEDENT_LABEL_KEY_ALIAS)));
+        ExtendedSettingsUtils.convertAllBooleans(helmRelease.getValuesSection(), Boolean::valueOf);
     }
 
     @Override
