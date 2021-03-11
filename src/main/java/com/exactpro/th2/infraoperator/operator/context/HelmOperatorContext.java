@@ -23,11 +23,8 @@ import com.exactpro.th2.infraoperator.model.box.configuration.grpc.factory.impl.
 import com.exactpro.th2.infraoperator.model.box.configuration.mq.factory.MessageRouterConfigFactory;
 import com.exactpro.th2.infraoperator.model.box.configuration.mq.factory.impl.DefaultMessageRouterConfigFactory;
 import com.exactpro.th2.infraoperator.spec.strategy.linkResolver.dictionary.DictionaryLinkResolver;
-import com.exactpro.th2.infraoperator.spec.strategy.linkResolver.dictionary.impl.EmptyDictionaryLinkResolver;
 import com.exactpro.th2.infraoperator.spec.strategy.linkResolver.grpc.GrpcLinkResolver;
-import com.exactpro.th2.infraoperator.spec.strategy.linkResolver.grpc.impl.EmptyGrpcLinkResolver;
 import com.exactpro.th2.infraoperator.spec.strategy.linkResolver.mq.QueueLinkResolver;
-import com.exactpro.th2.infraoperator.spec.strategy.linkResolver.mq.impl.EmptyQueueLinkResolver;
 import com.exactpro.th2.infraoperator.spec.strategy.resFinder.box.BoxResourceFinder;
 import com.exactpro.th2.infraoperator.spec.strategy.resFinder.box.EmptyBoxResourceFinder;
 import io.fabric8.kubernetes.client.KubernetesClient;
@@ -69,9 +66,9 @@ public class HelmOperatorContext {
         protected final KubernetesClient client;
 
         protected BoxResourceFinder resourceFinder = new EmptyBoxResourceFinder();
-        protected GrpcLinkResolver grpcLinkResolver = new EmptyGrpcLinkResolver();
-        protected DictionaryLinkResolver dictionaryLinkResolver = new EmptyDictionaryLinkResolver();
-        protected QueueLinkResolver queueGenLinkResolver = new EmptyQueueLinkResolver();
+        protected GrpcLinkResolver grpcLinkResolver = null;
+        protected DictionaryLinkResolver dictionaryLinkResolver = null;
+        protected QueueLinkResolver queueGenLinkResolver = null;
         protected MessageRouterConfigFactory mqConfigFactory = new DefaultMessageRouterConfigFactory();
         protected GrpcRouterConfigFactory grpcConfigFactory = new EmptyGrpcRouterConfigFactory();
         protected DictionaryFactory dictionaryFactory = new EmptyDictionaryFactory();

@@ -28,11 +28,8 @@ import com.exactpro.th2.infraoperator.operator.context.HelmOperatorContext;
 import com.exactpro.th2.infraoperator.spec.Th2CustomResource;
 import com.exactpro.th2.infraoperator.spec.link.Th2Link;
 import com.exactpro.th2.infraoperator.spec.strategy.linkResolver.dictionary.impl.DefaultDictionaryLinkResolver;
-import com.exactpro.th2.infraoperator.spec.strategy.linkResolver.dictionary.impl.EmptyDictionaryLinkResolver;
 import com.exactpro.th2.infraoperator.spec.strategy.linkResolver.grpc.impl.DefaultGrpcLinkResolver;
-import com.exactpro.th2.infraoperator.spec.strategy.linkResolver.grpc.impl.EmptyGrpcLinkResolver;
 import com.exactpro.th2.infraoperator.spec.strategy.linkResolver.mq.impl.BindQueueLinkResolver;
-import com.exactpro.th2.infraoperator.spec.strategy.linkResolver.mq.impl.EmptyQueueLinkResolver;
 import com.exactpro.th2.infraoperator.spec.strategy.resFinder.box.EmptyBoxResourceFinder;
 import com.exactpro.th2.infraoperator.spec.strategy.resFinder.box.impl.DefaultBoxResourceFinder;
 import com.exactpro.th2.infraoperator.spec.strategy.resFinder.box.impl.StoreDependentBoxResourceFinder;
@@ -81,7 +78,6 @@ public class DefaultWatchManager {
     private static DefaultWatchManager instance;
 
     private final EventDispatcher eventDispatcher;
-    private EventHandlerContext eventHandlerContext;
 
     private synchronized SharedInformerFactory getInformerFactory() {
         return sharedInformerFactory;
@@ -105,9 +101,10 @@ public class DefaultWatchManager {
 
         SharedInformerFactory sharedInformerFactory = getInformerFactory();
 
+
         eventDispatcher.start();
         postInit();
-        this.eventHandlerContext = registerInformers (sharedInformerFactory);
+        EventHandlerContext eventHandlerContext = registerInformers (sharedInformerFactory);
         loadResources(eventHandlerContext);
 
         isWatching = true;
@@ -197,7 +194,7 @@ public class DefaultWatchManager {
         for (var hwSup : helmWatchersCommands) {
             HelmReleaseTh2Op<Th2CustomResource> helmReleaseTh2Op = hwSup.get();
 
-            var handler = CustomResourceUtils.resourceEventHandlerFor(helmReleaseTh2Op.getResourceClient(),
+            var handler = new GenericResourceEventHandler<>(
                     helmReleaseTh2Op,
                     eventDispatcher.getEventQueue());
             helmReleaseTh2Op.generateInformerFromFactory(getInformerFactory()).addEventHandler(handler);
@@ -292,15 +289,15 @@ public class DefaultWatchManager {
             operatorBuilder.dictionaryResourceFinder(new DefaultDictionaryResourceFinder(dictionaryClient));
         }
 
-        if (grpcLinkResolver instanceof EmptyGrpcLinkResolver || grpcLinkResolver instanceof DefaultGrpcLinkResolver) {
+        if (grpcLinkResolver == null || grpcLinkResolver instanceof DefaultGrpcLinkResolver) {
             operatorBuilder.grpcLinkResolver(new DefaultGrpcLinkResolver(operatorBuilder.getResourceFinder()));
         }
 
-        if (queueGenLinkResolver instanceof EmptyQueueLinkResolver || queueGenLinkResolver instanceof BindQueueLinkResolver) {
+        if (queueGenLinkResolver == null || queueGenLinkResolver instanceof BindQueueLinkResolver) {
             operatorBuilder.queueGenLinkResolver(new BindQueueLinkResolver(operatorBuilder.getResourceFinder()));
         }
 
-        if (dictionaryLinkResolver instanceof EmptyDictionaryLinkResolver || dictionaryLinkResolver instanceof DefaultDictionaryLinkResolver) {
+        if (dictionaryLinkResolver == null || dictionaryLinkResolver instanceof DefaultDictionaryLinkResolver) {
             var boxResFinder = operatorBuilder.getResourceFinder();
             var dicResFinder = operatorBuilder.getDictionaryResourceFinder();
             operatorBuilder.dictionaryLinkResolver(new DefaultDictionaryLinkResolver(boxResFinder, dicResFinder));

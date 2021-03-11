@@ -16,9 +16,7 @@
 
 package com.exactpro.th2.infraoperator.model.kubernetes.client;
 
-import com.exactpro.th2.infraoperator.util.CustomResourceUtils;
 import io.fabric8.kubernetes.api.model.KubernetesResourceList;
-import io.fabric8.kubernetes.api.model.apiextensions.v1.CustomResourceDefinition;
 import io.fabric8.kubernetes.client.CustomResource;
 import io.fabric8.kubernetes.client.KubernetesClient;
 import io.fabric8.kubernetes.client.dsl.MixedOperation;
@@ -35,7 +33,6 @@ public abstract class DefaultResourceClient<CR extends CustomResource> implement
 
     private final KubernetesClient client;
     private final Class<CR> resourceType;
-    private final CustomResourceDefinition customResourceDefinition;
     private final MixedOperation<CR, ? extends KubernetesResourceList<CR>, ? extends Resource<CR>> instance;
     private final String crdName;
 
@@ -46,7 +43,6 @@ public abstract class DefaultResourceClient<CR extends CustomResource> implement
     ) {
         this.client = client;
         this.resourceType = resourceType;
-        this.customResourceDefinition = CustomResourceUtils.getResourceCrd(client, crdName);
         this.crdName = crdName;
 
         instance = client.customResources(resourceType);
@@ -56,11 +52,6 @@ public abstract class DefaultResourceClient<CR extends CustomResource> implement
     @Override
     public Class<CR> getResourceType() {
         return resourceType;
-    }
-
-    @Override
-    public CustomResourceDefinition getCustomResourceDefinition() {
-        return customResourceDefinition;
     }
 }
 

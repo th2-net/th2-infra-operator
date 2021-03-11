@@ -42,7 +42,6 @@ import com.exactpro.th2.infraoperator.util.ExtendedSettingsUtils;
 import com.exactpro.th2.infraoperator.util.ExtractUtils;
 import com.exactpro.th2.infraoperator.util.JsonUtils;
 import io.fabric8.kubernetes.api.model.KubernetesResourceList;
-import io.fabric8.kubernetes.api.model.apiextensions.v1.CustomResourceDefinition;
 import io.fabric8.kubernetes.client.dsl.MixedOperation;
 import io.fabric8.kubernetes.client.dsl.Resource;
 import io.fabric8.kubernetes.client.informers.SharedInformer;
@@ -73,7 +72,6 @@ public abstract class HelmReleaseTh2Op<CR extends Th2CustomResource> extends Abs
     public static final String COMPONENT_NAME_ALIAS = "name";
     public static final String RELEASE_NAME_ALIAS = "releaseName";
     public static final String INGRESS_HOST_ALIAS = "ingressHost";
-    public static final String HELM_RELEASE_CRD_NAME = "helmreleases.helm.fluxcd.io";
 
     protected final BoxResourceFinder resourceFinder;
     protected final GrpcLinkResolver grpcLinkResolver;
@@ -84,7 +82,6 @@ public abstract class HelmReleaseTh2Op<CR extends Th2CustomResource> extends Abs
     protected final GrpcRouterConfigFactory grpcConfigFactory;
     protected final DictionaryFactory dictionaryFactory;
 
-    protected final CustomResourceDefinition helmReleaseCrd;
     protected final MixedOperation<HelmRelease, KubernetesResourceList<HelmRelease>, Resource<HelmRelease>> helmReleaseClient;
 
     protected final ActiveLinkUpdater activeLinkUpdaterOnDelete;
@@ -106,8 +103,6 @@ public abstract class HelmReleaseTh2Op<CR extends Th2CustomResource> extends Abs
         this.dictionaryLinkResolver = builder.getDictionaryLinkResolver();
         this.grpcConfigFactory = builder.getGrpcConfigFactory();
         this.dictionaryFactory = builder.getDictionaryFactory();
-
-        helmReleaseCrd = CustomResourceUtils.getResourceCrd(kubClient, HELM_RELEASE_CRD_NAME);
 
         helmReleaseClient = kubClient.customResources(HelmRelease.class);
 
@@ -204,6 +199,7 @@ public abstract class HelmReleaseTh2Op<CR extends Th2CustomResource> extends Abs
             updateEventStorageLinksBeforeAdd(resource);
             updateMsgStorageLinksBeforeAdd(resource);
             var linkedResources = updateActiveLinksBeforeAdd(resource);
+            OperatorState.INSTANCE.addActiveTh2Resource(resource.getMetadata().getNamespace(), resource.getMetadata().getName());
             updateDependedResourcesIfNeeded(resource, linkedResources);
             super.addedEvent(resource);
 
@@ -223,6 +219,7 @@ public abstract class HelmReleaseTh2Op<CR extends Th2CustomResource> extends Abs
             updateEventStorageLinksBeforeAdd(resource);
             updateMsgStorageLinksBeforeAdd(resource);
             var linkedResources = updateActiveLinksBeforeAdd(resource);
+            OperatorState.INSTANCE.addActiveTh2Resource(resource.getMetadata().getNamespace(), resource.getMetadata().getName());
             updateDependedResourcesIfNeeded(resource, linkedResources);
             super.modifiedEvent(resource);
 
@@ -238,6 +235,7 @@ public abstract class HelmReleaseTh2Op<CR extends Th2CustomResource> extends Abs
         try {
             lock.lock();
 
+            OperatorState.INSTANCE.removeActiveResource(resource.getMetadata().getNamespace(), resource.getMetadata().getName());
             super.deletedEvent(resource);
             updateEventStorageLinksAfterDelete(resource);
             updateMsgStorageLinksAfterDelete(resource);
@@ -252,12 +250,6 @@ public abstract class HelmReleaseTh2Op<CR extends Th2CustomResource> extends Abs
     @Override
     protected void setupKubObj(CR resource, HelmRelease helmRelease) {
         super.setupKubObj(resource, helmRelease);
-
-        if (!CustomResourceUtils.isResourceCrdExist(kubClient, helmReleaseCrd)) {
-            String kubObjType = helmRelease.getClass().getSimpleName();
-            CustomResourceUtils.createResourceCrd(kubClient, helmReleaseCrd, kubObjType);
-        }
-
     }
 
     @Override

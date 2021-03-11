@@ -25,6 +25,7 @@ import com.exactpro.th2.infraoperator.spec.link.validator.chain.impl.DicBoxResou
 import com.exactpro.th2.infraoperator.spec.link.validator.chain.impl.DictionaryResourceExist;
 import com.exactpro.th2.infraoperator.spec.link.validator.model.DictionaryLinkContext;
 import com.exactpro.th2.infraoperator.spec.link.validator.model.DirectionalLinkContext;
+import com.exactpro.th2.infraoperator.spec.strategy.linkResolver.GenericLinkResolver;
 import com.exactpro.th2.infraoperator.spec.strategy.linkResolver.dictionary.DictionaryLinkResolver;
 import com.exactpro.th2.infraoperator.spec.strategy.resFinder.box.BoxResourceFinder;
 import com.exactpro.th2.infraoperator.spec.strategy.resFinder.dictionary.DictionaryResourceFinder;
@@ -32,10 +33,9 @@ import com.exactpro.th2.infraoperator.util.ExtractUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.ArrayList;
 import java.util.List;
 
-public class DefaultDictionaryLinkResolver implements DictionaryLinkResolver {
+public class DefaultDictionaryLinkResolver extends GenericLinkResolver<DictionaryBinding> implements DictionaryLinkResolver {
 
     private static final Logger logger = LoggerFactory.getLogger(DefaultDictionaryLinkResolver.class);
 
@@ -51,21 +51,6 @@ public class DefaultDictionaryLinkResolver implements DictionaryLinkResolver {
     ) {
         this.boxResourceFinder = boxResourceFinder;
         this.dicResourceFinder = dicResourceFinder;
-    }
-
-
-    @Override
-    public List<DictionaryBinding> resolve(List<Th2Link> linkResources) {
-        List<DictionaryBinding> resolvedLinks = new ArrayList<>();
-
-        resolve(linkResources, resolvedLinks);
-
-        return resolvedLinks;
-    }
-
-    @Override
-    public void resolve(List<Th2Link> linkResources, List<DictionaryBinding> dicActiveLinks) {
-        resolve(linkResources, dicActiveLinks, new Th2CustomResource[]{});
     }
 
     @Override
@@ -87,7 +72,6 @@ public class DefaultDictionaryLinkResolver implements DictionaryLinkResolver {
     private boolean validateLinks(Th2Link linkRes, DictionaryBinding link, Th2CustomResource... additionalSource) {
 
         var namespace = ExtractUtils.extractNamespace(linkRes);
-
 
         var boxName = link.getBox();
 
