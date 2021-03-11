@@ -75,23 +75,19 @@ public class BindQueueLinkResolver  extends GenericLinkResolver<EnqueuedLink> im
 
             var namespace = ExtractUtils.extractNamespace(lRes);
 
-            for (var link : lRes.getSpec().getBoxesRelation().getRouterMq()) {
+            for (var pinCouple : lRes.getSpec().getBoxesRelation().getRouterMq()) {
 
                 if (Arrays.stream(newResources)
                         .map(res -> res.getMetadata().getName())
-                        .noneMatch(name -> name.equals(link.getFrom().getBoxName())
-                                || name.equals(link.getTo().getBoxName()))) {
-                    logger.debug("Skipping Pin {}, Boxes {}", link, Arrays.stream(newResources).map(el -> el.getMetadata().getName()).reduce( (prev, cur) -> prev  + ", " + cur).get());
-
+                        .noneMatch(name -> name.equals(pinCouple.getFrom().getBoxName())
+                                || name.equals(pinCouple.getTo().getBoxName()))) {
                     continue;
-                } else {
-                    logger.debug("Processing Pin {}, Boxes {}", link, Arrays.stream(newResources).map(el -> el.getMetadata().getName()).reduce( (prev, cur) -> prev  + ", " + cur).get());
                 }
 
-                var resourceCouple = validateAndReturnRes(lRes, link, newResources);
+                var resourceCouple = validateAndReturnRes(lRes, pinCouple, newResources);
                 var queueBunch = new QueueDescription(
-                        new QueueName(namespace, link.getTo()),
-                        new RoutingKeyName(namespace, link.getFrom()),
+                        new QueueName(namespace, pinCouple.getTo()),
+                        new RoutingKeyName(namespace, pinCouple.getFrom()),
                         RabbitMQContext.getExchangeName(namespace)
                 );
 
@@ -100,17 +96,17 @@ public class BindQueueLinkResolver  extends GenericLinkResolver<EnqueuedLink> im
                     continue;
                 }
 
-                bindQueues(namespace, queueBunch, resourceCouple.to, link.getTo());
+                bindQueues(namespace, queueBunch, resourceCouple.to, pinCouple.getTo());
 
                 logger.info("Queue '{}' of link {{}.{} -> {}.{}} successfully bound",
-                        queueBunch.getQueueName(), namespace, link.getFrom(), namespace, link.getTo());
+                        queueBunch.getQueueName(), namespace, pinCouple.getFrom(), namespace, pinCouple.getTo());
 
                 var alreadyExistLink = activeLinksCopy.stream()
-                        .filter(l -> l.getQueueDescription().equals(queueBunch) && l.getPinCoupling().equals(link))
+                        .filter(l -> l.getQueueDescription().equals(queueBunch) && l.getPinCoupling().equals(pinCouple))
                         .findFirst()
                         .orElse(null);
 
-                activeLinks.add(Objects.requireNonNullElseGet(alreadyExistLink, () -> new EnqueuedLink(link, queueBunch)));
+                activeLinks.add(Objects.requireNonNullElseGet(alreadyExistLink, () -> new EnqueuedLink(pinCouple, queueBunch)));
 
             }
         }
@@ -186,6 +182,7 @@ public class BindQueueLinkResolver  extends GenericLinkResolver<EnqueuedLink> im
         if (!th2PinEndpointPreValidation(namespace,
                 link.getFrom().getBoxName(),
                 link.getTo().getBoxName())) {
+            logger.debug("One of the boxes weren't found in the cache");
             return null;
         }
 
