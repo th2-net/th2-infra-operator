@@ -81,9 +81,11 @@ public class BindQueueLinkResolver  extends GenericLinkResolver<EnqueuedLink> im
                         .map(res -> res.getMetadata().getName())
                         .noneMatch(name -> name.equals(link.getFrom().getBoxName())
                                 || name.equals(link.getTo().getBoxName()))) {
-                    logger.info("Skipping, Pin {}, Boxes {}", link, Arrays.stream(newResources).map(el -> el.getMetadata().getName()).reduce( (prev, cur) -> prev  + ", " + cur).get());
+                    logger.debug("Skipping Pin {}, Boxes {}", link, Arrays.stream(newResources).map(el -> el.getMetadata().getName()).reduce( (prev, cur) -> prev  + ", " + cur).get());
 
                     continue;
+                } else {
+                    logger.debug("Processing Pin {}, Boxes {}", link, Arrays.stream(newResources).map(el -> el.getMetadata().getName()).reduce( (prev, cur) -> prev  + ", " + cur).get());
                 }
 
                 var resourceCouple = validateAndReturnRes(lRes, link, newResources);
