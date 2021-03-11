@@ -47,6 +47,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Objects;
 
@@ -75,6 +76,15 @@ public class BindQueueLinkResolver  extends GenericLinkResolver<EnqueuedLink> im
             var namespace = ExtractUtils.extractNamespace(lRes);
 
             for (var link : lRes.getSpec().getBoxesRelation().getRouterMq()) {
+
+                if (Arrays.stream(newResources)
+                        .map(res -> res.getMetadata().getName())
+                        .noneMatch(name -> name.equals(link.getFrom().getBoxName())
+                                || name.equals(link.getTo().getBoxName()))) {
+                    logger.info("Skipping Link");
+
+                    continue;
+                }
 
                 var resourceCouple = validateAndReturnRes(lRes, link, newResources);
                 var queueBunch = new QueueDescription(
