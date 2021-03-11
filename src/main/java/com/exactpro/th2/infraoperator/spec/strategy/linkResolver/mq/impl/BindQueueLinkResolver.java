@@ -77,29 +77,28 @@ public class BindQueueLinkResolver  extends GenericLinkResolver<EnqueuedLink> im
 
             for (var pinCouple : lRes.getSpec().getBoxesRelation().getRouterMq()) {
 
-                if (Arrays.stream(newResources)
-                        .map(res -> res.getMetadata().getName())
-                        .noneMatch(name -> name.equals(pinCouple.getFrom().getBoxName())
-                                || name.equals(pinCouple.getTo().getBoxName()))) {
-                    continue;
-                }
-
-                var resourceCouple = validateAndReturnRes(lRes, pinCouple, newResources);
                 var queueBunch = new QueueDescription(
                         new QueueName(namespace, pinCouple.getTo()),
                         new RoutingKeyName(namespace, pinCouple.getFrom()),
                         RabbitMQContext.getExchangeName(namespace)
                 );
 
+                if (Arrays.stream(newResources)
+                        .map(res -> res.getMetadata().getName())
+                        .anyMatch(name -> name.equals(pinCouple.getFrom().getBoxName())
+                                || name.equals(pinCouple.getTo().getBoxName()))) {
+                    var resourceCouple = validateAndReturnRes(lRes, pinCouple, newResources);
 
-                if (resourceCouple == null) {
-                    continue;
+                    if (resourceCouple == null) {
+                        continue;
+                    }
+
+                    logger.info("Queue '{}' of link {{}.{} -> {}.{}} successfully bound",
+                            queueBunch.getQueueName(), namespace, pinCouple.getFrom(), namespace, pinCouple.getTo());
+
+                    bindQueues(namespace, queueBunch, resourceCouple.to, pinCouple.getTo());
                 }
 
-                bindQueues(namespace, queueBunch, resourceCouple.to, pinCouple.getTo());
-
-                logger.info("Queue '{}' of link {{}.{} -> {}.{}} successfully bound",
-                        queueBunch.getQueueName(), namespace, pinCouple.getFrom(), namespace, pinCouple.getTo());
 
                 var alreadyExistLink = activeLinksCopy.stream()
                         .filter(l -> l.getQueueDescription().equals(queueBunch) && l.getPinCoupling().equals(pinCouple))
