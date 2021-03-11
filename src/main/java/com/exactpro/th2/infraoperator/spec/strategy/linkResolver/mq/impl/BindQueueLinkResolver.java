@@ -80,8 +80,8 @@ public class BindQueueLinkResolver  extends GenericLinkResolver<EnqueuedLink> im
                 if (Arrays.stream(newResources)
                         .map(res -> res.getMetadata().getName())
                         .noneMatch(name -> name.equals(link.getFrom().getBoxName())
-                                || name.equals(link.getTo().getBoxName()))) {
-                    logger.info("Skipping Link");
+                                && name.equals(link.getTo().getBoxName()))) {
+                    logger.info("Skipping, Pin {}, boxes {}", newResources);
 
                     continue;
                 }
