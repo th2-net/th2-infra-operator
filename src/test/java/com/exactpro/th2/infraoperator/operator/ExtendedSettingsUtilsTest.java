@@ -12,7 +12,8 @@ import static org.junit.jupiter.api.Assertions.*;
 
 public class ExtendedSettingsUtilsTest {
 
-    private static final String EXTENDED_SETTINGS_ALIAS = "extended-settings";
+    private static final String COMPONENT_ALIAS = "component";
+    private static final String EXTENDED_SETTINGS_ALIAS = "extendedSettings";
     private static final String EXTERNAL_BOX_ALIAS = "externalBox";
     private static final String SERVICE_ALIAS = "service";
     private static final String ENABLED_ALIAS = "enabled";
@@ -20,14 +21,18 @@ public class ExtendedSettingsUtilsTest {
     @Test
     void testNull() {
         Map<String, Object> values = new HashMap<>();
-        values.put(EXTENDED_SETTINGS_ALIAS, null);
+        Map<String, Object> component = new HashMap<>();
+        component.put(EXTENDED_SETTINGS_ALIAS, null);
+        values.put(COMPONENT_ALIAS, component);
         assertDoesNotThrow(() -> ExtendedSettingsUtils.convertAllBooleans(values, Boolean::valueOf));
     }
 
     @Test
     void testServiceEmptyMap() {
         Map<String, Object> values = new HashMap<>();
-        values.put(EXTENDED_SETTINGS_ALIAS, Collections.emptyMap());
+        Map<String, Object> component = new HashMap<>();
+        component.put(EXTENDED_SETTINGS_ALIAS, Collections.emptyMap());
+        values.put(COMPONENT_ALIAS, component);
         assertDoesNotThrow(() -> ExtendedSettingsUtils.convertAllBooleans(values, Boolean::valueOf));
     }
 
@@ -38,7 +43,9 @@ public class ExtendedSettingsUtilsTest {
         List<Object> notMap = Collections.singletonList(service);
         Map<String, Object> extendedSettings = Collections.singletonMap(SERVICE_ALIAS, notMap);
         Map<String, Object> values = new HashMap<>();
-        values.put(EXTENDED_SETTINGS_ALIAS, extendedSettings);
+        Map<String, Object> component = new HashMap<>();
+        component.put(EXTENDED_SETTINGS_ALIAS, extendedSettings);
+        values.put(COMPONENT_ALIAS, component);
         assertThrows(ClassCastException.class, () -> ExtendedSettingsUtils.convertAllBooleans(values, Boolean::valueOf));
     }
 
@@ -49,7 +56,8 @@ public class ExtendedSettingsUtilsTest {
         Map<String, Object> externalBox = new HashMap<>();
         externalBox.put(ENABLED_ALIAS, "true");
         Map<String, Object> extendedSettings = Map.of(SERVICE_ALIAS, service, EXTERNAL_BOX_ALIAS, externalBox);
-        Map<String, Object> values = Map.of(EXTENDED_SETTINGS_ALIAS, extendedSettings);
+        Map<String, Object> component = Map.of(EXTENDED_SETTINGS_ALIAS, extendedSettings);
+        Map<String, Object> values = Map.of(COMPONENT_ALIAS, component);
 
         assertDoesNotThrow(() -> ExtendedSettingsUtils.convertAllBooleans(values, Boolean::valueOf));
 
@@ -66,7 +74,8 @@ public class ExtendedSettingsUtilsTest {
         Map<String, Object> externalBox = new HashMap<>();
         externalBox.put(ENABLED_ALIAS, "false");
         Map<String, Object> extendedSettings = Map.of(SERVICE_ALIAS, service, EXTERNAL_BOX_ALIAS, externalBox);
-        Map<String, Object> values = Map.of(EXTENDED_SETTINGS_ALIAS, extendedSettings);
+        Map<String, Object> component = Map.of(EXTENDED_SETTINGS_ALIAS, extendedSettings);
+        Map<String, Object> values = Map.of(COMPONENT_ALIAS, component);
 
         assertDoesNotThrow(() -> ExtendedSettingsUtils.convertAllBooleans(values, Boolean::valueOf));
 
