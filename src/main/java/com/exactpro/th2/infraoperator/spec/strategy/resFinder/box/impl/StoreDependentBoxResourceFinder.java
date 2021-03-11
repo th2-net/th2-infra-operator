@@ -141,11 +141,9 @@ public class StoreDependentBoxResourceFinder implements BoxResourceFinder {
                 }
             };
         }
-    };
+    }
 
     private Th2CustomResource generateFakeResource(String name, String namespace, List<PinSpec> stPins) {
-        System.out.println(String.format("Printing face resource: %s, %s", name, namespace));
-
         return new FakeCustomResource(name, namespace, stPins);
     }
 

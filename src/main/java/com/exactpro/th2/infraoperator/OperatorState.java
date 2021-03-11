@@ -124,7 +124,17 @@ public enum OperatorState {
         return namespaceStates.computeIfAbsent(namespace, s -> new NamespaceState(namespace));
     }
 
+    public void addActiveTh2Resource (String namespace, String resourceName) {
+        computeIfAbsent(namespace).availableTh2Resources.add(resourceName);
+    }
 
+    public void removeActiveResource(String namespace, String resourceName) {
+        computeIfAbsent(namespace).availableTh2Resources.remove(resourceName);
+    }
+
+    public boolean checkActiveTh2Resource (String namespace, String resourceName) {
+        return computeIfAbsent(namespace).availableTh2Resources.contains(resourceName);
+    }
 
     public interface NamespaceLock {
         void lock();
@@ -134,6 +144,7 @@ public enum OperatorState {
     public static class NamespaceState implements NamespaceLock {
 
         private String name;
+        private Set<String> availableTh2Resources;
         private List<Th2Link> linkResources = new ArrayList<>();
         private List<EnqueuedLink> mqActiveLinks = new ArrayList<>();
         private List<PinCouplingGRPC> grpcActiveLinks = new ArrayList<>();
@@ -143,7 +154,9 @@ public enum OperatorState {
 
         public NamespaceState(String name) {
             this.name = name;
+            this.availableTh2Resources = new HashSet<>();
         }
+
         @Override
         public void lock() {
             lock.lock();

@@ -70,8 +70,7 @@ public class NamespaceEventHandler implements ResourceEventHandler<Namespace>, W
         logger.debug("Received DELETED event ({}) for \"{}\" {}",
                 eventId,
                 resourceLabel,
-                ExtractUtils.sourceHash(namespace, true),
-                null);
+                ExtractUtils.sourceHash(namespace, true));
 
         eventQueue.addEvent(EventQueue.generateEvent(
                 eventId,
