@@ -17,16 +17,12 @@
 package com.exactpro.th2.infraoperator.operator.context;
 
 import com.exactpro.th2.infraoperator.model.box.configuration.dictionary.factory.DictionaryFactory;
-import com.exactpro.th2.infraoperator.model.box.configuration.dictionary.factory.impl.EmptyDictionaryFactory;
 import com.exactpro.th2.infraoperator.model.box.configuration.grpc.factory.GrpcRouterConfigFactory;
-import com.exactpro.th2.infraoperator.model.box.configuration.grpc.factory.impl.EmptyGrpcRouterConfigFactory;
 import com.exactpro.th2.infraoperator.model.box.configuration.mq.factory.MessageRouterConfigFactory;
-import com.exactpro.th2.infraoperator.model.box.configuration.mq.factory.impl.DefaultMessageRouterConfigFactory;
 import com.exactpro.th2.infraoperator.spec.strategy.linkResolver.dictionary.DictionaryLinkResolver;
 import com.exactpro.th2.infraoperator.spec.strategy.linkResolver.grpc.GrpcLinkResolver;
 import com.exactpro.th2.infraoperator.spec.strategy.linkResolver.mq.QueueLinkResolver;
 import com.exactpro.th2.infraoperator.spec.strategy.resFinder.box.BoxResourceFinder;
-import com.exactpro.th2.infraoperator.spec.strategy.resFinder.box.EmptyBoxResourceFinder;
 import io.fabric8.kubernetes.client.KubernetesClient;
 import lombok.Getter;
 
@@ -65,13 +61,13 @@ public class HelmOperatorContext {
 
         protected final KubernetesClient client;
 
-        protected BoxResourceFinder resourceFinder = new EmptyBoxResourceFinder();
+        protected BoxResourceFinder resourceFinder = null;
         protected GrpcLinkResolver grpcLinkResolver = null;
         protected DictionaryLinkResolver dictionaryLinkResolver = null;
         protected QueueLinkResolver queueGenLinkResolver = null;
-        protected MessageRouterConfigFactory mqConfigFactory = new DefaultMessageRouterConfigFactory();
-        protected GrpcRouterConfigFactory grpcConfigFactory = new EmptyGrpcRouterConfigFactory();
-        protected DictionaryFactory dictionaryFactory = new EmptyDictionaryFactory();
+        protected MessageRouterConfigFactory mqConfigFactory = new MessageRouterConfigFactory();
+        protected GrpcRouterConfigFactory grpcConfigFactory = null;
+        protected DictionaryFactory dictionaryFactory = null;
 
 
         public Builder(KubernetesClient client) {
