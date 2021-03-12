@@ -47,6 +47,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Objects;
 
@@ -74,31 +75,37 @@ public class BindQueueLinkResolver  extends GenericLinkResolver<EnqueuedLink> im
 
             var namespace = ExtractUtils.extractNamespace(lRes);
 
-            for (var link : lRes.getSpec().getBoxesRelation().getRouterMq()) {
+            for (var pinCouple : lRes.getSpec().getBoxesRelation().getRouterMq()) {
 
-                var resourceCouple = validateAndReturnRes(lRes, link, newResources);
                 var queueBunch = new QueueDescription(
-                        new QueueName(namespace, link.getTo()),
-                        new RoutingKeyName(namespace, link.getFrom()),
+                        new QueueName(namespace, pinCouple.getTo()),
+                        new RoutingKeyName(namespace, pinCouple.getFrom()),
                         RabbitMQContext.getExchangeName(namespace)
                 );
 
+                if (Arrays.stream(newResources)
+                        .map(res -> res.getMetadata().getName())
+                        .anyMatch(name -> name.equals(pinCouple.getFrom().getBoxName())
+                                || name.equals(pinCouple.getTo().getBoxName()))) {
+                    var resourceCouple = validateAndReturnRes(lRes, pinCouple, newResources);
 
-                if (resourceCouple == null) {
-                    continue;
+                    if (resourceCouple == null) {
+                        continue;
+                    }
+
+                    logger.info("Queue '{}' of link {{}.{} -> {}.{}} successfully bound",
+                            queueBunch.getQueueName(), namespace, pinCouple.getFrom(), namespace, pinCouple.getTo());
+
+                    bindQueues(namespace, queueBunch, resourceCouple.to, pinCouple.getTo());
                 }
 
-                bindQueues(namespace, queueBunch, resourceCouple.to, link.getTo());
-
-                logger.info("Queue '{}' of link {{}.{} -> {}.{}} successfully bound",
-                        queueBunch.getQueueName(), namespace, link.getFrom(), namespace, link.getTo());
 
                 var alreadyExistLink = activeLinksCopy.stream()
-                        .filter(l -> l.getQueueDescription().equals(queueBunch) && l.getPinCoupling().equals(link))
+                        .filter(l -> l.getQueueDescription().equals(queueBunch) && l.getPinCoupling().equals(pinCouple))
                         .findFirst()
                         .orElse(null);
 
-                activeLinks.add(Objects.requireNonNullElseGet(alreadyExistLink, () -> new EnqueuedLink(link, queueBunch)));
+                activeLinks.add(Objects.requireNonNullElseGet(alreadyExistLink, () -> new EnqueuedLink(pinCouple, queueBunch)));
 
             }
         }
@@ -174,6 +181,7 @@ public class BindQueueLinkResolver  extends GenericLinkResolver<EnqueuedLink> im
         if (!th2PinEndpointPreValidation(namespace,
                 link.getFrom().getBoxName(),
                 link.getTo().getBoxName())) {
+            logger.debug("One of the boxes weren't found in the cache");
             return null;
         }
 
