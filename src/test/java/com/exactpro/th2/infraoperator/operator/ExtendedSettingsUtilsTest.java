@@ -1,6 +1,6 @@
 package com.exactpro.th2.infraoperator.operator;
 
-import com.exactpro.th2.infraoperator.util.ExtendedSettingsUtils;
+import com.exactpro.th2.infraoperator.spec.helmRelease.HelmRelease;
 import org.junit.jupiter.api.Test;
 
 import java.util.Collections;
@@ -8,32 +8,37 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import static com.exactpro.th2.infraoperator.util.ExtendedSettingsUtils.convertField;
 import static org.junit.jupiter.api.Assertions.*;
 
 public class ExtendedSettingsUtilsTest {
 
-    private static final String COMPONENT_ALIAS = "component";
+    public static final String ROOT_PROPERTIES_ALIAS = "component";
     private static final String EXTENDED_SETTINGS_ALIAS = "extendedSettings";
     private static final String EXTERNAL_BOX_ALIAS = "externalBox";
     private static final String SERVICE_ALIAS = "service";
     private static final String ENABLED_ALIAS = "enabled";
 
+
     @Test
     void testNull() {
-        Map<String, Object> values = new HashMap<>();
         Map<String, Object> component = new HashMap<>();
         component.put(EXTENDED_SETTINGS_ALIAS, null);
-        values.put(COMPONENT_ALIAS, component);
-        assertDoesNotThrow(() -> ExtendedSettingsUtils.convertAllBooleans(values, Boolean::valueOf));
+        HelmRelease hr = new HelmRelease();
+        hr.mergeValue(ROOT_PROPERTIES_ALIAS, component);
+        assertDoesNotThrow(() -> convertField(hr, Boolean::valueOf, ENABLED_ALIAS, ROOT_PROPERTIES_ALIAS, EXTENDED_SETTINGS_ALIAS, SERVICE_ALIAS));
+        assertDoesNotThrow(() -> convertField(hr, Boolean::valueOf, ENABLED_ALIAS, ROOT_PROPERTIES_ALIAS, EXTENDED_SETTINGS_ALIAS, EXTERNAL_BOX_ALIAS));
+
     }
 
     @Test
     void testServiceEmptyMap() {
-        Map<String, Object> values = new HashMap<>();
         Map<String, Object> component = new HashMap<>();
         component.put(EXTENDED_SETTINGS_ALIAS, Collections.emptyMap());
-        values.put(COMPONENT_ALIAS, component);
-        assertDoesNotThrow(() -> ExtendedSettingsUtils.convertAllBooleans(values, Boolean::valueOf));
+        HelmRelease hr = new HelmRelease();
+        hr.mergeValue(ROOT_PROPERTIES_ALIAS, component);
+        assertDoesNotThrow(() -> convertField(hr, Boolean::valueOf, ENABLED_ALIAS, ROOT_PROPERTIES_ALIAS, EXTENDED_SETTINGS_ALIAS, SERVICE_ALIAS));
+        assertDoesNotThrow(() -> convertField(hr, Boolean::valueOf, ENABLED_ALIAS, ROOT_PROPERTIES_ALIAS, EXTENDED_SETTINGS_ALIAS, EXTERNAL_BOX_ALIAS));
     }
 
     @Test
@@ -42,11 +47,11 @@ public class ExtendedSettingsUtilsTest {
         Map<String, Object> service = Collections.emptyMap();
         List<Object> notMap = Collections.singletonList(service);
         Map<String, Object> extendedSettings = Collections.singletonMap(SERVICE_ALIAS, notMap);
-        Map<String, Object> values = new HashMap<>();
         Map<String, Object> component = new HashMap<>();
         component.put(EXTENDED_SETTINGS_ALIAS, extendedSettings);
-        values.put(COMPONENT_ALIAS, component);
-        assertThrows(ClassCastException.class, () -> ExtendedSettingsUtils.convertAllBooleans(values, Boolean::valueOf));
+        HelmRelease hr = new HelmRelease();
+        hr.mergeValue(ROOT_PROPERTIES_ALIAS, component);
+        assertThrows(ClassCastException.class, () -> convertField(hr, Boolean::valueOf, ENABLED_ALIAS, ROOT_PROPERTIES_ALIAS, EXTENDED_SETTINGS_ALIAS, SERVICE_ALIAS));
     }
 
     @Test
@@ -57,9 +62,11 @@ public class ExtendedSettingsUtilsTest {
         externalBox.put(ENABLED_ALIAS, "true");
         Map<String, Object> extendedSettings = Map.of(SERVICE_ALIAS, service, EXTERNAL_BOX_ALIAS, externalBox);
         Map<String, Object> component = Map.of(EXTENDED_SETTINGS_ALIAS, extendedSettings);
-        Map<String, Object> values = Map.of(COMPONENT_ALIAS, component);
+        HelmRelease hr = new HelmRelease();
+        hr.mergeValue(ROOT_PROPERTIES_ALIAS, component);
 
-        assertDoesNotThrow(() -> ExtendedSettingsUtils.convertAllBooleans(values, Boolean::valueOf));
+        assertDoesNotThrow(() -> convertField(hr, Boolean::valueOf, ENABLED_ALIAS, ROOT_PROPERTIES_ALIAS, EXTENDED_SETTINGS_ALIAS, SERVICE_ALIAS));
+        assertDoesNotThrow(() -> convertField(hr, Boolean::valueOf, ENABLED_ALIAS, ROOT_PROPERTIES_ALIAS, EXTENDED_SETTINGS_ALIAS, EXTERNAL_BOX_ALIAS));
 
         assertTrue(service.get(ENABLED_ALIAS) instanceof Boolean);
         assertTrue((Boolean) service.get(ENABLED_ALIAS));
@@ -75,9 +82,11 @@ public class ExtendedSettingsUtilsTest {
         externalBox.put(ENABLED_ALIAS, "false");
         Map<String, Object> extendedSettings = Map.of(SERVICE_ALIAS, service, EXTERNAL_BOX_ALIAS, externalBox);
         Map<String, Object> component = Map.of(EXTENDED_SETTINGS_ALIAS, extendedSettings);
-        Map<String, Object> values = Map.of(COMPONENT_ALIAS, component);
+        HelmRelease hr = new HelmRelease();
+        hr.mergeValue(ROOT_PROPERTIES_ALIAS, component);
 
-        assertDoesNotThrow(() -> ExtendedSettingsUtils.convertAllBooleans(values, Boolean::valueOf));
+        assertDoesNotThrow(() -> convertField(hr, Boolean::valueOf, ENABLED_ALIAS, ROOT_PROPERTIES_ALIAS, EXTENDED_SETTINGS_ALIAS, SERVICE_ALIAS));
+        assertDoesNotThrow(() -> convertField(hr, Boolean::valueOf, ENABLED_ALIAS, ROOT_PROPERTIES_ALIAS, EXTENDED_SETTINGS_ALIAS, EXTERNAL_BOX_ALIAS));
 
         assertTrue(service.get(ENABLED_ALIAS) instanceof Boolean);
         assertFalse((Boolean) service.get(ENABLED_ALIAS));
