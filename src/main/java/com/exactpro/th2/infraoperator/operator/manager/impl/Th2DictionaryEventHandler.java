@@ -3,7 +3,6 @@ package com.exactpro.th2.infraoperator.operator.manager.impl;
 import com.exactpro.th2.infraoperator.OperatorState;
 import com.exactpro.th2.infraoperator.model.kubernetes.client.impl.DictionaryClient;
 import com.exactpro.th2.infraoperator.spec.dictionary.Th2Dictionary;
-import com.exactpro.th2.infraoperator.util.CustomResourceUtils;
 import com.exactpro.th2.infraoperator.util.ExtractUtils;
 import io.fabric8.kubernetes.client.Watcher;
 import io.fabric8.kubernetes.client.WatcherException;
@@ -36,10 +35,8 @@ public class Th2DictionaryEventHandler implements Watcher<Th2Dictionary> {
                 Th2Dictionary.class,
                 RESYNC_TIME);
 
-        dictionaryInformer.addEventHandler(CustomResourceUtils.resourceEventHandlerFor(
+        dictionaryInformer.addEventHandler(new GenericResourceEventHandler<>(
                 res,
-                Th2Dictionary.class,
-                res.dictionaryClient.getCustomResourceDefinition(),
                 eventQueue));
         return res;
     }

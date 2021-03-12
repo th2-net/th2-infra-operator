@@ -17,28 +17,20 @@
 package com.exactpro.th2.infraoperator.operator.manager.impl;
 
 import com.exactpro.th2.infraoperator.configuration.OperatorConfig;
-import com.exactpro.th2.infraoperator.model.box.configuration.dictionary.factory.impl.DefaultDictionaryFactory;
-import com.exactpro.th2.infraoperator.model.box.configuration.dictionary.factory.impl.EmptyDictionaryFactory;
-import com.exactpro.th2.infraoperator.model.box.configuration.grpc.factory.impl.DefaultGrpcRouterConfigFactory;
-import com.exactpro.th2.infraoperator.model.box.configuration.grpc.factory.impl.EmptyGrpcRouterConfigFactory;
+import com.exactpro.th2.infraoperator.model.box.configuration.dictionary.factory.DictionaryFactory;
+import com.exactpro.th2.infraoperator.model.box.configuration.grpc.factory.GrpcRouterConfigFactory;
 import com.exactpro.th2.infraoperator.model.kubernetes.client.ResourceClient;
 import com.exactpro.th2.infraoperator.model.kubernetes.client.impl.DictionaryClient;
 import com.exactpro.th2.infraoperator.operator.HelmReleaseTh2Op;
 import com.exactpro.th2.infraoperator.operator.context.HelmOperatorContext;
 import com.exactpro.th2.infraoperator.spec.Th2CustomResource;
 import com.exactpro.th2.infraoperator.spec.link.Th2Link;
-import com.exactpro.th2.infraoperator.spec.strategy.linkResolver.dictionary.impl.DefaultDictionaryLinkResolver;
-import com.exactpro.th2.infraoperator.spec.strategy.linkResolver.dictionary.impl.EmptyDictionaryLinkResolver;
-import com.exactpro.th2.infraoperator.spec.strategy.linkResolver.grpc.impl.DefaultGrpcLinkResolver;
-import com.exactpro.th2.infraoperator.spec.strategy.linkResolver.grpc.impl.EmptyGrpcLinkResolver;
+import com.exactpro.th2.infraoperator.spec.strategy.linkResolver.dictionary.DictionaryLinkResolver;
+import com.exactpro.th2.infraoperator.spec.strategy.linkResolver.grpc.GrpcLinkResolver;
 import com.exactpro.th2.infraoperator.spec.strategy.linkResolver.mq.impl.BindQueueLinkResolver;
-import com.exactpro.th2.infraoperator.spec.strategy.linkResolver.mq.impl.EmptyQueueLinkResolver;
-import com.exactpro.th2.infraoperator.spec.strategy.resFinder.box.EmptyBoxResourceFinder;
 import com.exactpro.th2.infraoperator.spec.strategy.resFinder.box.impl.DefaultBoxResourceFinder;
 import com.exactpro.th2.infraoperator.spec.strategy.resFinder.box.impl.StoreDependentBoxResourceFinder;
 import com.exactpro.th2.infraoperator.spec.strategy.resFinder.dictionary.DictionaryResourceFinder;
-import com.exactpro.th2.infraoperator.spec.strategy.resFinder.dictionary.impl.DefaultDictionaryResourceFinder;
-import com.exactpro.th2.infraoperator.spec.strategy.resFinder.dictionary.impl.EmptyDictionaryResourceFinder;
 import com.exactpro.th2.infraoperator.util.CustomResourceUtils;
 import com.exactpro.th2.infraoperator.util.Strings;
 import com.fasterxml.uuid.Generators;
@@ -81,7 +73,6 @@ public class DefaultWatchManager {
     private static DefaultWatchManager instance;
 
     private final EventDispatcher eventDispatcher;
-    private EventHandlerContext eventHandlerContext;
 
     private synchronized SharedInformerFactory getInformerFactory() {
         return sharedInformerFactory;
@@ -105,9 +96,10 @@ public class DefaultWatchManager {
 
         SharedInformerFactory sharedInformerFactory = getInformerFactory();
 
+
         eventDispatcher.start();
         postInit();
-        this.eventHandlerContext = registerInformers (sharedInformerFactory);
+        EventHandlerContext eventHandlerContext = registerInformers (sharedInformerFactory);
         loadResources(eventHandlerContext);
 
         isWatching = true;
@@ -197,7 +189,7 @@ public class DefaultWatchManager {
         for (var hwSup : helmWatchersCommands) {
             HelmReleaseTh2Op<Th2CustomResource> helmReleaseTh2Op = hwSup.get();
 
-            var handler = CustomResourceUtils.resourceEventHandlerFor(helmReleaseTh2Op.getResourceClient(),
+            var handler = new GenericResourceEventHandler<>(
                     helmReleaseTh2Op,
                     eventDispatcher.getEventQueue());
             helmReleaseTh2Op.generateInformerFromFactory(getInformerFactory()).addEventHandler(handler);
@@ -272,47 +264,30 @@ public class DefaultWatchManager {
         logger.debug("refreshed \"{}\" with refresh-token={}", CustomResourceUtils.annotationFor(resource), refreshToken);
     }
 
+    /*
+        operatorBuilder should be initialized before starting
+        operators, since operatorBuilder is HelmOperatorContext
+        for operators
+     */
     private void postInit() {
 
-        var queueGenLinkResolver = operatorBuilder.getQueueGenLinkResolver();
-        var resourceFinder = operatorBuilder.getResourceFinder();
-        var dicResourceFinder = operatorBuilder.getDictionaryResourceFinder();
-        var grpcLinkResolver = operatorBuilder.getGrpcLinkResolver();
-        var dictionaryLinkResolver = operatorBuilder.getDictionaryLinkResolver();
-        var grpcConfigFactory = operatorBuilder.getGrpcConfigFactory();
-        var dictionaryFactory = operatorBuilder.getDictionaryFactory();
+        var resFinder = new DefaultBoxResourceFinder(resourceClients);
+        var msgStResFinder = new StoreDependentBoxResourceFinder(resFinder);
+        operatorBuilder.resourceFinder(msgStResFinder);
 
-        if (resourceFinder instanceof EmptyBoxResourceFinder || resourceFinder instanceof DefaultBoxResourceFinder) {
-            var resFinder = new DefaultBoxResourceFinder(resourceClients);
-            var msgStResFinder = new StoreDependentBoxResourceFinder(resFinder);
-            operatorBuilder.resourceFinder(msgStResFinder);
-        }
+        operatorBuilder.dictionaryResourceFinder(new DictionaryResourceFinder(dictionaryClient));
 
-        if (dicResourceFinder instanceof EmptyDictionaryResourceFinder || dicResourceFinder instanceof DefaultDictionaryResourceFinder) {
-            operatorBuilder.dictionaryResourceFinder(new DefaultDictionaryResourceFinder(dictionaryClient));
-        }
+        operatorBuilder.grpcLinkResolver(new GrpcLinkResolver(operatorBuilder.getResourceFinder()));
 
-        if (grpcLinkResolver instanceof EmptyGrpcLinkResolver || grpcLinkResolver instanceof DefaultGrpcLinkResolver) {
-            operatorBuilder.grpcLinkResolver(new DefaultGrpcLinkResolver(operatorBuilder.getResourceFinder()));
-        }
+        operatorBuilder.queueGenLinkResolver(new BindQueueLinkResolver(operatorBuilder.getResourceFinder()));
 
-        if (queueGenLinkResolver instanceof EmptyQueueLinkResolver || queueGenLinkResolver instanceof BindQueueLinkResolver) {
-            operatorBuilder.queueGenLinkResolver(new BindQueueLinkResolver(operatorBuilder.getResourceFinder()));
-        }
+        var boxResFinder = operatorBuilder.getResourceFinder();
+        var dicResFinder = operatorBuilder.getDictionaryResourceFinder();
+        operatorBuilder.dictionaryLinkResolver(new DictionaryLinkResolver(boxResFinder, dicResFinder));
 
-        if (dictionaryLinkResolver instanceof EmptyDictionaryLinkResolver || dictionaryLinkResolver instanceof DefaultDictionaryLinkResolver) {
-            var boxResFinder = operatorBuilder.getResourceFinder();
-            var dicResFinder = operatorBuilder.getDictionaryResourceFinder();
-            operatorBuilder.dictionaryLinkResolver(new DefaultDictionaryLinkResolver(boxResFinder, dicResFinder));
-        }
+        operatorBuilder.grpcConfigFactory(new GrpcRouterConfigFactory(operatorBuilder.getResourceFinder()));
 
-        if (grpcConfigFactory instanceof EmptyGrpcRouterConfigFactory || grpcConfigFactory instanceof DefaultGrpcRouterConfigFactory) {
-            operatorBuilder.grpcConfigFactory(new DefaultGrpcRouterConfigFactory(operatorBuilder.getResourceFinder()));
-        }
-
-        if (dictionaryFactory instanceof EmptyDictionaryFactory || dictionaryFactory instanceof DefaultDictionaryFactory) {
-            operatorBuilder.dictionaryFactory(new DefaultDictionaryFactory(operatorBuilder.getDictionaryResourceFinder()));
-        }
+        operatorBuilder.dictionaryFactory(new DictionaryFactory(operatorBuilder.getDictionaryResourceFinder()));
     }
 
     public static Builder builder(KubernetesClient client) {
@@ -331,13 +306,13 @@ public class DefaultWatchManager {
     @Getter
     private static class Builder extends HelmOperatorContext.Builder<DefaultWatchManager, Builder> {
 
-        private DictionaryResourceFinder dictionaryResourceFinder = new EmptyDictionaryResourceFinder();
+        private DictionaryResourceFinder dictionaryResourceFinder = null;
 
         public Builder(KubernetesClient client) {
             super(client);
         }
 
-        public Builder dictionaryResourceFinder(DefaultDictionaryResourceFinder dictionaryResourceFinder) {
+        public Builder dictionaryResourceFinder(DictionaryResourceFinder dictionaryResourceFinder) {
             this.dictionaryResourceFinder = dictionaryResourceFinder;
             return this;
         }

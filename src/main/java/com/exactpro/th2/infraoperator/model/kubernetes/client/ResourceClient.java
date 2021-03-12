@@ -17,7 +17,6 @@
 package com.exactpro.th2.infraoperator.model.kubernetes.client;
 
 import io.fabric8.kubernetes.api.model.KubernetesResourceList;
-import io.fabric8.kubernetes.api.model.apiextensions.v1.CustomResourceDefinition;
 import io.fabric8.kubernetes.client.CustomResource;
 import io.fabric8.kubernetes.client.dsl.MixedOperation;
 import io.fabric8.kubernetes.client.dsl.Resource;
@@ -34,11 +33,6 @@ public interface ResourceClient<CR extends CustomResource> {
      * @return class of custom resource
      */
     Class<CR> getResourceType();
-
-    /**
-     * @return custom resource definition of custom resource
-     */
-    CustomResourceDefinition getCustomResourceDefinition();
 
     /**
      * @return kubernetes custom client of custom resource

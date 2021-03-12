@@ -3,6 +3,7 @@ package com.exactpro.th2.infraoperator.util;
 import com.exactpro.th2.infraoperator.model.box.configuration.grpc.GrpcEndpointMapping;
 import com.exactpro.th2.infraoperator.model.box.configuration.grpc.GrpcExternalEndpointMapping;
 import com.exactpro.th2.infraoperator.spec.Th2CustomResource;
+import com.exactpro.th2.infraoperator.spec.helmRelease.HelmRelease;
 import com.exactpro.th2.infraoperator.spec.strategy.linkResolver.ConfigNotFoundException;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.JsonNode;
@@ -15,17 +16,16 @@ import static com.exactpro.th2.infraoperator.util.CustomResourceUtils.annotation
 import static com.exactpro.th2.infraoperator.util.JsonUtils.JSON_READER;
 
 public class ExtendedSettingsUtils {
-    private static final String SPLIT_CHARACTER = "\\.";
-    private static final String SEPARATOR = ".";
 
-    private static final String EXTENDED_SETTINGS_ALIAS = "extended-settings";
+    private static final String EXTENDED_SETTINGS_ALIAS = "extendedSettings";
+
     private static final String EXTERNAL_BOX_ALIAS = "externalBox";
     private static final String HOST_NETWORK_ALIAS = "hostNetwork";
-    private static final String SERVICE_ALIAS = "service";
     private static final String ENDPOINTS_ALIAS = "endpoints";
-    private static final String GRPC_ALIAS = "grpc";
-    private static final String ENABLED_ALIAS = "enabled";
     private static final String ADDRESS_ALIAS = "address";
+    private static final String ENABLED_ALIAS = "enabled";
+    private static final String SERVICE_ALIAS = "service";
+    private static final String GRPC_ALIAS = "grpc";
 
     private ExtendedSettingsUtils() {
     }
@@ -35,16 +35,14 @@ public class ExtendedSettingsUtils {
     }
 
     public static boolean isExternalBox(Map<String, Object> boxExtendedSettings) {
-        String path = EXTERNAL_BOX_ALIAS + SEPARATOR + ENABLED_ALIAS;
-        return boxExtendedSettings != null && getFieldAsBoolean(boxExtendedSettings, path);
+        return boxExtendedSettings != null && getFieldAsBoolean(boxExtendedSettings, EXTERNAL_BOX_ALIAS, ENABLED_ALIAS);
     }
 
     public static GrpcEndpointMapping getGrpcMapping(Map<String, Object> boxSettings) {
         if (boxSettings == null) {
             return null;
         }
-        String path = SERVICE_ALIAS + SEPARATOR + ENDPOINTS_ALIAS;
-        JsonNode endpointsNode = getFieldAsNode(boxSettings, path);
+        JsonNode endpointsNode = getFieldAsNode(boxSettings, SERVICE_ALIAS, ENDPOINTS_ALIAS);
         if (endpointsNode != null) {
             List<GrpcEndpointMapping> grpcEndpointMappings = JSON_READER.convertValue(endpointsNode, new TypeReference<>() {
             });
@@ -61,8 +59,7 @@ public class ExtendedSettingsUtils {
         if (boxSettings == null) {
             return null;
         }
-        String path = EXTERNAL_BOX_ALIAS + SEPARATOR + ENDPOINTS_ALIAS;
-        JsonNode endpointsNode = getFieldAsNode(boxSettings, path);
+        JsonNode endpointsNode = getFieldAsNode(boxSettings, EXTERNAL_BOX_ALIAS, ENDPOINTS_ALIAS);
         if (endpointsNode != null) {
             List<GrpcExternalEndpointMapping> externalEndpoints = JSON_READER.convertValue(endpointsNode, new TypeReference<>() {
             });
@@ -79,8 +76,7 @@ public class ExtendedSettingsUtils {
         if (boxSettings == null) {
             return null;
         }
-        String path = EXTERNAL_BOX_ALIAS + SEPARATOR + ADDRESS_ALIAS;
-        JsonNode address = getFieldAsNode(boxSettings, path);
+        JsonNode address = getFieldAsNode(boxSettings, EXTERNAL_BOX_ALIAS, ADDRESS_ALIAS);
         if (address != null) {
             return JSON_READER.convertValue(address, String.class);
         }
@@ -89,20 +85,19 @@ public class ExtendedSettingsUtils {
 
     public static void hostNetworkEndpointNotFound(Th2CustomResource box) throws ConfigNotFoundException {
         String message = String.format(
-                "Could not find HostNetworkEndpoint configuration for [%S], please check '%s' section in CR",
-                annotationFor(box), EXTENDED_SETTINGS_ALIAS + SEPARATOR + SERVICE_ALIAS + SEPARATOR + ENDPOINTS_ALIAS);
+            "Could not find HostNetworkEndpoint configuration for [%S], please check '%s' section in CR",
+            annotationFor(box), EXTENDED_SETTINGS_ALIAS + "." + SERVICE_ALIAS + "." + ENDPOINTS_ALIAS);
         throw new ConfigNotFoundException(message);
     }
 
     public static void externalBoxEndpointNotFound(Th2CustomResource box) throws ConfigNotFoundException {
         String message = String.format(
-                "Could not find ExternalBoxEndpoint configuration for [%S], please check '%s' section in CR",
-                annotationFor(box), EXTENDED_SETTINGS_ALIAS + SEPARATOR + EXTERNAL_BOX_ALIAS + SEPARATOR + ENDPOINTS_ALIAS);
+            "Could not find ExternalBoxEndpoint configuration for [%S], please check '%s' section in CR",
+            annotationFor(box), EXTENDED_SETTINGS_ALIAS + "." + EXTERNAL_BOX_ALIAS + "." + ENDPOINTS_ALIAS);
         throw new ConfigNotFoundException(message);
     }
 
-    private static JsonNode getFieldAsNode(Object sourceObj, String path) {
-        String[] fields = path.split(SPLIT_CHARACTER);
+    private static JsonNode getFieldAsNode(Object sourceObj, String... fields) {
         JsonNode currentField = JSON_READER.convertValue(sourceObj, JsonNode.class);
         for (String field : fields) {
             currentField = currentField.get(field);
@@ -113,12 +108,11 @@ public class ExtendedSettingsUtils {
         return currentField;
     }
 
-    private static boolean getFieldAsBoolean(Object sourceObj, String path) {
-        return getFieldAsBoolean(sourceObj, path, false);
+    private static boolean getFieldAsBoolean(Object sourceObj, String... fields) {
+        return getFieldAsBoolean(sourceObj, false, fields);
     }
 
-    private static boolean getFieldAsBoolean(Object sourceObj, String path, boolean defaultValue) {
-        String[] fields = path.split(SPLIT_CHARACTER);
+    private static boolean getFieldAsBoolean(Object sourceObj, boolean defaultValue, String... fields) {
         JsonNode currentField = JSON_READER.convertValue(sourceObj, JsonNode.class);
         for (String field : fields) {
             currentField = currentField.get(field);
@@ -129,20 +123,22 @@ public class ExtendedSettingsUtils {
         return JSON_READER.convertValue(currentField, Boolean.class);
     }
 
-    private static Map<String, Object> getSectionReference(Map<String, Object> extendedSettings, String... fields) {
-        Map<String, Object> currentSection = (Map<String, Object>) extendedSettings.get(fields[0]);
+    private static Map<String, Object> getSectionReference(Map<String, Object> values, String... fields) {
+        Map<String, Object> currentSection = (Map<String, Object>) values.get(fields[0]);
         for (int i = 1; i < fields.length; i++) {
-            currentSection = (Map<String, Object>) currentSection.get(fields[i]);
+            if (currentSection != null) {
+                currentSection = (Map<String, Object>) currentSection.get(fields[i]);
+            }
         }
         return currentSection;
     }
 
-    public static <R> void convertServiceEnabled(Map<String, Object> extendedSettings, Function<String, R> converter) {
-        Map<String, Object> service = getSectionReference(extendedSettings, SERVICE_ALIAS);
-        if (service != null) {
-            var currentValue = service.get(ENABLED_ALIAS);
+    public static <R> void convertField(HelmRelease helmRelease, Function<String, R> converter, String fieldName, String... fields) {
+        Map<String, Object> section = getSectionReference(helmRelease.getValuesSection(), fields);
+        if (section != null) {
+            var currentValue = section.get(fieldName);
             if (currentValue != null) {
-                service.put(ENABLED_ALIAS, converter.apply(currentValue.toString()));
+                section.put(fieldName, converter.apply(currentValue.toString()));
             }
         }
     }

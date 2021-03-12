@@ -7,7 +7,6 @@ import com.exactpro.th2.infraoperator.spec.link.Th2LinkSpec;
 import com.exactpro.th2.infraoperator.spec.link.relation.dictionaries.DictionaryBinding;
 import com.exactpro.th2.infraoperator.spec.link.relation.pins.PinCoupling;
 import com.exactpro.th2.infraoperator.spec.shared.Identifiable;
-import com.exactpro.th2.infraoperator.util.CustomResourceUtils;
 import io.fabric8.kubernetes.client.KubernetesClient;
 import io.fabric8.kubernetes.client.Watcher;
 import io.fabric8.kubernetes.client.WatcherException;
@@ -46,10 +45,8 @@ public class Th2LinkEventHandler implements Watcher<Th2Link> {
                 Th2Link.class,
                 RESYNC_TIME);
 
-        linkInformer.addEventHandler(CustomResourceUtils.resourceEventHandlerFor(
+        linkInformer.addEventHandler(new GenericResourceEventHandler<>(
                 res,
-                Th2Link.class,
-                res.linkClient.getCustomResourceDefinition(),
                 eventQueue));
 
         return res;
@@ -135,10 +132,13 @@ public class Th2LinkEventHandler implements Watcher<Th2Link> {
             var linkResources = new ArrayList<>(operatorState.getLinkResources(namespace));
 
             Th2Link prevLink = getPreviousLink(th2Link, linkResources);
-            refreshAffectedBoxes(prevLink, th2Link);
             linkResources.remove(th2Link);
-            if (action != Action.DELETED)
+            if (action.equals(Action.DELETED)) {
+                refreshAffectedBoxes(prevLink, Th2Link.newInstance());
+            } else {
+                refreshAffectedBoxes(prevLink, th2Link);
                 linkResources.add(th2Link);
+            }
 
             operatorState.setLinkResources(namespace, linkResources);
         } finally {

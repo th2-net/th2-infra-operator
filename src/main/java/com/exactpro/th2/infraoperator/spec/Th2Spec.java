@@ -18,8 +18,8 @@ package com.exactpro.th2.infraoperator.spec;
 
 import com.exactpro.th2.infraoperator.configuration.ChartConfig;
 import com.exactpro.th2.infraoperator.operator.StoreHelmTh2Op;
-import com.exactpro.th2.infraoperator.util.JsonUtils;
 import com.exactpro.th2.infraoperator.spec.shared.*;
+import com.exactpro.th2.infraoperator.util.JsonUtils;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonProperty;
@@ -52,12 +52,13 @@ public abstract class Th2Spec implements KubernetesResource {
     protected Map<String, Object> customConfig = new HashMap<>();
 
     @JsonProperty("prometheus")
-    protected PrometheusConfiguration prometheusConfiguration;
+    protected PrometheusConfiguration<String> prometheusConfiguration;
 
     protected List<ParamSpec> params = new ArrayList<>();
 
     protected List<PinSpec> pins = new ArrayList<>();
 
+    // TODO
     public void setPins(List<PinSpec> pins) {
         this.pins = pins;
 
