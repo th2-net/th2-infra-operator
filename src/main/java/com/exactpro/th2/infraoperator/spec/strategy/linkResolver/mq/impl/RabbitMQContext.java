@@ -22,8 +22,6 @@ import com.exactpro.th2.infraoperator.configuration.RabbitMQManagementConfig;
 import com.exactpro.th2.infraoperator.configuration.RabbitMQNamespacePermissions;
 import com.exactpro.th2.infraoperator.model.kubernetes.configmaps.ConfigMaps;
 import com.exactpro.th2.infraoperator.spec.shared.PinSettings;
-import com.exactpro.th2.infraoperator.spec.strategy.linkResolver.ConfigNotFoundException;
-import com.exactpro.th2.infraoperator.spec.strategy.linkResolver.VHostCreateException;
 import com.exactpro.th2.infraoperator.util.Strings;
 import com.rabbitmq.client.Channel;
 import com.rabbitmq.client.Connection;
@@ -51,6 +49,7 @@ public final class RabbitMQContext {
 
 
     private static volatile RabbitMQManagementConfig managementConfig;
+
     private static RabbitMQManagementConfig getManagementConfig() {
         // we do not need to synchronize as we are assigning immutable object from singleton
         if (managementConfig == null)
@@ -79,11 +78,12 @@ public final class RabbitMQContext {
     }
 
 
-    public static RabbitMQConfig getRabbitMQConfig(String namespace) throws ConfigNotFoundException {
+    public static RabbitMQConfig getRabbitMQConfig(String namespace) {
 
         RabbitMQConfig rabbitMQConfig = ConfigMaps.INSTANCE.getRabbitMQConfig4Namespace(namespace);
-        if (rabbitMQConfig == null)
-            throw new ConfigNotFoundException(String.format("RabbitMQ configuration for namespace \"%s\" is not available", namespace));
+        if (rabbitMQConfig == null) {
+            throw new RuntimeException(String.format("RabbitMQ configuration for namespace \"%s\" is not available", namespace));
+        }
         return rabbitMQConfig;
     }
 
@@ -139,8 +139,7 @@ public final class RabbitMQContext {
     }
 
 
-    public static void createVHostIfAbsent(String namespace)
-        throws VHostCreateException {
+    public static void createVHostIfAbsent(String namespace) {
 
         RabbitMQManagementConfig rabbitMQManagementConfig = getManagementConfig();
         RabbitMQConfig rabbitMQConfig = getRabbitMQConfig(namespace);
@@ -166,8 +165,6 @@ public final class RabbitMQContext {
                 logger.info("vHost \"{}\" was already present in RabbitMQ", vHostName);
             }
 
-            // check user
-//            if (rmqClient.getUser(username) == null) {
             rmqClient.createUser(username, rabbitMQConfig.getPassword().toCharArray(), new ArrayList<>());
             logger.info("Created user \"{}\" in RabbitMQ for namespace \"{}\"", username, namespace);
 
@@ -181,16 +178,14 @@ public final class RabbitMQContext {
 
             rmqClient.updatePermissions(vHostName, username, permissions);
             logger.info("User \"{}\" permissions set in RabbitMQ", username);
-//            } else
-//                logger.info("User \"{}\" was already present in RabbitMQ", username);
         } catch (Exception e) {
-            logger.error("Exception setting up vHost & user for namespace \"{}\"", namespace, e);
-            throw new VHostCreateException(e);
+            String message = "Exception setting up vHost";
+            logger.error(message, e);
+            throw new RuntimeException(message, e);
         }
     }
 
-    public static void cleanupVHost(String namespace)
-        throws VHostCreateException {
+    public static void cleanupVHost(String namespace) {
 
         RabbitMQManagementConfig rabbitMQManagementConfig = getManagementConfig();
         RabbitMQConfig rabbitMQConfig = getRabbitMQConfig(namespace);
@@ -220,25 +215,27 @@ public final class RabbitMQContext {
                 logger.info("Deleted vHost \"{}\" in RabbitMQ", username);
             }
         } catch (Exception e) {
-            logger.error("Exception cleaning up vHost  \"{}\"", vHostName, e);
-            throw new VHostCreateException(e);
+            String message = "Exception cleaning up vHost";
+            logger.error(message, e);
+            throw new RuntimeException(message, e);
         }
     }
 
 
-    public static List<QueueInfo> getQueues(String vhost) throws Exception {
+    public static List<QueueInfo> getQueues(String vhost) {
 
         RabbitMQManagementConfig rabbitMQManagementConfig = getManagementConfig();
         try {
             Client rmqClient = getClient(
-                    String.format("http://%s:%s/api", rabbitMQManagementConfig.getHost(), rabbitMQManagementConfig.getPort())
-                    , rabbitMQManagementConfig.getUsername()
-                    , rabbitMQManagementConfig.getPassword()
+                String.format("http://%s:%s/api", rabbitMQManagementConfig.getHost(), rabbitMQManagementConfig.getPort())
+                , rabbitMQManagementConfig.getUsername()
+                , rabbitMQManagementConfig.getPassword()
             );
             return rmqClient.getQueues(vhost);
         } catch (Exception e) {
-            logger.error("Exception while fetching queues for vHost: '{}'", vhost, e);
-            throw e;
+            String message = "Exception while fetching queues";
+            logger.error(message, e);
+            throw new RuntimeException(message, e);
         }
     }
 
@@ -310,10 +307,10 @@ public final class RabbitMQContext {
 
         static String signatureFor(RabbitMQManagementConfig managementConfig, RabbitMQConfig rabbitMQConfig) {
             return
-                    rabbitMQConfig.getHost()
-                            + ":" +rabbitMQConfig.getPort()
-                            + ":" + rabbitMQConfig.getVHost()
-                            + ":" + managementConfig.getUsername();
+                rabbitMQConfig.getHost()
+                    + ":" + rabbitMQConfig.getPort()
+                    + ":" + rabbitMQConfig.getVHost()
+                    + ":" + managementConfig.getUsername();
         }
 
     }
