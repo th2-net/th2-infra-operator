@@ -211,8 +211,8 @@ public abstract class HelmReleaseTh2Op<CR extends Th2CustomResource> extends Abs
 
             updateEventStorageLinksBeforeAdd(resource);
             updateMsgStorageLinksBeforeAdd(resource);
-            var linkedResources = updateActiveLinksBeforeAdd(resource);
             OperatorState.INSTANCE.addActiveTh2Resource(resource.getMetadata().getNamespace(), resource.getMetadata().getName());
+            var linkedResources = updateActiveLinksBeforeAdd(resource);
             updateDependedResourcesIfNeeded(resource, linkedResources);
             super.addedEvent(resource);
 
@@ -231,8 +231,8 @@ public abstract class HelmReleaseTh2Op<CR extends Th2CustomResource> extends Abs
 
             updateEventStorageLinksBeforeAdd(resource);
             updateMsgStorageLinksBeforeAdd(resource);
-            var linkedResources = updateActiveLinksBeforeAdd(resource);
             OperatorState.INSTANCE.addActiveTh2Resource(resource.getMetadata().getNamespace(), resource.getMetadata().getName());
+            var linkedResources = updateActiveLinksBeforeAdd(resource);
             updateDependedResourcesIfNeeded(resource, linkedResources);
             super.modifiedEvent(resource);
 
