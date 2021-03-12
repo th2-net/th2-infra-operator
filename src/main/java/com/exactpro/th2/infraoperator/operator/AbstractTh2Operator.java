@@ -87,7 +87,7 @@ public abstract class AbstractTh2Operator<CR extends Th2CustomResource, KO exten
             } catch (Exception e) {
                 logger.error("Exception processing {} event for \"{}\"", action, resourceLabel, e);
 
-                resource.getStatus().failed(e);
+                resource.getStatus().failed(e.getMessage());
                 updateStatus(resource);
 
                 String namespace = resource.getMetadata().getNamespace();

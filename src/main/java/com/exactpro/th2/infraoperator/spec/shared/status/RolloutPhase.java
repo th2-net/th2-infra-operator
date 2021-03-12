@@ -24,9 +24,7 @@ public enum RolloutPhase {
     UPGRADING("Upgrading", "ComponentUpgrading"),
     DELETING("Deleting", "ComponentDeleting"),
     SUCCEEDED("Succeeded", "Succeeded"),
-    FAILED("Failed", "SomeExceptionOccurred"),
-    FAILED_VHOST("Failed", "VHostCreateException"),
-    FAILED_CONFIG("Failed", "ConfigNotFoundException");
+    FAILED("Failed", "SomeExceptionOccurred");
 
     private final String name;
     private final String reason;

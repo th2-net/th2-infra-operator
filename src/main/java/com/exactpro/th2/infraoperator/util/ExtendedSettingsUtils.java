@@ -4,7 +4,6 @@ import com.exactpro.th2.infraoperator.model.box.configuration.grpc.GrpcEndpointM
 import com.exactpro.th2.infraoperator.model.box.configuration.grpc.GrpcExternalEndpointMapping;
 import com.exactpro.th2.infraoperator.spec.Th2CustomResource;
 import com.exactpro.th2.infraoperator.spec.helmRelease.HelmRelease;
-import com.exactpro.th2.infraoperator.spec.strategy.linkResolver.ConfigNotFoundException;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.JsonNode;
 
@@ -83,18 +82,18 @@ public class ExtendedSettingsUtils {
         return null;
     }
 
-    public static void hostNetworkEndpointNotFound(Th2CustomResource box) throws ConfigNotFoundException {
+    public static void hostNetworkEndpointNotFound(Th2CustomResource box) {
         String message = String.format(
             "Could not find HostNetworkEndpoint configuration for [%S], please check '%s' section in CR",
             annotationFor(box), EXTENDED_SETTINGS_ALIAS + "." + SERVICE_ALIAS + "." + ENDPOINTS_ALIAS);
-        throw new ConfigNotFoundException(message);
+        throw new RuntimeException(message);
     }
 
-    public static void externalBoxEndpointNotFound(Th2CustomResource box) throws ConfigNotFoundException {
+    public static void externalBoxEndpointNotFound(Th2CustomResource box) {
         String message = String.format(
             "Could not find ExternalBoxEndpoint configuration for [%S], please check '%s' section in CR",
             annotationFor(box), EXTENDED_SETTINGS_ALIAS + "." + EXTERNAL_BOX_ALIAS + "." + ENDPOINTS_ALIAS);
-        throw new ConfigNotFoundException(message);
+        throw new RuntimeException(message);
     }
 
     private static JsonNode getFieldAsNode(Object sourceObj, String... fields) {

@@ -45,8 +45,7 @@ public class Condition {
 
 
     public enum Type {
-        DEPLOYED("Deployed"),
-        ENQUEUED("Enqueued");
+        DEPLOYED("Deployed");
 
         private String name;
         Type(String name) {

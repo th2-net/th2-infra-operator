@@ -24,7 +24,6 @@ import com.exactpro.th2.infraoperator.spec.link.relation.pins.PinGRPC;
 import com.exactpro.th2.infraoperator.spec.shared.FilterSpec;
 import com.exactpro.th2.infraoperator.spec.shared.PinSpec;
 import com.exactpro.th2.infraoperator.spec.shared.SchemaConnectionType;
-import com.exactpro.th2.infraoperator.spec.strategy.linkResolver.ConfigNotFoundException;
 import com.exactpro.th2.infraoperator.spec.strategy.resFinder.box.BoxResourceFinder;
 import com.exactpro.th2.infraoperator.util.SchemeMappingUtils;
 import com.exactpro.th2.infraoperator.util.Strings;
@@ -68,8 +67,8 @@ public class GrpcRouterConfigFactory {
     /**
      * Creates a grpc configuration based on the th2 resource and a list of active links.
      *
-     * @param resource th2 resource containing a list of {@link PinSpec}s
-     * @param grpcActiveLinks    active links
+     * @param resource        th2 resource containing a list of {@link PinSpec}s
+     * @param grpcActiveLinks active links
      * @return ready grpc configuration based on active {@code links} and specified links in {@code resource}
      */
     public GrpcRouterConfiguration createConfig(Th2CustomResource resource, List<PinCouplingGRPC> grpcActiveLinks) {
@@ -102,18 +101,18 @@ public class GrpcRouterConfigFactory {
         }
 
         return GrpcRouterConfiguration.builder()
-                .serverConfiguration(DEFAULT_SERVER)
-                .services(services)
-                .build();
+            .serverConfiguration(DEFAULT_SERVER)
+            .services(services)
+            .build();
     }
 
 
     private void createService(
-            PinSpec currentPin,
-            String oppositePinName,
-            String namespace,
-            PinCouplingGRPC link,
-            Map<String, GrpcServiceConfiguration> services
+        PinSpec currentPin,
+        String oppositePinName,
+        String namespace,
+        PinCouplingGRPC link,
+        Map<String, GrpcServiceConfiguration> services
     ) {
         var naturePinState = getNaturePinState(currentPin.getName(), oppositePinName, link);
 
@@ -133,24 +132,20 @@ public class GrpcRouterConfigFactory {
             oppositePin = fromBoxResource.getSpec().getPin(oppositePinName);
         }
 
-        try {
-            checkForExternal(fromBoxResource, toBoxResource, toBoxSpec);
+        checkForExternal(fromBoxResource, toBoxResource, toBoxSpec);
 
-            if (naturePinState.getFromPinName().equals(oppositePin.getName())) {
-                resourceToServiceConfig(oppositePin, fromBoxSpec, services);
-            } else {
-                resourceToServiceConfig(oppositePin, toBoxSpec, services);
-            }
-        } catch (ConfigNotFoundException e) {
-            logger.error(e.getMessage(), e);
+        if (naturePinState.getFromPinName().equals(oppositePin.getName())) {
+            resourceToServiceConfig(oppositePin, fromBoxSpec, services);
+        } else {
+            resourceToServiceConfig(oppositePin, toBoxSpec, services);
         }
 
     }
 
     private void resourceToServiceConfig(
-            PinSpec targetPin,
-            PinGRPC targetBoxSpec,
-            Map<String, GrpcServiceConfiguration> services
+        PinSpec targetPin,
+        PinGRPC targetBoxSpec,
+        Map<String, GrpcServiceConfiguration> services
     ) {
         var targetBoxName = getTargetBoxName(targetBoxSpec);
         var serviceClass = targetBoxSpec.getServiceClass();
@@ -159,29 +154,29 @@ public class GrpcRouterConfigFactory {
         var config = services.get(serviceName);
 
         Map<String, GrpcEndpointConfiguration> endpoints = new HashMap<>(Map.of(
-                targetBoxName + ENDPOINT_ALIAS_SUFFIX, GrpcEndpointConfiguration.builder()
-                        .host(targetBoxName)
-                        .port(targetPort)
-                        .build()
+            targetBoxName + ENDPOINT_ALIAS_SUFFIX, GrpcEndpointConfiguration.builder()
+                .host(targetBoxName)
+                .port(targetPort)
+                .build()
         ));
 
         if (Objects.isNull(config)) {
 
             config = GrpcServiceConfiguration.builder()
-                    .serviceClass(serviceClass)
-                    .endpoints(endpoints)
-                    .build();
+                .serviceClass(serviceClass)
+                .endpoints(endpoints)
+                .build();
 
             var strategy = targetBoxSpec.getStrategy();
 
             if (strategy.equals(ROBIN.getActualName())) {
                 config.setStrategy(GrpcRobinStrategy.builder()
-                        .endpoints(new ArrayList<>(endpoints.keySet()))
-                        .build());
+                    .endpoints(new ArrayList<>(endpoints.keySet()))
+                    .build());
             } else if (strategy.equals(FILTER.getActualName())) {
                 config.setStrategy(GrpcFilterStrategy.builder()
-                        .filters(schemeFiltersToGrpcFilters(targetBoxName, targetPin.getFilters()))
-                        .build());
+                    .filters(schemeFiltersToGrpcFilters(targetBoxName, targetPin.getFilters()))
+                    .build());
             } else {
                 // should never happen if the existing list of strategies has not been expanded
                 throw new RuntimeException("Unknown routing strategy '" + strategy + "'");
@@ -224,13 +219,13 @@ public class GrpcRouterConfigFactory {
 
     private List<GrpcRouterFilterConfiguration> schemeFiltersToGrpcFilters(String targetHostName, Set<FilterSpec> filterSpecs) {
         return filterSpecs.stream()
-                .map(filterSpec ->
-                        GrpcRouterFilterConfiguration.builder()
-                                .endpoint(targetHostName)
-                                .metadata(SchemeMappingUtils.specToConfigFieldFilters(filterSpec.getMetadataFilter()))
-                                .message(SchemeMappingUtils.specToConfigFieldFilters(filterSpec.getMessageFilter()))
-                                .build()
-                ).collect(Collectors.toList());
+            .map(filterSpec ->
+                GrpcRouterFilterConfiguration.builder()
+                    .endpoint(targetHostName)
+                    .metadata(SchemeMappingUtils.specToConfigFieldFilters(filterSpec.getMetadataFilter()))
+                    .message(SchemeMappingUtils.specToConfigFieldFilters(filterSpec.getMessageFilter()))
+                    .build()
+            ).collect(Collectors.toList());
     }
 
 
@@ -243,9 +238,9 @@ public class GrpcRouterConfigFactory {
 
     private static GrpcServerConfiguration createServer() {
         return GrpcServerConfiguration.builder()
-                .workers(DEFAULT_SERVER_WORKERS_COUNT)
-                .port(DEFAULT_PORT)
-                .build();
+            .workers(DEFAULT_SERVER_WORKERS_COUNT)
+            .port(DEFAULT_PORT)
+            .build();
     }
 
     private String getTargetBoxName(PinGRPC targetBox) {
@@ -264,7 +259,7 @@ public class GrpcRouterConfigFactory {
         return DEFAULT_PORT;
     }
 
-    private void checkForExternal(Th2CustomResource fromBox, Th2CustomResource toBox, PinGRPC targetBox) throws ConfigNotFoundException {
+    private void checkForExternal(Th2CustomResource fromBox, Th2CustomResource toBox, PinGRPC targetBox) {
         Map<String, Object> fromBoxSettings = fromBox.getSpec().getExtendedSettings();
         Map<String, Object> toBoxSettings = toBox.getSpec().getExtendedSettings();
         logger.debug("checking externalBox or hostNetwork flags for a link [from \"{}\" to \"{}\"]", annotationFor(fromBox), annotationFor(toBox));
