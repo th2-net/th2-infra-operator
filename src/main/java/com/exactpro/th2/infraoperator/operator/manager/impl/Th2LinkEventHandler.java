@@ -132,10 +132,13 @@ public class Th2LinkEventHandler implements Watcher<Th2Link> {
             var linkResources = new ArrayList<>(operatorState.getLinkResources(namespace));
 
             Th2Link prevLink = getPreviousLink(th2Link, linkResources);
-            refreshAffectedBoxes(prevLink, th2Link);
             linkResources.remove(th2Link);
-            if (action != Action.DELETED)
+            if (action.equals(Action.DELETED)) {
+                refreshAffectedBoxes(prevLink, Th2Link.newInstance());
+            } else {
+                refreshAffectedBoxes(prevLink, th2Link);
                 linkResources.add(th2Link);
+            }
 
             operatorState.setLinkResources(namespace, linkResources);
         } finally {
