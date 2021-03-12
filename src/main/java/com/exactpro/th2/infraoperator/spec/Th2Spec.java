@@ -52,7 +52,7 @@ public abstract class Th2Spec implements KubernetesResource {
     protected Map<String, Object> customConfig = new HashMap<>();
 
     @JsonProperty("prometheus")
-    protected PrometheusConfiguration prometheusConfiguration;
+    protected PrometheusConfiguration<String> prometheusConfiguration;
 
     protected List<ParamSpec> params = new ArrayList<>();
 

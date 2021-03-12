@@ -84,7 +84,9 @@ public class Th2LinkEventHandler implements Watcher<Th2Link> {
 
     private int refreshAffectedBoxes(Th2Link prevLink, Th2Link newLink) {
 
-        String namespace = extractNamespace(newLink);
+        String namespace = extractNamespace(prevLink);
+        namespace = namespace != null ? namespace : extractNamespace(newLink);
+
         Set<String> boxesNamesToUpdate = getAffectedBoxNames(prevLink, newLink);
         int items = boxesNamesToUpdate.size();
         if (items == 0) {
