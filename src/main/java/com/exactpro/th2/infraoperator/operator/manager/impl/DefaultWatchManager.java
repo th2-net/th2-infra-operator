@@ -87,7 +87,7 @@ public class DefaultWatchManager {
         sharedInformerFactory.addSharedInformerEventListener(exception -> {
             logger.error("Exception in InformerFactory : {}", exception.getMessage());
         });
-
+        builderInit();
         instance = this;
     }
 
@@ -98,7 +98,6 @@ public class DefaultWatchManager {
 
 
         eventDispatcher.start();
-        postInit();
         EventHandlerContext eventHandlerContext = registerInformers (sharedInformerFactory);
         loadResources(eventHandlerContext);
 
@@ -269,7 +268,7 @@ public class DefaultWatchManager {
         operators, since operatorBuilder is HelmOperatorContext
         for operators
      */
-    private void postInit() {
+    private void builderInit() {
 
         var resFinder = new DefaultBoxResourceFinder(resourceClients);
         var msgStResFinder = new StoreDependentBoxResourceFinder(resFinder);

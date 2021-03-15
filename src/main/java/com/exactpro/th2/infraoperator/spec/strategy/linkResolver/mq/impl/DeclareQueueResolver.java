@@ -24,6 +24,7 @@ import com.exactpro.th2.infraoperator.spec.Th2CustomResource;
 import com.exactpro.th2.infraoperator.spec.link.relation.pins.PinMQ;
 import com.exactpro.th2.infraoperator.spec.shared.PinAttribute;
 import com.exactpro.th2.infraoperator.spec.strategy.linkResolver.queue.QueueName;
+import com.exactpro.th2.infraoperator.spec.strategy.redeploy.NonTerminalException;
 import com.exactpro.th2.infraoperator.util.ExtractUtils;
 import com.rabbitmq.client.Channel;
 import com.rabbitmq.http.client.domain.QueueInfo;
@@ -53,17 +54,29 @@ public class DeclareQueueResolver {
 
         String namespace = ExtractUtils.extractNamespace(resource);
         RabbitMQContext.createVHostIfAbsent(namespace);
-        declareQueueBunch(namespace, resource);
+        try {
+            declareQueueBunch(namespace, resource);
+        } catch (Exception e) {
+            String message = "Exception while working with rabbitMq";
+            logger.error(message, e);
+            throw new NonTerminalException(message, e);
+        }
     }
 
 
     public void resolveDelete(Th2CustomResource resource) {
 
         String namespace = ExtractUtils.extractNamespace(resource);
-        Channel channel = getChannel(namespace);
-        //get queues that are associated with current box and are not linked through Th2Link resources
-        Set<String> boxUnlinkedQueueNames = getBoxUnlinkedQueues(namespace, extractName(resource));
-        removeExtinctQueues(channel, boxUnlinkedQueueNames);
+        try {
+            Channel channel = getChannel(namespace);
+            //get queues that are associated with current box and are not linked through Th2Link resources
+            Set<String> boxUnlinkedQueueNames = getBoxUnlinkedQueues(namespace, extractName(resource));
+            removeExtinctQueues(channel, boxUnlinkedQueueNames);
+        } catch (Exception e) {
+            String message = "Exception while working with rabbitMq";
+            logger.error(message, e);
+            throw new NonTerminalException(message, e);
+        }
     }
 
     @SneakyThrows
@@ -86,10 +99,10 @@ public class DeclareQueueResolver {
                 //remove from set if pin for queue still exists.
                 boxUnlinkedQueueNames.remove(queueName);
                 var declareResult = channel.queueDeclare(queueName
-                        , rabbitMQManagementConfig.isPersistence()
-                        , false
-                        , false
-                        , RabbitMQContext.generateQueueArguments(pin.getSettings()));
+                    , rabbitMQManagementConfig.isPersistence()
+                    , false
+                    , false
+                    , RabbitMQContext.generateQueueArguments(pin.getSettings()));
                 logger.info("Queue '{}' of resource {} was successfully declared", declareResult.getQueue(), extractName(resource));
             }
         }
@@ -127,7 +140,7 @@ public class DeclareQueueResolver {
 
         //remove queues that appear in active links
         mqActiveLinks.forEach(enqueuedLink ->
-                boxQueueNames.remove(enqueuedLink.getQueueDescription().getQueueName().toString())
+            boxQueueNames.remove(enqueuedLink.getQueueDescription().getQueueName().toString())
         );
     }
 
