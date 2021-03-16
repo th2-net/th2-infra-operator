@@ -20,6 +20,7 @@ import com.exactpro.th2.infraoperator.Th2CrdController;
 import com.exactpro.th2.infraoperator.model.http.HttpCode;
 import com.exactpro.th2.infraoperator.model.kubernetes.client.ResourceClient;
 import com.exactpro.th2.infraoperator.spec.Th2CustomResource;
+import com.exactpro.th2.infraoperator.spec.strategy.redeploy.NonTerminalException;
 import com.exactpro.th2.infraoperator.spec.strategy.redeploy.RetryableTaskQueue;
 import com.exactpro.th2.infraoperator.spec.strategy.redeploy.tasks.TriggerRedeployTask;
 import com.exactpro.th2.infraoperator.util.CustomResourceUtils;
@@ -84,8 +85,8 @@ public abstract class AbstractTh2Operator<CR extends Th2CustomResource, KO exten
                 processEvent(action, resource);
                 fingerprints.put(resourceLabel, resourceFingerprint);
 
-            } catch (Exception e) {
-                logger.error("Exception processing {} event for \"{}\"", action, resourceLabel, e);
+            } catch (NonTerminalException e) {
+                logger.error("Non-terminal Exception processing {} event for \"{}\". Will try to redeploy.", action, resourceLabel, e);
 
                 resource.getStatus().failed(e.getMessage());
                 updateStatus(resource);
@@ -105,7 +106,7 @@ public abstract class AbstractTh2Operator<CR extends Th2CustomResource, KO exten
             }
 
         } catch (Exception e) {
-            logger.error("Exception processing {} event", action, e);
+            logger.error("Terminal Exception processing {} event. Will not try to redeploy", action, e);
         }
     }
 

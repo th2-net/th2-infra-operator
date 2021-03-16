@@ -37,6 +37,7 @@ import com.exactpro.th2.infraoperator.spec.strategy.linkResolver.GenericLinkReso
 import com.exactpro.th2.infraoperator.spec.strategy.linkResolver.mq.QueueLinkResolver;
 import com.exactpro.th2.infraoperator.spec.strategy.linkResolver.queue.QueueName;
 import com.exactpro.th2.infraoperator.spec.strategy.linkResolver.queue.RoutingKeyName;
+import com.exactpro.th2.infraoperator.spec.strategy.redeploy.NonTerminalException;
 import com.exactpro.th2.infraoperator.spec.strategy.resFinder.box.BoxResourceFinder;
 import com.exactpro.th2.infraoperator.util.ExtractUtils;
 import com.rabbitmq.client.Channel;
@@ -52,7 +53,7 @@ import java.util.List;
 import java.util.Objects;
 
 
-public class BindQueueLinkResolver  extends GenericLinkResolver<EnqueuedLink> implements QueueLinkResolver {
+public class BindQueueLinkResolver extends GenericLinkResolver<EnqueuedLink> implements QueueLinkResolver {
 
     private static final Logger logger = LoggerFactory.getLogger(BindQueueLinkResolver.class);
     private final BoxResourceFinder resourceFinder;
@@ -78,15 +79,15 @@ public class BindQueueLinkResolver  extends GenericLinkResolver<EnqueuedLink> im
             for (var pinCouple : lRes.getSpec().getBoxesRelation().getRouterMq()) {
 
                 var queueBunch = new QueueDescription(
-                        new QueueName(namespace, pinCouple.getTo()),
-                        new RoutingKeyName(namespace, pinCouple.getFrom()),
-                        RabbitMQContext.getExchangeName(namespace)
+                    new QueueName(namespace, pinCouple.getTo()),
+                    new RoutingKeyName(namespace, pinCouple.getFrom()),
+                    RabbitMQContext.getExchangeName(namespace)
                 );
 
                 if (Arrays.stream(newResources)
-                        .map(res -> res.getMetadata().getName())
-                        .anyMatch(name -> name.equals(pinCouple.getFrom().getBoxName())
-                                || name.equals(pinCouple.getTo().getBoxName()))) {
+                    .map(res -> res.getMetadata().getName())
+                    .anyMatch(name -> name.equals(pinCouple.getFrom().getBoxName())
+                        || name.equals(pinCouple.getTo().getBoxName()))) {
                     var resourceCouple = validateAndReturnRes(lRes, pinCouple, newResources);
 
                     if (resourceCouple == null) {
@@ -94,16 +95,16 @@ public class BindQueueLinkResolver  extends GenericLinkResolver<EnqueuedLink> im
                     }
 
                     logger.info("Queue '{}' of link {{}.{} -> {}.{}} successfully bound",
-                            queueBunch.getQueueName(), namespace, pinCouple.getFrom(), namespace, pinCouple.getTo());
+                        queueBunch.getQueueName(), namespace, pinCouple.getFrom(), namespace, pinCouple.getTo());
 
                     bindQueues(namespace, queueBunch, resourceCouple.to, pinCouple.getTo());
                 }
 
 
                 var alreadyExistLink = activeLinksCopy.stream()
-                        .filter(l -> l.getQueueDescription().equals(queueBunch) && l.getPinCoupling().equals(pinCouple))
-                        .findFirst()
-                        .orElse(null);
+                    .filter(l -> l.getQueueDescription().equals(queueBunch) && l.getPinCoupling().equals(pinCouple))
+                    .findFirst()
+                    .orElse(null);
 
                 activeLinks.add(Objects.requireNonNullElseGet(alreadyExistLink, () -> new EnqueuedLink(pinCouple, queueBunch)));
 
@@ -120,19 +121,24 @@ public class BindQueueLinkResolver  extends GenericLinkResolver<EnqueuedLink> im
     @SneakyThrows
     private void bindQueues(String namespace, QueueDescription queue, Th2CustomResource resource, PinMQ mqPin) {
 
+        try {
+            Channel channel = RabbitMQContext.getChannel(namespace);
 
-        Channel channel = RabbitMQContext.getChannel(namespace);
+            if (!channel.isOpen()) {
+                logger.warn("RabbitMQ connection is broken, trying to reconnect...");
+                RabbitMQContext.closeChannel(namespace);
+                channel = RabbitMQContext.getChannel(namespace);
+                logger.info("RabbitMQ connection has been restored");
+            }
 
-        if (!channel.isOpen()) {
-            logger.warn("RabbitMQ connection is broken, trying to reconnect...");
-            RabbitMQContext.closeChannel(namespace);
-            channel = RabbitMQContext.getChannel(namespace);
-            logger.info("RabbitMQ connection has been restored");
+            PinSettings pinSettings = resource.getSpec().getPin(mqPin.getPinName()).getSettings();
+            channel.queueDeclare(queue.getQueueName().toString(), rabbitMQManagementConfig.isPersistence(), false, false, RabbitMQContext.generateQueueArguments(pinSettings));
+            channel.queueBind(queue.getQueueName().toString(), queue.getExchange(), queue.getRoutingKey().toString());
+        } catch (Exception e) {
+            String message = "Exception while working with rabbitMq";
+            logger.error(message, e);
+            throw new NonTerminalException(message, e);
         }
-
-        PinSettings pinSettings = resource.getSpec().getPin(mqPin.getPinName()).getSettings();
-        channel.queueDeclare(queue.getQueueName().toString(), rabbitMQManagementConfig.isPersistence(), false, false, RabbitMQContext.generateQueueArguments(pinSettings));
-        channel.queueBind(queue.getQueueName().toString(), queue.getExchange(), queue.getRoutingKey().toString());
 
     }
 
@@ -140,28 +146,33 @@ public class BindQueueLinkResolver  extends GenericLinkResolver<EnqueuedLink> im
     private void removeExtinctQueue(String namespace, List<EnqueuedLink> oldLinks, List<EnqueuedLink> newLinks) {
 
         oldLinks.removeIf(qlb -> newLinks.stream().anyMatch(newQlb ->
-                qlb.getQueueDescription().getQueueName().equals(newQlb.getQueueDescription().getQueueName())
-                        && qlb.getQueueDescription().getRoutingKey().equals(newQlb.getQueueDescription().getRoutingKey())
+            qlb.getQueueDescription().getQueueName().equals(newQlb.getQueueDescription().getQueueName())
+                && qlb.getQueueDescription().getRoutingKey().equals(newQlb.getQueueDescription().getRoutingKey())
         ));
+        try {
+            Channel channel = RabbitMQContext.getChannel(namespace);
 
-        Channel channel = RabbitMQContext.getChannel(namespace);
+            for (var extinctLink : oldLinks) {
 
-        for (var extinctLink : oldLinks) {
+                var fromBox = extinctLink.getFrom();
+                var toBox = extinctLink.getTo();
+                QueueDescription queueBunch = extinctLink.getQueueDescription();
+                var queue = queueBunch.getQueueName().toString();
+                var routingKey = queueBunch.getRoutingKey().toString();
 
-            var fromBox = extinctLink.getFrom();
-            var toBox = extinctLink.getTo();
-            QueueDescription queueBunch = extinctLink.getQueueDescription();
-            var queue = queueBunch.getQueueName().toString();
-            var routingKey = queueBunch.getRoutingKey().toString();
+                channel.queueUnbind(queue, queueBunch.getExchange(), routingKey);
 
-            channel.queueUnbind(queue, queueBunch.getExchange(), routingKey);
-
-            String infoMsg = String.format(
+                String infoMsg = String.format(
                     "Unbind queue '%1$s' -> '%2$s' because link {%5$s.%3$s -> %5$s.%4$s} is not active anymore",
                     queue, routingKey, fromBox, toBox, namespace
-            );
+                );
 
-            logger.info(infoMsg);
+                logger.info(infoMsg);
+            }
+        } catch (Exception e) {
+            String message = "Exception while working with rabbitMq";
+            logger.error(message, e);
+            throw new NonTerminalException(message, e);
         }
 
     }
@@ -179,8 +190,8 @@ public class BindQueueLinkResolver  extends GenericLinkResolver<EnqueuedLink> im
         var namespace = ExtractUtils.extractNamespace(linkRes);
 
         if (!th2PinEndpointPreValidation(namespace,
-                link.getFrom().getBoxName(),
-                link.getTo().getBoxName())) {
+            link.getFrom().getBoxName(),
+            link.getTo().getBoxName())) {
             logger.debug("One of the boxes weren't found in the cache");
             return null;
         }
@@ -190,15 +201,15 @@ public class BindQueueLinkResolver  extends GenericLinkResolver<EnqueuedLink> im
         var fromBoxName = fromBoxSpec.getBoxName();
 
         var fromContext = DirectionalLinkContext.builder()
-                .linkName(link.getName())
-                .boxName(fromBoxName)
-                .boxPinName(fromBoxSpec.getPinName())
-                .boxDirection(BoxDirection.from)
-                .linksSectionName("mq")
-                .connectionType(SchemaConnectionType.mq)
-                .linkResName(ExtractUtils.extractName(linkRes))
-                .linkNamespace(namespace)
-                .build();
+            .linkName(link.getName())
+            .boxName(fromBoxName)
+            .boxPinName(fromBoxSpec.getPinName())
+            .boxDirection(BoxDirection.from)
+            .linksSectionName("mq")
+            .connectionType(SchemaConnectionType.mq)
+            .linkResName(ExtractUtils.extractName(linkRes))
+            .linkNamespace(namespace)
+            .build();
 
 
         var toBoxSpec = link.getTo();
@@ -206,10 +217,10 @@ public class BindQueueLinkResolver  extends GenericLinkResolver<EnqueuedLink> im
         var toBoxName = toBoxSpec.getBoxName();
 
         var toContext = fromContext.toBuilder()
-                .boxName(toBoxName)
-                .boxPinName(toBoxSpec.getPinName())
-                .boxDirection(BoxDirection.to)
-                .build();
+            .boxName(toBoxName)
+            .boxPinName(toBoxSpec.getPinName())
+            .boxDirection(BoxDirection.to)
+            .build();
 
         var fromRes = resourceFinder.getResource(fromBoxName, namespace, additionalSource);
 
