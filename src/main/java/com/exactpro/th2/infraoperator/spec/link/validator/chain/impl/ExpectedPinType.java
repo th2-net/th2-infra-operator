@@ -19,16 +19,14 @@ package com.exactpro.th2.infraoperator.spec.link.validator.chain.impl;
 import com.exactpro.th2.infraoperator.spec.link.validator.ValidationStatus;
 import com.exactpro.th2.infraoperator.spec.link.validator.chain.AbstractValidator;
 import com.exactpro.th2.infraoperator.spec.link.validator.model.DirectionalLinkContext;
-import com.exactpro.th2.infraoperator.spec.link.validator.warnPrinter.WarnPrinter;
-import com.exactpro.th2.infraoperator.spec.link.validator.warnPrinter.node.impl.*;
+import com.exactpro.th2.infraoperator.spec.link.validator.warnprinter.WarnPrinter;
+import com.exactpro.th2.infraoperator.spec.link.validator.warnprinter.node.impl.*;
 import com.exactpro.th2.infraoperator.spec.shared.PinSpec;
 import com.exactpro.th2.infraoperator.spec.shared.SchemaConnectionType;
-
 
 public class ExpectedPinType extends AbstractValidator {
 
     private SchemaConnectionType connectionType;
-
 
     public ExpectedPinType(SchemaConnectionType connectionType) {
         this(connectionType, null);
@@ -41,14 +39,14 @@ public class ExpectedPinType extends AbstractValidator {
 
     public ExpectedPinType(DirectionalLinkContext context) {
         this(context.getConnectionType(), WarnPrinter.builder()
-                .addNode(new IncorrectPinTypeNode(context.getBoxPinName(), context.getLinkNamespace(), context.getBoxName(), context.getConnectionType()))
+                .addNode(new IncorrectPinTypeNode(context.getBoxPinName(), context.getLinkNamespace(),
+                        context.getBoxName(), context.getConnectionType()))
                 .addNode(new Th2LinkResNode(context.getLinkNamespace(), context.getLinkResName()))
                 .addNode(new BoxRelNode(context.getLinksSectionName()))
                 .addNode(new LinkNameNode(context.getLinkName()))
                 .addNode(new PinNode(context.getBoxDirection().name(), context.getBoxPinName()))
                 .build());
     }
-
 
     @Override
     public ValidationStatus validate(Object object, Object... additional) {
@@ -65,7 +63,6 @@ public class ExpectedPinType extends AbstractValidator {
         printWarn();
 
         return ValidationStatus.PIN_NOT_MQ;
-
     }
 
 }

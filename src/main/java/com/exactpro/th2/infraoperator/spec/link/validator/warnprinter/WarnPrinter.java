@@ -14,9 +14,9 @@
  * limitations under the License.
  */
 
-package com.exactpro.th2.infraoperator.spec.link.validator.warnPrinter;
+package com.exactpro.th2.infraoperator.spec.link.validator.warnprinter;
 
-import com.exactpro.th2.infraoperator.spec.link.validator.warnPrinter.node.WarnNode;
+import com.exactpro.th2.infraoperator.spec.link.validator.warnprinter.node.WarnNode;
 import lombok.Getter;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -25,23 +25,19 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 
-
 @Getter
 public class WarnPrinter {
 
     private static final Logger logger = LoggerFactory.getLogger(WarnPrinter.class);
 
-
     private final String template;
 
     private final Object[] args;
-
 
     public WarnPrinter(Builder builder) {
         this.template = builder.warnMessage + String.join("->", builder.warnNodes);
         this.args = builder.warnArgs.toArray();
     }
-
 
     public void printWarn() {
         logger.warn(template, args);
@@ -51,7 +47,6 @@ public class WarnPrinter {
         logger.error(template, args);
     }
 
-
     public static Builder builder() {
         return new Builder();
     }
@@ -59,14 +54,15 @@ public class WarnPrinter {
     public static class Builder {
 
         private String warnMessage = "";
+
         private List<Object> warnArgs = new ArrayList<>();
+
         private List<String> warnNodes = new ArrayList<>();
 
-
         public Builder addNode(WarnNode node) {
-            if(warnMessage.isEmpty()){
+            if (warnMessage.isEmpty()) {
                 warnMessage = node.getTemplate();
-            }else {
+            } else {
                 warnNodes.add(node.getTemplate());
             }
 

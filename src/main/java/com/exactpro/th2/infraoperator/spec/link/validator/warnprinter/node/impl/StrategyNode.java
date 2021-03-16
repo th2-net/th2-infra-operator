@@ -14,23 +14,22 @@
  * limitations under the License.
  */
 
-package com.exactpro.th2.infraoperator.spec.link.validator.warnPrinter.node.impl;
+package com.exactpro.th2.infraoperator.spec.link.validator.warnprinter.node.impl;
 
-import com.exactpro.th2.infraoperator.spec.link.validator.warnPrinter.node.WarnNode;
+import com.exactpro.th2.infraoperator.spec.link.validator.warnprinter.node.WarnNode;
 
-public class LinkNameNode implements WarnNode {
+public class StrategyNode implements WarnNode {
 
-    private Object[] args = new Object[1];
+    private Object[] args = new Object[2];
 
-
-    public LinkNameNode(String name) {
-        args[0] = name;
+    public StrategyNode(String direction, String strategyName) {
+        args[0] = direction;
+        args[1] = strategyName;
     }
-
 
     @Override
     public String getTemplate() {
-        return "[name:'{}']";
+        return "[{}.strategy:'{}']";
     }
 
     @Override

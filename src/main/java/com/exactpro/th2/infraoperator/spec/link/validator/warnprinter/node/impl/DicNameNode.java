@@ -14,20 +14,26 @@
  * limitations under the License.
  */
 
-package com.exactpro.th2.infraoperator.spec.link.validator.warnPrinter.node.impl;
+package com.exactpro.th2.infraoperator.spec.link.validator.warnprinter.node.impl;
 
-import com.exactpro.th2.infraoperator.spec.link.validator.warnPrinter.node.WarnNode;
+import com.exactpro.th2.infraoperator.spec.link.validator.warnprinter.node.WarnNode;
 
-public class DicRelNode implements WarnNode {
+public class DicNameNode implements WarnNode {
+
+    private Object[] args = new Object[1];
+
+    public DicNameNode(String dictionaryName) {
+        args[0] = dictionaryName;
+    }
 
     @Override
     public String getTemplate() {
-        return "[dictionaries-relation.array]";
+        return "[dictionary.name:'{}']";
     }
 
     @Override
     public Object[] getArgs() {
-        return new Object[]{};
+        return args;
     }
 
 }

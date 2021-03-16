@@ -14,29 +14,12 @@
  * limitations under the License.
  */
 
-package com.exactpro.th2.infraoperator.spec.link.validator.warnPrinter.node.impl;
+package com.exactpro.th2.infraoperator.spec.link.validator.warnprinter.node;
 
-import com.exactpro.th2.infraoperator.spec.link.validator.warnPrinter.node.WarnNode;
+public interface WarnNode {
 
-public class ResNotFoundNode implements WarnNode {
+    String getTemplate();
 
-    private Object[] args = new Object[2];
-
-
-    public ResNotFoundNode(String resName, String resNamespace) {
-        args[0] = resName;
-        args[1] = resNamespace;
-    }
-
-
-    @Override
-    public String getTemplate() {
-        return "The specified resource with name '{}' in namespace '{}' not found. ";
-    }
-
-    @Override
-    public Object[] getArgs() {
-        return args;
-    }
+    Object[] getArgs();
 
 }

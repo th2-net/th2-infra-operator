@@ -14,27 +14,20 @@
  * limitations under the License.
  */
 
-package com.exactpro.th2.infraoperator.spec.link.validator.warnPrinter.node.impl;
+package com.exactpro.th2.infraoperator.spec.link.validator.warnprinter.node.impl;
 
-import com.exactpro.th2.infraoperator.spec.link.validator.warnPrinter.node.WarnNode;
+import com.exactpro.th2.infraoperator.spec.shared.BoxDirection;
+import com.exactpro.th2.infraoperator.spec.shared.PinAttribute;
 
-public class BoxRelNode implements WarnNode {
+public class IncorrectToPinAttrsNode extends AbstractIncorrectPinAttrsNode {
 
-    private Object[] args = new Object[1];
-
-
-    public BoxRelNode(String sectionName) {
-        args[0] = sectionName;
-    }
-
-    @Override
-    public String getTemplate() {
-        return "[boxes-relation.array<router-{}>]";
-    }
-
-    @Override
-    public Object[] getArgs() {
-        return args;
+    public IncorrectToPinAttrsNode(
+            String pinName,
+            String resNamespace,
+            String resName
+    ) {
+        super(pinName, resNamespace, resName, BoxDirection.to.name(), PinAttribute.subscribe.name(),
+                PinAttribute.publish.name());
     }
 
 }

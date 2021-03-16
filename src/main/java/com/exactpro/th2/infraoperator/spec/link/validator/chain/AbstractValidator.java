@@ -17,10 +17,9 @@
 package com.exactpro.th2.infraoperator.spec.link.validator.chain;
 
 import com.exactpro.th2.infraoperator.spec.link.validator.ValidationStatus;
-import com.exactpro.th2.infraoperator.spec.link.validator.warnPrinter.WarnPrinter;
+import com.exactpro.th2.infraoperator.spec.link.validator.warnprinter.WarnPrinter;
 
 import java.util.Objects;
-
 
 public abstract class AbstractValidator implements Validator<Object, ValidationStatus, Object> {
 
@@ -28,14 +27,12 @@ public abstract class AbstractValidator implements Validator<Object, ValidationS
 
     private Validator<Object, ValidationStatus, Object> next;
 
-
     public AbstractValidator() {
     }
 
     public AbstractValidator(WarnPrinter warnPrinter) {
         this.warnPrinter = warnPrinter;
     }
-
 
     @Override
     public ValidationStatus validate(Object object, Object... additional) {
@@ -50,7 +47,6 @@ public abstract class AbstractValidator implements Validator<Object, ValidationS
         this.next = validator;
     }
 
-
     protected void printWarn() {
         if (Objects.nonNull(warnPrinter)) {
             warnPrinter.printWarn();
@@ -62,5 +58,4 @@ public abstract class AbstractValidator implements Validator<Object, ValidationS
             warnPrinter.printError();
         }
     }
-
 }

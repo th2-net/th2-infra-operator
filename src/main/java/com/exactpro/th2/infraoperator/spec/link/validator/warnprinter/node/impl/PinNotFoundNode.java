@@ -14,22 +14,23 @@
  * limitations under the License.
  */
 
-package com.exactpro.th2.infraoperator.spec.link.validator.warnPrinter.node.impl;
+package com.exactpro.th2.infraoperator.spec.link.validator.warnprinter.node.impl;
 
-import com.exactpro.th2.infraoperator.spec.link.validator.warnPrinter.node.WarnNode;
+import com.exactpro.th2.infraoperator.spec.link.validator.warnprinter.node.WarnNode;
 
-public class DicBoxNameNode implements WarnNode {
+public class PinNotFoundNode implements WarnNode {
 
-    private Object[] args = new Object[1];
+    private Object[] args = new Object[3];
 
-
-    public DicBoxNameNode(String boxName) {
-        args[0] = boxName;
+    public PinNotFoundNode(String pinName, String resNamespace, String resName) {
+        args[0] = pinName;
+        args[1] = resNamespace;
+        args[2] = resName;
     }
 
     @Override
     public String getTemplate() {
-        return "[box:'{}']";
+        return "The specified pin with name '{}' not found in box '{}.{}'. ";
     }
 
     @Override

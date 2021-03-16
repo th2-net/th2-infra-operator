@@ -14,19 +14,27 @@
  * limitations under the License.
  */
 
-package com.exactpro.th2.infraoperator.spec.link.validator.warnPrinter.node.impl;
+package com.exactpro.th2.infraoperator.spec.link.validator.warnprinter.node.impl;
 
-import com.exactpro.th2.infraoperator.spec.shared.BoxDirection;
-import com.exactpro.th2.infraoperator.spec.shared.PinAttribute;
+import com.exactpro.th2.infraoperator.spec.link.validator.warnprinter.node.WarnNode;
 
-public class IncorrectFromPinAttrsNode extends AbstractIncorrectPinAttrsNode {
+public class Th2LinkResNode implements WarnNode {
 
-    public IncorrectFromPinAttrsNode(
-            String pinName,
-            String resNamespace,
-            String resName
-    ) {
-        super(pinName, resNamespace, resName, BoxDirection.from.name(), PinAttribute.publish.name(), PinAttribute.subscribe.name());
+    private Object[] args = new Object[2];
+
+    public Th2LinkResNode(String linkNamespace, String linkName) {
+        args[0] = linkNamespace;
+        args[1] = linkName;
+    }
+
+    @Override
+    public String getTemplate() {
+        return "[Th2Link<{}.{}>]";
+    }
+
+    @Override
+    public Object[] getArgs() {
+        return args;
     }
 
 }

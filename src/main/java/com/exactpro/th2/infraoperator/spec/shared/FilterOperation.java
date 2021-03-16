@@ -25,13 +25,11 @@ public enum FilterOperation {
     EMPTY(2),
     NOT_EMPTY(3);
 
-
     private int id;
 
     FilterOperation(int id) {
         this.id = id;
     }
-
 
     public static FilterOperation of(int id) {
         return Arrays.stream(values())

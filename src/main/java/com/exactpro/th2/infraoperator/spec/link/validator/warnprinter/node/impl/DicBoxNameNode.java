@@ -14,24 +14,21 @@
  * limitations under the License.
  */
 
-package com.exactpro.th2.infraoperator.spec.link.validator.warnPrinter.node.impl;
+package com.exactpro.th2.infraoperator.spec.link.validator.warnprinter.node.impl;
 
-import com.exactpro.th2.infraoperator.spec.link.validator.warnPrinter.node.WarnNode;
+import com.exactpro.th2.infraoperator.spec.link.validator.warnprinter.node.WarnNode;
 
-public class PinNode implements WarnNode {
+public class DicBoxNameNode implements WarnNode {
 
-    private Object[] args = new Object[2];
+    private Object[] args = new Object[1];
 
-
-    public PinNode(String direction, String pinName) {
-        args[0] = direction;
-        args[1] = pinName;
+    public DicBoxNameNode(String boxName) {
+        args[0] = boxName;
     }
-
 
     @Override
     public String getTemplate() {
-        return "[{}.pin:'{}']";
+        return "[box:'{}']";
     }
 
     @Override

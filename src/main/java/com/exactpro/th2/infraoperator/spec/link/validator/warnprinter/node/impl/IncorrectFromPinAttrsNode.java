@@ -14,27 +14,20 @@
  * limitations under the License.
  */
 
-package com.exactpro.th2.infraoperator.spec.link.validator.warnPrinter.node.impl;
+package com.exactpro.th2.infraoperator.spec.link.validator.warnprinter.node.impl;
 
-import com.exactpro.th2.infraoperator.spec.link.validator.warnPrinter.node.WarnNode;
+import com.exactpro.th2.infraoperator.spec.shared.BoxDirection;
+import com.exactpro.th2.infraoperator.spec.shared.PinAttribute;
 
-public class DicNameNode implements WarnNode {
+public class IncorrectFromPinAttrsNode extends AbstractIncorrectPinAttrsNode {
 
-    private Object[] args = new Object[1];
-
-
-    public DicNameNode(String dictionaryName) {
-        args[0] = dictionaryName;
-    }
-
-    @Override
-    public String getTemplate() {
-        return "[dictionary.name:'{}']";
-    }
-
-    @Override
-    public Object[] getArgs() {
-        return args;
+    public IncorrectFromPinAttrsNode(
+            String pinName,
+            String resNamespace,
+            String resName
+    ) {
+        super(pinName, resNamespace, resName, BoxDirection.from.name(), PinAttribute.publish.name(),
+                PinAttribute.subscribe.name());
     }
 
 }

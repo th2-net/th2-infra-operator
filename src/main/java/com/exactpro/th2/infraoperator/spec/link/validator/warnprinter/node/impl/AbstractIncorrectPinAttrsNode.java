@@ -14,27 +14,34 @@
  * limitations under the License.
  */
 
-package com.exactpro.th2.infraoperator.spec.link.validator.warnPrinter.node.impl;
+package com.exactpro.th2.infraoperator.spec.link.validator.warnprinter.node.impl;
 
-import com.exactpro.th2.infraoperator.spec.link.validator.warnPrinter.node.WarnNode;
-import com.exactpro.th2.infraoperator.spec.shared.SchemaConnectionType;
+import com.exactpro.th2.infraoperator.spec.link.validator.warnprinter.node.WarnNode;
 
-public class IncorrectPinTypeNode implements WarnNode {
+public abstract class AbstractIncorrectPinAttrsNode implements WarnNode {
 
-    private Object[] args = new Object[4];
+    private Object[] args = new Object[6];
 
-
-    public IncorrectPinTypeNode(String pinName, String resNamespace, String resName, SchemaConnectionType cType) {
+    public AbstractIncorrectPinAttrsNode(
+            String pinName,
+            String resNamespace,
+            String resName,
+            String boxDirection,
+            String fromAttr,
+            String toAttr
+    ) {
         args[0] = pinName;
         args[1] = resNamespace;
         args[2] = resName;
-        args[3] = cType;
+        args[3] = boxDirection;
+        args[4] = fromAttr;
+        args[5] = toAttr;
     }
-
 
     @Override
     public String getTemplate() {
-        return "The specified pin with name '{}' has incorrect connection type in box '{}.{}'. Pin must be '{}' connection type. ";
+        return "The specified pin with name '{}' in box '{}.{}' has incorrect direction attributes. " +
+                "Pin specified as '{}' must have the '{}' attribute and doesn't have '{}' attribute.";
     }
 
     @Override

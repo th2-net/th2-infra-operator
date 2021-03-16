@@ -14,19 +14,26 @@
  * limitations under the License.
  */
 
-package com.exactpro.th2.infraoperator.spec.shared;
+package com.exactpro.th2.infraoperator.spec.link.validator.warnprinter.node.impl;
 
-import com.fasterxml.jackson.annotation.JsonInclude;
-import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
-import lombok.Data;
+import com.exactpro.th2.infraoperator.spec.link.validator.warnprinter.node.WarnNode;
 
-@Data
-@JsonDeserialize
-@JsonInclude(JsonInclude.Include.NON_EMPTY)
-public class PinSettings {
+public class StrategyNotFoundNode implements WarnNode {
 
-    protected String storageOnDemand = "true";
+    private Object[] args = new Object[1];
 
-    protected String queueLength = "1000";
+    public StrategyNotFoundNode(String strategyName) {
+        args[0] = strategyName;
+    }
+
+    @Override
+    public String getTemplate() {
+        return "The specified strategy with name '{}' not found. ";
+    }
+
+    @Override
+    public Object[] getArgs() {
+        return args;
+    }
 
 }

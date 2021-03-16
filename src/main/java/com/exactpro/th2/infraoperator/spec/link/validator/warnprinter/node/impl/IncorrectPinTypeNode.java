@@ -14,23 +14,26 @@
  * limitations under the License.
  */
 
-package com.exactpro.th2.infraoperator.spec.link.validator.warnPrinter.node.impl;
+package com.exactpro.th2.infraoperator.spec.link.validator.warnprinter.node.impl;
 
-import com.exactpro.th2.infraoperator.spec.link.validator.warnPrinter.node.WarnNode;
+import com.exactpro.th2.infraoperator.spec.link.validator.warnprinter.node.WarnNode;
+import com.exactpro.th2.infraoperator.spec.shared.SchemaConnectionType;
 
-public class StrategyNode implements WarnNode {
+public class IncorrectPinTypeNode implements WarnNode {
 
-    private Object[] args = new Object[2];
+    private Object[] args = new Object[4];
 
-
-    public StrategyNode(String direction, String strategyName) {
-        args[0] = direction;
-        args[1] = strategyName;
+    public IncorrectPinTypeNode(String pinName, String resNamespace, String resName, SchemaConnectionType cType) {
+        args[0] = pinName;
+        args[1] = resNamespace;
+        args[2] = resName;
+        args[3] = cType;
     }
 
     @Override
     public String getTemplate() {
-        return "[{}.strategy:'{}']";
+        return "The specified pin with name '{}' has incorrect connection type in box '{}.{}'. " +
+                "Pin must be '{}' connection type. ";
     }
 
     @Override

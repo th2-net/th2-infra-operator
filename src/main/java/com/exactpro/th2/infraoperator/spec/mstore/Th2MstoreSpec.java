@@ -31,13 +31,11 @@ import java.util.Set;
 public class Th2MstoreSpec extends Th2Spec {
 
     public Th2MstoreSpec() {
-
         List<PinSpec> autoPins = new ArrayList<>();
         autoPins.add(createPin(PinAttribute.parsed));
         autoPins.add(createPin(PinAttribute.raw));
         setPins(autoPins);
     }
-
 
     private PinSpec createPin(PinAttribute type) {
         PinSpec pin = new PinSpec();
@@ -47,32 +45,29 @@ public class Th2MstoreSpec extends Th2Spec {
         return pin;
     }
 
-
     private static String pinName(PinAttribute type) {
         return StoreHelmTh2Op.MESSAGE_STORAGE_PIN_ALIAS + "-" + type.name();
     }
-
 
     public static String rawPinName() {
         return pinName(PinAttribute.raw);
     }
 
-
     public static String parsedPinName() {
         return pinName(PinAttribute.parsed);
     }
 
-
     @Override
     public boolean equals(final Object o) {
-        if (o == this)
+        if (o == this) {
             return true;
-        if (!(o instanceof Th2MstoreSpec))
+        }
+        if (!(o instanceof Th2MstoreSpec)) {
             return false;
+        }
 
         return super.equals(o);
     }
-
 
     @Override
     public int hashCode() {

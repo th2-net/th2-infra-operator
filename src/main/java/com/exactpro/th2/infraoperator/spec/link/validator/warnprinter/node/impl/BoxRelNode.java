@@ -14,23 +14,21 @@
  * limitations under the License.
  */
 
-package com.exactpro.th2.infraoperator.spec.link.validator.warnPrinter.node.impl;
+package com.exactpro.th2.infraoperator.spec.link.validator.warnprinter.node.impl;
 
-import com.exactpro.th2.infraoperator.spec.link.validator.warnPrinter.node.WarnNode;
+import com.exactpro.th2.infraoperator.spec.link.validator.warnprinter.node.WarnNode;
 
-public class BoxNameNode implements WarnNode {
+public class BoxRelNode implements WarnNode {
 
-    private Object[] args = new Object[2];
+    private Object[] args = new Object[1];
 
-
-    public BoxNameNode(String direction, String boxName) {
-        args[0] = direction;
-        args[1] = boxName;
+    public BoxRelNode(String sectionName) {
+        args[0] = sectionName;
     }
 
     @Override
     public String getTemplate() {
-        return "[{}.box:'{}']";
+        return "[boxes-relation.array<router-{}>]";
     }
 
     @Override

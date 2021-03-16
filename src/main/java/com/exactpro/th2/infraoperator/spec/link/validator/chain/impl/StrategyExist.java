@@ -20,16 +20,14 @@ import com.exactpro.th2.infraoperator.model.box.configuration.grpc.StrategyType;
 import com.exactpro.th2.infraoperator.spec.link.validator.ValidationStatus;
 import com.exactpro.th2.infraoperator.spec.link.validator.chain.AbstractValidator;
 import com.exactpro.th2.infraoperator.spec.link.validator.model.DirectionalLinkContext;
-import com.exactpro.th2.infraoperator.spec.link.validator.warnPrinter.WarnPrinter;
-import com.exactpro.th2.infraoperator.spec.link.validator.warnPrinter.node.impl.*;
+import com.exactpro.th2.infraoperator.spec.link.validator.warnprinter.WarnPrinter;
+import com.exactpro.th2.infraoperator.spec.link.validator.warnprinter.node.impl.*;
 
 import java.util.Arrays;
-
 
 public class StrategyExist extends AbstractValidator {
 
     private String routingStrategy;
-
 
     public StrategyExist(String routingStrategy) {
         this.routingStrategy = routingStrategy;
@@ -49,7 +47,6 @@ public class StrategyExist extends AbstractValidator {
                 .addNode(new StrategyNode(context.getBoxDirection().name(), context.getRoutingStrategy()))
                 .build());
     }
-
 
     @Override
     public ValidationStatus validate(Object object, Object... additional) {

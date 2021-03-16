@@ -14,28 +14,20 @@
  * limitations under the License.
  */
 
-package com.exactpro.th2.infraoperator.spec.link.validator.warnPrinter.node.impl;
+package com.exactpro.th2.infraoperator.spec.link.validator.warnprinter.node.impl;
 
-import com.exactpro.th2.infraoperator.spec.link.validator.warnPrinter.node.WarnNode;
+import com.exactpro.th2.infraoperator.spec.link.validator.warnprinter.node.WarnNode;
 
-public class StrategyNotFoundNode implements WarnNode {
-
-    private Object[] args = new Object[1];
-
-
-    public StrategyNotFoundNode(String strategyName) {
-        args[0] = strategyName;
-    }
-
+public class DicRelNode implements WarnNode {
 
     @Override
     public String getTemplate() {
-        return "The specified strategy with name '{}' not found. ";
+        return "[dictionaries-relation.array]";
     }
 
     @Override
     public Object[] getArgs() {
-        return args;
+        return new Object[]{};
     }
 
 }

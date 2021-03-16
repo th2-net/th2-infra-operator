@@ -17,9 +17,8 @@
 package com.exactpro.th2.infraoperator.spec.link.validator.chain.impl;
 
 import com.exactpro.th2.infraoperator.spec.link.validator.model.DictionaryLinkContext;
-import com.exactpro.th2.infraoperator.spec.link.validator.warnPrinter.WarnPrinter;
-import com.exactpro.th2.infraoperator.spec.link.validator.warnPrinter.node.impl.*;
-
+import com.exactpro.th2.infraoperator.spec.link.validator.warnprinter.WarnPrinter;
+import com.exactpro.th2.infraoperator.spec.link.validator.warnprinter.node.impl.*;
 
 public class DictionaryResourceExist extends ResourceExist {
 
