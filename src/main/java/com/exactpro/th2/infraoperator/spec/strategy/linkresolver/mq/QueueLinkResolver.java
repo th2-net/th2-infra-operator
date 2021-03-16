@@ -14,15 +14,14 @@
  * limitations under the License.
  */
 
-package com.exactpro.th2.infraoperator.spec.strategy.linkResolver.mq;
+package com.exactpro.th2.infraoperator.spec.strategy.linkresolver.mq;
 
 import com.exactpro.th2.infraoperator.model.box.schema.link.EnqueuedLink;
 import com.exactpro.th2.infraoperator.model.box.schema.link.QueueDescription;
 import com.exactpro.th2.infraoperator.spec.link.Th2Link;
-import com.exactpro.th2.infraoperator.spec.strategy.linkResolver.LinkResolver;
+import com.exactpro.th2.infraoperator.spec.strategy.linkresolver.LinkResolver;
 
 import java.util.List;
-
 
 public interface QueueLinkResolver extends LinkResolver<EnqueuedLink> {
 

@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package com.exactpro.th2.infraoperator.spec.strategy.linkResolver.mq.impl;
+package com.exactpro.th2.infraoperator.spec.strategy.linkresolver.mq.impl;
 
 import com.exactpro.th2.infraoperator.OperatorState;
 import com.exactpro.th2.infraoperator.configuration.OperatorConfig;
@@ -23,7 +23,7 @@ import com.exactpro.th2.infraoperator.configuration.RabbitMQManagementConfig;
 import com.exactpro.th2.infraoperator.spec.Th2CustomResource;
 import com.exactpro.th2.infraoperator.spec.link.relation.pins.PinMQ;
 import com.exactpro.th2.infraoperator.spec.shared.PinAttribute;
-import com.exactpro.th2.infraoperator.spec.strategy.linkResolver.queue.QueueName;
+import com.exactpro.th2.infraoperator.spec.strategy.linkresolver.queue.QueueName;
 import com.exactpro.th2.infraoperator.spec.strategy.redeploy.NonTerminalException;
 import com.exactpro.th2.infraoperator.util.ExtractUtils;
 import com.rabbitmq.client.Channel;
@@ -42,13 +42,13 @@ import static com.exactpro.th2.infraoperator.util.ExtractUtils.extractName;
 public class DeclareQueueResolver {
 
     private static final Logger logger = LoggerFactory.getLogger(DeclareQueueResolver.class);
+
     private final RabbitMQManagementConfig rabbitMQManagementConfig;
 
     @SneakyThrows
     public DeclareQueueResolver() {
         this.rabbitMQManagementConfig = OperatorConfig.INSTANCE.getRabbitMQManagementConfig();
     }
-
 
     public void resolveAdd(Th2CustomResource resource) {
 
@@ -62,7 +62,6 @@ public class DeclareQueueResolver {
             throw new NonTerminalException(message, e);
         }
     }
-
 
     public void resolveDelete(Th2CustomResource resource) {
 
@@ -99,24 +98,23 @@ public class DeclareQueueResolver {
                 //remove from set if pin for queue still exists.
                 boxUnlinkedQueueNames.remove(queueName);
                 var declareResult = channel.queueDeclare(queueName
-                    , rabbitMQManagementConfig.isPersistence()
-                    , false
-                    , false
-                    , RabbitMQContext.generateQueueArguments(pin.getSettings()));
-                logger.info("Queue '{}' of resource {} was successfully declared", declareResult.getQueue(), extractName(resource));
+                        , rabbitMQManagementConfig.isPersistence()
+                        , false
+                        , false
+                        , RabbitMQContext.generateQueueArguments(pin.getSettings()));
+                logger.info("Queue '{}' of resource {} was successfully declared",
+                        declareResult.getQueue(), extractName(resource));
             }
         }
         //remove from rabbit queues that are left i.e. inactive
         removeExtinctQueues(channel, boxUnlinkedQueueNames);
     }
 
-
     private Set<String> getBoxUnlinkedQueues(String namespace, String boxQueuesFullName) {
         Set<String> boxQueueNames = getBoxQueues(namespace, boxQueuesFullName);
         removeLinkedQueues(boxQueueNames, namespace);
         return boxQueueNames;
     }
-
 
     @SneakyThrows
     private Set<String> getBoxQueues(String namespace, String boxName) {
@@ -127,12 +125,12 @@ public class DeclareQueueResolver {
         Set<String> queueNames = new HashSet<>();
         queueInfoList.forEach(q -> {
             var queue = QueueName.fromString(q.getName());
-            if (queue != null && queue.getBoxName().equals(boxName))
+            if (queue != null && queue.getBoxName().equals(boxName)) {
                 queueNames.add(q.getName());
+            }
         });
         return queueNames;
     }
-
 
     private void removeLinkedQueues(Set<String> boxQueueNames, String namespace) {
         var lSingleton = OperatorState.INSTANCE;
@@ -140,10 +138,9 @@ public class DeclareQueueResolver {
 
         //remove queues that appear in active links
         mqActiveLinks.forEach(enqueuedLink ->
-            boxQueueNames.remove(enqueuedLink.getQueueDescription().getQueueName().toString())
+                boxQueueNames.remove(enqueuedLink.getQueueDescription().getQueueName().toString())
         );
     }
-
 
     @SneakyThrows
     private Channel getChannel(String namespace) {
@@ -164,7 +161,6 @@ public class DeclareQueueResolver {
         return channel;
     }
 
-
     private void removeExtinctQueues(Channel channel, Set<String> extinctQueueNames) {
         if (!extinctQueueNames.isEmpty()) {
             logger.info("Unlinked pin(s) removed from resource. trying to delete queues associated with it");
@@ -177,7 +173,5 @@ public class DeclareQueueResolver {
                 }
             });
         }
-
     }
-
 }

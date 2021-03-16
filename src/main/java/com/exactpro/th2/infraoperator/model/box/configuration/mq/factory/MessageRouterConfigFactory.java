@@ -23,15 +23,14 @@ import com.exactpro.th2.infraoperator.model.box.schema.link.QueueDescription;
 import com.exactpro.th2.infraoperator.model.kubernetes.configmaps.ConfigMaps;
 import com.exactpro.th2.infraoperator.spec.Th2CustomResource;
 import com.exactpro.th2.infraoperator.spec.link.relation.pins.PinMQ;
-import com.exactpro.th2.infraoperator.spec.shared.PinAttribute;
 import com.exactpro.th2.infraoperator.spec.shared.FilterSpec;
+import com.exactpro.th2.infraoperator.spec.shared.PinAttribute;
 import com.exactpro.th2.infraoperator.spec.shared.PinSpec;
-import com.exactpro.th2.infraoperator.spec.strategy.linkResolver.queue.QueueName;
-import com.exactpro.th2.infraoperator.spec.strategy.linkResolver.queue.RoutingKeyName;
+import com.exactpro.th2.infraoperator.spec.strategy.linkresolver.queue.QueueName;
+import com.exactpro.th2.infraoperator.spec.strategy.linkresolver.queue.RoutingKeyName;
 import com.exactpro.th2.infraoperator.spec.strategy.redeploy.NonTerminalException;
 import com.exactpro.th2.infraoperator.util.ExtractUtils;
 import com.exactpro.th2.infraoperator.util.SchemeMappingUtils;
-import org.jetbrains.annotations.Nullable;
 
 import java.util.HashMap;
 import java.util.Map;

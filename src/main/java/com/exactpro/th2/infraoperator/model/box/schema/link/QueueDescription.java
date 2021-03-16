@@ -16,8 +16,8 @@
 
 package com.exactpro.th2.infraoperator.model.box.schema.link;
 
-import com.exactpro.th2.infraoperator.spec.strategy.linkResolver.queue.QueueName;
-import com.exactpro.th2.infraoperator.spec.strategy.linkResolver.queue.RoutingKeyName;
+import com.exactpro.th2.infraoperator.spec.strategy.linkresolver.queue.QueueName;
+import com.exactpro.th2.infraoperator.spec.strategy.linkresolver.queue.RoutingKeyName;
 
 import java.util.Objects;
 

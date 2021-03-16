@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package com.exactpro.th2.infraoperator.spec.strategy.linkResolver.dictionary;
+package com.exactpro.th2.infraoperator.spec.strategy.linkresolver.dictionary;
 
 import com.exactpro.th2.infraoperator.spec.Th2CustomResource;
 import com.exactpro.th2.infraoperator.spec.dictionary.Th2Dictionary;
@@ -25,8 +25,8 @@ import com.exactpro.th2.infraoperator.spec.link.validator.chain.impl.DicBoxResou
 import com.exactpro.th2.infraoperator.spec.link.validator.chain.impl.DictionaryResourceExist;
 import com.exactpro.th2.infraoperator.spec.link.validator.model.DictionaryLinkContext;
 import com.exactpro.th2.infraoperator.spec.link.validator.model.DirectionalLinkContext;
-import com.exactpro.th2.infraoperator.spec.strategy.linkResolver.GenericLinkResolver;
-import com.exactpro.th2.infraoperator.spec.strategy.linkResolver.LinkResolver;
+import com.exactpro.th2.infraoperator.spec.strategy.linkresolver.GenericLinkResolver;
+import com.exactpro.th2.infraoperator.spec.strategy.linkresolver.LinkResolver;
 import com.exactpro.th2.infraoperator.spec.strategy.resfinder.box.BoxResourceFinder;
 import com.exactpro.th2.infraoperator.spec.strategy.resfinder.dictionary.DictionaryResourceFinder;
 import com.exactpro.th2.infraoperator.util.ExtractUtils;
@@ -35,38 +35,32 @@ import org.slf4j.LoggerFactory;
 
 import java.util.List;
 
-public class DictionaryLinkResolver extends GenericLinkResolver<DictionaryBinding> implements LinkResolver<DictionaryBinding> {
+public class DictionaryLinkResolver extends GenericLinkResolver<DictionaryBinding>
+        implements LinkResolver<DictionaryBinding> {
 
     private static final Logger logger = LoggerFactory.getLogger(DictionaryLinkResolver.class);
-
 
     private final BoxResourceFinder boxResourceFinder;
 
     private final DictionaryResourceFinder dicResourceFinder;
 
-
-    public DictionaryLinkResolver(
-            BoxResourceFinder boxResourceFinder,
-            DictionaryResourceFinder dicResourceFinder
-    ) {
+    public DictionaryLinkResolver(BoxResourceFinder boxResourceFinder, DictionaryResourceFinder dicResourceFinder) {
         this.boxResourceFinder = boxResourceFinder;
         this.dicResourceFinder = dicResourceFinder;
     }
 
     @Override
-    public void resolve(List<Th2Link> linkResources, List<DictionaryBinding> dicActiveLinks, Th2CustomResource... newResources) {
+    public void resolve(List<Th2Link> linkResources, List<DictionaryBinding> dicActiveLinks,
+                        Th2CustomResource... newResources) {
         dicActiveLinks.clear();
 
         for (var lRes : linkResources) {
             for (var link : lRes.getSpec().getDictionariesRelation()) {
-
                 if (validateLinks(lRes, link, newResources)) {
                     dicActiveLinks.add(link);
                 }
-
             }
         }
-
     }
 
     private boolean validateLinks(Th2Link linkRes, DictionaryBinding link, Th2CustomResource... additionalSource) {
@@ -91,26 +85,24 @@ public class DictionaryLinkResolver extends GenericLinkResolver<DictionaryBindin
                 .linkNamespace(namespace)
                 .build();
 
-
         var boxRes = boxResourceFinder.getResource(boxName, namespace, additionalSource);
 
         var boxValRes = validateResourceByDirectionalLink(boxRes, boxContext);
-
 
         var dicRes = dicResourceFinder.getResource(dicName, namespace);
 
         var dicValRes = validateDictionaryByDirectionalLink(dicRes, dicContextTemplate);
 
-
         return boxValRes.equals(ValidationStatus.VALID) && dicValRes.equals(ValidationStatus.VALID);
     }
 
-    private ValidationStatus validateResourceByDirectionalLink(Th2CustomResource resource, DirectionalLinkContext context) {
+    private ValidationStatus validateResourceByDirectionalLink(Th2CustomResource resource,
+                                                               DirectionalLinkContext context) {
         return new DicBoxResourceExist(context).validate(resource);
     }
 
-    private ValidationStatus validateDictionaryByDirectionalLink(Th2Dictionary resource, DictionaryLinkContext context) {
+    private ValidationStatus validateDictionaryByDirectionalLink(Th2Dictionary resource,
+                                                                 DictionaryLinkContext context) {
         return new DictionaryResourceExist(context).validate(resource);
     }
-
 }

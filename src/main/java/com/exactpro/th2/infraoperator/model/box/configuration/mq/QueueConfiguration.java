@@ -17,8 +17,8 @@
 package com.exactpro.th2.infraoperator.model.box.configuration.mq;
 
 import com.exactpro.th2.infraoperator.model.box.schema.link.QueueDescription;
-import com.exactpro.th2.infraoperator.spec.strategy.linkResolver.queue.QueueName;
-import com.exactpro.th2.infraoperator.spec.strategy.linkResolver.queue.RoutingKeyName;
+import com.exactpro.th2.infraoperator.spec.strategy.linkresolver.queue.QueueName;
+import com.exactpro.th2.infraoperator.spec.strategy.linkresolver.queue.RoutingKeyName;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 

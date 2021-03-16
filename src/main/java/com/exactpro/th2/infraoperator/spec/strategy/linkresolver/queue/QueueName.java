@@ -14,38 +14,39 @@
  * limitations under the License.
  */
 
-package com.exactpro.th2.infraoperator.spec.strategy.linkResolver.queue;
+package com.exactpro.th2.infraoperator.spec.strategy.linkresolver.queue;
 
 import com.exactpro.th2.infraoperator.spec.link.relation.pins.PinMQ;
 
 import java.util.Objects;
 
-
 public class QueueName extends AbstractName {
 
-    public static final QueueName EMPTY = new QueueName("","","");
+    public static final QueueName EMPTY = new QueueName("", "", "");
 
     private static final String EMPTY_QUEUE_NAME = "";
-    private static final String QUEUE_NAME_PREFIX = "link";
-    private static final String QUEUE_NAME_REGEXP = QUEUE_NAME_PREFIX + "\\[" + NAMESPACE_REGEXP + ":" + BOX_NAME_REGEXP + ":" + PIN_NAME_REGEXP + "\\]";
 
+    private static final String QUEUE_NAME_PREFIX = "link";
+
+    private static final String QUEUE_NAME_REGEXP =
+            QUEUE_NAME_PREFIX + "\\[" + NAMESPACE_REGEXP + ":" + BOX_NAME_REGEXP + ":" + PIN_NAME_REGEXP + "\\]";
 
     public QueueName(String namespace, PinMQ mqPin) {
         super(namespace, mqPin);
     }
 
-
     public QueueName(String namespace, String boxName, String pinName) {
         super(namespace, boxName, pinName);
     }
 
-
     @Override
     public boolean equals(Object o) {
-        if (o == this)
+        if (o == this) {
             return true;
-        if (! (o instanceof QueueName))
+        }
+        if (!(o instanceof QueueName)) {
             return false;
+        }
 
         QueueName other = (QueueName) o;
         return Objects.equals(this.namespace, other.namespace) &&
@@ -53,26 +54,24 @@ public class QueueName extends AbstractName {
                 Objects.equals(this.pinName, other.pinName);
     }
 
-
     @Override
     public String toString() {
         return QueueName.format(namespace, boxName, pinName);
     }
 
-
     public static String format(String namespace, String boxName, String pinName) {
-        if  (namespace.equals("") && boxName.equals("") && pinName.equals(""))
+        if (namespace.equals("") && boxName.equals("") && pinName.equals("")) {
             return EMPTY_QUEUE_NAME;
-        else
+        } else {
             return String.format("%s[%s:%s:%s]", QUEUE_NAME_PREFIX, namespace, boxName, pinName);
+        }
     }
-
 
     public static QueueName fromString(String str) {
 
-        if (str == null || str.equals(EMPTY_QUEUE_NAME))
+        if (str == null || str.equals(EMPTY_QUEUE_NAME)) {
             return QueueName.EMPTY;
-
+        }
         if (str.matches(QUEUE_NAME_REGEXP)) {
             try {
                 String enclosedStr = str.substring(QUEUE_NAME_PREFIX.length() + 1, str.length() - 1);

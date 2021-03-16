@@ -29,9 +29,10 @@ import java.util.Objects;
 public final class PrometheusConfiguration<E> {
 
     private String host;
-    private String port;
-    private E enabled;
 
+    private String port;
+
+    private E enabled;
 
     private PrometheusConfiguration(String host, String port, E enabled) {
         this.host = host;
@@ -39,24 +40,23 @@ public final class PrometheusConfiguration<E> {
         this.enabled = enabled;
     }
 
-
     public static <E> PrometheusConfiguration<E> createDefault(E enabled) {
-        return new PrometheusConfiguration<E>(null, null,enabled );
+        return new PrometheusConfiguration<E>(null, null, enabled);
     }
-
 
     @Override
     public boolean equals(Object o) {
-        if (this == o)
+        if (this == o) {
             return true;
-        if (! (o instanceof PrometheusConfiguration))
+        }
+        if (!(o instanceof PrometheusConfiguration)) {
             return false;
+        }
         PrometheusConfiguration that = (PrometheusConfiguration) o;
         return Objects.equals(host, that.host) &&
                 Objects.equals(port, that.port) &&
                 Objects.equals(enabled, that.enabled);
     }
-
 
     public static <E> Builder<E> builder() {
         return new Builder<>();
@@ -75,8 +75,11 @@ public final class PrometheusConfiguration<E> {
     }
 
     public static class Builder<E> {
+
         private String host;
+
         private String port;
+
         private E enabled;
 
         @JsonProperty("host")

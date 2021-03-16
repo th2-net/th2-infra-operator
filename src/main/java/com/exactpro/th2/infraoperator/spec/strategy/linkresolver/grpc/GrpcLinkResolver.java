@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package com.exactpro.th2.infraoperator.spec.strategy.linkResolver.grpc;
+package com.exactpro.th2.infraoperator.spec.strategy.linkresolver.grpc;
 
 import com.exactpro.th2.infraoperator.spec.Th2CustomResource;
 import com.exactpro.th2.infraoperator.spec.link.Th2Link;
@@ -27,8 +27,8 @@ import com.exactpro.th2.infraoperator.spec.link.validator.chain.impl.StrategyExi
 import com.exactpro.th2.infraoperator.spec.link.validator.model.DirectionalLinkContext;
 import com.exactpro.th2.infraoperator.spec.shared.BoxDirection;
 import com.exactpro.th2.infraoperator.spec.shared.SchemaConnectionType;
-import com.exactpro.th2.infraoperator.spec.strategy.linkResolver.GenericLinkResolver;
-import com.exactpro.th2.infraoperator.spec.strategy.linkResolver.LinkResolver;
+import com.exactpro.th2.infraoperator.spec.strategy.linkresolver.GenericLinkResolver;
+import com.exactpro.th2.infraoperator.spec.strategy.linkresolver.LinkResolver;
 import com.exactpro.th2.infraoperator.spec.strategy.resfinder.box.BoxResourceFinder;
 import com.exactpro.th2.infraoperator.util.ExtractUtils;
 import org.slf4j.Logger;
@@ -36,34 +36,29 @@ import org.slf4j.LoggerFactory;
 
 import java.util.List;
 
-
 public class GrpcLinkResolver extends GenericLinkResolver<PinCouplingGRPC> implements LinkResolver<PinCouplingGRPC> {
 
     private static final Logger logger = LoggerFactory.getLogger(GrpcLinkResolver.class);
 
-
     private final BoxResourceFinder resourceFinder;
-
 
     public GrpcLinkResolver(BoxResourceFinder resourceFinder) {
         this.resourceFinder = resourceFinder;
     }
 
     @Override
-    public void resolve(List<Th2Link> linkResources, List<PinCouplingGRPC> grpcActiveLinks, Th2CustomResource... newResources) {
+    public void resolve(List<Th2Link> linkResources, List<PinCouplingGRPC> grpcActiveLinks,
+                        Th2CustomResource... newResources) {
 
         grpcActiveLinks.clear();
 
         for (var lRes : linkResources) {
             for (var link : lRes.getSpec().getBoxesRelation().getRouterGrpc()) {
-
                 if (validateLinks(lRes, link, newResources)) {
                     grpcActiveLinks.add(link);
                 }
-
             }
         }
-
     }
 
     private boolean validateLinks(Th2Link linkRes, PinCouplingGRPC link, Th2CustomResource... additionalSource) {
@@ -92,7 +87,6 @@ public class GrpcLinkResolver extends GenericLinkResolver<PinCouplingGRPC> imple
                 .linkNamespace(namespace)
                 .build();
 
-
         var toBoxSpec = link.getTo();
 
         var toBoxName = toBoxSpec.getBoxName();
@@ -104,7 +98,6 @@ public class GrpcLinkResolver extends GenericLinkResolver<PinCouplingGRPC> imple
                 .routingStrategy(toBoxSpec.getStrategy())
                 .build();
 
-
         var fromRes = resourceFinder.getResource(fromBoxName, namespace, additionalSource);
 
         var fromValRes = validateResourceByDirectionalLink(fromRes, fromContext);
@@ -113,12 +106,11 @@ public class GrpcLinkResolver extends GenericLinkResolver<PinCouplingGRPC> imple
 
         var toValRes = validateResourceByDirectionalLink(toRes, toContext);
 
-
         return fromValRes.equals(ValidationStatus.VALID) && toValRes.equals(ValidationStatus.VALID);
     }
 
-    private ValidationStatus validateResourceByDirectionalLink(Th2CustomResource resource, DirectionalLinkContext context) {
-
+    private ValidationStatus validateResourceByDirectionalLink(Th2CustomResource resource,
+                                                               DirectionalLinkContext context) {
         var resValidator = new ResourceExist(context);
         var pinExist = new PinExist(context);
         var expectedPin = new ExpectedPinType(context);
@@ -130,5 +122,4 @@ public class GrpcLinkResolver extends GenericLinkResolver<PinCouplingGRPC> imple
 
         return resValidator.validate(resource);
     }
-
 }

@@ -16,7 +16,7 @@
 
 package com.exactpro.th2.infraoperator.operator;
 
-import com.exactpro.th2.infraoperator.spec.strategy.linkResolver.queue.QueueName;
+import com.exactpro.th2.infraoperator.spec.strategy.linkresolver.queue.QueueName;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 
