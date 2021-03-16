@@ -28,14 +28,11 @@ public class DescriptorExtractor {
 
     private static final Logger logger = LoggerFactory.getLogger(DescriptorExtractor.class);
 
-
     public static final String COMPONENT_DESCRIPTOR_ALIAS = "com.exactpro.th2.descriptor";
-
 
     private DescriptorExtractor() {
         throw new AssertionError();
     }
-
 
     /**
      * Usage example:

@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package com.exactpro.th2.infraoperator.spec.strategy.resFinder;
+package com.exactpro.th2.infraoperator.spec.strategy.resfinder;
 
 import io.fabric8.kubernetes.client.CustomResource;
 

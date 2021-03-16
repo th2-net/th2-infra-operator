@@ -38,7 +38,7 @@ import com.exactpro.th2.infraoperator.spec.strategy.linkResolver.mq.QueueLinkRes
 import com.exactpro.th2.infraoperator.spec.strategy.linkResolver.queue.QueueName;
 import com.exactpro.th2.infraoperator.spec.strategy.linkResolver.queue.RoutingKeyName;
 import com.exactpro.th2.infraoperator.spec.strategy.redeploy.NonTerminalException;
-import com.exactpro.th2.infraoperator.spec.strategy.resFinder.box.BoxResourceFinder;
+import com.exactpro.th2.infraoperator.spec.strategy.resfinder.box.BoxResourceFinder;
 import com.exactpro.th2.infraoperator.util.ExtractUtils;
 import com.rabbitmq.client.Channel;
 import lombok.AllArgsConstructor;

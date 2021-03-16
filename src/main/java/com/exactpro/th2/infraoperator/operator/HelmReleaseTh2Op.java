@@ -36,7 +36,7 @@ import com.exactpro.th2.infraoperator.spec.strategy.linkResolver.dictionary.Dict
 import com.exactpro.th2.infraoperator.spec.strategy.linkResolver.grpc.GrpcLinkResolver;
 import com.exactpro.th2.infraoperator.spec.strategy.linkResolver.mq.QueueLinkResolver;
 import com.exactpro.th2.infraoperator.spec.strategy.linkResolver.mq.impl.DeclareQueueResolver;
-import com.exactpro.th2.infraoperator.spec.strategy.resFinder.box.BoxResourceFinder;
+import com.exactpro.th2.infraoperator.spec.strategy.resfinder.box.BoxResourceFinder;
 import com.exactpro.th2.infraoperator.util.CustomResourceUtils;
 import com.exactpro.th2.infraoperator.util.ExtractUtils;
 import com.exactpro.th2.infraoperator.util.JsonUtils;

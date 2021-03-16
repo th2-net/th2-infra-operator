@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package com.exactpro.th2.infraoperator.spec.strategy.resFinder.box.impl;
+package com.exactpro.th2.infraoperator.spec.strategy.resfinder.box.impl;
 
 import com.exactpro.th2.infraoperator.OperatorState;
 import com.exactpro.th2.infraoperator.spec.Th2CustomResource;
@@ -22,7 +22,7 @@ import com.exactpro.th2.infraoperator.spec.Th2Spec;
 import com.exactpro.th2.infraoperator.spec.shared.PinAttribute;
 import com.exactpro.th2.infraoperator.spec.shared.PinSpec;
 import com.exactpro.th2.infraoperator.spec.shared.SchemaConnectionType;
-import com.exactpro.th2.infraoperator.spec.strategy.resFinder.box.BoxResourceFinder;
+import com.exactpro.th2.infraoperator.spec.strategy.resfinder.box.BoxResourceFinder;
 import com.exactpro.th2.infraoperator.util.ExtractUtils;
 import io.fabric8.kubernetes.api.model.ObjectMeta;
 import io.fabric8.kubernetes.model.annotation.Group;
@@ -40,11 +40,9 @@ public class StoreDependentBoxResourceFinder implements BoxResourceFinder {
 
     private BoxResourceFinder resourceFinder;
 
-
     public StoreDependentBoxResourceFinder(BoxResourceFinder resourceFinder) {
         this.resourceFinder = resourceFinder;
     }
-
 
     @Nullable
     @Override
@@ -56,10 +54,11 @@ public class StoreDependentBoxResourceFinder implements BoxResourceFinder {
             var lock = OperatorState.INSTANCE.getLock(namespace);
             try {
                 lock.lock();
-                if (resource != null)
+                if (resource != null) {
                     return resource;
-                else
+                } else {
                     return generateFakeResource(name, namespace, generateStoragePins(namespace));
+                }
             } finally {
                 lock.unlock();
             }
@@ -72,7 +71,6 @@ public class StoreDependentBoxResourceFinder implements BoxResourceFinder {
     public List<Th2CustomResource> getResources(String namespace) {
         return resourceFinder.getResources(namespace);
     }
-
 
     private List<PinSpec> generateStoragePins(String namespace) {
         return OperatorState.INSTANCE.getLinkResources(namespace).stream()
@@ -106,10 +104,12 @@ public class StoreDependentBoxResourceFinder implements BoxResourceFinder {
     private class FakeCustomResource extends Th2CustomResource {
 
         private String name;
+
         private String namespace;
+
         private List<PinSpec> stPins;
 
-        public FakeCustomResource (String name, String namespace, List<PinSpec> stPins) {
+        public FakeCustomResource(String name, String namespace, List<PinSpec> stPins) {
             this.name = name;
             this.namespace = namespace;
             this.stPins = stPins;

@@ -27,16 +27,15 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-
 public final class CustomResourceUtils {
 
     private static final Logger logger = LoggerFactory.getLogger(CustomResourceUtils.class);
-    public static long RESYNC_TIME = 180000;
+
+    public static final long RESYNC_TIME = 180000;
 
     private CustomResourceUtils() {
         throw new AssertionError();
     }
-
 
     public static String annotationFor(String namespace, String kind, String resourceName) {
         return String.format("%s:%s/%s", namespace, kind, resourceName);

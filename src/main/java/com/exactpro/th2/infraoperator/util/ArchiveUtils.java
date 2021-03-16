@@ -24,23 +24,20 @@ import java.util.zip.GZIPOutputStream;
 public final class ArchiveUtils {
 
     private static final GZIPBase64Encoder ENCODER = new GZIPBase64Encoder();
-    private static final GZIPBase64Decoder DECODER = new GZIPBase64Decoder();
 
+    private static final GZIPBase64Decoder DECODER = new GZIPBase64Decoder();
 
     private ArchiveUtils() {
         throw new AssertionError();
     }
 
-
     public static GZIPBase64Encoder getGZIPBase64Encoder() {
         return ENCODER;
     }
 
-
     public static GZIPBase64Decoder getGZIPBase64Decoder() {
         return DECODER;
     }
-
 
     public static class GZIPBase64Encoder {
 
@@ -59,7 +56,6 @@ public final class ArchiveUtils {
             }
         }
     }
-
 
     public static class GZIPBase64Decoder {
 

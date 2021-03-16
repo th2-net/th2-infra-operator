@@ -14,33 +14,31 @@
  * limitations under the License.
  */
 
-package com.exactpro.th2.infraoperator.spec.strategy.resFinder.dictionary;
+package com.exactpro.th2.infraoperator.spec.strategy.resfinder.dictionary;
 
 import com.exactpro.th2.infraoperator.model.kubernetes.client.ResourceClient;
 import com.exactpro.th2.infraoperator.spec.dictionary.Th2Dictionary;
-import com.exactpro.th2.infraoperator.spec.strategy.resFinder.ResourceFinder;
+import com.exactpro.th2.infraoperator.spec.strategy.resfinder.ResourceFinder;
 import com.exactpro.th2.infraoperator.util.ExtractUtils;
 import org.jetbrains.annotations.Nullable;
 
 import java.util.List;
 import java.util.Objects;
 
-
 public class DictionaryResourceFinder implements ResourceFinder<Th2Dictionary> {
 
     private ResourceClient<Th2Dictionary> dictionaryClient;
-
 
     public DictionaryResourceFinder(ResourceClient<Th2Dictionary> dictionaryClient) {
         this.dictionaryClient = dictionaryClient;
     }
 
-
     @Nullable
     @Override
     public Th2Dictionary getResource(String name, String namespace, Th2Dictionary... additionalSource) {
         for (var r : additionalSource) {
-            if (Objects.nonNull(r) && ExtractUtils.extractName(r).equals(name) && ExtractUtils.extractNamespace(r).equals(namespace)) {
+            if (Objects.nonNull(r) && ExtractUtils.extractName(r).equals(name)
+                    && ExtractUtils.extractNamespace(r).equals(namespace)) {
                 return r;
             }
         }

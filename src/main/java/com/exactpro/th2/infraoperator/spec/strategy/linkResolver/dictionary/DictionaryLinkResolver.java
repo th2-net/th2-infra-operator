@@ -27,8 +27,8 @@ import com.exactpro.th2.infraoperator.spec.link.validator.model.DictionaryLinkCo
 import com.exactpro.th2.infraoperator.spec.link.validator.model.DirectionalLinkContext;
 import com.exactpro.th2.infraoperator.spec.strategy.linkResolver.GenericLinkResolver;
 import com.exactpro.th2.infraoperator.spec.strategy.linkResolver.LinkResolver;
-import com.exactpro.th2.infraoperator.spec.strategy.resFinder.box.BoxResourceFinder;
-import com.exactpro.th2.infraoperator.spec.strategy.resFinder.dictionary.DictionaryResourceFinder;
+import com.exactpro.th2.infraoperator.spec.strategy.resfinder.box.BoxResourceFinder;
+import com.exactpro.th2.infraoperator.spec.strategy.resfinder.dictionary.DictionaryResourceFinder;
 import com.exactpro.th2.infraoperator.util.ExtractUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;

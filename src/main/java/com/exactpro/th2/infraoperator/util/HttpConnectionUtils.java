@@ -32,7 +32,6 @@ public final class HttpConnectionUtils {
         throw new AssertionError();
     }
 
-
     @SneakyThrows
     public static HttpURLConnection getNexusConnection(Image image, NexusAuth nexusAuth) {
 
@@ -45,7 +44,8 @@ public final class HttpConnectionUtils {
     }
 
     private static URL toManifestURL(Image image, NexusAuth nexusAuth) throws MalformedURLException {
-        return new URL(String.format("https://%s/v2/%s/manifests/%s", nexusAuth.getRegistry(), image.getName(), image.getTag()));
+        return new URL(String.format("https://%s/v2/%s/manifests/%s", nexusAuth.getRegistry(),
+                image.getName(), image.getTag()));
     }
 
     public enum HttpMethods {

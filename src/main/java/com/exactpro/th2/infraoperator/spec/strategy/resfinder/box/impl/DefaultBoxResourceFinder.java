@@ -14,11 +14,11 @@
  * limitations under the License.
  */
 
-package com.exactpro.th2.infraoperator.spec.strategy.resFinder.box.impl;
+package com.exactpro.th2.infraoperator.spec.strategy.resfinder.box.impl;
 
 import com.exactpro.th2.infraoperator.model.kubernetes.client.ResourceClient;
 import com.exactpro.th2.infraoperator.spec.Th2CustomResource;
-import com.exactpro.th2.infraoperator.spec.strategy.resFinder.box.BoxResourceFinder;
+import com.exactpro.th2.infraoperator.spec.strategy.resfinder.box.BoxResourceFinder;
 import com.exactpro.th2.infraoperator.util.ExtractUtils;
 import io.fabric8.kubernetes.api.model.KubernetesResourceList;
 import org.jetbrains.annotations.Nullable;
@@ -28,22 +28,20 @@ import java.util.Objects;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
-
 public class DefaultBoxResourceFinder implements BoxResourceFinder {
 
     private List<ResourceClient<Th2CustomResource>> resourceClients;
-
 
     public DefaultBoxResourceFinder(List<ResourceClient<Th2CustomResource>> resourceClients) {
         this.resourceClients = resourceClients;
     }
 
-
     @Nullable
     @Override
     public Th2CustomResource getResource(String name, String namespace, Th2CustomResource... additionalSource) {
         for (var r : additionalSource) {
-            if (Objects.nonNull(r) && ExtractUtils.extractName(r).equals(name) && ExtractUtils.extractNamespace(r).equals(namespace)) {
+            if (Objects.nonNull(r) && ExtractUtils.extractName(r).equals(name)
+                    && ExtractUtils.extractNamespace(r).equals(namespace)) {
                 return r;
             }
         }
@@ -63,7 +61,6 @@ public class DefaultBoxResourceFinder implements BoxResourceFinder {
     public List<Th2CustomResource> getResources(String namespace) {
         return getResources(rc -> rc.getInstance().inNamespace(namespace).list());
     }
-
 
     private List<Th2CustomResource> getResources(
             Function<ResourceClient<Th2CustomResource>, KubernetesResourceList<Th2CustomResource>> listFunction

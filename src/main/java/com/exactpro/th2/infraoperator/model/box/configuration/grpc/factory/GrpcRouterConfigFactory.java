@@ -24,7 +24,7 @@ import com.exactpro.th2.infraoperator.spec.link.relation.pins.PinGRPC;
 import com.exactpro.th2.infraoperator.spec.shared.FilterSpec;
 import com.exactpro.th2.infraoperator.spec.shared.PinSpec;
 import com.exactpro.th2.infraoperator.spec.shared.SchemaConnectionType;
-import com.exactpro.th2.infraoperator.spec.strategy.resFinder.box.BoxResourceFinder;
+import com.exactpro.th2.infraoperator.spec.strategy.resfinder.box.BoxResourceFinder;
 import com.exactpro.th2.infraoperator.util.SchemeMappingUtils;
 import com.exactpro.th2.infraoperator.util.Strings;
 import lombok.AllArgsConstructor;

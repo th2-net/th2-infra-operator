@@ -32,14 +32,14 @@ import java.util.Map;
 public final class ExtractUtils {
 
     private static final Logger logger = LoggerFactory.getLogger(ExtractUtils.class);
-    private static final String KEY_SOURCE_HASH = "th2.exactpro.com/source-hash";
-    public static final String REFRESH_TOKEN_ALIAS = "refresh-token";
 
+    private static final String KEY_SOURCE_HASH = "th2.exactpro.com/source-hash";
+
+    public static final String REFRESH_TOKEN_ALIAS = "refresh-token";
 
     private ExtractUtils() {
         throw new AssertionError();
     }
-
 
     public static String extractFullName(HasMetadata obj) {
         return extractNamespace(obj) + "." + extractName(obj);
@@ -107,19 +107,22 @@ public final class ExtractUtils {
     public static String refreshToken(HasMetadata res) {
 
         var metadata = res.getMetadata();
-        if (metadata == null)
+        if (metadata == null) {
             return null;
+        }
 
-        var annotations= metadata.getAnnotations();
-        if (annotations != null)
+        var annotations = metadata.getAnnotations();
+        if (annotations != null) {
             return annotations.get(REFRESH_TOKEN_ALIAS);
+        }
         return null;
     }
 
     private static String sourceHash(HasMetadata res) {
 
-        if (res.getMetadata() != null && res.getMetadata().getAnnotations() != null)
+        if (res.getMetadata() != null && res.getMetadata().getAnnotations() != null) {
             return res.getMetadata().getAnnotations().get(KEY_SOURCE_HASH);
+        }
         return null;
     }
 
@@ -129,8 +132,9 @@ public final class ExtractUtils {
         }
 
         String hash = ExtractUtils.sourceHash(res);
-        if (hash != null)
+        if (hash != null) {
             return "[" + hash.substring(0, 8) + "]";
+        }
         return "";
     }
 

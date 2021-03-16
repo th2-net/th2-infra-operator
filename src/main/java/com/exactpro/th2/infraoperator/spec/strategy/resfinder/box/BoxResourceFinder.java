@@ -14,10 +14,10 @@
  * limitations under the License.
  */
 
-package com.exactpro.th2.infraoperator.spec.strategy.resFinder.box;
+package com.exactpro.th2.infraoperator.spec.strategy.resfinder.box;
 
 import com.exactpro.th2.infraoperator.spec.Th2CustomResource;
-import com.exactpro.th2.infraoperator.spec.strategy.resFinder.ResourceFinder;
+import com.exactpro.th2.infraoperator.spec.strategy.resfinder.ResourceFinder;
 
 public interface BoxResourceFinder extends ResourceFinder<Th2CustomResource> {
 
