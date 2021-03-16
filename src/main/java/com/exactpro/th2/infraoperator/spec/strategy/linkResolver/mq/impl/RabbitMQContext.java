@@ -22,6 +22,7 @@ import com.exactpro.th2.infraoperator.configuration.RabbitMQManagementConfig;
 import com.exactpro.th2.infraoperator.configuration.RabbitMQNamespacePermissions;
 import com.exactpro.th2.infraoperator.model.kubernetes.configmaps.ConfigMaps;
 import com.exactpro.th2.infraoperator.spec.shared.PinSettings;
+import com.exactpro.th2.infraoperator.spec.strategy.redeploy.NonTerminalException;
 import com.exactpro.th2.infraoperator.util.Strings;
 import com.rabbitmq.client.Channel;
 import com.rabbitmq.client.Connection;
@@ -82,7 +83,7 @@ public final class RabbitMQContext {
 
         RabbitMQConfig rabbitMQConfig = ConfigMaps.INSTANCE.getRabbitMQConfig4Namespace(namespace);
         if (rabbitMQConfig == null) {
-            throw new RuntimeException(String.format("RabbitMQ configuration for namespace \"%s\" is not available", namespace));
+            throw new NonTerminalException(String.format("RabbitMQ configuration for namespace \"%s\" is not available", namespace));
         }
         return rabbitMQConfig;
     }
@@ -181,7 +182,7 @@ public final class RabbitMQContext {
         } catch (Exception e) {
             String message = "Exception setting up vHost";
             logger.error(message, e);
-            throw new RuntimeException(message, e);
+            throw new NonTerminalException(message, e);
         }
     }
 
@@ -235,7 +236,7 @@ public final class RabbitMQContext {
         } catch (Exception e) {
             String message = "Exception while fetching queues";
             logger.error(message, e);
-            throw new RuntimeException(message, e);
+            throw new NonTerminalException(message, e);
         }
     }
 
@@ -256,7 +257,9 @@ public final class RabbitMQContext {
                 this.channel = connection.createChannel();
             } catch (Exception e) {
                 close();
-                throw new RuntimeException(e);
+                String message = "Exception while creating rabbitMq channel";
+                logger.error(message, e);
+                throw new NonTerminalException(message, e);
             }
         }
 
