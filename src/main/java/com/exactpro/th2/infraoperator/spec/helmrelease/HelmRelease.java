@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package com.exactpro.th2.infraoperator.spec.helmRelease;
+package com.exactpro.th2.infraoperator.spec.helmrelease;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
@@ -33,7 +33,6 @@ import java.util.Objects;
 
 import static com.exactpro.th2.infraoperator.util.JsonUtils.YAML_READER;
 
-
 @SuppressWarnings("unchecked")
 @JsonIgnoreProperties(ignoreUnknown = true)
 @Group("helm.fluxcd.io")
@@ -42,7 +41,6 @@ import static com.exactpro.th2.infraoperator.util.JsonUtils.YAML_READER;
 public class HelmRelease extends CustomResource<InstantiableMap, InstantiableMap> implements Namespaced {
 
     private MergePutter mergePutter = new MergePutter();
-
 
     @SneakyThrows
     public static HelmRelease of(File customResourceFile) {
@@ -56,7 +54,6 @@ public class HelmRelease extends CustomResource<InstantiableMap, InstantiableMap
     public static HelmRelease of(Path customResourcePath) {
         return of(customResourcePath.toFile());
     }
-
 
     @JsonIgnore
     public Map<String, Object> getValuesSection() {
@@ -72,7 +69,6 @@ public class HelmRelease extends CustomResource<InstantiableMap, InstantiableMap
 
         return values;
     }
-
 
     public void removeSpecProp(String key) {
         getSpec().remove(key);
@@ -105,7 +101,6 @@ public class HelmRelease extends CustomResource<InstantiableMap, InstantiableMap
     public void mergeSpecProp(int depth, Map<String, Object> values) {
         mergePutter.putValue(depth, getSpec(), values);
     }
-
 
     public void removeValue(String key) {
         getValuesSection().remove(key);
@@ -143,7 +138,6 @@ public class HelmRelease extends CustomResource<InstantiableMap, InstantiableMap
         return "HelmRelease(super=" + super.toString() + ")";
     }
 
-
     private static class MergePutter {
 
         public void putValue(Map<String, Object> target, String key, Object value) {
@@ -166,13 +160,12 @@ public class HelmRelease extends CustomResource<InstantiableMap, InstantiableMap
             mergePut(depth, target, values);
         }
 
-
         private void mergePut(int depth, Map<String, Object> firstMap, Map<String, Object> secondMap) {
             mergePutRec(depth, 0, firstMap, secondMap);
         }
 
-        private void mergePutRec(int depth, int currentDepth, Map<String, Object> firstMap, Map<String, Object> secondMap) {
-
+        private void mergePutRec(int depth, int currentDepth, Map<String, Object> firstMap,
+                                 Map<String, Object> secondMap) {
             if (firstMap.isEmpty()) {
                 firstMap.putAll(secondMap);
                 return;
@@ -184,14 +177,14 @@ public class HelmRelease extends CustomResource<InstantiableMap, InstantiableMap
                 var firstKey = firstEntry.getKey();
                 var firstValue = firstEntry.getValue();
 
-
                 for (var secEntry : secondMap.entrySet()) {
                     var secKey = secEntry.getKey();
                     var secValue = secEntry.getValue();
 
                     if (firstKey.equals(secKey)) {
                         if (firstValue instanceof Map && secValue instanceof Map && depth > currentDepth) {
-                            mergePutRec(depth, ++currentDepth, (Map<String, Object>) firstValue, (Map<String, Object>) secValue);
+                            mergePutRec(depth, ++currentDepth, (Map<String, Object>) firstValue,
+                                    (Map<String, Object>) secValue);
                         } else {
                             firstMap.put(secKey, secValue);
                         }
@@ -199,15 +192,11 @@ public class HelmRelease extends CustomResource<InstantiableMap, InstantiableMap
                         firstMap.put(secKey, secValue);
                     }
                 }
-
             }
         }
 
         private Map<String, Object> mutable(Map<String, Object> map) {
             return new LinkedHashMap<>(map);
         }
-
     }
-
 }
-

@@ -1,6 +1,6 @@
 package com.exactpro.th2.infraoperator.operator;
 
-import com.exactpro.th2.infraoperator.spec.helmRelease.HelmRelease;
+import com.exactpro.th2.infraoperator.spec.helmrelease.HelmRelease;
 import org.junit.jupiter.api.Test;
 
 import java.util.Collections;

@@ -29,8 +29,7 @@ public class Th2Box extends Th2CustomResource {
 
     private Th2BoxSpec spec;
 
-    public Th2Box() {
-    }
+    public Th2Box() { }
 
     public Th2BoxSpec getSpec() {
         return this.spec;
@@ -42,14 +41,20 @@ public class Th2Box extends Th2CustomResource {
     }
 
     public boolean equals(final Object o) {
-        if (o == this) return true;
-        if (!(o instanceof Th2Box)) return false;
+        if (o == this) {
+            return true;
+        }
+        if (!(o instanceof Th2Box)) {
+            return false;
+        }
         final Th2Box other = (Th2Box) o;
-        if (!super.equals(o)) return false;
+        if (!super.equals(o)) {
+            return false;
+        }
         final Object this$spec = this.getSpec();
         final Object other$spec = other.getSpec();
-        if (this$spec == null ? other$spec != null : !this$spec.equals(other$spec)) return false;
-        return true;
+
+        return this$spec == null ? other$spec == null : this$spec.equals(other$spec);
     }
 
     public int hashCode() {

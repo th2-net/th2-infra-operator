@@ -19,7 +19,7 @@ package com.exactpro.th2.infraoperator.util;
 import com.exactpro.th2.infraoperator.model.box.configuration.grpc.GrpcEndpointMapping;
 import com.exactpro.th2.infraoperator.model.box.configuration.grpc.GrpcExternalEndpointMapping;
 import com.exactpro.th2.infraoperator.spec.Th2CustomResource;
-import com.exactpro.th2.infraoperator.spec.helmRelease.HelmRelease;
+import com.exactpro.th2.infraoperator.spec.helmrelease.HelmRelease;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.JsonNode;
 

@@ -24,13 +24,12 @@ public abstract class Th2CustomResource extends CustomResource implements Namesp
 
     protected StatusSpec status = new StatusSpec();
 
-    public Th2CustomResource() {
-    }
+    public Th2CustomResource() { }
 
     public abstract Th2Spec getSpec();
 
     @Override
-    public void setSpec (Object spec) {
+    public void setSpec(Object spec) {
         throw new AssertionError("Setting spec with Object argument");
     }
 
@@ -43,14 +42,20 @@ public abstract class Th2CustomResource extends CustomResource implements Namesp
     }
 
     public boolean equals(final Object o) {
-        if (o == this) return true;
-        if (!(o instanceof Th2CustomResource)) return false;
+        if (o == this) {
+            return true;
+        }
+        if (!(o instanceof Th2CustomResource)) {
+            return false;
+        }
         final Th2CustomResource other = (Th2CustomResource) o;
-        if (!super.equals(o)) return false;
+        if (!super.equals(o)) {
+            return false;
+        }
         final Object this$status = this.getStatus();
         final Object other$status = other.getStatus();
-        if (this$status == null ? other$status != null : !this$status.equals(other$status)) return false;
-        return true;
+
+        return this$status == null ? other$status == null : this$status.equals(other$status);
     }
 
     public int hashCode() {

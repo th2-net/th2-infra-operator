@@ -14,9 +14,9 @@
  * limitations under the License.
  */
 
-package com.exactpro.th2.infraoperator.spec.helmRelease;
+package com.exactpro.th2.infraoperator.spec.helmrelease;
 
 import java.util.HashMap;
 
-class InstantiableMap extends HashMap<String, Object>{
+class InstantiableMap extends HashMap<String, Object> {
 }

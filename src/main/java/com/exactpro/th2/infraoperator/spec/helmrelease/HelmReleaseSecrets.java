@@ -14,13 +14,14 @@
  * limitations under the License.
  */
 
-package com.exactpro.th2.infraoperator.spec.helmRelease;
+package com.exactpro.th2.infraoperator.spec.helmrelease;
 
 import com.exactpro.th2.infraoperator.configuration.SchemaSecrets;
 
 public class HelmReleaseSecrets {
 
     private String rabbitMQ;
+
     private String cassandra;
 
     public HelmReleaseSecrets(SchemaSecrets schemaSecrets) {
