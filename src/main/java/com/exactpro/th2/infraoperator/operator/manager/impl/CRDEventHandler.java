@@ -1,3 +1,19 @@
+/*
+ * Copyright 2020-2021 Exactpro (Exactpro Systems Limited)
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
 package com.exactpro.th2.infraoperator.operator.manager.impl;
 
 import com.exactpro.th2.infraoperator.util.CustomResourceUtils;
@@ -16,10 +32,9 @@ public
 class CRDEventHandler implements ResourceEventHandler<CustomResourceDefinition> {
     private static final Logger logger = LoggerFactory.getLogger(CRDEventHandler.class);
 
-    public static CRDEventHandler newInstance (SharedInformerFactory sharedInformerFactory) {
+    public static CRDEventHandler newInstance(SharedInformerFactory sharedInformerFactory) {
         SharedIndexInformer<CustomResourceDefinition> crdInformer = sharedInformerFactory.sharedIndexInformerFor(
-                CustomResourceDefinition.class,
-                RESYNC_TIME);
+                CustomResourceDefinition.class, RESYNC_TIME);
 
         List<String> crdNames = List.of(
                 "th2boxes.th2.exactpro.com",
@@ -34,7 +49,7 @@ class CRDEventHandler implements ResourceEventHandler<CustomResourceDefinition> 
         return res;
     }
 
-    private CRDEventHandler (List<String> crdNames) {
+    private CRDEventHandler(List<String> crdNames) {
         if (crdNames == null) {
             logger.error("Can't initialize CRDResourceEventHandler, crdNames is null");
             return;
@@ -45,7 +60,7 @@ class CRDEventHandler implements ResourceEventHandler<CustomResourceDefinition> 
 
     private List<String> crdNames;
 
-    private boolean notInCrdNames (String crdName) {
+    private boolean notInCrdNames(String crdName) {
         return !(crdNames.stream().anyMatch(el -> el.equals(crdName)));
     }
 
@@ -61,21 +76,24 @@ class CRDEventHandler implements ResourceEventHandler<CustomResourceDefinition> 
     @Override
     public void onUpdate(CustomResourceDefinition oldCrd, CustomResourceDefinition newCrd) {
         if (notInCrdNames(oldCrd.getMetadata().getName())
-                || oldCrd.getMetadata().getResourceVersion().equals(newCrd.getMetadata().getResourceVersion()))
+                || oldCrd.getMetadata().getResourceVersion().equals(newCrd.getMetadata().getResourceVersion())) {
             return;
+        }
 
-        logger.info("CRD old ResourceVersion {}, new ResourceVersion {}", oldCrd.getMetadata().getResourceVersion(), newCrd.getMetadata().getResourceVersion());
-        logger.error("Modification detected for CustomResourceDefinition \"{}\". going to shutdown...", oldCrd.getMetadata().getName());
+        logger.info("CRD old ResourceVersion {}, new ResourceVersion {}",
+                oldCrd.getMetadata().getResourceVersion(), newCrd.getMetadata().getResourceVersion());
+        logger.error("Modification detected for CustomResourceDefinition \"{}\". going to shutdown...",
+                oldCrd.getMetadata().getName());
         System.exit(1);
     }
 
     @Override
     public void onDelete(CustomResourceDefinition crd, boolean deletedFinalStateUnknown) {
-        if (notInCrdNames(crd.getMetadata().getName()))
+        if (notInCrdNames(crd.getMetadata().getName())) {
             return;
-
-        logger.error("Modification detected for CustomResourceDefinition \"{}\". going to shutdown...", crd.getMetadata().getName());
+        }
+        logger.error("Modification detected for CustomResourceDefinition \"{}\". going to shutdown...",
+                crd.getMetadata().getName());
         System.exit(1);
     }
 }
-

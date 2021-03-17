@@ -29,9 +29,10 @@ import java.util.Set;
 public final class QueueConfiguration {
 
     private QueueDescription queue;
-    private Set<String> attributes;
-    private Set<RouterFilterConfiguration> filters;
 
+    private Set<String> attributes;
+
+    private Set<RouterFilterConfiguration> filters;
 
     public QueueConfiguration(QueueDescription queue, Set<String> attributes, Set<RouterFilterConfiguration> filters) {
         this.queue = queue;
@@ -39,43 +40,39 @@ public final class QueueConfiguration {
         this.filters = filters;
     }
 
-
     @JsonProperty("queue")
     public String getQueueName() {
         return this.queue.getQueueName().toString();
     }
-
 
     @JsonProperty("name")
     public String getRouterKeyName() {
         return this.queue.getRoutingKey().toString();
     }
 
-
     @JsonProperty("exchange")
     public String getExchange() {
         return this.queue.getExchange();
     }
-
 
     @JsonProperty("attributes")
     public Set<String> getAttributes() {
         return this.attributes;
     }
 
-
     @JsonProperty("filters")
     public Set<RouterFilterConfiguration> getFilters() {
         return this.filters;
     }
 
-
     @Override
     public boolean equals(final Object o) {
-        if (o == this)
+        if (o == this) {
             return true;
-        if (!(o instanceof QueueConfiguration))
+        }
+        if (!(o instanceof QueueConfiguration)) {
             return false;
+        }
 
         final QueueConfiguration other = (QueueConfiguration) o;
         return Objects.equals(this.attributes, other.attributes) &&
@@ -83,23 +80,22 @@ public final class QueueConfiguration {
                 Objects.equals(this.queue, other.queue);
     }
 
-
     public Builder builder() {
         return new Builder();
     }
 
-
     public static class Builder {
         private String queueName;
+
         private String routingkey;
+
         private String exchange;
 
         private Set<String> attributes;
+
         private Set<RouterFilterConfiguration> filters;
 
-        Builder() {
-        }
-
+        Builder() { }
 
         @JsonProperty("queue")
         public Builder queueName(String queueName) {
@@ -131,16 +127,14 @@ public final class QueueConfiguration {
             return this;
         }
 
-
         public QueueConfiguration build() {
             return new QueueConfiguration(
                     new QueueDescription(
-                        QueueName.fromString(queueName),
-                        RoutingKeyName.fromString(routingkey),
-                        exchange
+                            QueueName.fromString(queueName),
+                            RoutingKeyName.fromString(routingkey),
+                            exchange
                     ),
-                    attributes,
-                    filters);
+                    attributes, filters);
         }
     }
 }

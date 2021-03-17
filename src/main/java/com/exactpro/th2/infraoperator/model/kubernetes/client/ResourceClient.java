@@ -21,7 +21,6 @@ import io.fabric8.kubernetes.client.CustomResource;
 import io.fabric8.kubernetes.client.dsl.MixedOperation;
 import io.fabric8.kubernetes.client.dsl.Resource;
 
-
 /**
  * Provides information about the client of a custom resource.
  *
@@ -37,6 +36,6 @@ public interface ResourceClient<CR extends CustomResource> {
     /**
      * @return kubernetes custom client of custom resource
      */
-    MixedOperation<CR, ? extends KubernetesResourceList<CR>,  ? extends Resource<CR>> getInstance();
+    MixedOperation<CR, ? extends KubernetesResourceList<CR>, ? extends Resource<CR>> getInstance();
 
 }

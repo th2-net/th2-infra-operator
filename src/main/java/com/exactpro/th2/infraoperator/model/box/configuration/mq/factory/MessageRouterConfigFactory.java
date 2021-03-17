@@ -73,7 +73,6 @@ public class MessageRouterConfigFactory {
         return MessageRouterConfiguration.builder().queues(queues).build();
     }
 
-
     private Set<RouterFilterConfiguration> specToConfigFilters(Set<FilterSpec> filterSpecs) {
         return filterSpecs.stream()
                 .map(filterSpec ->
@@ -84,13 +83,13 @@ public class MessageRouterConfigFactory {
                 ).collect(Collectors.toSet());
     }
 
-
     private QueueDescription createQueueBunch(String namespace, PinMQ to, PinMQ from) {
 
         var rabbitMQConfig = ConfigMaps.INSTANCE.getRabbitMQConfig4Namespace(namespace);
 
-        if (rabbitMQConfig == null){
-            throw new NonTerminalException(String.format("RabbitMQ configuration for namespace \"%s\" is not available", namespace));
+        if (rabbitMQConfig == null) {
+            throw new NonTerminalException(
+                    String.format("RabbitMQ configuration for namespace \"%s\" is not available", namespace));
         }
 
         QueueName queue = (to == null) ? QueueName.EMPTY : new QueueName(namespace, to);

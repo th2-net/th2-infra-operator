@@ -26,16 +26,19 @@ import lombok.Data;
 public class ConnectorQueueConfiguration {
 
     private String exchangeName;
+
     private String inQueueName;
+
     private String inRawQueueName;
+
     private String outQueueName;
+
     private String outRawQueueName;
 
+    protected ConnectorQueueConfiguration() { }
 
-    protected ConnectorQueueConfiguration() {
-    }
-
-    protected ConnectorQueueConfiguration(String exchangeName, String inQueueName, String inRawQueueName, String outQueueName, String outRawQueueName) {
+    protected ConnectorQueueConfiguration(String exchangeName, String inQueueName, String inRawQueueName,
+                                          String outQueueName, String outRawQueueName) {
         this.exchangeName = exchangeName;
         this.inQueueName = inQueueName;
         this.inRawQueueName = inRawQueueName;

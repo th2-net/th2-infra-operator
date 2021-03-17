@@ -22,71 +22,64 @@ import com.exactpro.th2.infraoperator.spec.link.relation.pins.PinMQ;
 
 import java.util.Objects;
 
-
 public final class EnqueuedLink implements PinCoupling {
 
     private QueueDescription queueDescription;
-    private PinCouplingMQ pinCoupling;
 
+    private PinCouplingMQ pinCoupling;
 
     public EnqueuedLink(PinCouplingMQ pinCoupling, QueueDescription queueDescription) {
         this.pinCoupling = pinCoupling;
         this.queueDescription = queueDescription;
     }
 
-
     @Override
     public PinMQ getFrom() {
         return pinCoupling.getFrom();
     }
-
 
     @Override
     public PinMQ getTo() {
         return pinCoupling.getTo();
     }
 
-
     public String getName() {
         return pinCoupling.getName();
     }
-
 
     @Override
     public String getId() {
         return pinCoupling.getId();
     }
 
-
     public QueueDescription getQueueDescription() {
         return this.queueDescription;
     }
-
 
     public PinCouplingMQ getPinCoupling() {
         return this.pinCoupling;
     }
 
-
     @Override
     public boolean equals(final Object o) {
-        if (this == o)
+        if (this == o) {
             return true;
-        if (! (o instanceof EnqueuedLink))
+        }
+        if (!(o instanceof EnqueuedLink)) {
             return false;
+        }
         return Objects.equals(this.queueDescription, ((EnqueuedLink) o).queueDescription) &&
                 Objects.equals(this.pinCoupling, ((EnqueuedLink) o).pinCoupling);
     }
-
 
     @Override
     public int hashCode() {
         throw new AssertionError("method not implemented");
     }
 
-
     @Override
     public String toString() {
-        return String.format("%s[%s:%s]", this.getClass().getName(), queueDescription.toString(), pinCoupling.toString());
+        return String.format("%s[%s:%s]", this.getClass().getName(),
+                queueDescription.toString(), pinCoupling.toString());
     }
 }

@@ -29,10 +29,9 @@ public class QueueNameTests {
         Assertions.assertEquals("link[namespace:box:pin]", QueueName.format("namespace", "box", "pin"));
     }
 
-
     @Test
     public void invalidQueueNameTest() {
-        String[] tests = new String[] {
+        String[] tests = new String[]{
                 "tes",
                 "link",
                 "link[]",
@@ -50,15 +49,15 @@ public class QueueNameTests {
                 "link [q:wds:0]"
         };
 
-        for (String test: tests)
+        for (String test : tests) {
             assertEquals(null, QueueName.fromString(test));
+        }
     }
-
 
     @Test
     public void validQueueNameTest() {
 
-        String[] tests = new String[] {
+        String[] tests = new String[]{
                 "",
                 "link[abc:030:test]",
                 "link[name-space:box:pin]",
@@ -68,7 +67,7 @@ public class QueueNameTests {
                 "link[0:1:ab]"
         };
 
-        for (String test: tests) {
+        for (String test : tests) {
             var res = QueueName.fromString(test);
             assertEquals(test, res == null ? null : res.toString());
         }

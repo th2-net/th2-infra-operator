@@ -33,8 +33,7 @@ public final class NexusAuth {
 
     private String password;
 
-
-    public String getEncoded(){
+    public String getEncoded() {
         return Base64.getEncoder().encodeToString(String.format("%s:%s", login, password).getBytes(UTF_8));
     }
 }

@@ -30,14 +30,13 @@ public class MstoreHelmTh2Op extends StoreHelmTh2Op<Th2Mstore> {
 
     private final MstoreClient mstoreClient;
 
-
     public MstoreHelmTh2Op(HelmOperatorContext.Builder<?, ?> builder) {
         super(builder);
         this.mstoreClient = new MstoreClient(builder.getClient());
     }
 
     @Override
-    public SharedIndexInformer<Th2Mstore> generateInformerFromFactory (SharedInformerFactory factory) {
+    public SharedIndexInformer<Th2Mstore> generateInformerFromFactory(SharedInformerFactory factory) {
         return factory.sharedIndexInformerForCustomResource(
                 Th2Mstore.class,
                 CustomResourceUtils.RESYNC_TIME);
@@ -48,7 +47,6 @@ public class MstoreHelmTh2Op extends StoreHelmTh2Op<Th2Mstore> {
         return mstoreClient;
     }
 
-
     @Override
     protected String getKubObjDefPath(Th2Mstore resource) {
         return "/Th2Mstore-HelmRelease.yml";
@@ -58,7 +56,6 @@ public class MstoreHelmTh2Op extends StoreHelmTh2Op<Th2Mstore> {
     protected String getStorageName() {
         return MESSAGE_STORAGE_BOX_ALIAS;
     }
-
 
     public static Builder builder(KubernetesClient client) {
         return new Builder(client);

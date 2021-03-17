@@ -1,3 +1,19 @@
+/*
+ * Copyright 2020-2021 Exactpro (Exactpro Systems Limited)
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
 package com.exactpro.th2.infraoperator.operator.manager.impl;
 
 import com.exactpro.th2.infraoperator.OperatorState;
@@ -29,8 +45,9 @@ public class ConfigMapEventHandler implements Watcher<ConfigMap> {
     private static final Logger logger = LoggerFactory.getLogger(ConfigMapEventHandler.class);
 
     private KubernetesClient client;
+
     public KubernetesClient getClient() {
-        return  client;
+        return client;
     }
 
     public static ConfigMapEventHandler newInstance(SharedInformerFactory sharedInformerFactory,
@@ -47,7 +64,6 @@ public class ConfigMapEventHandler implements Watcher<ConfigMap> {
         return res;
     }
 
-
     private ConfigMapEventHandler(KubernetesClient client) {
         this.client = client;
     }
@@ -59,8 +75,9 @@ public class ConfigMapEventHandler implements Watcher<ConfigMap> {
         String namespace = resource.getMetadata().getNamespace();
         String configMapName = resource.getMetadata().getName();
 
-        if (!(configMapName.equals(OperatorConfig.INSTANCE.getRabbitMQConfigMapName())))
+        if (!(configMapName.equals(OperatorConfig.INSTANCE.getRabbitMQConfigMapName()))) {
             return;
+        }
         try {
             logger.info("Processing {} event for \"{}\"", action, resourceLabel);
 
@@ -91,8 +108,9 @@ public class ConfigMapEventHandler implements Watcher<ConfigMap> {
                                 namespace);
                         int refreshedBoxesCount = DefaultWatchManager.getInstance().refreshBoxes(namespace);
                         logger.info("{} box-definition(s) have been updated", refreshedBoxesCount);
-                    } else
+                    } else {
                         logger.info("RabbitMQ ConfigMap data hasn't changed");
+                    }
                 } finally {
                     lock.unlock();
                 }
@@ -107,27 +125,25 @@ public class ConfigMapEventHandler implements Watcher<ConfigMap> {
         throw new AssertionError("This method should not be called");
     }
 
-
     private String readRabbitMQPasswordForSchema(String namespace, String secretName) throws Exception {
 
         Secret secret = client.secrets().inNamespace(namespace).withName(secretName).get();
-        if (secret == null)
+        if (secret == null) {
             throw new Exception(String.format("Secret not found \"%s\"",
                     annotationFor(namespace, "Secret", secretName)));
-        if (secret.getData() == null)
-            throw new Exception(String.format("Invalid secret \"%s\". No data",
-                    annotationFor(secret)));
+        }
+        if (secret.getData() == null) {
+            throw new Exception(String.format("Invalid secret \"%s\". No data", annotationFor(secret)));
+        }
 
         String password = secret.getData().get(OperatorConfig.RABBITMQ_SECRET_PASSWORD_KEY);
-        if (password == null)
+        if (password == null) {
             throw new Exception(String.format("Invalid secret \"%s\". No password was found with key \"%s\""
-                    , annotationFor(secret)
-                    , OperatorConfig.RABBITMQ_SECRET_PASSWORD_KEY));
-
-        if (secret.getType().equals(SECRET_TYPE_OPAQUE))
+                    , annotationFor(secret), OperatorConfig.RABBITMQ_SECRET_PASSWORD_KEY));
+        }
+        if (secret.getType().equals(SECRET_TYPE_OPAQUE)) {
             password = new String(Base64.getDecoder().decode(password.getBytes()));
+        }
         return password;
     }
-
 }
-

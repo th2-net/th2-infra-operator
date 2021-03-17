@@ -30,14 +30,13 @@ public class BoxHelmTh2Op extends GenericHelmTh2Op<Th2Box> {
 
     private final BoxClient boxClient;
 
-
     public BoxHelmTh2Op(HelmOperatorContext.Builder<?, ?> builder) {
         super(builder);
         this.boxClient = new BoxClient(builder.getClient());
     }
 
     @Override
-    public SharedIndexInformer<Th2Box> generateInformerFromFactory (SharedInformerFactory factory) {
+    public SharedIndexInformer<Th2Box> generateInformerFromFactory(SharedInformerFactory factory) {
         return factory.sharedIndexInformerForCustomResource(
                 Th2Box.class,
                 CustomResourceUtils.RESYNC_TIME);
@@ -48,12 +47,10 @@ public class BoxHelmTh2Op extends GenericHelmTh2Op<Th2Box> {
         return boxClient;
     }
 
-
     @Override
     protected String getKubObjDefPath(Th2Box resource) {
         return "/Th2Box-HelmRelease.yml";
     }
-
 
     public static Builder builder(KubernetesClient client) {
         return new Builder(client);

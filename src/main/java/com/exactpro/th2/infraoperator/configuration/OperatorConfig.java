@@ -34,10 +34,13 @@ public enum OperatorConfig {
     INSTANCE;
 
     public static final String RABBITMQ_SECRET_PASSWORD_KEY = "rabbitmq-password";
+
     public static final String RABBITMQ_SECRET_USERNAME_KEY = "rabbitmq-username";
+
     public static final String CONFIG_FILE_SYSTEM_PROPERTY = "infra.operator.config";
 
     private static final String CONFIG_FILE = "/var/th2/config/infra-operator.yml";
+
     static final String DEFAULT_RABBITMQ_CONFIGMAP_NAME = "rabbit-mq-app-config";
 
     private static volatile Configuration configuration;
@@ -71,20 +74,21 @@ public enum OperatorConfig {
     }
 
     private synchronized Configuration getConfig() {
-        if (configuration == null)
+        if (configuration == null) {
             configuration = loadConfiguration();
+        }
         return configuration;
     }
 
     Configuration loadConfiguration() {
         try (var in = new FileInputStream(System.getProperty(CONFIG_FILE_SYSTEM_PROPERTY, CONFIG_FILE))) {
             StringSubstitutor stringSubstitutor =
-                new StringSubstitutor(StringLookupFactory.INSTANCE.environmentVariableStringLookup());
+                    new StringSubstitutor(StringLookupFactory.INSTANCE.environmentVariableStringLookup());
             String content = stringSubstitutor.replace(new String(in.readAllBytes()));
             return new ObjectMapper(new YAMLFactory()).readValue(content, Configuration.class);
         } catch (IOException e) {
             throw new IllegalStateException(
-                "Exception reading configuration " + Configuration.class.getSimpleName(), e);
+                    "Exception reading configuration " + Configuration.class.getSimpleName(), e);
         }
     }
 
@@ -93,12 +97,18 @@ public enum OperatorConfig {
 
         @JsonProperty("chart")
         private ChartConfig chartConfig;
+
         @JsonProperty("rabbitMQManagement")
         private RabbitMQManagementConfig rabbitMQManagementConfig;
+
         private SchemaSecrets schemaSecrets;
+
         private List<String> namespacePrefixes;
+
         private String rabbitMQConfigMapName;
+
         private String k8sUrl;
+
         private String ingressHost;
 
         public Configuration() {
@@ -115,8 +125,9 @@ public enum OperatorConfig {
         }
 
         public void setChartConfig(ChartConfig chartConfig) {
-            if (chartConfig != null)
+            if (chartConfig != null) {
                 this.chartConfig = chartConfig;
+            }
         }
 
         public RabbitMQManagementConfig getRabbitMQManagementConfig() {
@@ -124,8 +135,9 @@ public enum OperatorConfig {
         }
 
         public void setRabbitMQManagementConfig(RabbitMQManagementConfig rabbitMQManagementConfig) {
-            if (rabbitMQManagementConfig != null)
+            if (rabbitMQManagementConfig != null) {
                 this.rabbitMQManagementConfig = rabbitMQManagementConfig;
+            }
         }
 
         public SchemaSecrets getSchemaSecrets() {
@@ -133,8 +145,9 @@ public enum OperatorConfig {
         }
 
         public void setSchemaSecrets(SchemaSecrets schemaSecrets) {
-            if (schemaSecrets != null)
+            if (schemaSecrets != null) {
                 this.schemaSecrets = schemaSecrets;
+            }
         }
 
         public List<String> getNamespacePrefixes() {
@@ -142,8 +155,9 @@ public enum OperatorConfig {
         }
 
         public void setNamespacePrefixes(List<String> namespacePrefixes) {
-            if (namespacePrefixes != null)
+            if (namespacePrefixes != null) {
                 this.namespacePrefixes = namespacePrefixes;
+            }
         }
 
         public String getK8sUrl() {
@@ -163,28 +177,34 @@ public enum OperatorConfig {
         }
 
         public void setRabbitMQConfigMapName(String rabbitMQConfigMapName) {
-            if (rabbitMQConfigMapName != null)
+            if (rabbitMQConfigMapName != null) {
                 this.rabbitMQConfigMapName = rabbitMQConfigMapName;
+            }
         }
 
         @JsonProperty("configMaps")
         public void setRabbitMQConfigMapName(Map<String, String> configMaps) {
-            if (configMaps != null && configMaps.get("rabbitMQ") != null)
+            if (configMaps != null && configMaps.get("rabbitMQ") != null) {
                 this.rabbitMQConfigMapName = configMaps.get("rabbitMQ");
+            }
         }
 
         @Override
         public boolean equals(Object o) {
-            if (this == o) return true;
-            if (!(o instanceof Configuration)) return false;
+            if (this == o) {
+                return true;
+            }
+            if (!(o instanceof Configuration)) {
+                return false;
+            }
             Configuration that = (Configuration) o;
             return Objects.equals(getChartConfig(), that.getChartConfig())
-                && Objects.equals(getRabbitMQManagementConfig(), that.getRabbitMQManagementConfig())
-                && Objects.equals(getSchemaSecrets(), that.getSchemaSecrets())
-                && Objects.equals(getNamespacePrefixes(), that.getNamespacePrefixes())
-                && Objects.equals(getRabbitMQConfigMapName(), that.getRabbitMQConfigMapName())
-                && Objects.equals(getK8sUrl(), that.getK8sUrl())
-                && Objects.equals(getIngressHost(), that.getIngressHost());
+                    && Objects.equals(getRabbitMQManagementConfig(), that.getRabbitMQManagementConfig())
+                    && Objects.equals(getSchemaSecrets(), that.getSchemaSecrets())
+                    && Objects.equals(getNamespacePrefixes(), that.getNamespacePrefixes())
+                    && Objects.equals(getRabbitMQConfigMapName(), that.getRabbitMQConfigMapName())
+                    && Objects.equals(getK8sUrl(), that.getK8sUrl())
+                    && Objects.equals(getIngressHost(), that.getIngressHost());
         }
     }
 }

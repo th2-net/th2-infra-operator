@@ -25,15 +25,17 @@ import lombok.Data;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-
 @Data
 public abstract class DefaultResourceClient<CR extends CustomResource> implements ResourceClient<CR> {
 
     private static final Logger logger = LoggerFactory.getLogger(DefaultResourceClient.class);
 
     private final KubernetesClient client;
+
     private final Class<CR> resourceType;
+
     private final MixedOperation<CR, ? extends KubernetesResourceList<CR>, ? extends Resource<CR>> instance;
+
     private final String crdName;
 
     public DefaultResourceClient(
@@ -47,7 +49,6 @@ public abstract class DefaultResourceClient<CR extends CustomResource> implement
 
         instance = client.customResources(resourceType);
     }
-
 
     @Override
     public Class<CR> getResourceType() {

@@ -24,9 +24,10 @@ import java.util.Objects;
 public final class QueueDescription {
 
     private QueueName queueName;
-    private RoutingKeyName routingKey;
-    private String exchange;
 
+    private RoutingKeyName routingKey;
+
+    private String exchange;
 
     public QueueDescription(QueueName queueName, RoutingKeyName routingKey, String exchange) {
         this.queueName = queueName;
@@ -34,29 +35,26 @@ public final class QueueDescription {
         this.exchange = exchange;
     }
 
-
     public QueueName getQueueName() {
         return this.queueName;
     }
-
 
     public RoutingKeyName getRoutingKey() {
         return this.routingKey;
     }
 
-
     public String getExchange() {
         return this.exchange;
     }
 
-
     @Override
     public boolean equals(final Object o) {
-
-        if (o == this)
+        if (o == this) {
             return true;
-        if (!(o instanceof QueueDescription))
+        }
+        if (!(o instanceof QueueDescription)) {
             return false;
+        }
 
         final QueueDescription other = (QueueDescription) o;
         return Objects.equals(this.queueName, other.queueName) &&
@@ -64,12 +62,10 @@ public final class QueueDescription {
                 Objects.equals(this.routingKey, other.routingKey);
     }
 
-
     @Override
     public int hashCode() {
         throw new AssertionError("method not implemented");
     }
-
 
     @Override
     public String toString() {

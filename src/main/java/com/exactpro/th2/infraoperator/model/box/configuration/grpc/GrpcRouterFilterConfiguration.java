@@ -24,7 +24,6 @@ import lombok.Data;
 
 import java.util.Map;
 
-
 @Data
 @Builder
 @JsonDeserialize
@@ -39,11 +38,10 @@ public class GrpcRouterFilterConfiguration {
     @JsonProperty
     private Map<String, FilterConfiguration> message;
 
+    protected GrpcRouterFilterConfiguration() { }
 
-    protected GrpcRouterFilterConfiguration() {
-    }
-
-    protected GrpcRouterFilterConfiguration(String endpoint, Map<String, FilterConfiguration> metadata, Map<String, FilterConfiguration> message) {
+    protected GrpcRouterFilterConfiguration(String endpoint, Map<String, FilterConfiguration> metadata,
+                                            Map<String, FilterConfiguration> message) {
         this.endpoint = endpoint;
         this.metadata = metadata;
         this.message = message;

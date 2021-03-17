@@ -52,17 +52,20 @@ public class GrpcRouterConfigFactory {
     private static final Logger logger = LoggerFactory.getLogger(GrpcRouterConfigFactory.class);
 
     private static final int DEFAULT_PORT = 8080;
-    private static final int DEFAULT_SERVER_WORKERS_COUNT = 5;
-    private static final String ENDPOINT_ALIAS_SUFFIX = "-endpoint";
-    private static final String SERVICE_CLASS_PLACEHOLDER = "unknown";
-    private static final GrpcServerConfiguration DEFAULT_SERVER = createServer();
-    private final BoxResourceFinder resourceFinder;
 
+    private static final int DEFAULT_SERVER_WORKERS_COUNT = 5;
+
+    private static final String ENDPOINT_ALIAS_SUFFIX = "-endpoint";
+
+    private static final String SERVICE_CLASS_PLACEHOLDER = "unknown";
+
+    private static final GrpcServerConfiguration DEFAULT_SERVER = createServer();
+
+    private final BoxResourceFinder resourceFinder;
 
     public GrpcRouterConfigFactory(BoxResourceFinder resourceFinder) {
         this.resourceFinder = resourceFinder;
     }
-
 
     /**
      * Creates a grpc configuration based on the th2 resource and a list of active links.
@@ -101,19 +104,13 @@ public class GrpcRouterConfigFactory {
         }
 
         return GrpcRouterConfiguration.builder()
-            .serverConfiguration(DEFAULT_SERVER)
-            .services(services)
-            .build();
+                .serverConfiguration(DEFAULT_SERVER)
+                .services(services)
+                .build();
     }
 
-
-    private void createService(
-        PinSpec currentPin,
-        String oppositePinName,
-        String namespace,
-        PinCouplingGRPC link,
-        Map<String, GrpcServiceConfiguration> services
-    ) {
+    private void createService(PinSpec currentPin, String oppositePinName, String namespace,
+                               PinCouplingGRPC link, Map<String, GrpcServiceConfiguration> services) {
         var naturePinState = getNaturePinState(currentPin.getName(), oppositePinName, link);
 
         PinGRPC fromBoxSpec = link.getFrom();
@@ -142,11 +139,8 @@ public class GrpcRouterConfigFactory {
 
     }
 
-    private void resourceToServiceConfig(
-        PinSpec targetPin,
-        PinGRPC targetBoxSpec,
-        Map<String, GrpcServiceConfiguration> services
-    ) {
+    private void resourceToServiceConfig(PinSpec targetPin, PinGRPC targetBoxSpec,
+                                         Map<String, GrpcServiceConfiguration> services) {
         var targetBoxName = getTargetBoxName(targetBoxSpec);
         var serviceClass = targetBoxSpec.getServiceClass();
         var serviceName = getServiceName(serviceClass);
@@ -154,29 +148,29 @@ public class GrpcRouterConfigFactory {
         var config = services.get(serviceName);
 
         Map<String, GrpcEndpointConfiguration> endpoints = new HashMap<>(Map.of(
-            targetBoxName + ENDPOINT_ALIAS_SUFFIX, GrpcEndpointConfiguration.builder()
-                .host(targetBoxName)
-                .port(targetPort)
-                .build()
+                targetBoxName + ENDPOINT_ALIAS_SUFFIX, GrpcEndpointConfiguration.builder()
+                        .host(targetBoxName)
+                        .port(targetPort)
+                        .build()
         ));
 
         if (Objects.isNull(config)) {
 
             config = GrpcServiceConfiguration.builder()
-                .serviceClass(serviceClass)
-                .endpoints(endpoints)
-                .build();
+                    .serviceClass(serviceClass)
+                    .endpoints(endpoints)
+                    .build();
 
             var strategy = targetBoxSpec.getStrategy();
 
             if (strategy.equals(ROBIN.getActualName())) {
                 config.setStrategy(GrpcRobinStrategy.builder()
-                    .endpoints(new ArrayList<>(endpoints.keySet()))
-                    .build());
+                        .endpoints(new ArrayList<>(endpoints.keySet()))
+                        .build());
             } else if (strategy.equals(FILTER.getActualName())) {
                 config.setStrategy(GrpcFilterStrategy.builder()
-                    .filters(schemeFiltersToGrpcFilters(targetBoxName, targetPin.getFilters()))
-                    .build());
+                        .filters(schemeFiltersToGrpcFilters(targetBoxName, targetPin.getFilters()))
+                        .build());
             } else {
                 // should never happen if the existing list of strategies has not been expanded
                 throw new RuntimeException("Unknown routing strategy '" + strategy + "'");
@@ -199,7 +193,6 @@ public class GrpcRouterConfigFactory {
         }
     }
 
-
     private String getServiceName(String serviceClass) {
         if (Strings.isNullOrEmpty(serviceClass)) {
             return SERVICE_CLASS_PLACEHOLDER;
@@ -217,30 +210,31 @@ public class GrpcRouterConfigFactory {
         return new NaturePinState(secondPinName, firstPinName);
     }
 
-    private List<GrpcRouterFilterConfiguration> schemeFiltersToGrpcFilters(String targetHostName, Set<FilterSpec> filterSpecs) {
+    private List<GrpcRouterFilterConfiguration> schemeFiltersToGrpcFilters(String targetHostName,
+                                                                           Set<FilterSpec> filterSpecs) {
         return filterSpecs.stream()
-            .map(filterSpec ->
-                GrpcRouterFilterConfiguration.builder()
-                    .endpoint(targetHostName)
-                    .metadata(SchemeMappingUtils.specToConfigFieldFilters(filterSpec.getMetadataFilter()))
-                    .message(SchemeMappingUtils.specToConfigFieldFilters(filterSpec.getMessageFilter()))
-                    .build()
-            ).collect(Collectors.toList());
+                .map(filterSpec ->
+                        GrpcRouterFilterConfiguration.builder()
+                                .endpoint(targetHostName)
+                                .metadata(SchemeMappingUtils.specToConfigFieldFilters(filterSpec.getMetadataFilter()))
+                                .message(SchemeMappingUtils.specToConfigFieldFilters(filterSpec.getMessageFilter()))
+                                .build()
+                ).collect(Collectors.toList());
     }
-
 
     @Data
     @AllArgsConstructor
     private static class NaturePinState {
         private String fromPinName;
+
         private String toPinName;
     }
 
     private static GrpcServerConfiguration createServer() {
         return GrpcServerConfiguration.builder()
-            .workers(DEFAULT_SERVER_WORKERS_COUNT)
-            .port(DEFAULT_PORT)
-            .build();
+                .workers(DEFAULT_SERVER_WORKERS_COUNT)
+                .port(DEFAULT_PORT)
+                .build();
     }
 
     private String getTargetBoxName(PinGRPC targetBox) {
@@ -262,9 +256,11 @@ public class GrpcRouterConfigFactory {
     private void checkForExternal(Th2CustomResource fromBox, Th2CustomResource toBox, PinGRPC targetBox) {
         Map<String, Object> fromBoxSettings = fromBox.getSpec().getExtendedSettings();
         Map<String, Object> toBoxSettings = toBox.getSpec().getExtendedSettings();
-        logger.debug("checking externalBox or hostNetwork flags for a link [from \"{}\" to \"{}\"]", annotationFor(fromBox), annotationFor(toBox));
+        logger.debug("checking externalBox or hostNetwork flags for a link [from \"{}\" to \"{}\"]",
+                annotationFor(fromBox), annotationFor(toBox));
         if (isExternalBox(toBoxSettings)) {
-            logger.debug("link [from \"{}\" to \"{}\"] needs externalBox gRPC mapping", annotationFor(fromBox), annotationFor(toBox));
+            logger.debug("link [from \"{}\" to \"{}\"] needs externalBox gRPC mapping",
+                    annotationFor(fromBox), annotationFor(toBox));
             GrpcExternalEndpointMapping grpcExternalEndpointMapping = getGrpcExternalMapping(toBoxSettings);
             if (grpcExternalEndpointMapping != null) {
                 targetBox.setPort(Integer.parseInt(grpcExternalEndpointMapping.getTargetPort()));
@@ -275,7 +271,8 @@ public class GrpcRouterConfigFactory {
                 externalBoxEndpointNotFound(toBox);
             }
         } else if (isHostNetwork(fromBoxSettings) || isHostNetwork(toBoxSettings) || isExternalBox(fromBoxSettings)) {
-            logger.debug("link [from \"{}\" to \"{}\"] needs hostNetwork gRPC mapping", annotationFor(fromBox), annotationFor(toBox));
+            logger.debug("link [from \"{}\" to \"{}\"] needs hostNetwork gRPC mapping",
+                    annotationFor(fromBox), annotationFor(toBox));
             GrpcEndpointMapping grpcMapping = getGrpcMapping(toBoxSettings);
             if (grpcMapping != null) {
                 targetBox.setPort(Integer.parseInt(grpcMapping.getNodePort()));
@@ -287,7 +284,8 @@ public class GrpcRouterConfigFactory {
         } else {
             targetBox.setHostNetwork(false);
             targetBox.setExternalBox(false);
-            logger.debug("link [from \"{}\" to \"{}\"] does NOT need external gRPC mapping", annotationFor(fromBox), annotationFor(toBox));
+            logger.debug("link [from \"{}\" to \"{}\"] does NOT need external gRPC mapping",
+                    annotationFor(fromBox), annotationFor(toBox));
         }
     }
 }

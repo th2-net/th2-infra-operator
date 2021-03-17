@@ -1,3 +1,19 @@
+/*
+ * Copyright 2020-2021 Exactpro (Exactpro Systems Limited)
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
 package com.exactpro.th2.infraoperator.operator;
 
 import com.exactpro.th2.infraoperator.spec.helmrelease.HelmRelease;
@@ -14,11 +30,14 @@ import static org.junit.jupiter.api.Assertions.*;
 public class ExtendedSettingsUtilsTest {
 
     public static final String ROOT_PROPERTIES_ALIAS = "component";
-    private static final String EXTENDED_SETTINGS_ALIAS = "extendedSettings";
-    private static final String EXTERNAL_BOX_ALIAS = "externalBox";
-    private static final String SERVICE_ALIAS = "service";
-    private static final String ENABLED_ALIAS = "enabled";
 
+    private static final String EXTENDED_SETTINGS_ALIAS = "extendedSettings";
+
+    private static final String EXTERNAL_BOX_ALIAS = "externalBox";
+
+    private static final String SERVICE_ALIAS = "service";
+
+    private static final String ENABLED_ALIAS = "enabled";
 
     @Test
     void testNull() {
@@ -26,8 +45,10 @@ public class ExtendedSettingsUtilsTest {
         component.put(EXTENDED_SETTINGS_ALIAS, null);
         HelmRelease hr = new HelmRelease();
         hr.mergeValue(ROOT_PROPERTIES_ALIAS, component);
-        assertDoesNotThrow(() -> convertField(hr, Boolean::valueOf, ENABLED_ALIAS, ROOT_PROPERTIES_ALIAS, EXTENDED_SETTINGS_ALIAS, SERVICE_ALIAS));
-        assertDoesNotThrow(() -> convertField(hr, Boolean::valueOf, ENABLED_ALIAS, ROOT_PROPERTIES_ALIAS, EXTENDED_SETTINGS_ALIAS, EXTERNAL_BOX_ALIAS));
+        assertDoesNotThrow(() -> convertField(hr, Boolean::valueOf, ENABLED_ALIAS, ROOT_PROPERTIES_ALIAS,
+                EXTENDED_SETTINGS_ALIAS, SERVICE_ALIAS));
+        assertDoesNotThrow(() -> convertField(hr, Boolean::valueOf, ENABLED_ALIAS, ROOT_PROPERTIES_ALIAS,
+                EXTENDED_SETTINGS_ALIAS, EXTERNAL_BOX_ALIAS));
 
     }
 
@@ -37,8 +58,10 @@ public class ExtendedSettingsUtilsTest {
         component.put(EXTENDED_SETTINGS_ALIAS, Collections.emptyMap());
         HelmRelease hr = new HelmRelease();
         hr.mergeValue(ROOT_PROPERTIES_ALIAS, component);
-        assertDoesNotThrow(() -> convertField(hr, Boolean::valueOf, ENABLED_ALIAS, ROOT_PROPERTIES_ALIAS, EXTENDED_SETTINGS_ALIAS, SERVICE_ALIAS));
-        assertDoesNotThrow(() -> convertField(hr, Boolean::valueOf, ENABLED_ALIAS, ROOT_PROPERTIES_ALIAS, EXTENDED_SETTINGS_ALIAS, EXTERNAL_BOX_ALIAS));
+        assertDoesNotThrow(() -> convertField(hr, Boolean::valueOf, ENABLED_ALIAS, ROOT_PROPERTIES_ALIAS,
+                EXTENDED_SETTINGS_ALIAS, SERVICE_ALIAS));
+        assertDoesNotThrow(() -> convertField(hr, Boolean::valueOf, ENABLED_ALIAS, ROOT_PROPERTIES_ALIAS,
+                EXTENDED_SETTINGS_ALIAS, EXTERNAL_BOX_ALIAS));
     }
 
     @Test
@@ -51,7 +74,8 @@ public class ExtendedSettingsUtilsTest {
         component.put(EXTENDED_SETTINGS_ALIAS, extendedSettings);
         HelmRelease hr = new HelmRelease();
         hr.mergeValue(ROOT_PROPERTIES_ALIAS, component);
-        assertThrows(ClassCastException.class, () -> convertField(hr, Boolean::valueOf, ENABLED_ALIAS, ROOT_PROPERTIES_ALIAS, EXTENDED_SETTINGS_ALIAS, SERVICE_ALIAS));
+        assertThrows(ClassCastException.class, () -> convertField(hr, Boolean::valueOf, ENABLED_ALIAS,
+                ROOT_PROPERTIES_ALIAS, EXTENDED_SETTINGS_ALIAS, SERVICE_ALIAS));
     }
 
     @Test
@@ -65,8 +89,10 @@ public class ExtendedSettingsUtilsTest {
         HelmRelease hr = new HelmRelease();
         hr.mergeValue(ROOT_PROPERTIES_ALIAS, component);
 
-        assertDoesNotThrow(() -> convertField(hr, Boolean::valueOf, ENABLED_ALIAS, ROOT_PROPERTIES_ALIAS, EXTENDED_SETTINGS_ALIAS, SERVICE_ALIAS));
-        assertDoesNotThrow(() -> convertField(hr, Boolean::valueOf, ENABLED_ALIAS, ROOT_PROPERTIES_ALIAS, EXTENDED_SETTINGS_ALIAS, EXTERNAL_BOX_ALIAS));
+        assertDoesNotThrow(() -> convertField(hr, Boolean::valueOf, ENABLED_ALIAS, ROOT_PROPERTIES_ALIAS,
+                EXTENDED_SETTINGS_ALIAS, SERVICE_ALIAS));
+        assertDoesNotThrow(() -> convertField(hr, Boolean::valueOf, ENABLED_ALIAS, ROOT_PROPERTIES_ALIAS,
+                EXTENDED_SETTINGS_ALIAS, EXTERNAL_BOX_ALIAS));
 
         assertTrue(service.get(ENABLED_ALIAS) instanceof Boolean);
         assertTrue((Boolean) service.get(ENABLED_ALIAS));
@@ -85,8 +111,10 @@ public class ExtendedSettingsUtilsTest {
         HelmRelease hr = new HelmRelease();
         hr.mergeValue(ROOT_PROPERTIES_ALIAS, component);
 
-        assertDoesNotThrow(() -> convertField(hr, Boolean::valueOf, ENABLED_ALIAS, ROOT_PROPERTIES_ALIAS, EXTENDED_SETTINGS_ALIAS, SERVICE_ALIAS));
-        assertDoesNotThrow(() -> convertField(hr, Boolean::valueOf, ENABLED_ALIAS, ROOT_PROPERTIES_ALIAS, EXTENDED_SETTINGS_ALIAS, EXTERNAL_BOX_ALIAS));
+        assertDoesNotThrow(() -> convertField(hr, Boolean::valueOf, ENABLED_ALIAS, ROOT_PROPERTIES_ALIAS,
+                EXTENDED_SETTINGS_ALIAS, SERVICE_ALIAS));
+        assertDoesNotThrow(() -> convertField(hr, Boolean::valueOf, ENABLED_ALIAS, ROOT_PROPERTIES_ALIAS,
+                EXTENDED_SETTINGS_ALIAS, EXTERNAL_BOX_ALIAS));
 
         assertTrue(service.get(ENABLED_ALIAS) instanceof Boolean);
         assertFalse((Boolean) service.get(ENABLED_ALIAS));

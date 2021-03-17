@@ -31,11 +31,10 @@ public class RouterFilterConfiguration {
 
     private Map<String, FilterConfiguration> message;
 
+    protected RouterFilterConfiguration() { }
 
-    protected RouterFilterConfiguration() {
-    }
-
-    protected RouterFilterConfiguration(Map<String, FilterConfiguration> metadata, Map<String, FilterConfiguration> message) {
+    protected RouterFilterConfiguration(Map<String, FilterConfiguration> metadata,
+                                        Map<String, FilterConfiguration> message) {
         this.metadata = metadata;
         this.message = message;
     }
