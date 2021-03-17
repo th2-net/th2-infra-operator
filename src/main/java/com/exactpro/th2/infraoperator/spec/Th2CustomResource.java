@@ -20,6 +20,8 @@ import com.exactpro.th2.infraoperator.spec.shared.status.StatusSpec;
 import io.fabric8.kubernetes.api.model.Namespaced;
 import io.fabric8.kubernetes.client.CustomResource;
 
+import java.util.Objects;
+
 public abstract class Th2CustomResource extends CustomResource implements Namespaced {
 
     protected StatusSpec status = new StatusSpec();
@@ -52,10 +54,10 @@ public abstract class Th2CustomResource extends CustomResource implements Namesp
         if (!super.equals(o)) {
             return false;
         }
-        final Object this$status = this.getStatus();
-        final Object other$status = other.getStatus();
+        final Object thisStatus = this.getStatus();
+        final Object otherStatus = other.getStatus();
 
-        return this$status == null ? other$status == null : this$status.equals(other$status);
+        return Objects.equals(thisStatus, otherStatus);
     }
 
     public int hashCode() {
