@@ -19,26 +19,31 @@ package com.exactpro.th2.infraoperator.operator.context;
 import com.exactpro.th2.infraoperator.model.box.configuration.dictionary.factory.DictionaryFactory;
 import com.exactpro.th2.infraoperator.model.box.configuration.grpc.factory.GrpcRouterConfigFactory;
 import com.exactpro.th2.infraoperator.model.box.configuration.mq.factory.MessageRouterConfigFactory;
-import com.exactpro.th2.infraoperator.spec.strategy.linkResolver.dictionary.DictionaryLinkResolver;
-import com.exactpro.th2.infraoperator.spec.strategy.linkResolver.grpc.GrpcLinkResolver;
-import com.exactpro.th2.infraoperator.spec.strategy.linkResolver.mq.QueueLinkResolver;
-import com.exactpro.th2.infraoperator.spec.strategy.resFinder.box.BoxResourceFinder;
+import com.exactpro.th2.infraoperator.spec.strategy.linkresolver.dictionary.DictionaryLinkResolver;
+import com.exactpro.th2.infraoperator.spec.strategy.linkresolver.grpc.GrpcLinkResolver;
+import com.exactpro.th2.infraoperator.spec.strategy.linkresolver.mq.QueueLinkResolver;
+import com.exactpro.th2.infraoperator.spec.strategy.resfinder.box.BoxResourceFinder;
 import io.fabric8.kubernetes.client.KubernetesClient;
 import lombok.Getter;
-
 
 @Getter
 public class HelmOperatorContext {
 
     private final KubernetesClient client;
-    private final BoxResourceFinder resourceFinder;
-    private final GrpcLinkResolver grpcLinkResolver;
-    private final DictionaryLinkResolver dictionaryLinkResolver;
-    private final QueueLinkResolver queueGenLinkResolver;
-    private final MessageRouterConfigFactory mqConfigFactory;
-    private final GrpcRouterConfigFactory grpcConfigFactory;
-    private final DictionaryFactory dictionaryFactory;
 
+    private final BoxResourceFinder resourceFinder;
+
+    private final GrpcLinkResolver grpcLinkResolver;
+
+    private final DictionaryLinkResolver dictionaryLinkResolver;
+
+    private final QueueLinkResolver queueGenLinkResolver;
+
+    private final MessageRouterConfigFactory mqConfigFactory;
+
+    private final GrpcRouterConfigFactory grpcConfigFactory;
+
+    private final DictionaryFactory dictionaryFactory;
 
     public HelmOperatorContext(Builder<?, ?> builder) {
         this.client = builder.getClient();
@@ -51,7 +56,6 @@ public class HelmOperatorContext {
         this.dictionaryFactory = builder.getDictionaryFactory();
     }
 
-
     public static ContextBuilder builder(KubernetesClient client) {
         return new ContextBuilder(client);
     }
@@ -62,18 +66,22 @@ public class HelmOperatorContext {
         protected final KubernetesClient client;
 
         protected BoxResourceFinder resourceFinder = null;
-        protected GrpcLinkResolver grpcLinkResolver = null;
-        protected DictionaryLinkResolver dictionaryLinkResolver = null;
-        protected QueueLinkResolver queueGenLinkResolver = null;
-        protected MessageRouterConfigFactory mqConfigFactory = new MessageRouterConfigFactory();
-        protected GrpcRouterConfigFactory grpcConfigFactory = null;
-        protected DictionaryFactory dictionaryFactory = null;
 
+        protected GrpcLinkResolver grpcLinkResolver = null;
+
+        protected DictionaryLinkResolver dictionaryLinkResolver = null;
+
+        protected QueueLinkResolver queueGenLinkResolver = null;
+
+        protected MessageRouterConfigFactory mqConfigFactory = new MessageRouterConfigFactory();
+
+        protected GrpcRouterConfigFactory grpcConfigFactory = null;
+
+        protected DictionaryFactory dictionaryFactory = null;
 
         public Builder(KubernetesClient client) {
             this.client = client;
         }
-
 
         public T resourceFinder(BoxResourceFinder resourceFinder) {
             this.resourceFinder = resourceFinder;
@@ -110,9 +118,7 @@ public class HelmOperatorContext {
             return self();
         }
 
-
         public abstract O build();
-
 
         protected abstract T self();
     }

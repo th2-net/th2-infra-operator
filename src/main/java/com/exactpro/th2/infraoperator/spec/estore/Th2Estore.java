@@ -22,6 +22,8 @@ import io.fabric8.kubernetes.model.annotation.Group;
 import io.fabric8.kubernetes.model.annotation.Kind;
 import io.fabric8.kubernetes.model.annotation.Version;
 
+import java.util.Objects;
+
 @Group("th2.exactpro.com")
 @Version("v1")
 @Kind("Th2Estore")
@@ -29,9 +31,7 @@ public class Th2Estore extends Th2CustomResource {
 
     private Th2EstoreSpec spec;
 
-    public Th2Estore() {
-    }
-
+    public Th2Estore() { }
 
     public Th2EstoreSpec getSpec() {
         return this.spec;
@@ -43,14 +43,20 @@ public class Th2Estore extends Th2CustomResource {
     }
 
     public boolean equals(final Object o) {
-        if (o == this) return true;
-        if (!(o instanceof Th2Estore)) return false;
+        if (o == this) {
+            return true;
+        }
+        if (!(o instanceof Th2Estore)) {
+            return false;
+        }
         final Th2Estore other = (Th2Estore) o;
-        if (!super.equals(o)) return false;
-        final Object this$spec = this.getSpec();
-        final Object other$spec = other.getSpec();
-        if (this$spec == null ? other$spec != null : !this$spec.equals(other$spec)) return false;
-        return true;
+        if (!super.equals(o)) {
+            return false;
+        }
+        final Object thisSpec = this.getSpec();
+        final Object otherSpec = other.getSpec();
+
+        return Objects.equals(thisSpec, otherSpec);
     }
 
     public int hashCode() {

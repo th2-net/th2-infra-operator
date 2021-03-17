@@ -16,6 +16,7 @@
 
 plugins {
     id 'java'
+    id 'checkstyle'
 }
 
 group = 'com.exactpro.th2'
@@ -23,6 +24,10 @@ version = release_version
 
 repositories {
     mavenCentral()
+}
+
+checkstyle {
+    toolVersion = "8.26"
 }
 
 dependencies {

@@ -31,12 +31,10 @@ import java.util.Set;
 public class Th2EstoreSpec extends Th2Spec {
 
     public Th2EstoreSpec() {
-
         List<PinSpec> autoPins = new ArrayList<>();
         autoPins.add(createPin(PinAttribute.event));
         setPins(autoPins);
     }
-
 
     private PinSpec createPin(PinAttribute type) {
         PinSpec pin = new PinSpec();
@@ -46,22 +44,20 @@ public class Th2EstoreSpec extends Th2Spec {
         return pin;
     }
 
-
     private static String pinName(PinAttribute type) {
         return StoreHelmTh2Op.EVENT_STORAGE_PIN_ALIAS;
     }
 
-
     @Override
     public boolean equals(final Object o) {
-        if (o == this)
+        if (o == this) {
             return true;
-        if (!(o instanceof Th2EstoreSpec))
+        }
+        if (!(o instanceof Th2EstoreSpec)) {
             return false;
-
+        }
         return super.equals(o);
     }
-
 
     @Override
     public int hashCode() {

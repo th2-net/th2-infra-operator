@@ -30,9 +30,7 @@ public class FilterConfiguration {
 
     private FilterOperation operation;
 
-
-    protected FilterConfiguration() {
-    }
+    protected FilterConfiguration() { }
 
     protected FilterConfiguration(String value, FilterOperation operation) {
         this.value = value;

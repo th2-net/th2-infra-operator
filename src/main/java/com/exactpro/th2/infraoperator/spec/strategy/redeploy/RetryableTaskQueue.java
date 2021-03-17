@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.exactpro.th2.infraoperator.spec.strategy.redeploy;
 
 import java.util.HashMap;
@@ -49,22 +50,19 @@ public class RetryableTaskQueue {
         }
     }
 
-
     private Map<String, RetryableTask> taskMap;
-    private ScheduledExecutorService taskScheduler;
 
+    private ScheduledExecutorService taskScheduler;
 
     public RetryableTaskQueue() {
         taskMap = new HashMap<>();
         taskScheduler = new ScheduledThreadPoolExecutor(THREAD_POOL_SIZE);
     }
 
-
     private synchronized void addTask(RetryableTask retryableTask, boolean delayed) {
         taskMap.put(retryableTask.task.getName(), retryableTask);
         taskScheduler.schedule(retryableTask, delayed ? retryableTask.task.getRetryDelay() : 0, TimeUnit.SECONDS);
     }
-
 
     public synchronized void add(Task task) {
         if (!taskMap.containsKey(task.getName())) {
@@ -78,12 +76,11 @@ public class RetryableTaskQueue {
         }
     }
 
-
     private synchronized void completeTask(Task task) throws IllegalStateException {
         String taskName = task.getName();
-        if (!taskMap.containsKey(taskName))
+        if (!taskMap.containsKey(taskName)) {
             throw new IllegalStateException("Task \"" + taskName + "\" was not found in active task list");
-
+        }
         taskMap.remove(taskName);
     }
 

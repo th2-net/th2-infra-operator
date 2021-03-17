@@ -28,10 +28,12 @@ public class PinMQ extends AbstractPin {
 
     @Override
     public boolean equals(final Object o) {
-        if (this == o)
+        if (this == o) {
             return true;
-        if (! (o instanceof PinMQ))
+        }
+        if (!(o instanceof PinMQ)) {
             return false;
+        }
 
         return Objects.equals(getBoxName(), ((PinMQ) o).getBoxName())
                 && Objects.equals(getPinName(), ((PinMQ) o).getPinName());

@@ -26,15 +26,18 @@ import java.util.Objects;
 public class RabbitMQNamespacePermissions {
 
     static final String DEFAULT_CONFIGURE_PERMISSION = "";
+
     static final String DEFAULT_READ_PERMISSION = ".*";
+
     static final String DEFAULT_WRITE_PERMISSION = ".*";
 
     private String configure = DEFAULT_CONFIGURE_PERMISSION;
+
     private String read = DEFAULT_READ_PERMISSION;
+
     private String write = DEFAULT_WRITE_PERMISSION;
 
-    public RabbitMQNamespacePermissions() {
-    }
+    public RabbitMQNamespacePermissions() { }
 
     public RabbitMQNamespacePermissions(String configure, String read, String write) {
         this.configure = configure != null ? configure : DEFAULT_CONFIGURE_PERMISSION;
@@ -60,22 +63,27 @@ public class RabbitMQNamespacePermissions {
 
     @Override
     public boolean equals(Object o) {
-        if (this == o) return true;
-        if (!(o instanceof RabbitMQNamespacePermissions)) return false;
+        if (this == o) {
+            return true;
+        }
+        if (!(o instanceof RabbitMQNamespacePermissions)) {
+            return false;
+        }
         RabbitMQNamespacePermissions that = (RabbitMQNamespacePermissions) o;
-        return Objects.equals(getConfigure(), that.getConfigure()) &&
-            Objects.equals(getRead(), that.getRead()) &&
-            Objects.equals(getWrite(), that.getWrite());
+        return Objects.equals(getConfigure(), that.getConfigure())
+                && Objects.equals(getRead(), that.getRead())
+                && Objects.equals(getWrite(), that.getWrite());
     }
 
     public static class RabbitMQNamespacePermissionsBuilder {
 
         private String configure;
+
         private String read;
+
         private String write;
 
-        RabbitMQNamespacePermissionsBuilder() {
-        }
+        RabbitMQNamespacePermissionsBuilder() { }
 
         public RabbitMQNamespacePermissionsBuilder withConfigure(String configure) {
             this.configure = configure;

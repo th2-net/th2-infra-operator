@@ -1,7 +1,23 @@
+/*
+ * Copyright 2020-2021 Exactpro (Exactpro Systems Limited)
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
 package com.exactpro.th2.infraoperator.operator.manager.impl;
 
-import com.exactpro.th2.infraoperator.spec.helmRelease.HelmRelease;
-import com.exactpro.th2.infraoperator.spec.strategy.resFinder.box.BoxResourceFinder;
+import com.exactpro.th2.infraoperator.spec.helmrelease.HelmRelease;
+import com.exactpro.th2.infraoperator.spec.strategy.resfinder.box.BoxResourceFinder;
 import io.fabric8.kubernetes.api.model.KubernetesResourceList;
 import io.fabric8.kubernetes.api.model.Namespace;
 import io.fabric8.kubernetes.api.model.ObjectMeta;
@@ -18,13 +34,16 @@ import org.slf4j.LoggerFactory;
 import static com.exactpro.th2.infraoperator.util.CustomResourceUtils.RESYNC_TIME;
 import static com.exactpro.th2.infraoperator.util.CustomResourceUtils.annotationFor;
 
-// TODO, this class needs rework
+// TODO: this class needs rework
 public class HelmReleaseEventHandler implements Watcher<HelmRelease> {
 
     private static final Logger logger = LoggerFactory.getLogger(HelmReleaseEventHandler.class);
 
     private final KubernetesClient client;
-    private final MixedOperation<HelmRelease, KubernetesResourceList<HelmRelease>, Resource<HelmRelease>> helmReleaseClient;
+
+    private final MixedOperation<HelmRelease, KubernetesResourceList<HelmRelease>, Resource<HelmRelease>>
+            helmReleaseClient;
+
     private final BoxResourceFinder resourceFinder;
 
     public static HelmReleaseEventHandler newInstance(
@@ -36,8 +55,7 @@ public class HelmReleaseEventHandler implements Watcher<HelmRelease> {
         var res = new HelmReleaseEventHandler(client, resourceFinder);
 
         SharedIndexInformer<HelmRelease> helmReleaseInformer = factory.sharedIndexInformerForCustomResource(
-                HelmRelease.class,
-                RESYNC_TIME);
+                HelmRelease.class, RESYNC_TIME);
 
         helmReleaseInformer.addEventHandler(new GenericResourceEventHandler<>(res, eventQueue));
         return res;
@@ -52,13 +70,15 @@ public class HelmReleaseEventHandler implements Watcher<HelmRelease> {
 
     @Override
     public void eventReceived(Action action, HelmRelease helmRelease) {
-        if (action != Action.DELETED)
+        if (action != Action.DELETED) {
             return;
+        }
         String resourceLabel = annotationFor(helmRelease);
         String name = helmRelease.getMetadata().getName();
         String namespace = helmRelease.getMetadata().getNamespace();
-        if(resourceFinder.getResource(name, namespace) == null){
-            logger.info("\"{}\" Can't find associated CR, probably operator deleted it. it won't be redeployed!", resourceLabel);
+        if (resourceFinder.getResource(name, namespace) == null) {
+            logger.info("\"{}\" Can't find associated CR, probably operator deleted it. it won't be redeployed!",
+                    resourceLabel);
             return;
         }
 
@@ -76,7 +96,7 @@ public class HelmReleaseEventHandler implements Watcher<HelmRelease> {
         try {
             helmReleaseClient.inNamespace(namespace).create(helmRelease);
             logger.info("\"{}\" has been redeployed", resourceLabel);
-        } catch (Exception e){
+        } catch (Exception e) {
             var hr = helmReleaseClient.inNamespace(namespace).withName(name).get();
             if (hr != null) {
                 logger.warn("Exception redeploying \"{}\": resource already exists", resourceLabel);
@@ -85,7 +105,6 @@ public class HelmReleaseEventHandler implements Watcher<HelmRelease> {
             }
         }
     }
-
 
     @Override
     public void onClose(WatcherException cause) {

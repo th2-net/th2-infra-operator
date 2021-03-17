@@ -22,6 +22,8 @@ import io.fabric8.kubernetes.model.annotation.Group;
 import io.fabric8.kubernetes.model.annotation.Kind;
 import io.fabric8.kubernetes.model.annotation.Version;
 
+import java.util.Objects;
+
 @Group("th2.exactpro.com")
 @Version("v1")
 @Kind("Th2Mstore")
@@ -42,14 +44,20 @@ public class Th2Mstore extends Th2CustomResource {
     }
 
     public boolean equals(final Object o) {
-        if (o == this) return true;
-        if (!(o instanceof Th2Mstore)) return false;
+        if (o == this) {
+            return true;
+        }
+        if (!(o instanceof Th2Mstore)) {
+            return false;
+        }
         final Th2Mstore other = (Th2Mstore) o;
-        if (!super.equals(o)) return false;
-        final Object this$spec = this.getSpec();
-        final Object other$spec = other.getSpec();
-        if (this$spec == null ? other$spec != null : !this$spec.equals(other$spec)) return false;
-        return true;
+        if (!super.equals(o)) {
+            return false;
+        }
+        final Object thisSpec = this.getSpec();
+        final Object otherSpec = other.getSpec();
+
+        return Objects.equals(thisSpec, otherSpec);
     }
 
     public int hashCode() {

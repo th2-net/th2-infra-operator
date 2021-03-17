@@ -29,18 +29,22 @@ public class RabbitMQConfig {
     public static final String CONFIG_MAP_RABBITMQ_PROP_NAME = "rabbitMQ.json";
 
     private int port;
+
     private String host;
+
     @JsonProperty("vHost")
     private String vHost;
+
     private String exchangeName;
+
     private String username;
+
     private String password;
 
-    protected RabbitMQConfig() {
-    }
+    protected RabbitMQConfig() { }
 
-    public RabbitMQConfig(int port, String host, String vHost, String exchangeName, String username,
-                          String password) {
+    public RabbitMQConfig(int port, String host, String vHost, String exchangeName,
+                          String username, String password) {
         this.port = port;
         this.host = host;
         this.vHost = vHost;
@@ -84,21 +88,25 @@ public class RabbitMQConfig {
     @Override
     public String toString() {
         return "RabbitMQConfig{" + "port=" + port + ", host='" + host + '\'' +
-            ", vHost='" + vHost + '\'' + ", exchangeName='" + exchangeName + '\'' +
-            ", username='" + username + '\'' + ", password='" + password + '\'' + '}';
+                ", vHost='" + vHost + '\'' + ", exchangeName='" + exchangeName + '\'' +
+                ", username='" + username + '\'' + ", password='" + password + '\'' + '}';
     }
 
     @Override
     public boolean equals(Object o) {
-        if (this == o) return true;
-        if (!(o instanceof RabbitMQConfig)) return false;
+        if (this == o) {
+            return true;
+        }
+        if (!(o instanceof RabbitMQConfig)) {
+            return false;
+        }
         RabbitMQConfig that = (RabbitMQConfig) o;
-        return getPort() == that.getPort() &&
-            Objects.equals(getHost(), that.getHost()) &&
-            Objects.equals(getVHost(), that.getVHost()) &&
-            Objects.equals(getExchangeName(), that.getExchangeName()) &&
-            Objects.equals(getUsername(), that.getUsername()) &&
-            Objects.equals(getPassword(), that.getPassword());
+        return getPort() == that.getPort()
+                && Objects.equals(getHost(), that.getHost())
+                && Objects.equals(getVHost(), that.getVHost())
+                && Objects.equals(getExchangeName(), that.getExchangeName())
+                && Objects.equals(getUsername(), that.getUsername())
+                && Objects.equals(getPassword(), that.getPassword());
     }
 
     @Override
@@ -109,14 +117,18 @@ public class RabbitMQConfig {
     public static class RabbitMQConfigBuilder {
 
         private int port;
+
         private String host;
+
         private String vHost;
+
         private String exchangeName;
+
         private String username;
+
         private String password;
 
-        RabbitMQConfigBuilder() {
-        }
+        RabbitMQConfigBuilder() { }
 
         public RabbitMQConfigBuilder withPort(int port) {
             this.port = port;

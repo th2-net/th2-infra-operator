@@ -16,8 +16,8 @@
 
 package com.exactpro.th2.infraoperator.util.docker;
 
-import com.exactpro.th2.infraoperator.model.kubernetes.secret.Secret;
 import com.exactpro.th2.infraoperator.model.docker.NexusAuth;
+import com.exactpro.th2.infraoperator.model.kubernetes.secret.Secret;
 import io.fabric8.kubernetes.client.KubernetesClient;
 import lombok.SneakyThrows;
 import org.jetbrains.annotations.Nullable;
@@ -33,16 +33,13 @@ public final class SecretExtractor {
 
     private static final Logger logger = LoggerFactory.getLogger(SecretExtractor.class);
 
-
     public static final String SECRET_DATA_ALIAS = ".dockerconfigjson";
 
     public static final String SECRET_COMPONENT_NAME = "th2-solution";
 
-
     private SecretExtractor() {
         throw new AssertionError();
     }
-
 
     @Nullable
     @SneakyThrows
@@ -56,14 +53,16 @@ public final class SecretExtractor {
                 .orElse(null);
 
         if (Objects.isNull(secretComponent)) {
-            logger.warn("Secret '{}.{}' for extraction auth data for nexus does not exist", namespace, SECRET_COMPONENT_NAME);
+            logger.warn("Secret '{}.{}' for extraction auth data for nexus does not exist",
+                    namespace, SECRET_COMPONENT_NAME);
             return null;
         }
 
         var authsBunchEncoded = secretComponent.getData().get(SECRET_DATA_ALIAS);
 
         if (Objects.isNull(authsBunchEncoded)) {
-            logger.warn("No auth data with name '{}' found in secret '{}.{}'", SECRET_DATA_ALIAS, namespace, SECRET_COMPONENT_NAME);
+            logger.warn("No auth data with name '{}' found in secret '{}.{}'",
+                    SECRET_DATA_ALIAS, namespace, SECRET_COMPONENT_NAME);
             return null;
         }
 

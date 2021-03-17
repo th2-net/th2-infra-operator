@@ -21,7 +21,6 @@ import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import lombok.Data;
 import lombok.experimental.SuperBuilder;
 
-
 @Data
 @JsonDeserialize
 @SuperBuilder(toBuilder = true)
@@ -33,9 +32,7 @@ public class GrpcEndpointConfiguration {
     @JsonProperty(required = true)
     private int port;
 
-
-    protected GrpcEndpointConfiguration() {
-    }
+    protected GrpcEndpointConfiguration() { }
 
     protected GrpcEndpointConfiguration(String host, int port) {
         this.host = host;

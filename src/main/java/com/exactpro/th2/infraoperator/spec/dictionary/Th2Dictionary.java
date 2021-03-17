@@ -34,15 +34,16 @@ public class Th2Dictionary extends CustomResource {
 
     private Th2DictionarySpec spec;
 
-
-    public Th2Dictionary() {
-    }
-
+    public Th2Dictionary() { }
 
     @Override
     public boolean equals(Object object) {
-        if (this == object) return true;
-        if (!(object instanceof Th2Dictionary)) return false;
+        if (this == object) {
+            return true;
+        }
+        if (!(object instanceof Th2Dictionary)) {
+            return false;
+        }
         Th2Dictionary th2Dictionary = (Th2Dictionary) object;
         return extractName(this).equals(extractName(th2Dictionary))
                 && extractNamespace(this).equals(extractNamespace(th2Dictionary));
@@ -63,7 +64,7 @@ public class Th2Dictionary extends CustomResource {
     }
 
     @Override
-    public void setSpec (Object spec) {
+    public void setSpec(Object spec) {
         throw new AssertionError("Setting spec with Object argument");
     }
 

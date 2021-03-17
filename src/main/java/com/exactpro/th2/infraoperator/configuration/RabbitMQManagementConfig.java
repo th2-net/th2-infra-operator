@@ -27,10 +27,15 @@ import java.util.Objects;
 public class RabbitMQManagementConfig {
 
     private String username;
+
     private String password;
+
     private int port;
+
     private String host;
+
     private boolean persistence;
+
     private RabbitMQNamespacePermissions rabbitMQNamespacePermissions;
 
     protected RabbitMQManagementConfig() {
@@ -45,7 +50,7 @@ public class RabbitMQManagementConfig {
         this.host = host;
         this.persistence = persistence;
         this.rabbitMQNamespacePermissions = rabbitMQNamespacePermissions != null ?
-            rabbitMQNamespacePermissions : new RabbitMQNamespacePermissions();
+                rabbitMQNamespacePermissions : new RabbitMQNamespacePermissions();
     }
 
     public String getUsername() {
@@ -78,29 +83,37 @@ public class RabbitMQManagementConfig {
 
     @Override
     public boolean equals(Object o) {
-        if (this == o) return true;
-        if (!(o instanceof RabbitMQManagementConfig)) return false;
+        if (this == o) {
+            return true;
+        }
+        if (!(o instanceof RabbitMQManagementConfig)) {
+            return false;
+        }
         RabbitMQManagementConfig that = (RabbitMQManagementConfig) o;
-        return getPort() == that.getPort() &&
-            isPersistence() == that.isPersistence() &&
-            Objects.equals(getUsername(), that.getUsername()) &&
-            Objects.equals(getPassword(), that.getPassword()) &&
-            Objects.equals(getHost(), that.getHost()) &&
-            Objects.equals(getRabbitMQNamespacePermissions(), that.getRabbitMQNamespacePermissions());
+        return getPort() == that.getPort()
+                && isPersistence() == that.isPersistence()
+                && Objects.equals(getUsername(), that.getUsername())
+                && Objects.equals(getPassword(), that.getPassword())
+                && Objects.equals(getHost(), that.getHost())
+                && Objects.equals(getRabbitMQNamespacePermissions(), that.getRabbitMQNamespacePermissions());
     }
 
     public static class RabbitMQManagementConfigBuilder {
 
         private String username;
+
         private String password;
+
         private int port;
+
         private String host;
+
         private boolean persistence;
+
         @JsonProperty("schemaPermissions")
         private RabbitMQNamespacePermissions rabbitMQNamespacePermissions;
 
-        RabbitMQManagementConfigBuilder() {
-        }
+        RabbitMQManagementConfigBuilder() { }
 
         public RabbitMQManagementConfigBuilder withUsername(String username) {
             this.username = username;
@@ -128,14 +141,14 @@ public class RabbitMQManagementConfig {
         }
 
         public RabbitMQManagementConfigBuilder withRabbitMQNamespacePermissions(
-            RabbitMQNamespacePermissions rabbitMQNamespacePermissions) {
+                RabbitMQNamespacePermissions rabbitMQNamespacePermissions) {
             this.rabbitMQNamespacePermissions = rabbitMQNamespacePermissions;
             return this;
         }
 
         public RabbitMQManagementConfig build() {
             return new RabbitMQManagementConfig(username, password, port, host, persistence,
-                rabbitMQNamespacePermissions);
+                    rabbitMQNamespacePermissions);
         }
     }
 }

@@ -30,14 +30,13 @@ public class EstoreHelmTh2Op extends StoreHelmTh2Op<Th2Estore> {
 
     private final EstoreClient estoreClient;
 
-
     public EstoreHelmTh2Op(HelmOperatorContext.Builder<?, ?> builder) {
         super(builder);
         this.estoreClient = new EstoreClient(builder.getClient());
     }
 
     @Override
-    public SharedIndexInformer<Th2Estore> generateInformerFromFactory (SharedInformerFactory factory) {
+    public SharedIndexInformer<Th2Estore> generateInformerFromFactory(SharedInformerFactory factory) {
         return factory.sharedIndexInformerForCustomResource(
                 Th2Estore.class,
                 CustomResourceUtils.RESYNC_TIME);
@@ -48,7 +47,6 @@ public class EstoreHelmTh2Op extends StoreHelmTh2Op<Th2Estore> {
         return estoreClient;
     }
 
-
     @Override
     protected String getKubObjDefPath(Th2Estore resource) {
         return "/Th2Estore-HelmRelease.yml";
@@ -58,7 +56,6 @@ public class EstoreHelmTh2Op extends StoreHelmTh2Op<Th2Estore> {
     protected String getStorageName() {
         return EVENT_STORAGE_BOX_ALIAS;
     }
-
 
     public static Builder builder(KubernetesClient client) {
         return new Builder(client);

@@ -20,15 +20,14 @@ import com.exactpro.th2.infraoperator.spec.Th2CustomResource;
 import com.exactpro.th2.infraoperator.spec.link.validator.ValidationStatus;
 import com.exactpro.th2.infraoperator.spec.link.validator.chain.AbstractValidator;
 import com.exactpro.th2.infraoperator.spec.link.validator.model.DirectionalLinkContext;
-import com.exactpro.th2.infraoperator.spec.link.validator.warnPrinter.WarnPrinter;
-import com.exactpro.th2.infraoperator.spec.link.validator.warnPrinter.node.impl.*;
+import com.exactpro.th2.infraoperator.spec.link.validator.warnprinter.WarnPrinter;
+import com.exactpro.th2.infraoperator.spec.link.validator.warnprinter.node.impl.*;
 
 import java.util.Objects;
 
 public class PinExist extends AbstractValidator {
 
     private String pinName;
-
 
     public PinExist(String pinName) {
         this(pinName, null);
@@ -48,7 +47,6 @@ public class PinExist extends AbstractValidator {
                 .addNode(new PinNode(context.getBoxDirection().name(), context.getBoxPinName()))
                 .build());
     }
-
 
     @Override
     public ValidationStatus validate(Object object, Object... additional) {

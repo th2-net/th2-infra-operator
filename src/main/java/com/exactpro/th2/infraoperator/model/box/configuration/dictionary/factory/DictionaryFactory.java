@@ -21,7 +21,7 @@ import com.exactpro.th2.infraoperator.spec.Th2CustomResource;
 import com.exactpro.th2.infraoperator.spec.dictionary.Th2Dictionary;
 import com.exactpro.th2.infraoperator.spec.link.relation.dictionaries.DictionaryBinding;
 import com.exactpro.th2.infraoperator.spec.link.relation.dictionaries.DictionaryDescription;
-import com.exactpro.th2.infraoperator.spec.strategy.resFinder.dictionary.DictionaryResourceFinder;
+import com.exactpro.th2.infraoperator.spec.strategy.resfinder.dictionary.DictionaryResourceFinder;
 import com.exactpro.th2.infraoperator.util.ArchiveUtils;
 
 import java.util.ArrayList;
@@ -42,8 +42,8 @@ public class DictionaryFactory {
     /**
      * Creates a list of {@link DictionaryEntity} based on the th2 resource and a list of active links.
      *
-     * @param resource th2 resource
-     * @param activeLinks    active links
+     * @param resource    th2 resource
+     * @param activeLinks active links
      * @return list of {@link DictionaryEntity} based on provided active {@code activeLinks} and {@code resource}
      */
     public List<DictionaryEntity> create(Th2CustomResource resource, List<DictionaryBinding> activeLinks) {
@@ -62,7 +62,8 @@ public class DictionaryFactory {
                     if (res.getSpec().isCompressed()) {
                         encodedData = res.getSpec().getData();
                     } else {
-                        encodedData = new String(ArchiveUtils.getGZIPBase64Encoder().encodeString(res.getSpec().getData()));
+                        encodedData = new String(
+                                ArchiveUtils.getGZIPBase64Encoder().encodeString(res.getSpec().getData()));
 
                     }
 

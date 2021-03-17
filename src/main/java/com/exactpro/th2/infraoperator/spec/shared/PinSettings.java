@@ -16,7 +16,6 @@
 
 package com.exactpro.th2.infraoperator.spec.shared;
 
-
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import lombok.Data;

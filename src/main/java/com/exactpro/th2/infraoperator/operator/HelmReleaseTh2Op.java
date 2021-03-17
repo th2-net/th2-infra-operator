@@ -28,15 +28,15 @@ import com.exactpro.th2.infraoperator.operator.context.HelmOperatorContext;
 import com.exactpro.th2.infraoperator.operator.helm.*;
 import com.exactpro.th2.infraoperator.spec.Th2CustomResource;
 import com.exactpro.th2.infraoperator.spec.Th2Spec;
-import com.exactpro.th2.infraoperator.spec.helmRelease.HelmRelease;
-import com.exactpro.th2.infraoperator.spec.helmRelease.HelmReleaseSecrets;
+import com.exactpro.th2.infraoperator.spec.helmrelease.HelmRelease;
+import com.exactpro.th2.infraoperator.spec.helmrelease.HelmReleaseSecrets;
 import com.exactpro.th2.infraoperator.spec.link.relation.pins.PinCoupling;
 import com.exactpro.th2.infraoperator.spec.shared.PrometheusConfiguration;
-import com.exactpro.th2.infraoperator.spec.strategy.linkResolver.dictionary.DictionaryLinkResolver;
-import com.exactpro.th2.infraoperator.spec.strategy.linkResolver.grpc.GrpcLinkResolver;
-import com.exactpro.th2.infraoperator.spec.strategy.linkResolver.mq.QueueLinkResolver;
-import com.exactpro.th2.infraoperator.spec.strategy.linkResolver.mq.impl.DeclareQueueResolver;
-import com.exactpro.th2.infraoperator.spec.strategy.resFinder.box.BoxResourceFinder;
+import com.exactpro.th2.infraoperator.spec.strategy.linkresolver.dictionary.DictionaryLinkResolver;
+import com.exactpro.th2.infraoperator.spec.strategy.linkresolver.grpc.GrpcLinkResolver;
+import com.exactpro.th2.infraoperator.spec.strategy.linkresolver.mq.QueueLinkResolver;
+import com.exactpro.th2.infraoperator.spec.strategy.linkresolver.mq.impl.DeclareQueueResolver;
+import com.exactpro.th2.infraoperator.spec.strategy.resfinder.box.BoxResourceFinder;
 import com.exactpro.th2.infraoperator.util.CustomResourceUtils;
 import com.exactpro.th2.infraoperator.util.ExtractUtils;
 import com.exactpro.th2.infraoperator.util.JsonUtils;
@@ -60,40 +60,70 @@ public abstract class HelmReleaseTh2Op<CR extends Th2CustomResource> extends Abs
     public static final int PROPERTIES_MERGE_DEPTH = 1;
 
     public static final String CHART_PROPERTIES_ALIAS = "chart";
+
     public static final String ROOT_PROPERTIES_ALIAS = "component";
+
     public static final String EXTENDED_SETTINGS_ALIAS = "extendedSettings";
+
     private static final String SERVICE_ALIAS = "service";
+
     private static final String EXTERNAL_BOX_ALIAS = "externalBox";
+
     private static final String ENABLED_ALIAS = "enabled";
+
     public static final String MQ_CONFIG_ALIAS = "routerMq";
+
     public static final String CUSTOM_CONFIG_ALIAS = "custom";
+
     public static final String PROMETHEUS_CONFIG_ALIAS = "prometheus";
+
     public static final String SCHEMA_SECRETS_ALIAS = "secrets";
+
     public static final String GRPC_CONFIG_ALIAS = "grpcRouter";
+
     public static final String DICTIONARIES_ALIAS = "dictionaries";
+
     public static final String ANNOTATIONS_ALIAS = "annotations";
+
     public static final String DOCKER_IMAGE_ALIAS = "image";
+
     public static final String COMPONENT_NAME_ALIAS = "name";
+
     public static final String RELEASE_NAME_ALIAS = "releaseName";
+
     public static final String INGRESS_HOST_ALIAS = "ingressHost";
+
     public static final String DEFAULT_VALUE_ENABLED = Boolean.TRUE.toString();
 
     protected final BoxResourceFinder resourceFinder;
+
     protected final GrpcLinkResolver grpcLinkResolver;
+
     protected final QueueLinkResolver queueGenLinkResolver;
+
     protected final DictionaryLinkResolver dictionaryLinkResolver;
+
     protected final DeclareQueueResolver declareQueueResolver;
+
     protected final MessageRouterConfigFactory mqConfigFactory;
+
     protected final GrpcRouterConfigFactory grpcConfigFactory;
+
     protected final DictionaryFactory dictionaryFactory;
 
-    protected final MixedOperation<HelmRelease, KubernetesResourceList<HelmRelease>, Resource<HelmRelease>> helmReleaseClient;
+    protected final MixedOperation<HelmRelease, KubernetesResourceList<HelmRelease>, Resource<HelmRelease>>
+            helmReleaseClient;
 
     protected final ActiveLinkUpdater activeLinkUpdaterOnDelete;
+
     protected final ActiveLinkUpdater activeLinkUpdaterOnAdd;
+
     protected final StorageTh2LinksRefresher msgStLinkUpdaterOnDelete;
+
     protected final StorageTh2LinksRefresher msgStLinkUpdaterOnAdd;
+
     protected final StorageTh2LinksRefresher eventStLinkUpdaterOnDelete;
+
     protected final StorageTh2LinksRefresher eventStLinkUpdaterOnAdd;
 
     public HelmReleaseTh2Op(HelmOperatorContext.Builder<?, ?> builder) {
@@ -112,25 +142,27 @@ public abstract class HelmReleaseTh2Op<CR extends Th2CustomResource> extends Abs
         helmReleaseClient = kubClient.customResources(HelmRelease.class);
 
         var msgStContext = MsgStorageContext.builder()
-            .linkResourceName(StoreHelmTh2Op.MSG_ST_LINK_RESOURCE_NAME)
-            .linkNameSuffix(StoreHelmTh2Op.MESSAGE_STORAGE_LINK_NAME_SUFFIX)
-            .boxAlias(StoreHelmTh2Op.MESSAGE_STORAGE_BOX_ALIAS)
-            .pinName(StoreHelmTh2Op.MESSAGE_STORAGE_PIN_ALIAS)
-            .build();
+                .linkResourceName(StoreHelmTh2Op.MSG_ST_LINK_RESOURCE_NAME)
+                .linkNameSuffix(StoreHelmTh2Op.MESSAGE_STORAGE_LINK_NAME_SUFFIX)
+                .boxAlias(StoreHelmTh2Op.MESSAGE_STORAGE_BOX_ALIAS)
+                .pinName(StoreHelmTh2Op.MESSAGE_STORAGE_PIN_ALIAS)
+                .build();
 
         var eventStContext = EventStorageContext.builder()
-            .linkResourceName(StoreHelmTh2Op.EVENT_ST_LINK_RESOURCE_NAME)
-            .linkNameSuffix(StoreHelmTh2Op.EVENT_STORAGE_LINK_NAME_SUFFIX)
-            .boxAlias(StoreHelmTh2Op.EVENT_STORAGE_BOX_ALIAS)
-            .pinName(StoreHelmTh2Op.EVENT_STORAGE_PIN_ALIAS)
-            .build();
+                .linkResourceName(StoreHelmTh2Op.EVENT_ST_LINK_RESOURCE_NAME)
+                .linkNameSuffix(StoreHelmTh2Op.EVENT_STORAGE_LINK_NAME_SUFFIX)
+                .boxAlias(StoreHelmTh2Op.EVENT_STORAGE_BOX_ALIAS)
+                .pinName(StoreHelmTh2Op.EVENT_STORAGE_PIN_ALIAS)
+                .build();
 
         this.msgStLinkUpdaterOnDelete = new StorageTh2LinksCleaner(msgStContext);
         this.msgStLinkUpdaterOnAdd = new StorageTh2LinksUpdater(msgStContext);
         this.eventStLinkUpdaterOnDelete = new StorageTh2LinksCleaner(eventStContext);
         this.eventStLinkUpdaterOnAdd = new StorageTh2LinksUpdater(eventStContext);
-        this.activeLinkUpdaterOnDelete = new DeletedActiveLinkUpdater(this, grpcLinkResolver, queueGenLinkResolver, dictionaryLinkResolver, declareQueueResolver);
-        this.activeLinkUpdaterOnAdd = new AddedActiveLinkUpdater(this, grpcLinkResolver, queueGenLinkResolver, dictionaryLinkResolver, declareQueueResolver);
+        this.activeLinkUpdaterOnDelete = new DeletedActiveLinkUpdater(this, grpcLinkResolver,
+                queueGenLinkResolver, dictionaryLinkResolver, declareQueueResolver);
+        this.activeLinkUpdaterOnAdd = new AddedActiveLinkUpdater(this, grpcLinkResolver,
+                queueGenLinkResolver, dictionaryLinkResolver, declareQueueResolver);
     }
 
     public abstract SharedInformer<CR> generateInformerFromFactory(SharedInformerFactory factory);
@@ -149,13 +181,14 @@ public abstract class HelmReleaseTh2Op<CR extends Th2CustomResource> extends Abs
         GrpcRouterConfiguration grpcConfig = grpcConfigFactory.createConfig(resource, grpcActiveLinks);
         List<DictionaryEntity> dictionaries = dictionaryFactory.create(resource, dictionaryActiveLinks);
 
-        helmRelease.putSpecProp(RELEASE_NAME_ALIAS, ExtractUtils.extractNamespace(helmRelease) + "-" + ExtractUtils.extractName(helmRelease));
+        helmRelease.putSpecProp(RELEASE_NAME_ALIAS,
+                ExtractUtils.extractNamespace(helmRelease) + "-" + ExtractUtils.extractName(helmRelease));
         helmRelease.mergeValue(PROPERTIES_MERGE_DEPTH, ROOT_PROPERTIES_ALIAS, Map.of(
-            DOCKER_IMAGE_ALIAS, resSpec.getImageName() + ":" + resSpec.getImageVersion(),
-            COMPONENT_NAME_ALIAS, resource.getMetadata().getName(),
-            CUSTOM_CONFIG_ALIAS, resource.getSpec().getCustomConfig(),
-            MQ_CONFIG_ALIAS, JsonUtils.writeValueAsDeepMap(mqConfig),
-            GRPC_CONFIG_ALIAS, JsonUtils.writeValueAsDeepMap(grpcConfig)
+                DOCKER_IMAGE_ALIAS, resSpec.getImageName() + ":" + resSpec.getImageVersion(),
+                COMPONENT_NAME_ALIAS, resource.getMetadata().getName(),
+                CUSTOM_CONFIG_ALIAS, resource.getSpec().getCustomConfig(),
+                MQ_CONFIG_ALIAS, JsonUtils.writeValueAsDeepMap(mqConfig),
+                GRPC_CONFIG_ALIAS, JsonUtils.writeValueAsDeepMap(grpcConfig)
         ));
 
         PrometheusConfiguration<String> prometheusConfig = resource.getSpec().getPrometheusConfiguration();
@@ -163,16 +196,17 @@ public abstract class HelmReleaseTh2Op<CR extends Th2CustomResource> extends Abs
             prometheusConfig = PrometheusConfiguration.createDefault(DEFAULT_VALUE_ENABLED);
         }
         PrometheusConfiguration<Boolean> prometheusConfigForRelease = PrometheusConfiguration.<Boolean>builder()
-            .port(prometheusConfig.getPort())
-            .host(prometheusConfig.getHost())
-            .enabled(Boolean.valueOf(prometheusConfig.getEnabled()))
-            .build();
+                .port(prometheusConfig.getPort())
+                .host(prometheusConfig.getHost())
+                .enabled(Boolean.valueOf(prometheusConfig.getEnabled()))
+                .build();
         helmRelease.mergeValue(PROPERTIES_MERGE_DEPTH, ROOT_PROPERTIES_ALIAS,
-            Map.of(PROMETHEUS_CONFIG_ALIAS, prometheusConfigForRelease));
+                Map.of(PROMETHEUS_CONFIG_ALIAS, prometheusConfigForRelease));
 
-        if (!dictionaries.isEmpty())
+        if (!dictionaries.isEmpty()) {
             helmRelease.mergeValue(PROPERTIES_MERGE_DEPTH, ROOT_PROPERTIES_ALIAS,
-                Map.of(DICTIONARIES_ALIAS, dictionaries));
+                    Map.of(DICTIONARIES_ALIAS, dictionaries));
+        }
 
         Map<String, Object> extendedSettings = resSpec.getExtendedSettings();
         if (extendedSettings != null) {
@@ -181,13 +215,14 @@ public abstract class HelmReleaseTh2Op<CR extends Th2CustomResource> extends Abs
         }
 
         String ingressHost = OperatorConfig.INSTANCE.getIngressHost();
-        if (ingressHost != null && !ingressHost.isEmpty())
+        if (ingressHost != null && !ingressHost.isEmpty()) {
             helmRelease.mergeValue(PROPERTIES_MERGE_DEPTH, ROOT_PROPERTIES_ALIAS,
-                Map.of(INGRESS_HOST_ALIAS, ingressHost));
+                    Map.of(INGRESS_HOST_ALIAS, ingressHost));
+        }
 
         HelmReleaseSecrets secrets = new HelmReleaseSecrets(OperatorConfig.INSTANCE.getSchemaSecrets());
         helmRelease.mergeValue(PROPERTIES_MERGE_DEPTH, ROOT_PROPERTIES_ALIAS,
-            Map.of(SCHEMA_SECRETS_ALIAS, secrets));
+                Map.of(SCHEMA_SECRETS_ALIAS, secrets));
 
         var defaultChartConfig = OperatorConfig.INSTANCE.getChartConfig();
         var chartConfig = resSpec.getChartConfig();
@@ -196,10 +231,13 @@ public abstract class HelmReleaseTh2Op<CR extends Th2CustomResource> extends Abs
         }
 
         helmRelease.mergeSpecProp(CHART_PROPERTIES_ALIAS, defaultChartConfig.toMap());
-        helmRelease.mergeValue(Map.of(ANNOTATIONS_ALIAS, ExtractUtils.extractAnnotations(resource).get(ANTECEDENT_LABEL_KEY_ALIAS)));
+        helmRelease.mergeValue(Map.of(ANNOTATIONS_ALIAS,
+                ExtractUtils.extractAnnotations(resource).get(ANTECEDENT_LABEL_KEY_ALIAS)));
 
-        convertField(helmRelease, Boolean::valueOf, ENABLED_ALIAS, ROOT_PROPERTIES_ALIAS, EXTENDED_SETTINGS_ALIAS, SERVICE_ALIAS);
-        convertField(helmRelease, Boolean::valueOf, ENABLED_ALIAS, ROOT_PROPERTIES_ALIAS, EXTENDED_SETTINGS_ALIAS, EXTERNAL_BOX_ALIAS);
+        convertField(helmRelease, Boolean::valueOf, ENABLED_ALIAS, ROOT_PROPERTIES_ALIAS,
+                EXTENDED_SETTINGS_ALIAS, SERVICE_ALIAS);
+        convertField(helmRelease, Boolean::valueOf, ENABLED_ALIAS, ROOT_PROPERTIES_ALIAS,
+                EXTENDED_SETTINGS_ALIAS, EXTERNAL_BOX_ALIAS);
     }
 
     @Override
@@ -211,7 +249,8 @@ public abstract class HelmReleaseTh2Op<CR extends Th2CustomResource> extends Abs
 
             updateEventStorageLinksBeforeAdd(resource);
             updateMsgStorageLinksBeforeAdd(resource);
-            OperatorState.INSTANCE.addActiveTh2Resource(resource.getMetadata().getNamespace(), resource.getMetadata().getName());
+            OperatorState.INSTANCE.addActiveTh2Resource(resource.getMetadata().getNamespace(),
+                    resource.getMetadata().getName());
             var linkedResources = updateActiveLinksBeforeAdd(resource);
             updateDependedResourcesIfNeeded(resource, linkedResources);
             super.addedEvent(resource);
@@ -231,7 +270,8 @@ public abstract class HelmReleaseTh2Op<CR extends Th2CustomResource> extends Abs
 
             updateEventStorageLinksBeforeAdd(resource);
             updateMsgStorageLinksBeforeAdd(resource);
-            OperatorState.INSTANCE.addActiveTh2Resource(resource.getMetadata().getNamespace(), resource.getMetadata().getName());
+            OperatorState.INSTANCE.addActiveTh2Resource(resource.getMetadata().getNamespace(),
+                    resource.getMetadata().getName());
             var linkedResources = updateActiveLinksBeforeAdd(resource);
             updateDependedResourcesIfNeeded(resource, linkedResources);
             super.modifiedEvent(resource);
@@ -248,7 +288,8 @@ public abstract class HelmReleaseTh2Op<CR extends Th2CustomResource> extends Abs
         try {
             lock.lock();
 
-            OperatorState.INSTANCE.removeActiveResource(resource.getMetadata().getNamespace(), resource.getMetadata().getName());
+            OperatorState.INSTANCE.removeActiveResource(resource.getMetadata().getNamespace(),
+                    resource.getMetadata().getName());
             super.deletedEvent(resource);
             updateEventStorageLinksAfterDelete(resource);
             updateMsgStorageLinksAfterDelete(resource);
@@ -340,8 +381,8 @@ public abstract class HelmReleaseTh2Op<CR extends Th2CustomResource> extends Abs
                 logger.info("Updating helm release of '{}.{}' resource", namespace, resourceName);
 
                 hr.mergeValue(PROPERTIES_MERGE_DEPTH, ROOT_PROPERTIES_ALIAS, Map.of(
-                    MQ_CONFIG_ALIAS, JsonUtils.writeValueAsDeepMap(newResMqConfig),
-                    GRPC_CONFIG_ALIAS, newResRawGrpcConfig
+                        MQ_CONFIG_ALIAS, JsonUtils.writeValueAsDeepMap(newResMqConfig),
+                        GRPC_CONFIG_ALIAS, newResRawGrpcConfig
                 ));
 
                 createKubObj(ExtractUtils.extractNamespace(hr), hr);
@@ -387,11 +428,11 @@ public abstract class HelmReleaseTh2Op<CR extends Th2CustomResource> extends Abs
     private HelmRelease getHelmRelease(Th2CustomResource resource, List<HelmRelease> helmReleases) {
         var resName = ExtractUtils.extractFullName(resource);
         return helmReleases.stream()
-            .filter(hr -> {
-                var owner = ExtractUtils.extractOwnerFullName(hr);
-                return Objects.nonNull(owner) && owner.equals(resName);
-            }).findFirst()
-            .orElse(null);
+                .filter(hr -> {
+                    var owner = ExtractUtils.extractOwnerFullName(hr);
+                    return Objects.nonNull(owner) && owner.equals(resName);
+                }).findFirst()
+                .orElse(null);
     }
 
     @SuppressWarnings("unchecked")

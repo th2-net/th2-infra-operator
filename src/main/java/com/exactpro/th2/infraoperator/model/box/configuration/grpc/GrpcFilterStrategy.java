@@ -22,7 +22,6 @@ import lombok.Data;
 
 import java.util.List;
 
-
 @Data
 @Builder
 @JsonDeserialize
@@ -33,15 +32,12 @@ public class GrpcFilterStrategy implements RoutingStrategy {
 
     protected List<GrpcRouterFilterConfiguration> filters;
 
-
-    protected GrpcFilterStrategy() {
-    }
+    protected GrpcFilterStrategy() { }
 
     protected GrpcFilterStrategy(String name, List<GrpcRouterFilterConfiguration> filters) {
         this.name = name;
         this.filters = filters;
     }
-
 
     @Override
     public StrategyType getType() {

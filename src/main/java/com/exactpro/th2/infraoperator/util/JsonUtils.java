@@ -30,11 +30,9 @@ public final class JsonUtils {
 
     public static final ObjectMapper YAML_READER = new ObjectMapper(new YAMLFactory());
 
-
     private JsonUtils() {
         throw new AssertionError();
     }
-
 
     public static String writeValueAsString(Object object) throws IOException {
         return JSON_READER.writeValueAsString(object);

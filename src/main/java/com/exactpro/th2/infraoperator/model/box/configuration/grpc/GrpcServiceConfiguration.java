@@ -23,7 +23,6 @@ import lombok.Data;
 
 import java.util.Map;
 
-
 @Data
 @Builder
 @JsonDeserialize
@@ -38,11 +37,10 @@ public class GrpcServiceConfiguration {
     @JsonProperty(required = true)
     private Map<String, GrpcEndpointConfiguration> endpoints;
 
+    protected GrpcServiceConfiguration() { }
 
-    protected GrpcServiceConfiguration() {
-    }
-
-    protected GrpcServiceConfiguration(RoutingStrategy strategy, String serviceClass, Map<String, GrpcEndpointConfiguration> endpoints) {
+    protected GrpcServiceConfiguration(RoutingStrategy strategy, String serviceClass,
+                                       Map<String, GrpcEndpointConfiguration> endpoints) {
         this.strategy = strategy;
         this.serviceClass = serviceClass;
         this.endpoints = endpoints;

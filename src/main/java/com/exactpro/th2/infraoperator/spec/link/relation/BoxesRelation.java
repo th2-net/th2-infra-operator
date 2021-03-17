@@ -28,15 +28,14 @@ import java.util.List;
 public final class BoxesRelation {
 
     private List<PinCouplingMQ> mqLinks;
-    private List<PinCouplingGRPC> grpcLinks;
 
+    private List<PinCouplingGRPC> grpcLinks;
 
     private BoxesRelation(List<PinCouplingMQ> mqLinks, List<PinCouplingGRPC> grpcLinks) {
 
         this.mqLinks = mqLinks;
         this.grpcLinks = grpcLinks;
     }
-
 
     @JsonCreator
     public static BoxesRelation newRelation(@JsonProperty("router-mq") List<PinCouplingMQ> mqLinks,
@@ -50,37 +49,33 @@ public final class BoxesRelation {
         return BoxesRelation.newRelation(null, null);
     }
 
-
     public List<PinCouplingMQ> getRouterMq() {
         return this.mqLinks;
     }
-
 
     public void setRouterMq(List<PinCouplingMQ> mqLinks) {
         this.mqLinks = mqLinks;
     }
 
-
     public List<PinCouplingGRPC> getRouterGrpc() {
         return this.grpcLinks;
     }
 
-
     public List<PinCoupling> getAllLinks() {
         List<PinCoupling> links = new ArrayList<>();
-        if (mqLinks != null)
+        if (mqLinks != null) {
             links.addAll(mqLinks);
-        if (grpcLinks != null)
+        }
+        if (grpcLinks != null) {
             links.addAll(grpcLinks);
+        }
         return links;
     }
-
 
     @Override
     public boolean equals(final Object o) {
         throw new AssertionError("method not defined");
     }
-
 
     @Override
     public int hashCode() {

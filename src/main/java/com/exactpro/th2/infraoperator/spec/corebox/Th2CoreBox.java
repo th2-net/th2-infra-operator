@@ -22,6 +22,8 @@ import io.fabric8.kubernetes.model.annotation.Group;
 import io.fabric8.kubernetes.model.annotation.Kind;
 import io.fabric8.kubernetes.model.annotation.Version;
 
+import java.util.Objects;
+
 @Group("th2.exactpro.com")
 @Version("v1")
 @Kind("Th2CoreBox")
@@ -29,8 +31,7 @@ public class Th2CoreBox extends Th2CustomResource {
 
     private Th2CoreBoxSpec spec;
 
-    public Th2CoreBox() {
-    }
+    public Th2CoreBox() { }
 
     public Th2CoreBoxSpec getSpec() {
         return this.spec;
@@ -42,14 +43,20 @@ public class Th2CoreBox extends Th2CustomResource {
     }
 
     public boolean equals(final Object o) {
-        if (o == this) return true;
-        if (!(o instanceof Th2CoreBox)) return false;
+        if (o == this) {
+            return true;
+        }
+        if (!(o instanceof Th2CoreBox)) {
+            return false;
+        }
         final Th2CoreBox other = (Th2CoreBox) o;
-        if (!super.equals(o)) return false;
-        final Object this$spec = this.getSpec();
-        final Object other$spec = other.getSpec();
-        if (this$spec == null ? other$spec != null : !this$spec.equals(other$spec)) return false;
-        return true;
+        if (!super.equals(o)) {
+            return false;
+        }
+        final Object thisSpec = this.getSpec();
+        final Object otherSpec = other.getSpec();
+
+        return Objects.equals(thisSpec, otherSpec);
     }
 
     public int hashCode() {

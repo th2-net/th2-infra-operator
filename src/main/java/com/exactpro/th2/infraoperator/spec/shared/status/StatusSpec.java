@@ -30,8 +30,11 @@ public class StatusSpec {
     private static final String SUB_RESOURCE_NAME_PLACEHOLDER = "unknown";
 
     private final List<Condition> conditions = new ArrayList<>();
+
     private RolloutPhase phase = RolloutPhase.IDLE;
+
     private String subResourceName;
+
     private String message;
 
     public void idle() {
@@ -82,8 +85,8 @@ public class StatusSpec {
         refreshCondition(type, phase, SUB_RESOURCE_NAME_PLACEHOLDER, status, message);
     }
 
-
-    private void refreshCondition(Condition.Type type, RolloutPhase phase, String subResourceName, boolean status, String message) {
+    private void refreshCondition(Condition.Type type, RolloutPhase phase, String subResourceName,
+                                  boolean status, String message) {
 
         Condition condition;
         if (conditions.isEmpty()) {
@@ -93,13 +96,13 @@ public class StatusSpec {
             condition = conditions.get(0);
         }
 
-
         String currentTime = Instant.now().truncatedTo(SECONDS).toString();
         condition.setLastUpdateTime(currentTime);
 
         String currentStatus = Condition.Status.valueOf(status).toString();
-        if (!currentStatus.equals(condition.getStatus()))
+        if (!currentStatus.equals(condition.getStatus())) {
             condition.setLastTransitionTime(currentTime);
+        }
 
         this.message = message;
         this.phase = phase;
@@ -127,6 +130,7 @@ public class StatusSpec {
     }
 
     public String toString() {
-        return "StatusSpec(conditions=" + this.getConditions() + ", phase=" + this.getPhase() + ", subResourceName=" + this.getSubResourceName() + ", message=" + this.getMessage() + ")";
+        return "StatusSpec(conditions=" + this.getConditions() + ", phase=" + this.getPhase() +
+                ", subResourceName=" + this.getSubResourceName() + ", message=" + this.getMessage() + ")";
     }
 }

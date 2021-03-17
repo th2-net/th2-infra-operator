@@ -1,3 +1,19 @@
+/*
+ * Copyright 2020-2021 Exactpro (Exactpro Systems Limited)
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
 package com.exactpro.th2.infraoperator.operator.manager.impl;
 
 import com.exactpro.th2.infraoperator.OperatorState;
@@ -30,10 +46,10 @@ public class Th2LinkEventHandler implements Watcher<Th2Link> {
     private static final Logger logger = LoggerFactory.getLogger(Th2LinkEventHandler.class);
 
     private LinkClient linkClient;
+
     public LinkClient getLinkClient() {
         return linkClient;
     }
-
 
     public static Th2LinkEventHandler newInstance(SharedInformerFactory sharedInformerFactory,
                                                   KubernetesClient client,
@@ -42,12 +58,9 @@ public class Th2LinkEventHandler implements Watcher<Th2Link> {
         res.linkClient = new LinkClient(client);
 
         SharedIndexInformer<Th2Link> linkInformer = sharedInformerFactory.sharedIndexInformerForCustomResource(
-                Th2Link.class,
-                RESYNC_TIME);
+                Th2Link.class, RESYNC_TIME);
 
-        linkInformer.addEventHandler(new GenericResourceEventHandler<>(
-                res,
-                eventQueue));
+        linkInformer.addEventHandler(new GenericResourceEventHandler<>(res, eventQueue));
 
         return res;
     }
@@ -57,13 +70,14 @@ public class Th2LinkEventHandler implements Watcher<Th2Link> {
         Set<String> linkNames = new HashSet<>();
         Set<String> linkIds = new HashSet<>();
         for (var link : links) {
-            if (!linkNames.add(link.getName()))
+            if (!linkNames.add(link.getName())) {
                 logger.warn("Link with name \"{}\" already exists in the \"{}\"", link.getName(), annotation);
-            if (!linkIds.add(link.getId()))
+            }
+            if (!linkIds.add(link.getId())) {
                 logger.warn("Link with id \"{}\" already exists in the \"{}\"", link.getId(), annotation);
+            }
         }
     }
-
 
     private void checkForDuplicates(Th2Link th2Link) {
 
@@ -74,13 +88,11 @@ public class Th2LinkEventHandler implements Watcher<Th2Link> {
         checkForDuplicates(spec.getDictionariesRelation(), resourceLabel);
     }
 
-
     private Th2Link getPreviousLink(Th2Link th2Link, List<Th2Link> linkResources) {
 
         int index = linkResources.indexOf(th2Link);
         return index < 0 ? Th2Link.newInstance() : linkResources.get(index);
     }
-
 
     private int refreshAffectedBoxes(Th2Link prevLink, Th2Link newLink) {
 
@@ -98,7 +110,6 @@ public class Th2LinkEventHandler implements Watcher<Th2Link> {
         }
     }
 
-
     private Set<String> getAffectedBoxNames(Th2Link prevLink, Th2Link newLink) {
 
         // collect box names affected by router link changes
@@ -112,8 +123,8 @@ public class Th2LinkEventHandler implements Watcher<Th2Link> {
         List<DictionaryBinding> prevDictionaryBindings = prevLink.getSpec().getDictionariesRelation();
         List<DictionaryBinding> newDictionaryBindings = newLink.getSpec().getDictionariesRelation();
 
-        Set<String> affectedByDictionaryBindings = getAffectedBoxNamesByList(prevDictionaryBindings, newDictionaryBindings,
-                binding -> Set.of(binding.getBox()));
+        Set<String> affectedByDictionaryBindings = getAffectedBoxNamesByList(prevDictionaryBindings,
+                newDictionaryBindings, binding -> Set.of(binding.getBox()));
 
         // join two sets
         affectedByRouterLinks.addAll(affectedByDictionaryBindings);
@@ -149,7 +160,6 @@ public class Th2LinkEventHandler implements Watcher<Th2Link> {
 
     }
 
-
     <T extends Identifiable> Set<String> getAffectedBoxNamesByList(List<T> prevLinks, List<T> newLinks,
                                                                    Function<T, Set<String>> boxesExtractor) {
 
@@ -179,6 +189,4 @@ public class Th2LinkEventHandler implements Watcher<Th2Link> {
     public void onClose(WatcherException cause) {
         throw new AssertionError("This method should not be called");
     }
-
 }
-

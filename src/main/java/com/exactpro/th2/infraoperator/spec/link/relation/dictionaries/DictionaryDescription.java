@@ -20,14 +20,13 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 
 import java.util.Objects;
 
-
 public final class DictionaryDescription {
 
     public static final String DEFAULT_DICTIONARY_TYPE = "MAIN";
 
     private String name;
-    private String type;
 
+    private String type;
 
     public DictionaryDescription(@JsonProperty("name") String name,
                                  @JsonProperty("type") String type) {
@@ -35,27 +34,25 @@ public final class DictionaryDescription {
         this.type = type == null ? DEFAULT_DICTIONARY_TYPE : type;
     }
 
-
     public String getName() {
         return this.name;
     }
-
 
     public String getType() {
         return this.type;
     }
 
-
     @Override
     public boolean equals(final Object o) {
-        if (o == this)
+        if (o == this) {
             return true;
-        if (!(o instanceof DictionaryDescription))
+        }
+        if (!(o instanceof DictionaryDescription)) {
             return false;
+        }
         return Objects.equals(name, ((DictionaryDescription) o).name)
                 && Objects.equals(type, ((DictionaryDescription) o).type);
     }
-
 
     @Override
     public int hashCode() {

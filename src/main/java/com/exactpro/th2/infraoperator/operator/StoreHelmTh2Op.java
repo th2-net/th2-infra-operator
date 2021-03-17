@@ -30,7 +30,6 @@ public abstract class StoreHelmTh2Op<CR extends Th2CustomResource> extends HelmR
 
     private static final Logger logger = LoggerFactory.getLogger(StoreHelmTh2Op.class);
 
-
     public static final String EVENT_STORAGE_PIN_ALIAS = "estore-pin";
 
     public static final String EVENT_STORAGE_LINK_NAME_SUFFIX = "-to-estore_hidden-link";
@@ -38,7 +37,6 @@ public abstract class StoreHelmTh2Op<CR extends Th2CustomResource> extends HelmR
     public static final String EVENT_ST_LINK_RESOURCE_NAME = "estore-hidden-links";
 
     public static final String EVENT_STORAGE_BOX_ALIAS = "estore";
-
 
     public static final String MESSAGE_STORAGE_PIN_ALIAS = "mstore-pin";
 
@@ -48,12 +46,11 @@ public abstract class StoreHelmTh2Op<CR extends Th2CustomResource> extends HelmR
 
     public static final String MESSAGE_STORAGE_BOX_ALIAS = "mstore";
 
-
     public StoreHelmTh2Op(HelmOperatorContext.Builder<?, ?> builder) {
         super(builder);
     }
 
-    private void nameCheck (CR resource) {
+    private void nameCheck(CR resource) {
         var msNamespace = extractNamespace(resource);
         var lock = OperatorState.INSTANCE.getLock(msNamespace);
 
@@ -114,7 +111,6 @@ public abstract class StoreHelmTh2Op<CR extends Th2CustomResource> extends HelmR
     protected void updateDependedResourcesIfNeeded(CR resource, List<Th2CustomResource> linkedResources) {
         // nothing
     }
-
 
     protected abstract String getStorageName();
 

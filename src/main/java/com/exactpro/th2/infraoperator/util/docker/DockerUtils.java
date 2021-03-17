@@ -40,13 +40,13 @@ public final class DockerUtils {
         throw new AssertionError();
     }
 
-
     @SneakyThrows
     public static Map<String, String> getImageLabels(Image image, NexusAuth nexusAuth) {
         Objects.requireNonNull(image);
         Objects.requireNonNull(nexusAuth);
 
-        return readImageManifest(HttpConnectionUtils.getNexusConnection(image, nexusAuth).getInputStream()).getHistory().get(0)
+        return readImageManifest(HttpConnectionUtils.getNexusConnection(image, nexusAuth).getInputStream())
+                .getHistory().get(0)
                 .getV1Compatibility()
                 .getConfig()
                 .getLabels();

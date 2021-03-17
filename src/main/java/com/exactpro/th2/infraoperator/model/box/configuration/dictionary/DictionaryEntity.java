@@ -19,7 +19,9 @@ package com.exactpro.th2.infraoperator.model.box.configuration.dictionary;
 public class DictionaryEntity {
 
     private String name;
+
     private String type;
+
     private String data;
 
     DictionaryEntity(String name, String type, String data) {
@@ -44,14 +46,14 @@ public class DictionaryEntity {
         return new Builder();
     }
 
-
     public static class Builder {
         private String name;
+
         private String type;
+
         private String data;
 
-        public Builder() {
-        }
+        public Builder() { }
 
         public Builder setName(String name) {
             this.name = name;
