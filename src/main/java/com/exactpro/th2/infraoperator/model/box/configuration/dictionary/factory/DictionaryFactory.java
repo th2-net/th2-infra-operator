@@ -33,12 +33,6 @@ import java.util.List;
  */
 public class DictionaryFactory {
 
-    private DictionaryResourceFinder resourceFinder;
-
-    public DictionaryFactory(DictionaryResourceFinder resourceFinder) {
-        this.resourceFinder = resourceFinder;
-    }
-
     /**
      * Creates a list of {@link DictionaryEntity} based on the th2 resource and a list of active links.
      *
@@ -56,21 +50,10 @@ public class DictionaryFactory {
                     DictionaryDescription dict = link.getDictionary();
                     String name = dict.getName();
                     String type = dict.getType();
-                    Th2Dictionary res = resourceFinder.getResource(name, resource.getMetadata().getNamespace());
-
-                    String encodedData;
-                    if (res.getSpec().isCompressed()) {
-                        encodedData = res.getSpec().getData();
-                    } else {
-                        encodedData = new String(
-                                ArchiveUtils.getGZIPBase64Encoder().encodeString(res.getSpec().getData()));
-
-                    }
 
                     dictionaries.add(DictionaryEntity.builder()
                             .setName(name)
                             .setType(type)
-                            .setData(encodedData)
                             .build());
                 }
             } catch (Exception e) {
