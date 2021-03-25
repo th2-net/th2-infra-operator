@@ -44,6 +44,7 @@ import static com.exactpro.th2.infraoperator.util.ExtractUtils.extractNamespace;
 
 public class Th2DictionaryEventHandler implements Watcher<Th2Dictionary> {
     private static final Logger logger = LoggerFactory.getLogger(Th2DictionaryEventHandler.class);
+
     //TODO remove
     private static final List<String> types = Arrays.asList("MAIN", "LEVEL1", "LEVEL2", "INCOMING", "OUTGOING");
 
@@ -135,7 +136,8 @@ public class Th2DictionaryEventHandler implements Watcher<Th2Dictionary> {
         helmReleaseMD.setNamespace(ExtractUtils.extractNamespace(dictionary));
         helmReleaseMD.setLabels(resMD.getLabels());
         helmReleaseMD.setAnnotations(resMD.getAnnotations());
-        helmReleaseMD.setAnnotations(helmReleaseMD.getAnnotations() != null ? helmReleaseMD.getAnnotations() : new HashMap<>());
+        helmReleaseMD.setAnnotations(helmReleaseMD.getAnnotations() != null
+                ? helmReleaseMD.getAnnotations() : new HashMap<>());
 
         //TODO take config from charts
         Map<String, Object> chartCfg = new HashMap<>(OperatorConfig.INSTANCE.getChartConfig().toMap());
