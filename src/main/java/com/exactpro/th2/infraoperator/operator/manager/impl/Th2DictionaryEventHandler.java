@@ -36,6 +36,7 @@ import org.slf4j.LoggerFactory;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 
+import static com.exactpro.th2.infraoperator.operator.HelmReleaseTh2Op.*;
 import static com.exactpro.th2.infraoperator.util.CustomResourceUtils.RESYNC_TIME;
 import static com.exactpro.th2.infraoperator.util.CustomResourceUtils.annotationFor;
 import static com.exactpro.th2.infraoperator.util.ExtractUtils.extractName;
@@ -43,10 +44,8 @@ import static com.exactpro.th2.infraoperator.util.ExtractUtils.extractNamespace;
 
 public class Th2DictionaryEventHandler implements Watcher<Th2Dictionary> {
     private static final Logger logger = LoggerFactory.getLogger(Th2DictionaryEventHandler.class);
-    private static final String NAME_ALIAS = "name";
-    private static final String DATA_ALIAS = "data";
-    public static final String CHART_PROPERTIES_ALIAS = "chart";
-    public static final String ROOT_PROPERTIES_ALIAS = "component";
+    //TODO remove
+    private static final List<String> types = Arrays.asList("MAIN", "LEVEL1", "LEVEL2", "INCOMING", "OUTGOING");
 
     private MixedOperation<HelmRelease, KubernetesResourceList<HelmRelease>, Resource<HelmRelease>>
             helmReleaseClient = new DefaultKubernetesClient().customResources(HelmRelease.class);
@@ -93,7 +92,7 @@ public class Th2DictionaryEventHandler implements Watcher<Th2Dictionary> {
         String sourceHash = ExtractUtils.sourceHash(dictionary, false);
         String prevHash = sourceHashes.get(resourceLabel);
 
-        if (prevHash != null && prevHash.equals(sourceHash)) {
+        if (action == Action.MODIFIED && prevHash != null && prevHash.equals(sourceHash)) {
             logger.info("Dictionary has not been changed");
             return;
         }
@@ -114,45 +113,44 @@ public class Th2DictionaryEventHandler implements Watcher<Th2Dictionary> {
             sourceHashes.remove(resourceLabel);
             helmReleaseClient.inNamespace(resNamespace).withName(resName).delete();
         } else {
-            HelmRelease helmRelease;
-            if (action == Action.ADDED) {
-                helmRelease = new HelmRelease();
-            } else {
-                helmRelease = helmReleaseClient.inNamespace(resNamespace).withName(resName).get();
+            //TODO definitely remove
+            for (String type : types) {
+                HelmRelease helmRelease = new HelmRelease();
+                mapProperties(dictionary, helmRelease, type);
+                helmReleaseClient.inNamespace(resNamespace).createOrReplace(helmRelease);
             }
-            mapProperties(dictionary, helmRelease);
-            helmReleaseClient.inNamespace(resNamespace).createOrReplace(helmRelease);
             sourceHashes.put(resourceLabel, sourceHash);
         }
     }
 
-    @Override
-    public void onClose(WatcherException cause) {
-        throw new AssertionError("This method should not be called");
-    }
+    private void mapProperties(Th2Dictionary dictionary, HelmRelease helmRelease, String type) {
+        String dataAlias = "data";
 
-    private void mapProperties(Th2Dictionary dictionary, HelmRelease helmRelease) {
-
+        //TODO refactor
         var helmReleaseMD = helmRelease.getMetadata();
         var resMD = dictionary.getMetadata();
         var resName = resMD.getName();
 
-        helmReleaseMD.setName(resName);
+        helmReleaseMD.setName(resName + "-" + type.toLowerCase());
         helmReleaseMD.setNamespace(ExtractUtils.extractNamespace(dictionary));
         helmReleaseMD.setLabels(resMD.getLabels());
         helmReleaseMD.setAnnotations(resMD.getAnnotations());
         helmReleaseMD.setAnnotations(helmReleaseMD.getAnnotations() != null ? helmReleaseMD.getAnnotations() : new HashMap<>());
 
-        var chartConfig = OperatorConfig.INSTANCE.getChartConfig();
-
-        Map<String, Object> chartCfg = new HashMap<>(chartConfig.toMap());
+        //TODO take config from charts
+        Map<String, Object> chartCfg = new HashMap<>(OperatorConfig.INSTANCE.getChartConfig().toMap());
         chartCfg.put("path", "./dictionary/");
-        helmRelease.mergeSpecProp(CHART_PROPERTIES_ALIAS, chartCfg);
 
+        helmRelease.mergeSpecProp(CHART_PROPERTIES_ALIAS, chartCfg);
         helmRelease.mergeValue(ROOT_PROPERTIES_ALIAS, Map.of(
-                NAME_ALIAS, resName,
-                DATA_ALIAS, dictionary.getSpec().getData()
+                COMPONENT_NAME_ALIAS, resName + "-" + type,
+                dataAlias, dictionary.getSpec().getData()
         ));
+    }
+
+    @Override
+    public void onClose(WatcherException cause) {
+        throw new AssertionError("This method should not be called");
     }
 }
 
