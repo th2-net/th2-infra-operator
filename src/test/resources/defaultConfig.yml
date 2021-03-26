@@ -1,5 +1,6 @@
 namespacePrefixes:
-chart:
+chart-component:
+chart-dictionary:
 rabbitMQManagement:
 configMaps:
 schemaSecrets:

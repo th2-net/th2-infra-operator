@@ -18,11 +18,8 @@ package com.exactpro.th2.infraoperator.model.box.configuration.dictionary.factor
 
 import com.exactpro.th2.infraoperator.model.box.configuration.dictionary.DictionaryEntity;
 import com.exactpro.th2.infraoperator.spec.Th2CustomResource;
-import com.exactpro.th2.infraoperator.spec.dictionary.Th2Dictionary;
 import com.exactpro.th2.infraoperator.spec.link.relation.dictionaries.DictionaryBinding;
 import com.exactpro.th2.infraoperator.spec.link.relation.dictionaries.DictionaryDescription;
-import com.exactpro.th2.infraoperator.spec.strategy.resfinder.dictionary.DictionaryResourceFinder;
-import com.exactpro.th2.infraoperator.util.ArchiveUtils;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -32,12 +29,6 @@ import java.util.List;
  * based on the th2 resource and a list of active links.
  */
 public class DictionaryFactory {
-
-    private DictionaryResourceFinder resourceFinder;
-
-    public DictionaryFactory(DictionaryResourceFinder resourceFinder) {
-        this.resourceFinder = resourceFinder;
-    }
 
     /**
      * Creates a list of {@link DictionaryEntity} based on the th2 resource and a list of active links.
@@ -56,21 +47,10 @@ public class DictionaryFactory {
                     DictionaryDescription dict = link.getDictionary();
                     String name = dict.getName();
                     String type = dict.getType();
-                    Th2Dictionary res = resourceFinder.getResource(name, resource.getMetadata().getNamespace());
-
-                    String encodedData;
-                    if (res.getSpec().isCompressed()) {
-                        encodedData = res.getSpec().getData();
-                    } else {
-                        encodedData = new String(
-                                ArchiveUtils.getGZIPBase64Encoder().encodeString(res.getSpec().getData()));
-
-                    }
 
                     dictionaries.add(DictionaryEntity.builder()
                             .setName(name)
                             .setType(type)
-                            .setData(encodedData)
                             .build());
                 }
             } catch (Exception e) {

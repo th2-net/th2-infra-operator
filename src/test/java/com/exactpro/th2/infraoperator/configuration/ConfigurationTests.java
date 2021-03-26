@@ -35,7 +35,7 @@ public class ConfigurationTests {
     void testFullConfig() {
         beforeEach("src/test/resources/fullConfig.yml");
 
-        expected.setChartConfig(ChartConfig.builder().withGit("git").withPath("path").withRef("ref").build());
+        expected.setComponentChartConfig(ChartConfig.builder().withGit("git").withPath("path").withRef("ref").build());
         expected.setRabbitMQManagementConfig(
                 RabbitMQManagementConfig.builder().withHost("host").withPort(8080)
                         .withUsername("username").withPassword("password").withPersistence(true)
@@ -63,7 +63,7 @@ public class ConfigurationTests {
     void testGitChartConfig() {
         beforeEach("src/test/resources/gitChartConfig.yml");
 
-        expected.setChartConfig(ChartConfig.builder().withGit("git").withPath("path").withRef("ref").build());
+        expected.setComponentChartConfig(ChartConfig.builder().withGit("git").withPath("path").withRef("ref").build());
 
         Assertions.assertEquals(expected, OperatorConfig.INSTANCE.loadConfiguration());
     }
@@ -72,7 +72,7 @@ public class ConfigurationTests {
     void testHelmChartConfig() {
         beforeEach("src/test/resources/helmChartConfig.yml");
 
-        expected.setChartConfig(ChartConfig.builder().withRepository("helm").withName("name")
+        expected.setComponentChartConfig(ChartConfig.builder().withRepository("helm").withName("name")
                 .withVersion("1.1.0").build());
 
         Assertions.assertEquals(expected, OperatorConfig.INSTANCE.loadConfiguration());
@@ -204,9 +204,9 @@ public class ConfigurationTests {
         Assertions.assertEquals(Collections.emptyList(),
                 OperatorConfig.INSTANCE.loadConfiguration().getNamespacePrefixes());
 
-        Assertions.assertNull(OperatorConfig.INSTANCE.loadConfiguration().getChartConfig().getGit());
-        Assertions.assertNull(OperatorConfig.INSTANCE.loadConfiguration().getChartConfig().getRef());
-        Assertions.assertNull(OperatorConfig.INSTANCE.loadConfiguration().getChartConfig().getPath());
+        Assertions.assertNull(OperatorConfig.INSTANCE.loadConfiguration().getComponentChartConfig().getGit());
+        Assertions.assertNull(OperatorConfig.INSTANCE.loadConfiguration().getComponentChartConfig().getRef());
+        Assertions.assertNull(OperatorConfig.INSTANCE.loadConfiguration().getComponentChartConfig().getPath());
 
         Assertions.assertNull(OperatorConfig.INSTANCE.loadConfiguration().getRabbitMQManagementConfig().getHost());
         Assertions.assertEquals(0,

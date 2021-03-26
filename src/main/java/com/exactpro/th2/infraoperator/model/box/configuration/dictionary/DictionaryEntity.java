@@ -22,12 +22,9 @@ public class DictionaryEntity {
 
     private String type;
 
-    private String data;
-
-    DictionaryEntity(String name, String type, String data) {
+    DictionaryEntity(String name, String type) {
         this.name = name;
         this.type = type;
-        this.data = data;
     }
 
     public String getName() {
@@ -36,10 +33,6 @@ public class DictionaryEntity {
 
     public String getType() {
         return this.type;
-    }
-
-    public String getData() {
-        return this.data;
     }
 
     public static Builder builder() {
@@ -51,9 +44,8 @@ public class DictionaryEntity {
 
         private String type;
 
-        private String data;
-
-        public Builder() { }
+        public Builder() {
+        }
 
         public Builder setName(String name) {
             this.name = name;
@@ -65,13 +57,8 @@ public class DictionaryEntity {
             return this;
         }
 
-        public Builder setData(String data) {
-            this.data = data;
-            return this;
-        }
-
         public DictionaryEntity build() {
-            return new DictionaryEntity(name, type, data);
+            return new DictionaryEntity(name, type);
         }
     }
 }

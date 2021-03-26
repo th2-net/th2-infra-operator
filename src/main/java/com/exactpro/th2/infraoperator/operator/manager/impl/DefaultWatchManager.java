@@ -167,7 +167,7 @@ public class DefaultWatchManager {
         context.addHandler(NamespaceEventHandler.newInstance(sharedInformerFactory, eventDispatcher.getEventQueue()));
         context.addHandler(Th2LinkEventHandler.newInstance(sharedInformerFactory, client,
                 eventDispatcher.getEventQueue()));
-        context.addHandler(Th2DictionaryEventHandler.newInstance(sharedInformerFactory, dictionaryClient,
+        context.addHandler(Th2DictionaryEventHandler.newInstance(sharedInformerFactory, client,
                 eventDispatcher.getEventQueue()));
         context.addHandler(ConfigMapEventHandler.newInstance(sharedInformerFactory, client,
                 eventDispatcher.getEventQueue()));
@@ -287,7 +287,7 @@ public class DefaultWatchManager {
 
         operatorBuilder.grpcConfigFactory(new GrpcRouterConfigFactory(operatorBuilder.getResourceFinder()));
 
-        operatorBuilder.dictionaryFactory(new DictionaryFactory(operatorBuilder.getDictionaryResourceFinder()));
+        operatorBuilder.dictionaryFactory(new DictionaryFactory());
     }
 
     public static Builder builder(KubernetesClient client) {
