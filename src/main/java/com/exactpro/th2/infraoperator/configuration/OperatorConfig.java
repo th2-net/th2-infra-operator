@@ -65,8 +65,12 @@ public enum OperatorConfig {
         return getConfig().getSchemaSecrets();
     }
 
-    public ChartConfig getChartConfig() {
-        return getConfig().getChartConfig();
+    public ChartConfig getComponentChartConfig() {
+        return getConfig().getComponentChartConfig();
+    }
+
+    public ChartConfig getDictionaryChartConfig() {
+        return getConfig().getDictionaryChartConfig();
     }
 
     public RabbitMQManagementConfig getRabbitMQManagementConfig() {
@@ -95,8 +99,11 @@ public enum OperatorConfig {
     @JsonIgnoreProperties(ignoreUnknown = true)
     static class Configuration {
 
-        @JsonProperty("chart")
-        private ChartConfig chartConfig;
+        @JsonProperty("chart-component")
+        private ChartConfig componentChartConfig;
+
+        @JsonProperty("chart-dictionary")
+        private ChartConfig dictionaryChartConfig;
 
         @JsonProperty("rabbitMQManagement")
         private RabbitMQManagementConfig rabbitMQManagementConfig;
@@ -112,7 +119,8 @@ public enum OperatorConfig {
         private String ingressHost;
 
         public Configuration() {
-            chartConfig = new ChartConfig();
+            componentChartConfig = new ChartConfig();
+            dictionaryChartConfig = new ChartConfig();
             rabbitMQManagementConfig = new RabbitMQManagementConfig();
             schemaSecrets = new SchemaSecrets();
             namespacePrefixes = new ArrayList<>();
@@ -120,13 +128,23 @@ public enum OperatorConfig {
             k8sUrl = "";
         }
 
-        public ChartConfig getChartConfig() {
-            return chartConfig;
+        public ChartConfig getComponentChartConfig() {
+            return componentChartConfig;
         }
 
-        public void setChartConfig(ChartConfig chartConfig) {
-            if (chartConfig != null) {
-                this.chartConfig = chartConfig;
+        public void setComponentChartConfig(ChartConfig componentChartConfig) {
+            if (componentChartConfig != null) {
+                this.componentChartConfig = componentChartConfig;
+            }
+        }
+
+        public ChartConfig getDictionaryChartConfig() {
+            return dictionaryChartConfig;
+        }
+
+        public void setDictionaryChartConfig(ChartConfig dictionaryChartConfig) {
+            if (dictionaryChartConfig != null) {
+                this.dictionaryChartConfig = dictionaryChartConfig;
             }
         }
 
@@ -198,7 +216,8 @@ public enum OperatorConfig {
                 return false;
             }
             Configuration that = (Configuration) o;
-            return Objects.equals(getChartConfig(), that.getChartConfig())
+            return Objects.equals(getComponentChartConfig(), that.getComponentChartConfig())
+                    && Objects.equals(getComponentChartConfig(), that.getComponentChartConfig())
                     && Objects.equals(getRabbitMQManagementConfig(), that.getRabbitMQManagementConfig())
                     && Objects.equals(getSchemaSecrets(), that.getSchemaSecrets())
                     && Objects.equals(getNamespacePrefixes(), that.getNamespacePrefixes())

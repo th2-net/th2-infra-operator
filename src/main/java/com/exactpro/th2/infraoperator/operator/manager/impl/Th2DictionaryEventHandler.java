@@ -139,11 +139,7 @@ public class Th2DictionaryEventHandler implements Watcher<Th2Dictionary> {
         helmReleaseMD.setAnnotations(helmReleaseMD.getAnnotations() != null
                 ? helmReleaseMD.getAnnotations() : new HashMap<>());
 
-        //TODO take config from charts
-        Map<String, Object> chartCfg = new HashMap<>(OperatorConfig.INSTANCE.getChartConfig().toMap());
-        chartCfg.put("path", "./dictionary/");
-
-        helmRelease.mergeSpecProp(CHART_PROPERTIES_ALIAS, chartCfg);
+        helmRelease.mergeSpecProp(CHART_PROPERTIES_ALIAS, OperatorConfig.INSTANCE.getDictionaryChartConfig().toMap());
         helmRelease.mergeValue(ROOT_PROPERTIES_ALIAS, Map.of(
                 COMPONENT_NAME_ALIAS, resName + "-" + type,
                 dataAlias, dictionary.getSpec().getData()
