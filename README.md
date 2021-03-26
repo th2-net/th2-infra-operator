@@ -38,7 +38,7 @@ namespacePrefixes:
   - prefixes-
 # these prefixes are used to filter namespaces that infra-operator will manage as a schema
 
-chart:
+chart-component:
 # this section includes information about git or helm repository as a source of helm charts
 # you can specify either git or helm repository
 
@@ -57,6 +57,30 @@ chart:
   # helm repository URL for helm charts used by Th2 Custom Resources
 
   name: components
+  # the name of the Helm chart without an alias
+
+  version: 3.2.0
+  # the targeted Helm chart version
+
+chart-dictionary:
+# this section includes information about git or helm repository as a source of helm charts for dictionaries
+# you can specify either git or helm repository
+
+  # git repository parameters 
+  git: git@some.server.com:some/repository
+  # git repository URL for helm charts used by Th2 Custom Resources
+  
+  ref: branch
+  # branch for helm charts
+
+  path: /path/to/charts
+  # repository path for charts
+
+  # helm repository parameters 
+  repository: https://helm.server.com/some/repository
+  # helm repository URL for helm charts used by Th2 Custom Resources
+
+  name: dictionaries
   # the name of the Helm chart without an alias
 
   version: 3.2.0
