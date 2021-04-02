@@ -287,7 +287,7 @@ public class DefaultWatchManager {
 
         operatorBuilder.grpcConfigFactory(new GrpcRouterConfigFactory(operatorBuilder.getResourceFinder()));
 
-        operatorBuilder.dictionaryFactory(new DictionaryFactory());
+        operatorBuilder.dictionaryFactory(new DictionaryFactory(operatorBuilder.getDictionaryResourceFinder()));
     }
 
     public static Builder builder(KubernetesClient client) {

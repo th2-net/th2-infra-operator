@@ -189,7 +189,6 @@ public abstract class AbstractTh2Operator<CR extends Th2CustomResource, KO exten
 
         String resourceLabel = CustomResourceUtils.annotationFor(resource);
         fingerprints.remove(resourceLabel);
-//        removeKubObjAnnotation(resource);
     }
 
     protected void errorEvent(CR resource) {
