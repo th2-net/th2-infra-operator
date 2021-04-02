@@ -18,13 +18,16 @@ package com.exactpro.th2.infraoperator.model.box.configuration.dictionary;
 
 public class DictionaryEntity {
 
-    private String name;
+    private final String name;
 
-    private String type;
+    private final String type;
 
-    DictionaryEntity(String name, String type) {
+    private final String checksum;
+
+    DictionaryEntity(String name, String type, String checksum) {
         this.name = name;
         this.type = type;
+        this.checksum = checksum;
     }
 
     public String getName() {
@@ -35,6 +38,10 @@ public class DictionaryEntity {
         return this.type;
     }
 
+    public String getChecksum() {
+        return this.checksum;
+    }
+
     public static Builder builder() {
         return new Builder();
     }
@@ -43,6 +50,8 @@ public class DictionaryEntity {
         private String name;
 
         private String type;
+
+        private String checksum;
 
         public Builder() {
         }
@@ -57,8 +66,13 @@ public class DictionaryEntity {
             return this;
         }
 
+        public Builder setChecksum(String checksum) {
+            this.checksum = checksum;
+            return this;
+        }
+
         public DictionaryEntity build() {
-            return new DictionaryEntity(name, type);
+            return new DictionaryEntity(name, type, checksum);
         }
     }
 }
