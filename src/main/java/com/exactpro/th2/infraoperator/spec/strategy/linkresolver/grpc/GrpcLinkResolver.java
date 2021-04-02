@@ -65,9 +65,11 @@ public class GrpcLinkResolver extends GenericLinkResolver<PinCouplingGRPC> imple
 
         var namespace = ExtractUtils.extractNamespace(linkRes);
 
-        if (th2PinEndpointPreValidation(namespace,
+        if (!th2PinEndpointPreValidation(namespace,
                 link.getFrom().getBoxName(),
                 link.getTo().getBoxName())) {
+            logger.warn("One of the boxes {} or {} is not present in the cache",
+                    link.getFrom().getBoxName(), link.getTo().getBoxName());
             return false;
         }
 

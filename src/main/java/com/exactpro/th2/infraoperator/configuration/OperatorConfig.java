@@ -99,10 +99,10 @@ public enum OperatorConfig {
     @JsonIgnoreProperties(ignoreUnknown = true)
     static class Configuration {
 
-        @JsonProperty("chart-component")
+        @JsonProperty("chartComponent")
         private ChartConfig componentChartConfig;
 
-        @JsonProperty("chart-dictionary")
+        @JsonProperty("chartDictionary")
         private ChartConfig dictionaryChartConfig;
 
         @JsonProperty("rabbitMQManagement")

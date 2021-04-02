@@ -1,12 +1,12 @@
 namespacePrefixes:
-chart-component:
+chartComponent:
   git:
   path:
   ref:
   repository:
   name:
   version:
-chart-dictionary:
+chartDictionary:
   git:
   path:
   ref:

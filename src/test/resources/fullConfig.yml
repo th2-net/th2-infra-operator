@@ -1,11 +1,11 @@
 namespacePrefixes:
   - string1
   - string2
-chart-component:
+chartComponent:
   git: git
   path: path
   ref: ref
-chart-dictionary:
+chartDictionary:
   git: git
   path: path
   ref: ref
