@@ -57,6 +57,10 @@ public final class BoxesRelation {
         this.mqLinks = mqLinks;
     }
 
+    public void setRouterGrpc(List<PinCouplingGRPC> grpcLinks) {
+        this.grpcLinks = grpcLinks;
+    }
+
     public List<PinCouplingGRPC> getRouterGrpc() {
         return this.grpcLinks;
     }
