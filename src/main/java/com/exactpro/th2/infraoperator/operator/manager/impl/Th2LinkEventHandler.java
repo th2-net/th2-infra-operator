@@ -20,6 +20,7 @@ import com.exactpro.th2.infraoperator.OperatorState;
 import com.exactpro.th2.infraoperator.model.kubernetes.client.impl.LinkClient;
 import com.exactpro.th2.infraoperator.spec.link.Th2Link;
 import com.exactpro.th2.infraoperator.spec.link.Th2LinkSpec;
+import com.exactpro.th2.infraoperator.spec.link.relation.BoxesRelation;
 import com.exactpro.th2.infraoperator.spec.link.relation.dictionaries.DictionaryBinding;
 import com.exactpro.th2.infraoperator.spec.link.relation.pins.PinCoupling;
 import com.exactpro.th2.infraoperator.spec.shared.Identifiable;
@@ -79,6 +80,19 @@ public class Th2LinkEventHandler implements Watcher<Th2Link> {
         }
     }
 
+    private <T extends PinCoupling> List<T> removeInvalidLinks(List<T> links, String annotation) {
+        List<T> validLinks = new ArrayList<>();
+        for (var link : links) {
+            if (link.getTo().getBoxName().equals(link.getFrom().getBoxName())) {
+                logger.warn("Skipping invalid link \"{}\" in the \"{}\". " +
+                        "\"from\" box name can not be the same as \"to\" box name", link.getName(), annotation);
+            } else {
+                validLinks.add(link);
+            }
+        }
+        return validLinks;
+    }
+
     private void checkForDuplicates(Th2Link th2Link) {
 
         String resourceLabel = annotationFor(th2Link);
@@ -86,6 +100,14 @@ public class Th2LinkEventHandler implements Watcher<Th2Link> {
         checkForDuplicates(spec.getBoxesRelation().getRouterMq(), resourceLabel);
         checkForDuplicates(spec.getBoxesRelation().getRouterGrpc(), resourceLabel);
         checkForDuplicates(spec.getDictionariesRelation(), resourceLabel);
+    }
+
+    private void removeInvalidLinks(Th2Link th2Link) {
+        String resourceLabel = annotationFor(th2Link);
+        Th2LinkSpec spec = th2Link.getSpec();
+        BoxesRelation boxesRelation = spec.getBoxesRelation();
+        boxesRelation.setRouterMq(removeInvalidLinks(boxesRelation.getRouterMq(), resourceLabel));
+        boxesRelation.setRouterGrpc(removeInvalidLinks(boxesRelation.getRouterGrpc(), resourceLabel));
     }
 
     private Th2Link getPreviousLink(Th2Link th2Link, List<Th2Link> linkResources) {
@@ -141,6 +163,7 @@ public class Th2LinkEventHandler implements Watcher<Th2Link> {
             lock.lock();
 
             checkForDuplicates(th2Link);
+            removeInvalidLinks(th2Link);
 
             var linkResources = new ArrayList<>(operatorState.getLinkResources(namespace));
 
