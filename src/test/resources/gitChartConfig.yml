@@ -1,4 +1,4 @@
-chart-component:
+chartComponent:
   git: git
   path: path
   ref: ref

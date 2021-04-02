@@ -190,7 +190,8 @@ public class BindQueueLinkResolver extends GenericLinkResolver<EnqueuedLink> imp
         if (!th2PinEndpointPreValidation(namespace,
                 link.getFrom().getBoxName(),
                 link.getTo().getBoxName())) {
-            logger.debug("One of the boxes weren't found in the cache");
+            logger.warn("One of the boxes {} or {} is not present in the cache",
+                    link.getFrom().getBoxName(), link.getTo().getBoxName());
             return null;
         }
 
