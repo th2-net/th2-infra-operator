@@ -70,7 +70,7 @@ public final class PinCouplingMQ implements PinCoupling {
 
     @Override
     public String getId() {
-        return String.format("%s[%s:%s-%s:%s]", this.getClass().getName(),
+        return String.format("%s[%s:%s-%s:%s]", this.getClass().getSimpleName(),
                 from.getBoxName(), from.getPinName(),
                 to.getBoxName(), to.getPinName());
     }

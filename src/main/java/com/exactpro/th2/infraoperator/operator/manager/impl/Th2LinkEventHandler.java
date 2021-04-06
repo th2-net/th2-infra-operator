@@ -71,11 +71,17 @@ public class Th2LinkEventHandler implements Watcher<Th2Link> {
         Set<String> linkNames = new HashSet<>();
         Set<String> linkIds = new HashSet<>();
         for (var link : links) {
-            if (!linkNames.add(link.getName())) {
-                logger.warn("Link with name \"{}\" already exists in the \"{}\"", link.getName(), annotation);
-            }
-            if (!linkIds.add(link.getId())) {
-                logger.warn("Link with id \"{}\" already exists in the \"{}\"", link.getId(), annotation);
+            boolean sameName = !linkNames.add(link.getName());
+            boolean sameContent = !linkIds.add(link.getId());
+            if (sameName && sameContent) {
+                logger.warn("There are multiple links with same name \"{}\" and same content \"{}\" in the \"{}\"",
+                        link.getName(), link.getId(), annotation);
+            } else if (sameName) {
+                logger.warn("There are multiple links with same name \"{}\" but different content in the \"{}\"",
+                        link.getName(), annotation);
+            } else if (sameContent) {
+                logger.warn("There are multiple links with same content \"{}\" but different names in the \"{}\"",
+                        link.getId(), annotation);
             }
         }
     }
