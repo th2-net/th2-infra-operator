@@ -131,7 +131,7 @@ public class BindQueueLinkResolver extends GenericLinkResolver<EnqueuedLink> imp
             var newQueueArguments = RabbitMQContext.generateQueueArguments(pin.getSettings());
             var currentQueue = RabbitMQContext.getQueue(namespace, queueName);
             if (currentQueue == null) {
-                logger.info("Queue '{}' does not yet exist. returning", queueName);
+                logger.info("Queue '{}' does not yet exist. skipping binding", queueName);
                 return;
             }
             if (!currentQueue.getArguments().equals(newQueueArguments)) {
@@ -165,14 +165,19 @@ public class BindQueueLinkResolver extends GenericLinkResolver<EnqueuedLink> imp
                 var fromBox = extinctLink.getFrom();
                 var toBox = extinctLink.getTo();
                 QueueDescription queueBunch = extinctLink.getQueueDescription();
-                var queue = queueBunch.getQueueName().toString();
+                var queueName = queueBunch.getQueueName().toString();
                 var routingKey = queueBunch.getRoutingKey().toString();
 
-                channel.queueUnbind(queue, queueBunch.getExchange(), routingKey);
+                var currentQueue = RabbitMQContext.getQueue(namespace, queueName);
+                if (currentQueue == null) {
+                    logger.info("Queue '{}' already removed. skipping unbinding", queueName);
+                    return;
+                }
+                channel.queueUnbind(queueName, queueBunch.getExchange(), routingKey);
 
                 String infoMsg = String.format(
                         "Unbind queue '%1$s' -> '%2$s' because link {%5$s.%3$s -> %5$s.%4$s} is not active anymore",
-                        queue, routingKey, fromBox, toBox, namespace
+                        queueName, routingKey, fromBox, toBox, namespace
                 );
 
                 logger.info(infoMsg);
@@ -182,13 +187,6 @@ public class BindQueueLinkResolver extends GenericLinkResolver<EnqueuedLink> imp
             logger.error(message, e);
             throw new NonTerminalException(message, e);
         }
-    }
-
-    private boolean isQueueUsed(QueueDescription targetQB, List<EnqueuedLink> links) {
-        return links.stream().anyMatch(qlb -> {
-            var qb = qlb.getQueueDescription();
-            return qb.getQueueName().equals(targetQB.getQueueName()) && qb.getExchange().equals(targetQB.getExchange());
-        });
     }
 
     private ResourceCouple validateAndReturnRes(Th2Link linkRes, PinCouplingMQ link,

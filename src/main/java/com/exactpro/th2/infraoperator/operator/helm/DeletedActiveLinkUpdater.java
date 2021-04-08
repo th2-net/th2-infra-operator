@@ -62,7 +62,7 @@ public class DeletedActiveLinkUpdater extends ActiveLinkUpdater {
     @Override
     protected void refreshMqLinks(List<Th2Link> linkResources, List<EnqueuedLink> mqActiveLinks,
                                   Th2CustomResource... newResources) {
-        queueGenLinkResolver.resolve(linkResources, mqActiveLinks);
+        queueGenLinkResolver.resolve(linkResources, mqActiveLinks, newResources);
     }
 
     @Override
