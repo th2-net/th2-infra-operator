@@ -46,7 +46,8 @@ public final class RabbitMQContext {
 
     private static final Map<String, Boolean> exchangeResets = new ConcurrentHashMap<>();
 
-    private RabbitMQContext() { }
+    private RabbitMQContext() {
+    }
 
     private static volatile RabbitMQManagementConfig managementConfig;
 
@@ -113,13 +114,16 @@ public final class RabbitMQContext {
     }
 
     public static Map<String, Object> generateQueueArguments(PinSettings pinSettings) throws NumberFormatException {
-
+        if (pinSettings == null) {
+            return Collections.emptyMap();
+        }
         if (pinSettings.getStorageOnDemand().equals("true")) {
             return Collections.emptyMap();
         } else {
             Map<String, Object> args = new HashMap<>();
             int queueLength = Integer.parseInt(pinSettings.getQueueLength());
             args.put("x-max-length", queueLength);
+            args.put("x-overflow", pinSettings.getOverloadStrategy());
             return args;
         }
     }
@@ -229,6 +233,24 @@ public final class RabbitMQContext {
             return rmqClient.getQueues(vhost);
         } catch (Exception e) {
             String message = "Exception while fetching queues";
+            logger.error(message, e);
+            throw new NonTerminalException(message, e);
+        }
+    }
+
+    public static QueueInfo getQueue(String vhost, String queueName) {
+
+        RabbitMQManagementConfig rabbitMQManagementConfig = getManagementConfig();
+        try {
+            Client rmqClient = getClient(
+                    String.format("http://%s:%s/api", rabbitMQManagementConfig.getHost(),
+                            rabbitMQManagementConfig.getPort())
+                    , rabbitMQManagementConfig.getUsername()
+                    , rabbitMQManagementConfig.getPassword()
+            );
+            return rmqClient.getQueue(vhost, queueName);
+        } catch (Exception e) {
+            String message = "Exception while fetching queue";
             logger.error(message, e);
             throw new NonTerminalException(message, e);
         }

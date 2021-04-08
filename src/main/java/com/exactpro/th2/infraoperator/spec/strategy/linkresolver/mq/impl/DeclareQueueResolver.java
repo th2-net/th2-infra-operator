@@ -97,11 +97,17 @@ public class DeclareQueueResolver {
                 String queueName = new QueueName(namespace, mqPin).toString();
                 //remove from set if pin for queue still exists.
                 boxUnlinkedQueueNames.remove(queueName);
+                var newQueueArguments = RabbitMQContext.generateQueueArguments(pin.getSettings());
+                var currentQueue = RabbitMQContext.getQueue(namespace, queueName);
+                if (currentQueue != null && !currentQueue.getArguments().equals(newQueueArguments)) {
+                    logger.warn("Arguments for queue '{}' were modified. Recreating with new arguments", queueName);
+                    channel.queueDelete(queueName);
+                }
                 var declareResult = channel.queueDeclare(queueName
                         , rabbitMQManagementConfig.isPersistence()
                         , false
                         , false
-                        , RabbitMQContext.generateQueueArguments(pin.getSettings()));
+                        , newQueueArguments);
                 logger.info("Queue '{}' of resource {} was successfully declared",
                         declareResult.getQueue(), extractName(resource));
             }

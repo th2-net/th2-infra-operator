@@ -27,8 +27,10 @@ import lombok.Data;
 @JsonIgnoreProperties(ignoreUnknown = true)
 public class PinSettings {
 
-    protected String storageOnDemand = "true";
+    protected String storageOnDemand;
 
-    protected String queueLength = "1000";
+    protected String queueLength;
+
+    protected String overloadStrategy;
 
 }

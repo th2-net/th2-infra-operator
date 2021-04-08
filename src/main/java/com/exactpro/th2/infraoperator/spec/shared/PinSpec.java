@@ -36,7 +36,7 @@ public class PinSpec {
     @JsonProperty("connection-type")
     protected SchemaConnectionType connectionType;
 
-    protected PinSettings settings = new PinSettings();
+    protected PinSettings settings =  null;
 
     protected Set<String> attributes = new HashSet<>();
 

@@ -86,10 +86,6 @@ public final class ExtractUtils {
         }
     }
 
-    public static boolean isStorageBox(HasMetadata hasMetadata) {
-        return isStorageBox(extractName(hasMetadata));
-    }
-
     public static boolean isStorageBox(String name) {
         return name.equals(StoreHelmTh2Op.MESSAGE_STORAGE_BOX_ALIAS)
                 || name.equals(StoreHelmTh2Op.EVENT_STORAGE_BOX_ALIAS);

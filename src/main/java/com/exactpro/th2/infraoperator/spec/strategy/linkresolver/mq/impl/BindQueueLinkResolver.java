@@ -31,7 +31,6 @@ import com.exactpro.th2.infraoperator.spec.link.validator.chain.impl.PinExist;
 import com.exactpro.th2.infraoperator.spec.link.validator.chain.impl.ResourceExist;
 import com.exactpro.th2.infraoperator.spec.link.validator.model.DirectionalLinkContext;
 import com.exactpro.th2.infraoperator.spec.shared.BoxDirection;
-import com.exactpro.th2.infraoperator.spec.shared.PinSettings;
 import com.exactpro.th2.infraoperator.spec.shared.SchemaConnectionType;
 import com.exactpro.th2.infraoperator.spec.strategy.linkresolver.GenericLinkResolver;
 import com.exactpro.th2.infraoperator.spec.strategy.linkresolver.mq.QueueLinkResolver;
@@ -96,9 +95,6 @@ public class BindQueueLinkResolver extends GenericLinkResolver<EnqueuedLink> imp
                         continue;
                     }
 
-                    logger.info("Queue '{}' of link {{}.{} -> {}.{}} successfully bound",
-                            queueBunch.getQueueName(), namespace, pinCouple.getFrom(), namespace, pinCouple.getTo());
-
                     bindQueues(namespace, queueBunch, resourceCouple.to, pinCouple.getTo());
                 }
 
@@ -130,10 +126,22 @@ public class BindQueueLinkResolver extends GenericLinkResolver<EnqueuedLink> imp
                 logger.info("RabbitMQ connection has been restored");
             }
 
-            PinSettings pinSettings = resource.getSpec().getPin(mqPin.getPinName()).getSettings();
-            channel.queueDeclare(queue.getQueueName().toString(), rabbitMQManagementConfig.isPersistence(), false,
-                    false, RabbitMQContext.generateQueueArguments(pinSettings));
+            var pin = resource.getSpec().getPin(mqPin.getPinName());
+            String queueName = queue.getQueueName().toString();
+            var newQueueArguments = RabbitMQContext.generateQueueArguments(pin.getSettings());
+            var currentQueue = RabbitMQContext.getQueue(namespace, queueName);
+            if (currentQueue == null) {
+                logger.info("Queue '{}' does not yet exist. returning", queueName);
+                return;
+            }
+            if (!currentQueue.getArguments().equals(newQueueArguments)) {
+                logger.warn("Arguments for queue '{}' were modified. Recreating with new arguments", queueName);
+                channel.queueDelete(queueName);
+                channel.queueDeclare(queueName, rabbitMQManagementConfig.isPersistence(), false,
+                        false, newQueueArguments);
+            }
             channel.queueBind(queue.getQueueName().toString(), queue.getExchange(), queue.getRoutingKey().toString());
+            logger.info("Queue '{}' successfully bound to '{}'", queueName, queue.getRoutingKey().toString());
         } catch (Exception e) {
             String message = "Exception while working with rabbitMq";
             logger.error(message, e);

@@ -34,7 +34,7 @@ import static com.exactpro.th2.infraoperator.operator.StoreHelmTh2Op.MESSAGE_STO
 public enum OperatorState {
     INSTANCE;
 
-    private Map<String, NamespaceState> namespaceStates = new ConcurrentHashMap<>();
+    private final Map<String, NamespaceState> namespaceStates = new ConcurrentHashMap<>();
 
     public void setLinkResources(String namespace, List<Th2Link> linkResources) {
         computeIfAbsent(namespace).setLinkResources(new ArrayList<>(linkResources));
@@ -131,7 +131,7 @@ public enum OperatorState {
 
         private String name;
 
-        private Set<String> availableTh2Resources;
+        private final Set<String> availableTh2Resources;
 
         private List<Th2Link> linkResources = new ArrayList<>();
 
@@ -141,7 +141,7 @@ public enum OperatorState {
 
         private List<DictionaryBinding> dictionaryBindings = new ArrayList<>();
 
-        private Lock lock = new ReentrantLock(true);
+        private final Lock lock = new ReentrantLock(true);
 
         public NamespaceState(String name) {
             this.name = name;
