@@ -39,6 +39,8 @@ public class HelmReleaseEventHandler implements Watcher<HelmRelease> {
 
     private static final Logger logger = LoggerFactory.getLogger(HelmReleaseEventHandler.class);
 
+    private static final String FAKE_RESOURCE_ALIAS = "FakeCustomResource";
+
     private final KubernetesClient client;
 
     private final MixedOperation<HelmRelease, KubernetesResourceList<HelmRelease>, Resource<HelmRelease>>
@@ -76,7 +78,8 @@ public class HelmReleaseEventHandler implements Watcher<HelmRelease> {
         String resourceLabel = annotationFor(helmRelease);
         String name = helmRelease.getMetadata().getName();
         String namespace = helmRelease.getMetadata().getNamespace();
-        if (resourceFinder.getResource(name, namespace) == null) {
+        var resource = resourceFinder.getResource(name, namespace);
+        if (resource == null || resource.getKind().equals(FAKE_RESOURCE_ALIAS)) {
             logger.info("\"{}\" Can't find associated CR, probably operator deleted it. it won't be redeployed!",
                     resourceLabel);
             return;
