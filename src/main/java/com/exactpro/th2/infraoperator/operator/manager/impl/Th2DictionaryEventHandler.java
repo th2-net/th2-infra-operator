@@ -45,9 +45,6 @@ import static com.exactpro.th2.infraoperator.util.ExtractUtils.extractNamespace;
 public class Th2DictionaryEventHandler implements Watcher<Th2Dictionary> {
     private static final Logger logger = LoggerFactory.getLogger(Th2DictionaryEventHandler.class);
 
-    //TODO remove
-    private static final List<String> types = Arrays.asList("MAIN", "LEVEL1", "LEVEL2", "INCOMING", "OUTGOING");
-
     private MixedOperation<HelmRelease, KubernetesResourceList<HelmRelease>, Resource<HelmRelease>>
             helmReleaseClient = new DefaultKubernetesClient().customResources(HelmRelease.class);
 
@@ -114,25 +111,21 @@ public class Th2DictionaryEventHandler implements Watcher<Th2Dictionary> {
             sourceHashes.remove(resourceLabel);
             helmReleaseClient.inNamespace(resNamespace).withName(resName).delete();
         } else {
-            //TODO definitely remove
-            for (String type : types) {
-                HelmRelease helmRelease = new HelmRelease();
-                mapProperties(dictionary, helmRelease, type);
-                helmReleaseClient.inNamespace(resNamespace).createOrReplace(helmRelease);
-            }
+            HelmRelease helmRelease = new HelmRelease();
+            mapProperties(dictionary, helmRelease);
+            helmReleaseClient.inNamespace(resNamespace).createOrReplace(helmRelease);
             sourceHashes.put(resourceLabel, sourceHash);
         }
     }
 
-    private void mapProperties(Th2Dictionary dictionary, HelmRelease helmRelease, String type) {
+    private void mapProperties(Th2Dictionary dictionary, HelmRelease helmRelease) {
         String dataAlias = "data";
 
-        //TODO refactor
         var helmReleaseMD = helmRelease.getMetadata();
         var resMD = dictionary.getMetadata();
         var resName = resMD.getName();
 
-        helmReleaseMD.setName(resName + "-" + type.toLowerCase());
+        helmReleaseMD.setName(resName);
         helmReleaseMD.setNamespace(ExtractUtils.extractNamespace(dictionary));
         helmReleaseMD.setLabels(resMD.getLabels());
         helmReleaseMD.setAnnotations(resMD.getAnnotations());
@@ -141,7 +134,7 @@ public class Th2DictionaryEventHandler implements Watcher<Th2Dictionary> {
 
         helmRelease.mergeSpecProp(CHART_PROPERTIES_ALIAS, OperatorConfig.INSTANCE.getDictionaryChartConfig().toMap());
         helmRelease.mergeValue(ROOT_PROPERTIES_ALIAS, Map.of(
-                COMPONENT_NAME_ALIAS, resName + "-" + type,
+                COMPONENT_NAME_ALIAS, resName,
                 dataAlias, dictionary.getSpec().getData()
         ));
     }
