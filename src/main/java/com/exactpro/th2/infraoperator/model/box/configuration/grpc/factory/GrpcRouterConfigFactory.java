@@ -132,14 +132,14 @@ public class GrpcRouterConfigFactory {
         checkForExternal(fromBoxResource, toBoxResource, toBoxSpec);
 
         if (naturePinState.getFromPinName().equals(oppositePin.getName())) {
-            resourceToServiceConfig(oppositePin, fromBoxSpec, services);
+            resourceToServiceConfig(currentPin, oppositePin, fromBoxSpec, services);
         } else {
-            resourceToServiceConfig(oppositePin, toBoxSpec, services);
+            resourceToServiceConfig(currentPin, oppositePin, toBoxSpec, services);
         }
 
     }
 
-    private void resourceToServiceConfig(PinSpec targetPin, PinGRPC targetBoxSpec,
+    private void resourceToServiceConfig(PinSpec currentPin, PinSpec targetPin, PinGRPC targetBoxSpec,
                                          Map<String, GrpcServiceConfiguration> services) {
         var targetBoxName = getTargetBoxName(targetBoxSpec);
         var serviceClass = targetBoxSpec.getServiceClass();
@@ -151,6 +151,7 @@ public class GrpcRouterConfigFactory {
                 targetBoxName + ENDPOINT_ALIAS_SUFFIX, GrpcEndpointConfiguration.builder()
                         .host(targetBoxName)
                         .port(targetPort)
+                        .attributes(currentPin.getAttributes())
                         .build()
         ));
 
