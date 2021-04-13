@@ -69,6 +69,8 @@ public abstract class HelmReleaseTh2Op<CR extends Th2CustomResource> extends Abs
 
     private static final String EXTERNAL_BOX_ALIAS = "externalBox";
 
+    private static final String SHARED_MEMORY_ALIAS = "sharedMemory";
+
     private static final String ENABLED_ALIAS = "enabled";
 
     public static final String MQ_CONFIG_ALIAS = "routerMq";
@@ -238,6 +240,8 @@ public abstract class HelmReleaseTh2Op<CR extends Th2CustomResource> extends Abs
                 EXTENDED_SETTINGS_ALIAS, SERVICE_ALIAS);
         convertField(helmRelease, Boolean::valueOf, ENABLED_ALIAS, ROOT_PROPERTIES_ALIAS,
                 EXTENDED_SETTINGS_ALIAS, EXTERNAL_BOX_ALIAS);
+        convertField(helmRelease, Boolean::valueOf, ENABLED_ALIAS, ROOT_PROPERTIES_ALIAS,
+                EXTENDED_SETTINGS_ALIAS, SHARED_MEMORY_ALIAS);
     }
 
     @Override
