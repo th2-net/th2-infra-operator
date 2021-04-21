@@ -1,0 +1,21 @@
+---
+apiVersion: helm.fluxcd.io/v1
+kind: HelmRelease
+metadata:
+  name: will-be-replaced
+spec:
+  resetValues: true
+  wait: false
+  forceUpgrade: false
+  releaseName: th2-core-box
+  chart:
+    secretRef:
+      name: git-chart-creds
+    skipDepUpdate: true
+  values:
+    component:
+      image: will-be-replaced
+      name: will-be-replaced
+      custom: will-be-replaced
+      routerMq: will-be-replaced
+      grpcRouter: will-be-replaced
