@@ -17,17 +17,13 @@
 package com.exactpro.th2.infraoperator.operator.manager.impl;
 
 import com.exactpro.th2.infraoperator.OperatorState;
-import com.exactpro.th2.infraoperator.configuration.OperatorConfig;
 import com.exactpro.th2.infraoperator.spec.dictionary.Th2Dictionary;
-import com.exactpro.th2.infraoperator.spec.helmrelease.HelmRelease;
 import com.exactpro.th2.infraoperator.util.ExtractUtils;
-import io.fabric8.kubernetes.api.model.KubernetesResourceList;
-import io.fabric8.kubernetes.client.DefaultKubernetesClient;
+import io.fabric8.kubernetes.api.model.ConfigMap;
+import io.fabric8.kubernetes.api.model.ObjectMeta;
 import io.fabric8.kubernetes.client.KubernetesClient;
 import io.fabric8.kubernetes.client.Watcher;
 import io.fabric8.kubernetes.client.WatcherException;
-import io.fabric8.kubernetes.client.dsl.MixedOperation;
-import io.fabric8.kubernetes.client.dsl.Resource;
 import io.fabric8.kubernetes.client.informers.SharedIndexInformer;
 import io.fabric8.kubernetes.client.informers.SharedInformerFactory;
 import org.slf4j.Logger;
@@ -36,7 +32,6 @@ import org.slf4j.LoggerFactory;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 
-import static com.exactpro.th2.infraoperator.operator.HelmReleaseTh2Op.*;
 import static com.exactpro.th2.infraoperator.util.CustomResourceUtils.RESYNC_TIME;
 import static com.exactpro.th2.infraoperator.util.CustomResourceUtils.annotationFor;
 import static com.exactpro.th2.infraoperator.util.ExtractUtils.extractName;
@@ -45,14 +40,15 @@ import static com.exactpro.th2.infraoperator.util.ExtractUtils.extractNamespace;
 public class Th2DictionaryEventHandler implements Watcher<Th2Dictionary> {
     private static final Logger logger = LoggerFactory.getLogger(Th2DictionaryEventHandler.class);
 
-    private MixedOperation<HelmRelease, KubernetesResourceList<HelmRelease>, Resource<HelmRelease>>
-            helmReleaseClient = new DefaultKubernetesClient().customResources(HelmRelease.class);
+    private final String dictionaryAlias = "-dictionary";
+
+    private KubernetesClient client;
 
     public static Th2DictionaryEventHandler newInstance(SharedInformerFactory sharedInformerFactory,
                                                         KubernetesClient kubernetesClient,
                                                         EventQueue eventQueue) {
         var res = new Th2DictionaryEventHandler();
-        res.helmReleaseClient = kubernetesClient.customResources(HelmRelease.class);
+        res.client = kubernetesClient;
         SharedIndexInformer<Th2Dictionary> dictionaryInformer =
                 sharedInformerFactory.sharedIndexInformerForCustomResource(
                         Th2Dictionary.class, RESYNC_TIME);
@@ -109,34 +105,33 @@ public class Th2DictionaryEventHandler implements Watcher<Th2Dictionary> {
 
         if (action == Action.DELETED || action == Action.ERROR) {
             sourceHashes.remove(resourceLabel);
-            helmReleaseClient.inNamespace(resNamespace).withName(resName).delete();
+            client.configMaps().inNamespace(resNamespace).withName(resName + dictionaryAlias).delete();
         } else {
-            HelmRelease helmRelease = new HelmRelease();
-            mapProperties(dictionary, helmRelease);
-            helmReleaseClient.inNamespace(resNamespace).createOrReplace(helmRelease);
+            client.configMaps().inNamespace(resNamespace).createOrReplace(toConfigMap(dictionary));
             sourceHashes.put(resourceLabel, sourceHash);
         }
     }
 
-    private void mapProperties(Th2Dictionary dictionary, HelmRelease helmRelease) {
-        String dataAlias = "data";
+    private ConfigMap toConfigMap(Th2Dictionary dictionary) {
+        var configMapMD = new ObjectMeta();
+        Map<String, String> configMapData = new HashMap<>();
 
-        var helmReleaseMD = helmRelease.getMetadata();
         var resMD = dictionary.getMetadata();
         var resName = resMD.getName();
 
-        helmReleaseMD.setName(resName);
-        helmReleaseMD.setNamespace(ExtractUtils.extractNamespace(dictionary));
-        helmReleaseMD.setLabels(resMD.getLabels());
-        helmReleaseMD.setAnnotations(resMD.getAnnotations());
-        helmReleaseMD.setAnnotations(helmReleaseMD.getAnnotations() != null
-                ? helmReleaseMD.getAnnotations() : new HashMap<>());
+        configMapMD.setName(resName + dictionaryAlias);
+        configMapMD.setNamespace(ExtractUtils.extractNamespace(dictionary));
+        configMapMD.setLabels(resMD.getLabels());
+        configMapMD.setAnnotations(resMD.getAnnotations() != null ? resMD.getAnnotations() : new HashMap<>());
 
-        helmRelease.mergeSpecProp(CHART_PROPERTIES_ALIAS, OperatorConfig.INSTANCE.getDictionaryChartConfig().toMap());
-        helmRelease.mergeValue(ROOT_PROPERTIES_ALIAS, Map.of(
-                COMPONENT_NAME_ALIAS, resName,
-                dataAlias, dictionary.getSpec().getData()
-        ));
+        String encodedAlias = ".encoded";
+        String fieldName = resName + encodedAlias;
+        configMapData.put(fieldName, dictionary.getSpec().getData());
+
+        ConfigMap configMap = new ConfigMap();
+        configMap.setData(configMapData);
+        configMap.setMetadata(configMapMD);
+        return configMap;
     }
 
     @Override

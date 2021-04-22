@@ -1,4 +1,4 @@
-chartComponent:
+chart:
   repository: helm
   name: name
   version: 1.1.0

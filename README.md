@@ -38,7 +38,7 @@ namespacePrefixes:
   - prefixes-
 # these prefixes are used to filter namespaces that infra-operator will manage as a schema
 
-chartComponent:
+chart:
 # this section includes information about git or helm repository as a source of helm charts
 # you can specify either git or helm repository
 
@@ -62,30 +62,6 @@ chartComponent:
   version: 3.2.0
   # the targeted Helm chart version
 
-chartDictionary:
-# this section includes information about git or helm repository as a source of helm charts for dictionaries
-# you can specify either git or helm repository
-
-  # git repository parameters 
-  git: git@some.server.com:some/repository
-  # git repository URL for helm charts used by Th2 Custom Resources
-  
-  ref: branch
-  # branch for helm charts
-
-  path: /path/to/charts
-  # repository path for charts
-
-  # helm repository parameters 
-  repository: https://helm.server.com/some/repository
-  # helm repository URL for helm charts used by Th2 Custom Resources
-
-  name: dictionaries
-  # the name of the Helm chart without an alias
-
-  version: 3.2.0
-  # the targeted Helm chart version
-  
 rabbitMQManagement:
   host: host
   # RabbitMQ host used for managing vHosts and users
