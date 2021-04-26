@@ -132,17 +132,19 @@ public class GrpcRouterConfigFactory {
         checkForExternal(fromBoxResource, toBoxResource, toBoxSpec);
 
         if (naturePinState.getFromPinName().equals(oppositePin.getName())) {
-            resourceToServiceConfig(currentPin, oppositePin, fromBoxSpec, services);
+            resourceToServiceConfig(currentPin, oppositePin, toBoxSpec, fromBoxSpec, services);
         } else {
-            resourceToServiceConfig(currentPin, oppositePin, toBoxSpec, services);
+            resourceToServiceConfig(currentPin, oppositePin, fromBoxSpec, toBoxSpec, services);
         }
 
     }
 
-    private void resourceToServiceConfig(PinSpec currentPin, PinSpec targetPin, PinGRPC targetBoxSpec,
-                                         Map<String, GrpcServiceConfiguration> services) {
+    private void resourceToServiceConfig(PinSpec currentPin, PinSpec targetPin, PinGRPC currentBoxSpec,
+                                         PinGRPC targetBoxSpec, Map<String, GrpcServiceConfiguration> services) {
         var targetBoxName = getTargetBoxName(targetBoxSpec);
-        var serviceClass = targetBoxSpec.getServiceClass();
+        var targetServiceClass = targetBoxSpec.getServiceClass();
+        var currentServiceClass = currentBoxSpec.getServiceClass();
+        var serviceClass = targetServiceClass != null ? targetServiceClass : currentServiceClass;
         var serviceName = getServiceName(serviceClass);
         var targetPort = getTargetBoxPort(targetBoxSpec);
         var config = services.get(serviceName);
