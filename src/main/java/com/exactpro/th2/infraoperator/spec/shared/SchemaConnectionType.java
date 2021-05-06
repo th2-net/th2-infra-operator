@@ -16,7 +16,14 @@
 
 package com.exactpro.th2.infraoperator.spec.shared;
 
+import com.fasterxml.jackson.annotation.JsonProperty;
+
 public enum SchemaConnectionType {
     mq,
-    grpc
+    @Deprecated
+    grpc,
+    @JsonProperty("grpc-server")
+    grpc_server,
+    @JsonProperty("grpc-client")
+    grpc_client
 }

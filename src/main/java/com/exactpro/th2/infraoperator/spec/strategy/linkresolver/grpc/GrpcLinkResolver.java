@@ -23,7 +23,6 @@ import com.exactpro.th2.infraoperator.spec.link.validator.ValidationStatus;
 import com.exactpro.th2.infraoperator.spec.link.validator.chain.impl.ExpectedPinType;
 import com.exactpro.th2.infraoperator.spec.link.validator.chain.impl.PinExist;
 import com.exactpro.th2.infraoperator.spec.link.validator.chain.impl.ResourceExist;
-import com.exactpro.th2.infraoperator.spec.link.validator.chain.impl.StrategyExist;
 import com.exactpro.th2.infraoperator.spec.link.validator.model.DirectionalLinkContext;
 import com.exactpro.th2.infraoperator.spec.shared.BoxDirection;
 import com.exactpro.th2.infraoperator.spec.shared.SchemaConnectionType;
@@ -82,9 +81,8 @@ public class GrpcLinkResolver extends GenericLinkResolver<PinCouplingGRPC> imple
                 .boxName(fromBoxName)
                 .boxPinName(fromBoxSpec.getPinName())
                 .boxDirection(BoxDirection.from)
+                .connectionType(SchemaConnectionType.grpc_client)
                 .linksSectionName("grpc")
-                .connectionType(SchemaConnectionType.grpc)
-                .routingStrategy(fromBoxSpec.getStrategy())
                 .linkResName(ExtractUtils.extractName(linkRes))
                 .linkNamespace(namespace)
                 .build();
@@ -97,7 +95,7 @@ public class GrpcLinkResolver extends GenericLinkResolver<PinCouplingGRPC> imple
                 .boxName(toBoxName)
                 .boxPinName(toBoxSpec.getPinName())
                 .boxDirection(BoxDirection.to)
-                .routingStrategy(toBoxSpec.getStrategy())
+                .connectionType(SchemaConnectionType.grpc_server)
                 .build();
 
         var fromRes = resourceFinder.getResource(fromBoxName, namespace, additionalSource);
@@ -116,11 +114,9 @@ public class GrpcLinkResolver extends GenericLinkResolver<PinCouplingGRPC> imple
         var resValidator = new ResourceExist(context);
         var pinExist = new PinExist(context);
         var expectedPin = new ExpectedPinType(context);
-        var strategyExist = new StrategyExist(context);
 
         resValidator.setNext(pinExist);
         pinExist.setNext(expectedPin);
-        expectedPin.setNext(strategyExist);
 
         return resValidator.validate(resource);
     }

@@ -26,7 +26,7 @@ import com.exactpro.th2.infraoperator.spec.shared.SchemaConnectionType;
 
 public class ExpectedPinType extends AbstractValidator {
 
-    private SchemaConnectionType connectionType;
+    private final SchemaConnectionType connectionType;
 
     public ExpectedPinType(SchemaConnectionType connectionType) {
         this(connectionType, null);
@@ -62,7 +62,7 @@ public class ExpectedPinType extends AbstractValidator {
 
         printWarn();
 
-        return ValidationStatus.PIN_NOT_MQ;
+        return ValidationStatus.WRONG_CONNECTION_TYPE;
     }
 
 }
