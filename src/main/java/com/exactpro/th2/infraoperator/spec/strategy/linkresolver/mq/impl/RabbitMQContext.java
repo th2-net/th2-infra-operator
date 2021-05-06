@@ -220,9 +220,12 @@ public final class RabbitMQContext {
         }
     }
 
-    public static List<QueueInfo> getQueues(String vhost) {
+    public static List<QueueInfo> getQueues(String namespace) {
 
         RabbitMQManagementConfig rabbitMQManagementConfig = getManagementConfig();
+        RabbitMQConfig rabbitMQConfig = getRabbitMQConfig(namespace);
+        String vHostName = rabbitMQConfig.getVHost();
+
         try {
             Client rmqClient = getClient(
                     String.format("http://%s:%s/api", rabbitMQManagementConfig.getHost(),
@@ -230,7 +233,7 @@ public final class RabbitMQContext {
                     , rabbitMQManagementConfig.getUsername()
                     , rabbitMQManagementConfig.getPassword()
             );
-            return rmqClient.getQueues(vhost);
+            return rmqClient.getQueues(vHostName);
         } catch (Exception e) {
             String message = "Exception while fetching queues";
             logger.error(message, e);
@@ -238,9 +241,11 @@ public final class RabbitMQContext {
         }
     }
 
-    public static QueueInfo getQueue(String vhost, String queueName) {
+    public static QueueInfo getQueue(String namespace, String queueName) {
 
         RabbitMQManagementConfig rabbitMQManagementConfig = getManagementConfig();
+        RabbitMQConfig rabbitMQConfig = getRabbitMQConfig(namespace);
+        String vHostName = rabbitMQConfig.getVHost();
         try {
             Client rmqClient = getClient(
                     String.format("http://%s:%s/api", rabbitMQManagementConfig.getHost(),
@@ -248,7 +253,7 @@ public final class RabbitMQContext {
                     , rabbitMQManagementConfig.getUsername()
                     , rabbitMQManagementConfig.getPassword()
             );
-            return rmqClient.getQueue(vhost, queueName);
+            return rmqClient.getQueue(vHostName, queueName);
         } catch (Exception e) {
             String message = "Exception while fetching queue";
             logger.error(message, e);
