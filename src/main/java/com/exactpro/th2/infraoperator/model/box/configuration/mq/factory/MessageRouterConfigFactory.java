@@ -23,14 +23,14 @@ import com.exactpro.th2.infraoperator.model.box.schema.link.QueueDescription;
 import com.exactpro.th2.infraoperator.model.kubernetes.configmaps.ConfigMaps;
 import com.exactpro.th2.infraoperator.spec.Th2CustomResource;
 import com.exactpro.th2.infraoperator.spec.link.relation.pins.PinMQ;
-import com.exactpro.th2.infraoperator.spec.shared.PinAttribute;
 import com.exactpro.th2.infraoperator.spec.shared.FilterSpec;
+import com.exactpro.th2.infraoperator.spec.shared.PinAttribute;
 import com.exactpro.th2.infraoperator.spec.shared.PinSpec;
-import com.exactpro.th2.infraoperator.spec.strategy.linkResolver.queue.QueueName;
-import com.exactpro.th2.infraoperator.spec.strategy.linkResolver.queue.RoutingKeyName;
+import com.exactpro.th2.infraoperator.spec.strategy.linkresolver.queue.QueueName;
+import com.exactpro.th2.infraoperator.spec.strategy.linkresolver.queue.RoutingKeyName;
+import com.exactpro.th2.infraoperator.spec.strategy.redeploy.NonTerminalException;
 import com.exactpro.th2.infraoperator.util.ExtractUtils;
 import com.exactpro.th2.infraoperator.util.SchemeMappingUtils;
-import org.jetbrains.annotations.Nullable;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -66,14 +66,12 @@ public class MessageRouterConfigFactory {
                 queueSpec = createQueueBunch(ExtractUtils.extractNamespace(resource), mqPin, null);
             }
 
-            //TODO null check
             queues.put(pin.getName(),
                     new QueueConfiguration(queueSpec, pin.getAttributes(), specToConfigFilters(pin.getFilters())));
         }
 
         return MessageRouterConfiguration.builder().queues(queues).build();
     }
-
 
     private Set<RouterFilterConfiguration> specToConfigFilters(Set<FilterSpec> filterSpecs) {
         return filterSpecs.stream()
@@ -85,14 +83,14 @@ public class MessageRouterConfigFactory {
                 ).collect(Collectors.toSet());
     }
 
-
-    @Nullable
     private QueueDescription createQueueBunch(String namespace, PinMQ to, PinMQ from) {
 
         var rabbitMQConfig = ConfigMaps.INSTANCE.getRabbitMQConfig4Namespace(namespace);
 
-        if (rabbitMQConfig == null)
-            return null;
+        if (rabbitMQConfig == null) {
+            throw new NonTerminalException(
+                    String.format("RabbitMQ configuration for namespace \"%s\" is not available", namespace));
+        }
 
         QueueName queue = (to == null) ? QueueName.EMPTY : new QueueName(namespace, to);
         RoutingKeyName routingKey = (from == null) ? RoutingKeyName.EMPTY : new RoutingKeyName(namespace, from);

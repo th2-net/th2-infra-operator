@@ -61,7 +61,7 @@ chart:
 
   version: 3.2.0
   # the targeted Helm chart version
-  
+
 rabbitMQManagement:
   host: host
   # RabbitMQ host used for managing vHosts and users

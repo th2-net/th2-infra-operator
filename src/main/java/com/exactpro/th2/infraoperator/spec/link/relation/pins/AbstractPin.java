@@ -19,6 +19,7 @@ package com.exactpro.th2.infraoperator.spec.link.relation.pins;
 abstract class AbstractPin implements Pin {
 
     private String boxName;
+
     private String pinName;
 
     protected AbstractPin(String boxName, String pinName) {
@@ -50,5 +51,4 @@ abstract class AbstractPin implements Pin {
     public String toString() {
         return String.format("%s(%s:%s)", this.getClass().getName(), getBoxName(), getPinName());
     }
-
 }

@@ -26,9 +26,11 @@ import java.util.Objects;
 public class SchemaSecrets {
 
     public static final String DEFAULT_RABBITMQ_SECRET = "rabbitmq";
+
     public static final String DEFAULT_CASSANDRA_SECRET = "cassandra";
 
     private String rabbitMQ;
+
     private String cassandra;
 
     public SchemaSecrets() {
@@ -54,20 +56,24 @@ public class SchemaSecrets {
 
     @Override
     public boolean equals(Object o) {
-        if (this == o) return true;
-        if (!(o instanceof SchemaSecrets)) return false;
+        if (this == o) {
+            return true;
+        }
+        if (!(o instanceof SchemaSecrets)) {
+            return false;
+        }
         SchemaSecrets that = (SchemaSecrets) o;
-        return Objects.equals(getRabbitMQ(), that.getRabbitMQ()) &&
-            Objects.equals(getCassandra(), that.getCassandra());
+        return Objects.equals(getRabbitMQ(), that.getRabbitMQ())
+                && Objects.equals(getCassandra(), that.getCassandra());
     }
 
     public static class SchemaSecretsBuilder {
 
         private String rabbitMQ;
+
         private String cassandra;
 
-        SchemaSecretsBuilder() {
-        }
+        SchemaSecretsBuilder() { }
 
         public SchemaSecretsBuilder withRabbitMQ(String rabbitMQ) {
             this.rabbitMQ = rabbitMQ;

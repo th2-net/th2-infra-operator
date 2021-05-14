@@ -16,8 +16,6 @@
 
 package com.exactpro.th2.infraoperator.spec.shared.status;
 
-import com.exactpro.th2.infraoperator.spec.strategy.linkResolver.ConfigNotFoundException;
-import com.exactpro.th2.infraoperator.spec.strategy.linkResolver.VHostCreateException;
 import com.fasterxml.jackson.annotation.JsonInclude;
 
 import java.time.Instant;
@@ -32,8 +30,11 @@ public class StatusSpec {
     private static final String SUB_RESOURCE_NAME_PLACEHOLDER = "unknown";
 
     private final List<Condition> conditions = new ArrayList<>();
+
     private RolloutPhase phase = RolloutPhase.IDLE;
+
     private String subResourceName;
+
     private String message;
 
     public void idle() {
@@ -42,7 +43,6 @@ public class StatusSpec {
 
     public void idle(String message) {
         refreshCondition(Condition.Type.DEPLOYED, RolloutPhase.IDLE, false, message);
-        refreshCondition(Condition.Type.ENQUEUED, RolloutPhase.IDLE, false, message);
     }
 
     public void installing() {
@@ -51,7 +51,6 @@ public class StatusSpec {
 
     public void installing(String message) {
         refreshCondition(Condition.Type.DEPLOYED, RolloutPhase.INSTALLING, false, message);
-        refreshCondition(Condition.Type.ENQUEUED, RolloutPhase.INSTALLING, true, message);
     }
 
     public void upgrading() {
@@ -68,7 +67,6 @@ public class StatusSpec {
 
     public void deleting(String message) {
         refreshCondition(Condition.Type.DEPLOYED, RolloutPhase.DELETING, false, message);
-        refreshCondition(Condition.Type.ENQUEUED, RolloutPhase.DELETING, false, message);
     }
 
     public void succeeded() {
@@ -77,62 +75,34 @@ public class StatusSpec {
 
     public void succeeded(String message, String subResourceName) {
         refreshCondition(Condition.Type.DEPLOYED, RolloutPhase.SUCCEEDED, subResourceName, true, message);
-        refreshCondition(Condition.Type.ENQUEUED, RolloutPhase.SUCCEEDED, subResourceName, true, message);
-    }
-
-    public void failed(Exception e) {
-        if (e instanceof VHostCreateException) {
-            failedVHost(e.getMessage());
-        } else if (e instanceof ConfigNotFoundException) {
-            failedConfig(e.getMessage());
-        } else {
-            failed(e.getMessage());
-        }
     }
 
     public void failed(String message) {
         refreshCondition(Condition.Type.DEPLOYED, RolloutPhase.FAILED, false, message);
-        refreshCondition(Condition.Type.ENQUEUED, RolloutPhase.FAILED, false, message);
-    }
-
-    public void failedVHost(String message) {
-        refreshCondition(Condition.Type.DEPLOYED, RolloutPhase.FAILED, false, message);
-        refreshCondition(Condition.Type.ENQUEUED, RolloutPhase.FAILED_VHOST, false, message);
-    }
-
-    public void failedConfig(String message) {
-        refreshCondition(Condition.Type.DEPLOYED, RolloutPhase.FAILED, false, message);
-        refreshCondition(Condition.Type.ENQUEUED, RolloutPhase.FAILED_CONFIG, false, message);
     }
 
     private void refreshCondition(Condition.Type type, RolloutPhase phase, boolean status, String message) {
         refreshCondition(type, phase, SUB_RESOURCE_NAME_PLACEHOLDER, status, message);
     }
 
-
-    private void refreshCondition(Condition.Type type, RolloutPhase phase, String subResourceName, boolean status, String message) {
+    private void refreshCondition(Condition.Type type, RolloutPhase phase, String subResourceName,
+                                  boolean status, String message) {
 
         Condition condition;
         if (conditions.isEmpty()) {
             condition = Condition.builder().type(type.toString()).build();
             this.conditions.add(condition);
         } else {
-            condition = conditions.stream()
-                    .filter(con -> con.getType().equals(type.toString()))
-                    .findFirst().orElse(null);
-            if (condition == null) {
-                condition = Condition.builder().type(type.toString()).build();
-                this.conditions.add(condition);
-            }
+            condition = conditions.get(0);
         }
-
 
         String currentTime = Instant.now().truncatedTo(SECONDS).toString();
         condition.setLastUpdateTime(currentTime);
 
         String currentStatus = Condition.Status.valueOf(status).toString();
-        if (!currentStatus.equals(condition.getStatus()))
+        if (!currentStatus.equals(condition.getStatus())) {
             condition.setLastTransitionTime(currentTime);
+        }
 
         this.message = message;
         this.phase = phase;
@@ -160,6 +130,7 @@ public class StatusSpec {
     }
 
     public String toString() {
-        return "StatusSpec(conditions=" + this.getConditions() + ", phase=" + this.getPhase() + ", subResourceName=" + this.getSubResourceName() + ", message=" + this.getMessage() + ")";
+        return "StatusSpec(conditions=" + this.getConditions() + ", phase=" + this.getPhase() +
+                ", subResourceName=" + this.getSubResourceName() + ", message=" + this.getMessage() + ")";
     }
 }

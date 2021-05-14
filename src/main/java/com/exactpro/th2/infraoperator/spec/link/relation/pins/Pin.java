@@ -19,6 +19,6 @@ package com.exactpro.th2.infraoperator.spec.link.relation.pins;
 public interface Pin {
 
     String getBoxName();
-    String getPinName();
 
+    String getPinName();
 }

@@ -24,17 +24,21 @@ import lombok.Data;
 public class Condition {
 
     private String lastTransitionTime;
+
     private String lastUpdateTime;
+
     private String message;
+
     private String reason;
+
     private String status;
+
     private String type;
 
+    protected Condition() { }
 
-    protected Condition() {
-    }
-
-    protected Condition(String lastTransitionTime, String lastUpdateTime, String message, String reason, String status, String type) {
+    protected Condition(String lastTransitionTime, String lastUpdateTime, String message, String reason,
+                        String status, String type) {
         this.lastTransitionTime = lastTransitionTime;
         this.lastUpdateTime = lastUpdateTime;
         this.message = message;
@@ -43,12 +47,11 @@ public class Condition {
         this.type = type;
     }
 
-
     public enum Type {
-        DEPLOYED("Deployed"),
-        ENQUEUED("Enqueued");
+        DEPLOYED("Deployed");
 
         private String name;
+
         Type(String name) {
             this.name = name;
         }
@@ -65,6 +68,7 @@ public class Condition {
         UNKNOWN("Unknown");
 
         private String name;
+
         Status(String name) {
             this.name = name;
         }

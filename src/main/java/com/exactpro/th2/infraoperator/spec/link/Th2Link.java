@@ -27,7 +27,6 @@ import java.util.Objects;
 import static com.exactpro.th2.infraoperator.util.ExtractUtils.extractName;
 import static com.exactpro.th2.infraoperator.util.ExtractUtils.extractNamespace;
 
-
 @Group("th2.exactpro.com")
 @Version("v1")
 @Kind("Th2Link")
@@ -44,7 +43,6 @@ public class Th2Link extends CustomResource {
     public Th2Link() {
     }
 
-
     public static Th2Link newInstance() {
 
         Th2Link th2Link = new Th2Link();
@@ -52,13 +50,14 @@ public class Th2Link extends CustomResource {
         return th2Link;
     }
 
-
     @Override
     public boolean equals(Object object) {
-        if (this == object)
+        if (this == object) {
             return true;
-        if (!(object instanceof Th2Link))
+        }
+        if (!(object instanceof Th2Link)) {
             return false;
+        }
         Th2Link th2Link = (Th2Link) object;
         return extractName(this).equals(extractName(th2Link))
                 && extractNamespace(this).equals(extractNamespace(th2Link));
@@ -70,7 +69,7 @@ public class Th2Link extends CustomResource {
     }
 
     @Override
-    public void setSpec (Object spec) {
+    public void setSpec(Object spec) {
         throw new AssertionError("Setting spec with Object argument");
     }
 

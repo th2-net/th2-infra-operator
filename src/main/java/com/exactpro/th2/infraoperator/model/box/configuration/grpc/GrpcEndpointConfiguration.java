@@ -21,6 +21,7 @@ import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import lombok.Data;
 import lombok.experimental.SuperBuilder;
 
+import java.util.Set;
 
 @Data
 @JsonDeserialize
@@ -33,12 +34,15 @@ public class GrpcEndpointConfiguration {
     @JsonProperty(required = true)
     private int port;
 
+    @JsonProperty(required = true)
+    private Set<String> attributes;
 
     protected GrpcEndpointConfiguration() {
     }
 
-    protected GrpcEndpointConfiguration(String host, int port) {
+    protected GrpcEndpointConfiguration(String host, int port, Set<String> attributes) {
         this.host = host;
         this.port = port;
+        this.attributes = attributes;
     }
 }

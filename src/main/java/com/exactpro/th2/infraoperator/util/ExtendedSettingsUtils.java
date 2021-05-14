@@ -1,10 +1,25 @@
+/*
+ * Copyright 2020-2021 Exactpro (Exactpro Systems Limited)
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
 package com.exactpro.th2.infraoperator.util;
 
 import com.exactpro.th2.infraoperator.model.box.configuration.grpc.GrpcEndpointMapping;
 import com.exactpro.th2.infraoperator.model.box.configuration.grpc.GrpcExternalEndpointMapping;
 import com.exactpro.th2.infraoperator.spec.Th2CustomResource;
-import com.exactpro.th2.infraoperator.spec.helmRelease.HelmRelease;
-import com.exactpro.th2.infraoperator.spec.strategy.linkResolver.ConfigNotFoundException;
+import com.exactpro.th2.infraoperator.spec.helmrelease.HelmRelease;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.JsonNode;
 
@@ -20,11 +35,17 @@ public class ExtendedSettingsUtils {
     private static final String EXTENDED_SETTINGS_ALIAS = "extendedSettings";
 
     private static final String EXTERNAL_BOX_ALIAS = "externalBox";
+
     private static final String HOST_NETWORK_ALIAS = "hostNetwork";
+
     private static final String ENDPOINTS_ALIAS = "endpoints";
+
     private static final String ADDRESS_ALIAS = "address";
+
     private static final String ENABLED_ALIAS = "enabled";
+
     private static final String SERVICE_ALIAS = "service";
+
     private static final String GRPC_ALIAS = "grpc";
 
     private ExtendedSettingsUtils() {
@@ -44,8 +65,8 @@ public class ExtendedSettingsUtils {
         }
         JsonNode endpointsNode = getFieldAsNode(boxSettings, SERVICE_ALIAS, ENDPOINTS_ALIAS);
         if (endpointsNode != null) {
-            List<GrpcEndpointMapping> grpcEndpointMappings = JSON_READER.convertValue(endpointsNode, new TypeReference<>() {
-            });
+            List<GrpcEndpointMapping> grpcEndpointMappings = JSON_READER.convertValue(endpointsNode,
+                    new TypeReference<>() { });
             for (GrpcEndpointMapping grpcEndpointMapping : grpcEndpointMappings) {
                 if (grpcEndpointMapping.getName().equals(GRPC_ALIAS)) {
                     return grpcEndpointMapping;
@@ -61,8 +82,8 @@ public class ExtendedSettingsUtils {
         }
         JsonNode endpointsNode = getFieldAsNode(boxSettings, EXTERNAL_BOX_ALIAS, ENDPOINTS_ALIAS);
         if (endpointsNode != null) {
-            List<GrpcExternalEndpointMapping> externalEndpoints = JSON_READER.convertValue(endpointsNode, new TypeReference<>() {
-            });
+            List<GrpcExternalEndpointMapping> externalEndpoints = JSON_READER.convertValue(endpointsNode,
+                    new TypeReference<>() { });
             for (GrpcExternalEndpointMapping grpcExternalEndpointMapping : externalEndpoints) {
                 if (grpcExternalEndpointMapping.getName().equals(GRPC_ALIAS)) {
                     return grpcExternalEndpointMapping;
@@ -83,18 +104,18 @@ public class ExtendedSettingsUtils {
         return null;
     }
 
-    public static void hostNetworkEndpointNotFound(Th2CustomResource box) throws ConfigNotFoundException {
+    public static void hostNetworkEndpointNotFound(Th2CustomResource box) {
         String message = String.format(
-            "Could not find HostNetworkEndpoint configuration for [%S], please check '%s' section in CR",
-            annotationFor(box), EXTENDED_SETTINGS_ALIAS + "." + SERVICE_ALIAS + "." + ENDPOINTS_ALIAS);
-        throw new ConfigNotFoundException(message);
+                "Could not find HostNetworkEndpoint configuration for [%S], please check '%s' section in CR",
+                annotationFor(box), EXTENDED_SETTINGS_ALIAS + "." + SERVICE_ALIAS + "." + ENDPOINTS_ALIAS);
+        throw new RuntimeException(message);
     }
 
-    public static void externalBoxEndpointNotFound(Th2CustomResource box) throws ConfigNotFoundException {
+    public static void externalBoxEndpointNotFound(Th2CustomResource box) {
         String message = String.format(
-            "Could not find ExternalBoxEndpoint configuration for [%S], please check '%s' section in CR",
-            annotationFor(box), EXTENDED_SETTINGS_ALIAS + "." + EXTERNAL_BOX_ALIAS + "." + ENDPOINTS_ALIAS);
-        throw new ConfigNotFoundException(message);
+                "Could not find ExternalBoxEndpoint configuration for [%S], please check '%s' section in CR",
+                annotationFor(box), EXTENDED_SETTINGS_ALIAS + "." + EXTERNAL_BOX_ALIAS + "." + ENDPOINTS_ALIAS);
+        throw new RuntimeException(message);
     }
 
     private static JsonNode getFieldAsNode(Object sourceObj, String... fields) {
@@ -133,7 +154,8 @@ public class ExtendedSettingsUtils {
         return currentSection;
     }
 
-    public static <R> void convertField(HelmRelease helmRelease, Function<String, R> converter, String fieldName, String... fields) {
+    public static <R> void convertField(HelmRelease helmRelease, Function<String, R> converter, String fieldName,
+                                        String... fields) {
         Map<String, Object> section = getSectionReference(helmRelease.getValuesSection(), fields);
         if (section != null) {
             var currentValue = section.get(fieldName);

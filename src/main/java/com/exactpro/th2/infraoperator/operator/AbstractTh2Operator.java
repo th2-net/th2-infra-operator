@@ -20,6 +20,7 @@ import com.exactpro.th2.infraoperator.Th2CrdController;
 import com.exactpro.th2.infraoperator.model.http.HttpCode;
 import com.exactpro.th2.infraoperator.model.kubernetes.client.ResourceClient;
 import com.exactpro.th2.infraoperator.spec.Th2CustomResource;
+import com.exactpro.th2.infraoperator.spec.strategy.redeploy.NonTerminalException;
 import com.exactpro.th2.infraoperator.spec.strategy.redeploy.RetryableTaskQueue;
 import com.exactpro.th2.infraoperator.spec.strategy.redeploy.tasks.TriggerRedeployTask;
 import com.exactpro.th2.infraoperator.util.CustomResourceUtils;
@@ -50,11 +51,15 @@ public abstract class AbstractTh2Operator<CR extends Th2CustomResource, KO exten
     private static final Logger logger = LoggerFactory.getLogger(AbstractTh2Operator.class);
 
     private static final int REDEPLOY_DELAY = 120;
+
     public static final String REFRESH_TOKEN_ALIAS = "refresh-token";
+
     public static final String ANTECEDENT_LABEL_KEY_ALIAS = "th2.exactpro.com/antecedent";
+
     private final RetryableTaskQueue retryableTaskQueue = new RetryableTaskQueue();
 
     protected final KubernetesClient kubClient;
+
     private final Map<String, ResourceFingerprint> fingerprints;
 
     protected AbstractTh2Operator(KubernetesClient kubClient) {
@@ -73,7 +78,8 @@ public abstract class AbstractTh2Operator<CR extends Th2CustomResource, KO exten
                 var cachedFingerprint = fingerprints.get(resourceLabel);
                 var resourceFingerprint = new ResourceFingerprint(resource);
 
-                if (cachedFingerprint != null && action.equals(MODIFIED) && cachedFingerprint.equals(resourceFingerprint)) {
+                if (cachedFingerprint != null && action.equals(MODIFIED)
+                        && cachedFingerprint.equals(resourceFingerprint)) {
                     logger.debug("No changes detected for \"{}\"", resourceLabel);
                     return;
                 }
@@ -84,10 +90,11 @@ public abstract class AbstractTh2Operator<CR extends Th2CustomResource, KO exten
                 processEvent(action, resource);
                 fingerprints.put(resourceLabel, resourceFingerprint);
 
-            } catch (Exception e) {
-                logger.error("Exception processing {} event for \"{}\"", action, resourceLabel, e);
+            } catch (NonTerminalException e) {
+                logger.error("Non-terminal Exception processing {} event for \"{}\". Will try to redeploy.",
+                        action, resourceLabel, e);
 
-                resource.getStatus().failed(e);
+                resource.getStatus().failed(e.getMessage());
                 updateStatus(resource);
 
                 String namespace = resource.getMetadata().getNamespace();
@@ -98,20 +105,20 @@ public abstract class AbstractTh2Operator<CR extends Th2CustomResource, KO exten
                 }
 
                 //create and schedule task to redeploy failed component
-                TriggerRedeployTask triggerRedeployTask = new TriggerRedeployTask(this, getResourceClient(), kubClient, resource, action, REDEPLOY_DELAY);
+                TriggerRedeployTask triggerRedeployTask = new TriggerRedeployTask(this,
+                        getResourceClient(), kubClient, resource, action, REDEPLOY_DELAY);
                 retryableTaskQueue.add(triggerRedeployTask, true);
 
-                logger.info("Task \"{}\" added to scheduler, with delay \"{}\" seconds", triggerRedeployTask.getName(), REDEPLOY_DELAY);
+                logger.info("Task \"{}\" added to scheduler, with delay \"{}\" seconds",
+                        triggerRedeployTask.getName(), REDEPLOY_DELAY);
             }
 
         } catch (Exception e) {
-            logger.error("Exception processing {} event", action, e);
+            logger.error("Terminal Exception processing {} event. Will not try to redeploy", action, e);
         }
     }
 
-
     public abstract ResourceClient<CR> getResourceClient();
-
 
     @SneakyThrows
     protected KO loadKubObj(String kubObjDefPath) {
@@ -182,14 +189,12 @@ public abstract class AbstractTh2Operator<CR extends Th2CustomResource, KO exten
 
         String resourceLabel = CustomResourceUtils.annotationFor(resource);
         fingerprints.remove(resourceLabel);
-//        removeKubObjAnnotation(resource);
     }
 
     protected void errorEvent(CR resource) {
         String resourceLabel = CustomResourceUtils.annotationFor(resource);
         fingerprints.remove(resourceLabel);
     }
-
 
     protected CR updateStatus(CR resource) {
 
@@ -202,7 +207,8 @@ public abstract class AbstractTh2Operator<CR extends Th2CustomResource, KO exten
 
             if (HttpCode.ofCode(e.getCode()) == HttpCode.SERVER_CONFLICT) {
                 logger.warn("Failed to update status for \"{}\"  to \"{}\" because it has been " +
-                        "already changed on the server. Trying to sync a resource...", resourceLabel, resource.getStatus().getPhase());
+                                "already changed on the server. Trying to sync a resource...",
+                        resourceLabel, resource.getStatus().getPhase());
                 var freshRes = resClient.inNamespace(ExtractUtils.extractNamespace(resource)).list().getItems().stream()
                         .filter(r -> ExtractUtils.extractName(r).equals(ExtractUtils.extractName(resource)))
                         .findFirst()
@@ -211,22 +217,18 @@ public abstract class AbstractTh2Operator<CR extends Th2CustomResource, KO exten
                     freshRes.setStatus(resource.getStatus());
                     var updatedRes = updateStatus(freshRes);
                     fingerprints.put(resourceLabel, new ResourceFingerprint(updatedRes));
-                    logger.info("Status for \"{}\" resource successfully updated to \"{}\"", resourceLabel, resource.getStatus().getPhase());
+                    logger.info("Status for \"{}\" resource successfully updated to \"{}\"",
+                            resourceLabel, resource.getStatus().getPhase());
                     return updatedRes;
                 } else {
-                    logger.warn("Unable to update status for \"{}\" resource to \"{}\": resource not present", resourceLabel, resource.getStatus().getPhase());
+                    logger.warn("Unable to update status for \"{}\" resource to \"{}\": resource not present",
+                            resourceLabel, resource.getStatus().getPhase());
                     return resource;
                 }
             }
 
             throw e;
         }
-    }
-
-    protected void removeKubObjAnnotation(CR resource) {
-        KO obj = loadKubObj(getKubObjDefPath((resource)));
-        obj.getMetadata().getAnnotations().remove(ANTECEDENT_LABEL_KEY_ALIAS);
-        createKubObj(resource.getMetadata().getName(), obj);
     }
 
     protected void setupAndCreateKubObj(CR resource) {
@@ -256,7 +258,6 @@ public abstract class AbstractTh2Operator<CR extends Th2CustomResource, KO exten
                 , CustomResourceUtils.annotationFor(resource)
                 , CustomResourceUtils.annotationFor(kubObj));
 
-
         kubObj.getMetadata().setOwnerReferences(List.of(createOwnerReference(resource)));
 
         logger.info("Property \"OwnerReference\" with reference to \"{}\" has been set for the resource \"{}\""
@@ -264,7 +265,6 @@ public abstract class AbstractTh2Operator<CR extends Th2CustomResource, KO exten
                 , CustomResourceUtils.annotationFor(kubObj));
 
     }
-
 
     protected void mapProperties(CR resource, KO kubObj) {
 
@@ -303,29 +303,32 @@ public abstract class AbstractTh2Operator<CR extends Th2CustomResource, KO exten
 
     private static class ResourceFingerprint {
         private String refreshToken;
+
         private Long generation;
 
         public ResourceFingerprint(HasMetadata res) {
 
             var metadata = res.getMetadata();
-            if (metadata == null)
+            if (metadata == null) {
                 return;
+            }
 
             generation = res.getMetadata().getGeneration();
 
-            var annotations= metadata.getAnnotations();
-            if (annotations != null)
+            var annotations = metadata.getAnnotations();
+            if (annotations != null) {
                 refreshToken = annotations.get(REFRESH_TOKEN_ALIAS);
+            }
         }
-
 
         @Override
         public boolean equals(Object o) {
-            if (this == o)
+            if (this == o) {
                 return true;
-
-            if (!(o instanceof ResourceFingerprint))
+            }
+            if (!(o instanceof ResourceFingerprint)) {
                 return false;
+            }
 
             ResourceFingerprint that = (ResourceFingerprint) o;
             return Objects.equals(refreshToken, that.refreshToken) &&

@@ -19,19 +19,17 @@ package com.exactpro.th2.infraoperator.spec.link.validator.chain.impl;
 import com.exactpro.th2.infraoperator.spec.link.validator.ValidationStatus;
 import com.exactpro.th2.infraoperator.spec.link.validator.chain.AbstractValidator;
 import com.exactpro.th2.infraoperator.spec.link.validator.model.DirectionalLinkContext;
-import com.exactpro.th2.infraoperator.spec.link.validator.warnPrinter.WarnPrinter;
-import com.exactpro.th2.infraoperator.spec.link.validator.warnPrinter.node.impl.*;
+import com.exactpro.th2.infraoperator.spec.link.validator.warnprinter.WarnPrinter;
+import com.exactpro.th2.infraoperator.spec.link.validator.warnprinter.node.impl.*;
 import com.exactpro.th2.infraoperator.spec.shared.BoxDirection;
 import com.exactpro.th2.infraoperator.spec.shared.PinAttribute;
 import com.exactpro.th2.infraoperator.spec.shared.PinSpec;
-
 
 public class ExpectedPinAttr extends AbstractValidator {
 
     private String linkResName;
 
     private BoxDirection boxDirection;
-
 
     public ExpectedPinAttr(BoxDirection boxDirection, String linkResName) {
         this(boxDirection, linkResName, null);
@@ -47,8 +45,10 @@ public class ExpectedPinAttr extends AbstractValidator {
         this(context.getBoxDirection(), context.getLinkResName(), WarnPrinter.builder()
                 .addNode(
                         context.getBoxDirection().equals(BoxDirection.to)
-                                ? new IncorrectToPinAttrsNode(context.getBoxPinName(), context.getLinkNamespace(), context.getBoxName())
-                                : new IncorrectFromPinAttrsNode(context.getBoxPinName(), context.getLinkNamespace(), context.getBoxName())
+                                ? new IncorrectToPinAttrsNode(context.getBoxPinName(), context.getLinkNamespace(),
+                                context.getBoxName())
+                                : new IncorrectFromPinAttrsNode(context.getBoxPinName(), context.getLinkNamespace(),
+                                context.getBoxName())
                 )
                 .addNode(new Th2LinkResNode(context.getLinkNamespace(), context.getLinkResName()))
                 .addNode(new BoxRelNode(context.getLinksSectionName()))
@@ -58,13 +58,11 @@ public class ExpectedPinAttr extends AbstractValidator {
 
     }
 
-
     @Override
     public ValidationStatus validate(Object object, Object... additional) {
         if (!(object instanceof PinSpec)) {
             throw new IllegalStateException("Expected target of type PinSpec");
         }
-
 
         var pin = (PinSpec) object;
 

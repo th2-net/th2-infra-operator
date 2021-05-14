@@ -23,7 +23,6 @@ import lombok.EqualsAndHashCode;
 import lombok.ToString;
 import lombok.experimental.SuperBuilder;
 
-
 @Data
 @JsonDeserialize
 @ToString(callSuper = true)
@@ -34,9 +33,7 @@ public class GrpcServerConfiguration extends GrpcEndpointConfiguration {
     @JsonProperty
     private int workers;
 
-
-    protected GrpcServerConfiguration() {
-    }
+    protected GrpcServerConfiguration() { }
 
     protected GrpcServerConfiguration(int workers) {
         this.workers = workers;

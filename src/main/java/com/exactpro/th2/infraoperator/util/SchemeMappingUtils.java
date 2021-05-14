@@ -29,7 +29,6 @@ public final class SchemeMappingUtils {
         throw new AssertionError();
     }
 
-
     public static Map<String, FilterConfiguration> specToConfigFieldFilters(List<FieldFilter> fieldFilters) {
         return fieldFilters.stream()
                 .collect(Collectors.toMap(

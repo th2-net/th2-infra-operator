@@ -26,16 +26,16 @@ import java.util.Objects;
 public final class DictionaryBinding implements Identifiable {
 
     private final String name;
-    private final String box;
-    private final DictionaryDescription dictionary;
 
+    private final String box;
+
+    private final DictionaryDescription dictionary;
 
     private DictionaryBinding(String name, String box, DictionaryDescription dictionary) {
         this.name = name;
         this.box = box;
         this.dictionary = dictionary;
     }
-
 
     public static Builder builder() {
         return new Builder();
@@ -46,11 +46,9 @@ public final class DictionaryBinding implements Identifiable {
         return this.name;
     }
 
-
     public String getBox() {
         return this.box;
     }
-
 
     public DictionaryDescription getDictionary() {
         return this.dictionary;
@@ -58,11 +56,14 @@ public final class DictionaryBinding implements Identifiable {
 
     @Override
     public boolean equals(Object o) {
-        if (this == o) return true;
-        if (!(o instanceof DictionaryBinding)) return false;
+        if (this == o) {
+            return true;
+        }
+        if (!(o instanceof DictionaryBinding)) {
+            return false;
+        }
         DictionaryBinding that = (DictionaryBinding) o;
-        return Objects.equals(box, that.box) &&
-                Objects.equals(dictionary, that.dictionary);
+        return Objects.equals(box, that.box) && Objects.equals(dictionary, that.dictionary);
     }
 
     @Override
@@ -73,21 +74,23 @@ public final class DictionaryBinding implements Identifiable {
     @Override
     public String getId() {
         return String.format("%s[%s:%s]",
-                this.getClass().getName(),
+                this.getClass().getSimpleName(),
                 this.box,
                 this.dictionary == null ? "null" : this.dictionary.getName());
     }
 
-
     @Override
     public String toString() {
-        return String.format("name: %s box: %s dictionary: %s (%s)", name, box, dictionary.getName(), dictionary.getType());
+        return String.format("name: %s box: %s dictionary: %s (%s)", name, box,
+                dictionary.getName(), dictionary.getType());
     }
 
-
     public static class Builder {
+
         private String name;
+
         private String box;
+
         private DictionaryDescription dictionary;
 
         Builder() {
@@ -99,13 +102,11 @@ public final class DictionaryBinding implements Identifiable {
             return this;
         }
 
-
         @JsonProperty("box")
         public Builder box(String box) {
             this.box = box;
             return this;
         }
-
 
         @JsonProperty("dictionary")
         public Builder dictionary(DictionaryDescription dictionary) {

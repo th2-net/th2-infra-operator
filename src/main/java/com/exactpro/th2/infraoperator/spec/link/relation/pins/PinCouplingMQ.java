@@ -23,9 +23,10 @@ import java.util.Objects;
 public final class PinCouplingMQ implements PinCoupling {
 
     private String name;
-    private PinMQ from;
-    private PinMQ to;
 
+    private PinMQ from;
+
+    private PinMQ to;
 
     public PinCouplingMQ(@JsonProperty("name") String name,
                          @JsonProperty("from") PinMQ from,
@@ -35,54 +36,49 @@ public final class PinCouplingMQ implements PinCoupling {
         this.to = to;
     }
 
-
     @Override
     public String getName() {
         return this.name;
     }
-
 
     @Override
     public PinMQ getFrom() {
         return this.from;
     }
 
-
     @Override
     public PinMQ getTo() {
         return this.to;
     }
 
-
     @Override
     public boolean equals(final Object o) {
-        if (o == this)
+        if (o == this) {
             return true;
-        if (!(o instanceof PinCouplingMQ))
+        }
+        if (!(o instanceof PinCouplingMQ)) {
             return false;
+        }
         return Objects.equals(from, ((PinCouplingMQ) o).from)
                 && Objects.equals(to, ((PinCouplingMQ) o).to);
     }
-
 
     @Override
     public int hashCode() {
         throw new AssertionError("method not defined");
     }
 
-
     @Override
     public String getId() {
-        return String.format("%s[%s:%s-%s:%s]",
-                this.getClass().getName(),
+        return String.format("%s[%s:%s-%s:%s]", this.getClass().getSimpleName(),
                 from.getBoxName(), from.getPinName(),
-                to.getBoxName(), to.getPinName()
-        );
+                to.getBoxName(), to.getPinName());
     }
-
 
     @Override
     public String toString() {
-        return String.format("name: %s from: [%s.%s] to: [%s.%s]", name, from.getBoxName(), from.getPinName(), to.getBoxName(), to.getPinName());
+        return String.format("name: %s from: [%s.%s] to: [%s.%s]", name,
+                from.getBoxName(), from.getPinName(),
+                to.getBoxName(), to.getPinName());
     }
 }

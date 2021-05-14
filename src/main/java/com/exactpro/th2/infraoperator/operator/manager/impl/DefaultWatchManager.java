@@ -25,12 +25,12 @@ import com.exactpro.th2.infraoperator.operator.HelmReleaseTh2Op;
 import com.exactpro.th2.infraoperator.operator.context.HelmOperatorContext;
 import com.exactpro.th2.infraoperator.spec.Th2CustomResource;
 import com.exactpro.th2.infraoperator.spec.link.Th2Link;
-import com.exactpro.th2.infraoperator.spec.strategy.linkResolver.dictionary.DictionaryLinkResolver;
-import com.exactpro.th2.infraoperator.spec.strategy.linkResolver.grpc.GrpcLinkResolver;
-import com.exactpro.th2.infraoperator.spec.strategy.linkResolver.mq.impl.BindQueueLinkResolver;
-import com.exactpro.th2.infraoperator.spec.strategy.resFinder.box.impl.DefaultBoxResourceFinder;
-import com.exactpro.th2.infraoperator.spec.strategy.resFinder.box.impl.StoreDependentBoxResourceFinder;
-import com.exactpro.th2.infraoperator.spec.strategy.resFinder.dictionary.DictionaryResourceFinder;
+import com.exactpro.th2.infraoperator.spec.strategy.linkresolver.dictionary.DictionaryLinkResolver;
+import com.exactpro.th2.infraoperator.spec.strategy.linkresolver.grpc.GrpcLinkResolver;
+import com.exactpro.th2.infraoperator.spec.strategy.linkresolver.mq.impl.BindQueueLinkResolver;
+import com.exactpro.th2.infraoperator.spec.strategy.resfinder.box.impl.DefaultBoxResourceFinder;
+import com.exactpro.th2.infraoperator.spec.strategy.resfinder.box.impl.StoreDependentBoxResourceFinder;
+import com.exactpro.th2.infraoperator.spec.strategy.resfinder.dictionary.DictionaryResourceFinder;
 import com.exactpro.th2.infraoperator.util.CustomResourceUtils;
 import com.exactpro.th2.infraoperator.util.Strings;
 import com.fasterxml.uuid.Generators;
@@ -87,19 +87,17 @@ public class DefaultWatchManager {
         sharedInformerFactory.addSharedInformerEventListener(exception -> {
             logger.error("Exception in InformerFactory : {}", exception.getMessage());
         });
-
+        builderInit();
         instance = this;
     }
 
-    public void startInformers () {
+    public void startInformers() {
         logger.info("Starting all informers...");
 
         SharedInformerFactory sharedInformerFactory = getInformerFactory();
 
-
         eventDispatcher.start();
-        postInit();
-        EventHandlerContext eventHandlerContext = registerInformers (sharedInformerFactory);
+        EventHandlerContext eventHandlerContext = registerInformers(sharedInformerFactory);
         loadResources(eventHandlerContext);
 
         isWatching = true;
@@ -108,11 +106,10 @@ public class DefaultWatchManager {
         logger.info("All informers has been started");
     }
 
-    public void stopInformers () {
+    public void stopInformers() {
         logger.info("Shutting down informers");
         getInformerFactory().stopAllRegisteredInformers();
     }
-
 
     private void loadResources(EventHandlerContext context) {
         loadLinks(context);
@@ -131,12 +128,11 @@ public class DefaultWatchManager {
         }
     }
 
-
     private void loadConfigMaps(EventHandlerContext context) {
 
         var configMapEventHandler = (ConfigMapEventHandler) context.getHandler(ConfigMapEventHandler.class);
         KubernetesClient client = operatorBuilder.getClient();
-        List<ConfigMap> configMaps =  client.configMaps().inAnyNamespace().list().getItems();
+        List<ConfigMap> configMaps = client.configMaps().inAnyNamespace().list().getItems();
         configMaps = filterByNamespace(configMaps);
         for (var configMap : configMaps) {
             logger.info("Loading \"{}\"", annotationFor(configMap));
@@ -144,16 +140,16 @@ public class DefaultWatchManager {
         }
     }
 
-
-    private <E extends HasMetadata> List<E> filterByNamespace(List<E> resources){
+    private <E extends HasMetadata> List<E> filterByNamespace(List<E> resources) {
         return resources.stream()
-                .filter(resource -> !Strings.nonePrefixMatch(resource.getMetadata().getNamespace(), OperatorConfig.INSTANCE.getNamespacePrefixes()))
+                .filter(resource -> !Strings.nonePrefixMatch(resource.getMetadata().getNamespace(),
+                        OperatorConfig.INSTANCE.getNamespacePrefixes()))
                 .collect(Collectors.toList());
     }
 
-
     private class EventHandlerContext<T extends Watcher> {
         Map<Class, Watcher> eventHandlers = new ConcurrentHashMap<>();
+
         void addHandler(T eventHandler) {
             eventHandlers.put(eventHandler.getClass(), eventHandler);
         }
@@ -163,16 +159,20 @@ public class DefaultWatchManager {
         }
     }
 
-    private EventHandlerContext registerInformers (SharedInformerFactory sharedInformerFactory) {
+    private EventHandlerContext registerInformers(SharedInformerFactory sharedInformerFactory) {
 
         EventHandlerContext context = new EventHandlerContext();
         KubernetesClient client = operatorBuilder.getClient();
 
         context.addHandler(NamespaceEventHandler.newInstance(sharedInformerFactory, eventDispatcher.getEventQueue()));
-        context.addHandler(Th2LinkEventHandler.newInstance(sharedInformerFactory, client, eventDispatcher.getEventQueue()));
-        context.addHandler(Th2DictionaryEventHandler.newInstance(sharedInformerFactory, dictionaryClient, eventDispatcher.getEventQueue()));
-        context.addHandler(ConfigMapEventHandler.newInstance(sharedInformerFactory, client, eventDispatcher.getEventQueue()));
-        context.addHandler(HelmReleaseEventHandler.newInstance(sharedInformerFactory, client, eventDispatcher.getEventQueue(), operatorBuilder.getResourceFinder()));
+        context.addHandler(Th2LinkEventHandler.newInstance(sharedInformerFactory, client,
+                eventDispatcher.getEventQueue()));
+        context.addHandler(Th2DictionaryEventHandler.newInstance(sharedInformerFactory, client,
+                eventDispatcher.getEventQueue()));
+        context.addHandler(ConfigMapEventHandler.newInstance(sharedInformerFactory, client,
+                eventDispatcher.getEventQueue()));
+        context.addHandler(HelmReleaseEventHandler.newInstance(sharedInformerFactory, client,
+                eventDispatcher.getEventQueue(), operatorBuilder.getResourceFinder()));
 
         /*
              resourceClients initialization should be done first
@@ -198,7 +198,7 @@ public class DefaultWatchManager {
 
         // needs to be converted to Watcher
         CRDEventHandler.newInstance(sharedInformerFactory);
-        return  context;
+        return context;
     }
 
     public boolean isWatching() {
@@ -224,7 +224,6 @@ public class DefaultWatchManager {
     int refreshBoxes(String namespace, Set<String> boxes) {
         return refreshBoxes(namespace, boxes, false);
     }
-
 
     private int refreshBoxes(String namespace, Set<String> boxes, boolean refreshAllBoxes) {
 
@@ -261,7 +260,8 @@ public class DefaultWatchManager {
         resMeta.setAnnotations(Objects.nonNull(resMeta.getAnnotations()) ? resMeta.getAnnotations() : new HashMap<>());
         resMeta.getAnnotations().put(REFRESH_TOKEN_ALIAS, refreshToken);
         resClient.getInstance().inNamespace(linkNamespace).createOrReplace(resource);
-        logger.debug("refreshed \"{}\" with refresh-token={}", CustomResourceUtils.annotationFor(resource), refreshToken);
+        logger.debug("refreshed \"{}\" with refresh-token={}",
+                CustomResourceUtils.annotationFor(resource), refreshToken);
     }
 
     /*
@@ -269,7 +269,7 @@ public class DefaultWatchManager {
         operators, since operatorBuilder is HelmOperatorContext
         for operators
      */
-    private void postInit() {
+    private void builderInit() {
 
         var resFinder = new DefaultBoxResourceFinder(resourceClients);
         var msgStResFinder = new StoreDependentBoxResourceFinder(resFinder);
@@ -294,8 +294,7 @@ public class DefaultWatchManager {
         return new Builder(client);
     }
 
-
-    public static synchronized DefaultWatchManager getInstance () {
+    public static synchronized DefaultWatchManager getInstance() {
         if (instance == null) {
             instance = DefaultWatchManager.builder(new DefaultKubernetesClient()).build();
         }
@@ -328,7 +327,7 @@ public class DefaultWatchManager {
         }
     }
 
-    public void close () {
+    public void close() {
         eventDispatcher.interrupt();
         operatorBuilder.getClient().close();
     }

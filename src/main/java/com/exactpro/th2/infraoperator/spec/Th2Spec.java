@@ -58,7 +58,6 @@ public abstract class Th2Spec implements KubernetesResource {
 
     protected List<PinSpec> pins = new ArrayList<>();
 
-    // TODO
     public void setPins(List<PinSpec> pins) {
         this.pins = pins;
 

@@ -21,11 +21,12 @@ import com.exactpro.th2.infraoperator.spec.Th2CustomResource;
 import com.exactpro.th2.infraoperator.spec.dictionary.Th2Dictionary;
 import com.exactpro.th2.infraoperator.spec.link.relation.dictionaries.DictionaryBinding;
 import com.exactpro.th2.infraoperator.spec.link.relation.dictionaries.DictionaryDescription;
-import com.exactpro.th2.infraoperator.spec.strategy.resFinder.dictionary.DictionaryResourceFinder;
-import com.exactpro.th2.infraoperator.util.ArchiveUtils;
+import com.exactpro.th2.infraoperator.spec.strategy.resfinder.dictionary.DictionaryResourceFinder;
+import com.exactpro.th2.infraoperator.util.ExtractUtils;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Objects;
 
 /**
  * A factory that creates list of {@link DictionaryEntity}
@@ -33,7 +34,7 @@ import java.util.List;
  */
 public class DictionaryFactory {
 
-    private DictionaryResourceFinder resourceFinder;
+    private final DictionaryResourceFinder resourceFinder;
 
     public DictionaryFactory(DictionaryResourceFinder resourceFinder) {
         this.resourceFinder = resourceFinder;
@@ -42,8 +43,8 @@ public class DictionaryFactory {
     /**
      * Creates a list of {@link DictionaryEntity} based on the th2 resource and a list of active links.
      *
-     * @param resource th2 resource
-     * @param activeLinks    active links
+     * @param resource    th2 resource
+     * @param activeLinks active links
      * @return list of {@link DictionaryEntity} based on provided active {@code activeLinks} and {@code resource}
      */
     public List<DictionaryEntity> create(Th2CustomResource resource, List<DictionaryBinding> activeLinks) {
@@ -58,18 +59,11 @@ public class DictionaryFactory {
                     String type = dict.getType();
                     Th2Dictionary res = resourceFinder.getResource(name, resource.getMetadata().getNamespace());
 
-                    String encodedData;
-                    if (res.getSpec().isCompressed()) {
-                        encodedData = res.getSpec().getData();
-                    } else {
-                        encodedData = new String(ArchiveUtils.getGZIPBase64Encoder().encodeString(res.getSpec().getData()));
-
-                    }
-
+                    String checksum = ExtractUtils.sourceHash(Objects.requireNonNull(res), false);
                     dictionaries.add(DictionaryEntity.builder()
                             .setName(name)
                             .setType(type)
-                            .setData(encodedData)
+                            .setChecksum(checksum)
                             .build());
                 }
             } catch (Exception e) {

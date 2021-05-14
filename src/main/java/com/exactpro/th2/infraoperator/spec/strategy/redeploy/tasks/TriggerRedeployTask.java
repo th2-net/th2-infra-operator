@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.exactpro.th2.infraoperator.spec.strategy.redeploy.tasks;
 
 import com.exactpro.th2.infraoperator.model.kubernetes.client.ResourceClient;
@@ -31,7 +32,6 @@ import java.util.HashMap;
 
 import static com.exactpro.th2.infraoperator.operator.AbstractTh2Operator.REFRESH_TOKEN_ALIAS;
 
-
 public class TriggerRedeployTask implements RetryableTaskQueue.Task {
 
     private static final Logger logger = LoggerFactory.getLogger(TriggerRedeployTask.class);
@@ -43,9 +43,13 @@ public class TriggerRedeployTask implements RetryableTaskQueue.Task {
     private final KubernetesClient kubClient;
 
     private final String boxName;
+
     private final String namespace;
+
     private final long retryDelay;
+
     private final Watcher.Action action;
+
     Watcher watcher;
 
     public TriggerRedeployTask(
@@ -125,7 +129,6 @@ public class TriggerRedeployTask implements RetryableTaskQueue.Task {
         }
         return true;
     }
-
 
     private void refreshToken(Th2CustomResource resource) {
         String token = Generators.timeBasedGenerator().generate().toString();

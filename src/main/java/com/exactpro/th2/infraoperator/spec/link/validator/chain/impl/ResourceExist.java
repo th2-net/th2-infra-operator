@@ -19,11 +19,10 @@ package com.exactpro.th2.infraoperator.spec.link.validator.chain.impl;
 import com.exactpro.th2.infraoperator.spec.link.validator.ValidationStatus;
 import com.exactpro.th2.infraoperator.spec.link.validator.chain.AbstractValidator;
 import com.exactpro.th2.infraoperator.spec.link.validator.model.DirectionalLinkContext;
-import com.exactpro.th2.infraoperator.spec.link.validator.warnPrinter.WarnPrinter;
-import com.exactpro.th2.infraoperator.spec.link.validator.warnPrinter.node.impl.*;
+import com.exactpro.th2.infraoperator.spec.link.validator.warnprinter.WarnPrinter;
+import com.exactpro.th2.infraoperator.spec.link.validator.warnprinter.node.impl.*;
 
 import java.util.Objects;
-
 
 public class ResourceExist extends AbstractValidator {
 
@@ -43,7 +42,6 @@ public class ResourceExist extends AbstractValidator {
                 .addNode(new BoxNameNode(context.getBoxDirection().name(), context.getBoxName()))
                 .build());
     }
-
 
     @Override
     public ValidationStatus validate(Object object, Object... additional) {

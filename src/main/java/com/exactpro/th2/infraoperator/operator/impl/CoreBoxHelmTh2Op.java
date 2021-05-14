@@ -30,12 +30,10 @@ public class CoreBoxHelmTh2Op extends GenericHelmTh2Op<Th2CoreBox> {
 
     private final CoreBoxClient coreBoxClient;
 
-
     public CoreBoxHelmTh2Op(HelmOperatorContext.Builder<?, ?> builder) {
         super(builder);
         this.coreBoxClient = new CoreBoxClient(builder.getClient());
     }
-
 
     @Override
     public ResourceClient<Th2CoreBox> getResourceClient() {
@@ -43,16 +41,16 @@ public class CoreBoxHelmTh2Op extends GenericHelmTh2Op<Th2CoreBox> {
     }
 
     @Override
-    public SharedIndexInformer<Th2CoreBox> generateInformerFromFactory (SharedInformerFactory factory) {
+    public SharedIndexInformer<Th2CoreBox> generateInformerFromFactory(SharedInformerFactory factory) {
         return factory.sharedIndexInformerForCustomResource(
                 Th2CoreBox.class,
                 CustomResourceUtils.RESYNC_TIME);
     }
+
     @Override
     protected String getKubObjDefPath(Th2CoreBox resource) {
         return "/Th2CoreBox-HelmRelease.yml";
     }
-
 
     public static CoreBoxHelmTh2Op.Builder builder(KubernetesClient client) {
         return new CoreBoxHelmTh2Op.Builder(client);

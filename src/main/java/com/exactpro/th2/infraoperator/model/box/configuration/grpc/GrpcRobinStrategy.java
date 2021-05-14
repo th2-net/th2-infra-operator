@@ -22,7 +22,6 @@ import lombok.Data;
 
 import java.util.List;
 
-
 @Data
 @Builder
 @JsonDeserialize
@@ -33,15 +32,12 @@ public class GrpcRobinStrategy implements RoutingStrategy {
 
     protected List<String> endpoints;
 
-
-    protected GrpcRobinStrategy() {
-    }
+    protected GrpcRobinStrategy() { }
 
     protected GrpcRobinStrategy(String name, List<String> endpoints) {
         this.name = name;
         this.endpoints = endpoints;
     }
-
 
     @Override
     public StrategyType getType() {

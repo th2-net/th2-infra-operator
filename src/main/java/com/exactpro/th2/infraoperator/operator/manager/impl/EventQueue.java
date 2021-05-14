@@ -1,3 +1,19 @@
+/*
+ * Copyright 2020-2021 Exactpro (Exactpro Systems Limited)
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
 package com.exactpro.th2.infraoperator.operator.manager.impl;
 
 import com.exactpro.th2.infraoperator.spec.dictionary.Th2Dictionary;
@@ -18,8 +34,11 @@ public class EventQueue {
     private static final Logger logger = LoggerFactory.getLogger(EventQueue.class);
 
     private final List<PriorityEvent> priorityEvents;
+
     private final List<Event> regularEvents;
+
     private final LinkedList<String> workingNamespaces;
+
     private final Awareable monitor;
 
     public EventQueue(Awareable monitor) {
@@ -31,14 +50,21 @@ public class EventQueue {
 
     @Getter
     public static class Event {
+
         private String eventId;
+
         private String annotation;
+
         private Watcher.Action action;
+
         private String namespace;
+
         private HasMetadata resource;
+
         private Watcher callback;
 
-        public Event(String eventId, String annotation, Watcher.Action action, String namespace, HasMetadata resource, Watcher callback) {
+        public Event(String eventId, String annotation, Watcher.Action action, String namespace, HasMetadata resource
+                , Watcher callback) {
             this.eventId = eventId;
             this.annotation = annotation;
             this.action = action;
@@ -80,15 +106,19 @@ public class EventQueue {
     @Getter
     public static class PriorityEvent extends Event {
 
-        public PriorityEvent(String eventId, String annotation, Watcher.Action action, String namespace, HasMetadata resource, Watcher callback) {
+        public PriorityEvent(String eventId, String annotation, Watcher.Action action, String namespace,
+                             HasMetadata resource, Watcher callback) {
             super(eventId, annotation, action, namespace, resource, callback);
         }
 
         @Override
         public boolean equals(Object o) {
-            if (this == o) return true;
-            if (!(o instanceof PriorityEvent)) return false;
-
+            if (this == o) {
+                return true;
+            }
+            if (!(o instanceof PriorityEvent)) {
+                return false;
+            }
             return getAnnotation().equals(((PriorityEvent) o).getAnnotation()) &&
                     getAction().equals(((PriorityEvent) o).getAction());
         }
@@ -139,10 +169,10 @@ public class EventQueue {
                 try {
                     var oldRV = e.getResource().getMetadata().getResourceVersion();
                     var newRV = e.getResource().getMetadata().getResourceVersion();
-                    if (oldRV != null && newRV != null && Long.valueOf(newRV) < Long.valueOf(oldRV))
+                    if (oldRV != null && newRV != null && Long.valueOf(newRV) < Long.valueOf(oldRV)) {
                         logger.warn("Substituted with older resource (old.resourceVersion={}, new.resourceVersion={})",
-                                oldRV,
-                                newRV);
+                                oldRV, newRV);
+                    }
                 } catch (Exception ex) {
                     logger.error("Exception checking resourceVersion", ex);
                 }
@@ -155,7 +185,6 @@ public class EventQueue {
         return eventQueue.size();
     }
 
-
     public synchronized void addEvent(Event event) {
 
         try {
@@ -167,10 +196,9 @@ public class EventQueue {
                 priorityEvents.add((PriorityEvent) event);
 
                 // Log state of queues
-                logger.debug("Preempted namespace {}, {} event(s) present in the priority queue, {} event(s) in the regular queue",
-                        event.getNamespace(),
-                        priorityEvents.size(),
-                        regularEvents.size());
+                logger.debug("Preempted namespace {}, {} event(s) present in the priority queue, " +
+                                "{} event(s) in the regular queue",
+                        event.getNamespace(), priorityEvents.size(), regularEvents.size());
 
                 return;
             }
@@ -196,22 +224,19 @@ public class EventQueue {
 
             // Log state of queues
             logger.debug("Enqueued {}, {} event(s) present in the priority queue, {} event(s) in the regular queue",
-                    event.getEventId(),
-                    priorityEvents.size(),
-                    regularEvents.size());
+                    event.getEventId(), priorityEvents.size(), regularEvents.size());
         } catch (Exception e) {
-            logger.error("Exception enqueueing {}, {} event(s) present in the priority queue, {} event(s) in the regular queue",
-                    event.getEventId(),
-                    priorityEvents.size(),
-                    regularEvents.size(),
-                    e);
+            logger.error("Exception enqueueing {}, {} event(s) present in the priority queue, " +
+                            "{} event(s) in the regular queue",
+                    event.getEventId(), priorityEvents.size(), regularEvents.size(), e);
         } finally {
-            if (monitor != null)
+            if (monitor != null) {
                 monitor.beAware();
+            }
         }
     }
 
-    private Event withdrawEventFromQueue (List<? extends Event> eventQueue) {
+    private Event withdrawEventFromQueue(List<? extends Event> eventQueue) {
         for (int i = 0; i < eventQueue.size(); i++) {
             String namespace = eventQueue.get(i).getNamespace();
 
@@ -225,7 +250,7 @@ public class EventQueue {
         return null;
     }
 
-    public void preemptEventsForQueue (List<? extends Event> queue, String namespace) {
+    public void preemptEventsForQueue(List<? extends Event> queue, String namespace) {
         logger.debug("Preempting events for namespace {}", namespace);
 
         int cnt = 0;
@@ -234,7 +259,7 @@ public class EventQueue {
             var event = iterator.next();
 
             if (event.getNamespace().equals(namespace)) {
-                cnt ++;
+                cnt++;
                 iterator.remove();
             }
 
@@ -243,7 +268,7 @@ public class EventQueue {
         logger.debug("Preempted {} events from queue", cnt);
     }
 
-    public void preemptAllEventsForNamespace (String namespace) {
+    public void preemptAllEventsForNamespace(String namespace) {
 
         logger.debug("Preempting priorityEvents");
         preemptEventsForQueue(priorityEvents, namespace);

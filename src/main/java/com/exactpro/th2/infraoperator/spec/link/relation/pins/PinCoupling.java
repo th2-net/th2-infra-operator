@@ -21,5 +21,6 @@ import com.exactpro.th2.infraoperator.spec.shared.Identifiable;
 public interface PinCoupling extends Identifiable {
 
     Pin getFrom();
+
     Pin getTo();
 }

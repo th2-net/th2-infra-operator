@@ -16,7 +16,7 @@
 
 package com.exactpro.th2.infraoperator.spec.shared;
 
-
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import lombok.Data;
@@ -24,10 +24,13 @@ import lombok.Data;
 @Data
 @JsonDeserialize
 @JsonInclude(JsonInclude.Include.NON_EMPTY)
+@JsonIgnoreProperties(ignoreUnknown = true)
 public class PinSettings {
 
-    protected String storageOnDemand = "true";
+    protected String storageOnDemand;
 
-    protected String queueLength = "1000";
+    protected String queueLength;
+
+    protected String overloadStrategy;
 
 }

@@ -23,7 +23,6 @@ import lombok.Data;
 
 import java.util.Map;
 
-
 @Data
 @Builder
 @JsonDeserialize
@@ -35,11 +34,10 @@ public class GrpcRouterConfiguration {
     @JsonProperty(value = "server")
     private GrpcServerConfiguration serverConfiguration;
 
+    protected GrpcRouterConfiguration() { }
 
-    protected GrpcRouterConfiguration() {
-    }
-
-    protected GrpcRouterConfiguration(Map<String, GrpcServiceConfiguration> services, GrpcServerConfiguration serverConfiguration) {
+    protected GrpcRouterConfiguration(Map<String, GrpcServiceConfiguration> services,
+                                      GrpcServerConfiguration serverConfiguration) {
         this.services = services;
         this.serverConfiguration = serverConfiguration;
     }

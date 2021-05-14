@@ -26,11 +26,14 @@ public class PinGRPC extends AbstractPin {
     private String serviceClass;
 
     private String strategy;
-    private boolean hostNetwork;
-    private boolean externalBox;
-    private String externalHost;
-    private int port;
 
+    private boolean hostNetwork;
+
+    private boolean externalBox;
+
+    private String externalHost;
+
+    private int port;
 
     public PinGRPC(@JsonProperty("box") String boxName,
                    @JsonProperty("pin") String pinName) {
@@ -87,10 +90,12 @@ public class PinGRPC extends AbstractPin {
 
     @Override
     public boolean equals(final Object o) {
-        if (this == o)
+        if (this == o) {
             return true;
-        if (!(o instanceof PinGRPC))
+        }
+        if (!(o instanceof PinGRPC)) {
             return false;
+        }
 
         return Objects.equals(getBoxName(), ((PinGRPC) o).getBoxName())
                 && Objects.equals(getPinName(), ((PinGRPC) o).getPinName());

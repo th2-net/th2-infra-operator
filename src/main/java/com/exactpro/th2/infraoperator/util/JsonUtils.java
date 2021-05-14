@@ -20,8 +20,6 @@ import com.fasterxml.jackson.core.JsonFactory;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.dataformat.yaml.YAMLFactory;
 
-import java.io.IOException;
-import java.lang.reflect.Field;
 import java.util.*;
 
 public final class JsonUtils {
@@ -30,51 +28,13 @@ public final class JsonUtils {
 
     public static final ObjectMapper YAML_READER = new ObjectMapper(new YAMLFactory());
 
-
     private JsonUtils() {
         throw new AssertionError();
-    }
-
-
-    public static String writeValueAsString(Object object) throws IOException {
-        return JSON_READER.writeValueAsString(object);
     }
 
     @SuppressWarnings("unchecked")
     public static Map<String, Object> writeValueAsDeepMap(Object object) {
         return (Map<String, Object>) JSON_READER.convertValue(object, Map.class);
-    }
-
-    public static Map<String, String> writeValueAsMap(Object object) throws IOException, IllegalAccessException {
-
-        Map<String, String> map = new HashMap<>();
-
-        var fields = getAllFields(object.getClass());
-
-        for (var field : fields) {
-
-            field.setAccessible(true);
-
-            var rawValue = field.get(object);
-
-            var resultValue = writeValueAsString(rawValue);
-
-            resultValue = rawValue.getClass().equals(String.class)
-                    ? resultValue.replace("\"", "")
-                    : resultValue;
-
-            map.put(field.getName(), resultValue);
-        }
-
-        return map;
-    }
-
-    public static List<Field> getAllFields(Class<?> type) {
-        var fields = new ArrayList<Field>();
-        for (Class<?> c = type; c != null; c = c.getSuperclass()) {
-            fields.addAll(Arrays.asList(c.getDeclaredFields()));
-        }
-        return fields;
     }
 
 }

@@ -18,7 +18,6 @@ package com.exactpro.th2.infraoperator.model.box.configuration.grpc;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 
-
 public interface RoutingStrategy {
 
     String getName();

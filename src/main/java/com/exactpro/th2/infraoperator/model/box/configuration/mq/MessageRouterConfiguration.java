@@ -19,6 +19,7 @@ package com.exactpro.th2.infraoperator.model.box.configuration.mq;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import lombok.Builder;
 import lombok.Data;
+
 import java.util.Map;
 
 @Data
@@ -28,9 +29,7 @@ public class MessageRouterConfiguration {
 
     private Map<String, QueueConfiguration> queues;
 
-
-    protected MessageRouterConfiguration() {
-    }
+    protected MessageRouterConfiguration() { }
 
     protected MessageRouterConfiguration(Map<String, QueueConfiguration> queues) {
         this.queues = queues;
