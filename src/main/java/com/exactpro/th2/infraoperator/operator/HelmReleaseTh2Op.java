@@ -85,6 +85,8 @@ public abstract class HelmReleaseTh2Op<CR extends Th2CustomResource> extends Abs
 
     public static final String DICTIONARIES_ALIAS = "dictionaries";
 
+    public static final String LOGGING_ALIAS = "logging";
+
     public static final String ANNOTATIONS_ALIAS = "annotations";
 
     public static final String DOCKER_IMAGE_ALIAS = "image";
@@ -182,6 +184,8 @@ public abstract class HelmReleaseTh2Op<CR extends Th2CustomResource> extends Abs
         MessageRouterConfiguration mqConfig = mqConfigFactory.createConfig(resource);
         GrpcRouterConfiguration grpcConfig = grpcConfigFactory.createConfig(resource, grpcActiveLinks);
         List<DictionaryEntity> dictionaries = dictionaryFactory.create(resource, dictionaryActiveLinks);
+        String loggingConfigChecksum = OperatorState.INSTANCE.getLoggingConfigChecksum(resNamespace);
+        loggingConfigChecksum = loggingConfigChecksum != null ? loggingConfigChecksum : "";
 
         helmRelease.putSpecProp(RELEASE_NAME_ALIAS,
                 ExtractUtils.extractNamespace(helmRelease) + "-" + ExtractUtils.extractName(helmRelease));
@@ -209,6 +213,9 @@ public abstract class HelmReleaseTh2Op<CR extends Th2CustomResource> extends Abs
             helmRelease.mergeValue(PROPERTIES_MERGE_DEPTH, ROOT_PROPERTIES_ALIAS,
                     Map.of(DICTIONARIES_ALIAS, dictionaries));
         }
+
+        helmRelease.mergeValue(PROPERTIES_MERGE_DEPTH, ROOT_PROPERTIES_ALIAS,
+                Map.of(LOGGING_ALIAS, loggingConfigChecksum));
 
         Map<String, Object> extendedSettings = resSpec.getExtendedSettings();
         if (extendedSettings != null) {
