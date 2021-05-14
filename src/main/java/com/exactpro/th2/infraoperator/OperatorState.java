@@ -101,6 +101,14 @@ public enum OperatorState {
                 .collect(Collectors.toUnmodifiableList());
     }
 
+    public String getLoggingConfigChecksum(String namespace) {
+        return namespaceStates.get(namespace).loggingConfigChecksum;
+    }
+
+    public void setLoggingConfigChecksum(String namespace, String checkSum) {
+        namespaceStates.get(namespace).setLoggingConfigChecksum(checkSum);
+    }
+
     public NamespaceLock getLock(String namespace) {
         return computeIfAbsent(namespace);
     }
@@ -141,6 +149,8 @@ public enum OperatorState {
 
         private List<DictionaryBinding> dictionaryBindings = new ArrayList<>();
 
+        private String loggingConfigChecksum;
+
         private final Lock lock = new ReentrantLock(true);
 
         public NamespaceState(String name) {
@@ -174,6 +184,10 @@ public enum OperatorState {
             return this.dictionaryBindings;
         }
 
+        public String getLoggingConfigChecksum() {
+            return loggingConfigChecksum;
+        }
+
         public void setLinkResources(List<Th2Link> linkResources) {
             this.linkResources = linkResources;
         }
@@ -188,6 +202,10 @@ public enum OperatorState {
 
         public void setDictionaryBindings(List<DictionaryBinding> dictionaryBindings) {
             this.dictionaryBindings = dictionaryBindings;
+        }
+
+        public void setLoggingConfigChecksum(String loggingConfigChecksum) {
+            this.loggingConfigChecksum = loggingConfigChecksum;
         }
 
         @Override

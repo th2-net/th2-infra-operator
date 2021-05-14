@@ -22,6 +22,7 @@ import com.exactpro.th2.infraoperator.configuration.RabbitMQConfig;
 import com.exactpro.th2.infraoperator.model.kubernetes.configmaps.ConfigMaps;
 import com.exactpro.th2.infraoperator.spec.strategy.linkresolver.mq.impl.RabbitMQContext;
 import com.exactpro.th2.infraoperator.util.CustomResourceUtils;
+import com.exactpro.th2.infraoperator.util.ExtractUtils;
 import com.exactpro.th2.infraoperator.util.Strings;
 import io.fabric8.kubernetes.api.model.ConfigMap;
 import io.fabric8.kubernetes.api.model.Secret;
@@ -41,6 +42,8 @@ import static com.exactpro.th2.infraoperator.util.JsonUtils.JSON_READER;
 
 public class ConfigMapEventHandler implements Watcher<ConfigMap> {
     public static final String SECRET_TYPE_OPAQUE = "Opaque";
+
+    private static final String DEFAULT_LOGGING_CONFIGMAP_NAME = "logging-config";
 
     private static final Logger logger = LoggerFactory.getLogger(ConfigMapEventHandler.class);
 
@@ -75,13 +78,10 @@ public class ConfigMapEventHandler implements Watcher<ConfigMap> {
         String namespace = resource.getMetadata().getNamespace();
         String configMapName = resource.getMetadata().getName();
 
-        if (!(configMapName.equals(OperatorConfig.INSTANCE.getRabbitMQConfigMapName()))) {
-            return;
-        }
-        try {
-            logger.info("Processing {} event for \"{}\"", action, resourceLabel);
+        if (configMapName.equals(OperatorConfig.INSTANCE.getRabbitMQConfigMapName())) {
+            try {
+                logger.info("Processing {} event for \"{}\"", action, resourceLabel);
 
-            if (configMapName.equals(OperatorConfig.INSTANCE.getRabbitMQConfigMapName())) {
                 var lock = OperatorState.INSTANCE.getLock(namespace);
                 try {
                     lock.lock();
@@ -114,10 +114,33 @@ public class ConfigMapEventHandler implements Watcher<ConfigMap> {
                 } finally {
                     lock.unlock();
                 }
+            } catch (Exception e) {
+                logger.error("Exception processing {} event for \"{}\"", action, resourceLabel, e);
             }
-        } catch (Exception e) {
-            logger.error("Exception processing {} event for \"{}\"", action, resourceLabel, e);
+        } else if (configMapName.equals(DEFAULT_LOGGING_CONFIGMAP_NAME)) {
+            try {
+                logger.info("Processing {} event for \"{}\"", action, resourceLabel);
+
+                var lock = OperatorState.INSTANCE.getLock(namespace);
+                try {
+                    lock.lock();
+                    String prevHash = OperatorState.INSTANCE.getLoggingConfigChecksum(namespace);
+                    String currentHash = ExtractUtils.sourceHash(resource, false);
+                    if (!currentHash.equals(prevHash)) {
+                        OperatorState.INSTANCE.setLoggingConfigChecksum(namespace, currentHash);
+                        logger.info("Logging ConfigMap has been updated in namespace \"{}\". Updating all boxes",
+                                namespace);
+                        int refreshedBoxesCount = DefaultWatchManager.getInstance().refreshBoxes(namespace);
+                        logger.info("{} box-definition(s) have been updated", refreshedBoxesCount);
+                    }
+                } finally {
+                    lock.unlock();
+                }
+            } catch (Exception e) {
+                logger.error("Exception processing {} event for \"{}\"", action, resourceLabel, e);
+            }
         }
+
     }
 
     @Override
