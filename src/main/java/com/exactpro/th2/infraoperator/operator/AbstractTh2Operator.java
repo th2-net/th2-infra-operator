@@ -20,6 +20,7 @@ import com.exactpro.th2.infraoperator.Th2CrdController;
 import com.exactpro.th2.infraoperator.model.http.HttpCode;
 import com.exactpro.th2.infraoperator.model.kubernetes.client.ResourceClient;
 import com.exactpro.th2.infraoperator.spec.Th2CustomResource;
+import com.exactpro.th2.infraoperator.spec.helmrelease.HelmRelease;
 import com.exactpro.th2.infraoperator.spec.strategy.redeploy.NonTerminalException;
 import com.exactpro.th2.infraoperator.spec.strategy.redeploy.RetryableTaskQueue;
 import com.exactpro.th2.infraoperator.spec.strategy.redeploy.tasks.TriggerRedeployTask;
@@ -38,6 +39,8 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.InputStream;
+import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -270,16 +273,44 @@ public abstract class AbstractTh2Operator<CR extends Th2CustomResource, KO exten
 
         var kubObjMD = kubObj.getMetadata();
         var resMD = resource.getMetadata();
-        var resName = resMD.getName();
+        String resName = resMD.getName();
+        String annotation = CustomResourceUtils.annotationFor(resource);
+        String finalName = hashNameIfNeeded(resName);
 
-        kubObjMD.setName(resName);
+        if (!finalName.equals(resName)) {
+            logger.info("Name of resource \"{}\" exceeds limitations. Will be substituted with \"{}\"",
+                    annotation, finalName);
+        }
+
+        kubObjMD.setName(finalName);
         kubObjMD.setNamespace(ExtractUtils.extractNamespace(resource));
         kubObjMD.setLabels(resMD.getLabels());
         kubObjMD.setAnnotations(resMD.getAnnotations());
         kubObjMD.setAnnotations(kubObjMD.getAnnotations() != null ? kubObjMD.getAnnotations() : new HashMap<>());
 
-        kubObjMD.getAnnotations().put(ANTECEDENT_LABEL_KEY_ALIAS, CustomResourceUtils.annotationFor(resource));
+        kubObjMD.getAnnotations().put(ANTECEDENT_LABEL_KEY_ALIAS, annotation);
 
+    }
+
+    public static String hashNameIfNeeded(String resName) {
+        if (resName.length() >= HelmRelease.NAME_LENGTH_LIMIT) {
+            return digest(resName);
+        }
+        return resName;
+    }
+
+    private static String digest(String data) {
+        try {
+            MessageDigest md = MessageDigest.getInstance("SHA-256");
+            byte[] digest = md.digest(data.getBytes());
+            StringBuilder sb = new StringBuilder();
+            for (byte b : digest) {
+                sb.append(String.format("%02x", b));
+            }
+            return sb.substring(0, HelmRelease.NAME_LENGTH_LIMIT);
+        } catch (NoSuchAlgorithmException e) {
+            throw new RuntimeException(e);
+        }
     }
 
     protected OwnerReference createOwnerReference(CR resource) {

@@ -38,11 +38,14 @@ import static com.exactpro.th2.infraoperator.util.ExtractUtils.extractName;
 import static com.exactpro.th2.infraoperator.util.ExtractUtils.extractNamespace;
 
 public class Th2DictionaryEventHandler implements Watcher<Th2Dictionary> {
+
     private static final Logger logger = LoggerFactory.getLogger(Th2DictionaryEventHandler.class);
+
+    private KubernetesClient client;
 
     private final String dictionaryAlias = "-dictionary";
 
-    private KubernetesClient client;
+    private final Map<String, String> sourceHashes = new ConcurrentHashMap<>();
 
     public static Th2DictionaryEventHandler newInstance(SharedInformerFactory sharedInformerFactory,
                                                         KubernetesClient kubernetesClient,
@@ -74,8 +77,6 @@ public class Th2DictionaryEventHandler implements Watcher<Th2Dictionary> {
 
         return resources;
     }
-
-    private Map<String, String> sourceHashes = new ConcurrentHashMap<>();
 
     @Override
     public void eventReceived(Action action, Th2Dictionary dictionary) {
