@@ -40,6 +40,8 @@ import static com.exactpro.th2.infraoperator.util.JsonUtils.YAML_READER;
 @Kind("HelmRelease")
 public class HelmRelease extends CustomResource<InstantiableMap, InstantiableMap> implements Namespaced {
 
+    public static final int NAME_LENGTH_LIMIT = 26;
+
     private MergePutter mergePutter = new MergePutter();
 
     @SneakyThrows

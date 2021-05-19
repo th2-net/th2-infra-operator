@@ -69,7 +69,7 @@ public class DeclareQueueResolver {
         String namespace = ExtractUtils.extractNamespace(resource);
         try {
             Channel channel = getChannel(namespace);
-            //get queues that are associated with current box and are not linked through Th2Link resources
+            //get queues that are associated with current box.
             Set<String> boxQueueNames = getBoxQueues(namespace, resource);
             removeExtinctQueues(channel, boxQueueNames, CustomResourceUtils.annotationFor(resource));
         } catch (Exception e) {
@@ -117,12 +117,6 @@ public class DeclareQueueResolver {
         removeExtinctQueues(channel, boxQueues, CustomResourceUtils.annotationFor(resource));
     }
 
-//    private Set<String> getBoxUnlinkedQueues(String namespace, String boxQueuesFullName) {
-//        Set<String> boxQueueNames = getBoxQueues(namespace, boxQueuesFullName);
-//        removeLinkedQueues(boxQueueNames, namespace);
-//        return boxQueueNames;
-//    }
-
     @SneakyThrows
     private Set<String> getBoxQueuesFromRabbit(String namespace, String boxName) {
 
@@ -149,16 +143,6 @@ public class DeclareQueueResolver {
         }
         return queueNames;
     }
-
-//    private void removeLinkedQueues(Set<String> boxQueueNames, String namespace) {
-//        var lSingleton = OperatorState.INSTANCE;
-//        var mqActiveLinks = lSingleton.getMqActiveLinks(namespace);
-//
-//        //remove queues that appear in active links
-//        mqActiveLinks.forEach(enqueuedLink ->
-//                boxQueueNames.remove(enqueuedLink.getQueueDescription().getQueueName().toString())
-//        );
-//    }
 
     @SneakyThrows
     private Channel getChannel(String namespace) {

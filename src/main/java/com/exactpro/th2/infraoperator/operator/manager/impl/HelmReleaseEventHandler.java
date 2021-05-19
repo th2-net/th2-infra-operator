@@ -76,7 +76,14 @@ public class HelmReleaseEventHandler implements Watcher<HelmRelease> {
             return;
         }
         String resourceLabel = annotationFor(helmRelease);
-        String name = helmRelease.getMetadata().getName();
+        var ownerReferences = helmRelease.getMetadata().getOwnerReferences();
+        var ownerReference = ownerReferences.get(0);
+        if (ownerReference == null) {
+            logger.warn("Owner reference of resource \"{}\" is null. it won't be redeployed!",
+                    resourceLabel);
+            return;
+        }
+        String name = ownerReference.getName();
         String namespace = helmRelease.getMetadata().getNamespace();
         var resource = resourceFinder.getResource(name, namespace);
         if (resource == null || resource.getKind().equals(FAKE_RESOURCE_ALIAS)) {

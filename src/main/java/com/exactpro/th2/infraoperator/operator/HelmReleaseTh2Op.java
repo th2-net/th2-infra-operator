@@ -437,7 +437,8 @@ public abstract class HelmReleaseTh2Op<CR extends Th2CustomResource> extends Abs
     }
 
     private HelmRelease getHelmRelease(Th2CustomResource resource, List<HelmRelease> helmReleases) {
-        var resName = ExtractUtils.extractFullName(resource);
+        String resFullName = ExtractUtils.extractFullName(resource);
+        String resName = hashNameIfNeeded(resFullName);
         return helmReleases.stream()
                 .filter(hr -> {
                     var owner = ExtractUtils.extractOwnerFullName(hr);
