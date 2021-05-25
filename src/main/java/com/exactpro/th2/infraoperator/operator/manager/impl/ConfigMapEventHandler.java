@@ -43,7 +43,13 @@ import static com.exactpro.th2.infraoperator.util.JsonUtils.JSON_READER;
 public class ConfigMapEventHandler implements Watcher<ConfigMap> {
     public static final String SECRET_TYPE_OPAQUE = "Opaque";
 
-    private static final String DEFAULT_LOGGING_CONFIGMAP_NAME = "logging-config";
+    public static final String LOGGING_CM_NAME = "logging-config";
+
+    public static final String MQ_ROUTER_CM_NAME = "mq-router";
+
+    public static final String GRPC_ROUTER_CM_NAME = "grpc-router";
+
+    public static final String CRADLE_MANAGER_CM_NAME = "cradle-manager";
 
     private static final Logger logger = LoggerFactory.getLogger(ConfigMapEventHandler.class);
 
@@ -117,30 +123,39 @@ public class ConfigMapEventHandler implements Watcher<ConfigMap> {
             } catch (Exception e) {
                 logger.error("Exception processing {} event for \"{}\"", action, resourceLabel, e);
             }
-        } else if (configMapName.equals(DEFAULT_LOGGING_CONFIGMAP_NAME)) {
-            try {
-                logger.info("Processing {} event for \"{}\"", action, resourceLabel);
-
-                var lock = OperatorState.INSTANCE.getLock(namespace);
-                try {
-                    lock.lock();
-                    String prevHash = OperatorState.INSTANCE.getLoggingConfigChecksum(namespace);
-                    String currentHash = ExtractUtils.sourceHash(resource, false);
-                    if (!currentHash.equals(prevHash)) {
-                        OperatorState.INSTANCE.setLoggingConfigChecksum(namespace, currentHash);
-                        logger.info("Logging ConfigMap has been updated in namespace \"{}\". Updating all boxes",
-                                namespace);
-                        int refreshedBoxesCount = DefaultWatchManager.getInstance().refreshBoxes(namespace);
-                        logger.info("{} box-definition(s) have been updated", refreshedBoxesCount);
-                    }
-                } finally {
-                    lock.unlock();
-                }
-            } catch (Exception e) {
-                logger.error("Exception processing {} event for \"{}\"", action, resourceLabel, e);
-            }
+        } else if (configMapName.equals(LOGGING_CM_NAME)) {
+            updateChecksum(action, namespace, resource, LOGGING_CM_NAME, resourceLabel);
+        } else if (configMapName.equals(MQ_ROUTER_CM_NAME)) {
+            updateChecksum(action, namespace, resource, MQ_ROUTER_CM_NAME, resourceLabel);
+        } else if (configMapName.equals(GRPC_ROUTER_CM_NAME)) {
+            updateChecksum(action, namespace, resource, GRPC_ROUTER_CM_NAME, resourceLabel);
+        } else if (configMapName.equals(CRADLE_MANAGER_CM_NAME)) {
+            updateChecksum(action, namespace, resource, CRADLE_MANAGER_CM_NAME, resourceLabel);
         }
 
+    }
+
+    private void updateChecksum(Action action, String namespace, ConfigMap resource, String key, String resourceLabel) {
+        try {
+            logger.info("Processing {} event for \"{}\"", action, resourceLabel);
+
+            var lock = OperatorState.INSTANCE.getLock(namespace);
+            try {
+                lock.lock();
+                String prevHash = OperatorState.INSTANCE.getConfigChecksum(namespace, key);
+                String currentHash = ExtractUtils.sourceHash(resource, false);
+                if (!currentHash.equals(prevHash)) {
+                    OperatorState.INSTANCE.putConfigChecksum(namespace, key, currentHash);
+                    logger.info("\"{}\" has been updated. Updating all boxes", resourceLabel);
+                    int refreshedBoxesCount = DefaultWatchManager.getInstance().refreshBoxes(namespace);
+                    logger.info("{} box-definition(s) have been updated", refreshedBoxesCount);
+                }
+            } finally {
+                lock.unlock();
+            }
+        } catch (Exception e) {
+            logger.error("Exception processing {} event for \"{}\"", action, resourceLabel, e);
+        }
     }
 
     @Override

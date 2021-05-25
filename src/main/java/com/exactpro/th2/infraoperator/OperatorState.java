@@ -101,12 +101,13 @@ public enum OperatorState {
                 .collect(Collectors.toUnmodifiableList());
     }
 
-    public String getLoggingConfigChecksum(String namespace) {
-        return namespaceStates.get(namespace).loggingConfigChecksum;
+    public String getConfigChecksum(String namespace, String key) {
+        String checksum = namespaceStates.get(namespace).configChecksums.get(key);
+        return checksum != null ? checksum : "";
     }
 
-    public void setLoggingConfigChecksum(String namespace, String checkSum) {
-        namespaceStates.get(namespace).setLoggingConfigChecksum(checkSum);
+    public void putConfigChecksum(String namespace, String key, String checkSum) {
+        namespaceStates.get(namespace).putConfigChecksums(key, checkSum);
     }
 
     public NamespaceLock getLock(String namespace) {
@@ -149,7 +150,7 @@ public enum OperatorState {
 
         private List<DictionaryBinding> dictionaryBindings = new ArrayList<>();
 
-        private String loggingConfigChecksum;
+        private Map<String, String> configChecksums = new HashMap<>();
 
         private final Lock lock = new ReentrantLock(true);
 
@@ -184,8 +185,8 @@ public enum OperatorState {
             return this.dictionaryBindings;
         }
 
-        public String getLoggingConfigChecksum() {
-            return loggingConfigChecksum;
+        public String getConfigChecksums(String key) {
+            return configChecksums.get(key);
         }
 
         public void setLinkResources(List<Th2Link> linkResources) {
@@ -204,8 +205,8 @@ public enum OperatorState {
             this.dictionaryBindings = dictionaryBindings;
         }
 
-        public void setLoggingConfigChecksum(String loggingConfigChecksum) {
-            this.loggingConfigChecksum = loggingConfigChecksum;
+        public void putConfigChecksums(String key, String configChecksum) {
+            this.configChecksums.put(key, configChecksum);
         }
 
         @Override
