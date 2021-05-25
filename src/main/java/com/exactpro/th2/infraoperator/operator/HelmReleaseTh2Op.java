@@ -51,53 +51,69 @@ import org.slf4j.LoggerFactory;
 import java.io.InputStream;
 import java.util.*;
 
+import static com.exactpro.th2.infraoperator.operator.manager.impl.ConfigMapEventHandler.*;
 import static com.exactpro.th2.infraoperator.util.ExtendedSettingsUtils.convertField;
 
 public abstract class HelmReleaseTh2Op<CR extends Th2CustomResource> extends AbstractTh2Operator<CR, HelmRelease> {
 
     private static final Logger logger = LoggerFactory.getLogger(HelmReleaseTh2Op.class);
 
-    public static final int PROPERTIES_MERGE_DEPTH = 1;
+    private static final int PROPERTIES_MERGE_DEPTH = 1;
 
-    public static final String CHART_PROPERTIES_ALIAS = "chart";
+    //spec section
+    private static final String CHART_PROPERTIES_ALIAS = "chart";
 
-    public static final String ROOT_PROPERTIES_ALIAS = "component";
+    public static final String RELEASE_NAME_ALIAS = "releaseName";
 
-    public static final String EXTENDED_SETTINGS_ALIAS = "extendedSettings";
+    //values section
+    private static final String ROOT_PROPERTIES_ALIAS = "component";
 
+    public static final String ANNOTATIONS_ALIAS = "annotations";
+
+    //component section
+    private static final String COMPONENT_NAME_ALIAS = "name";
+
+    private static final String DOCKER_IMAGE_ALIAS = "image";
+
+    private static final String CUSTOM_CONFIG_ALIAS = "custom";
+
+    private static final String PROMETHEUS_CONFIG_ALIAS = "prometheus";
+
+    private static final String DICTIONARIES_ALIAS = "dictionaries";
+
+    private static final String MQ_QUEUE_CONFIG_ALIAS = "mq";
+
+    private static final String GRPC_P2P_CONFIG_ALIAS = "grpc";
+
+    private static final String MQ_ROUTER_ALIAS = "mqRouter";
+
+    private static final String GRPC_ROUTER_ALIAS = "grpcRouter";
+
+    private static final String CRADLE_MANAGER_ALIAS = "cradleManager";
+
+    public static final String LOGGING_ALIAS = "logging";
+
+    public static final String SCHEMA_SECRETS_ALIAS = "secrets";
+
+    public static final String INGRESS_HOST_ALIAS = "ingressHost";
+
+    private static final String EXTENDED_SETTINGS_ALIAS = "extendedSettings";
+
+    //extended settings section
     private static final String SERVICE_ALIAS = "service";
 
     private static final String EXTERNAL_BOX_ALIAS = "externalBox";
 
     private static final String SHARED_MEMORY_ALIAS = "sharedMemory";
 
+    //general aliases
+    private static final String CONFIG_ALIAS = "config";
+
+    private static final String CHECKSUM_ALIAS = "checksum";
+
     private static final String ENABLED_ALIAS = "enabled";
 
-    public static final String MQ_CONFIG_ALIAS = "routerMq";
-
-    public static final String CUSTOM_CONFIG_ALIAS = "custom";
-
-    public static final String PROMETHEUS_CONFIG_ALIAS = "prometheus";
-
-    public static final String SCHEMA_SECRETS_ALIAS = "secrets";
-
-    public static final String GRPC_CONFIG_ALIAS = "grpcRouter";
-
-    public static final String DICTIONARIES_ALIAS = "dictionaries";
-
-    public static final String LOGGING_ALIAS = "logging";
-
-    public static final String ANNOTATIONS_ALIAS = "annotations";
-
-    public static final String DOCKER_IMAGE_ALIAS = "image";
-
-    public static final String COMPONENT_NAME_ALIAS = "name";
-
-    public static final String RELEASE_NAME_ALIAS = "releaseName";
-
-    public static final String INGRESS_HOST_ALIAS = "ingressHost";
-
-    public static final String DEFAULT_VALUE_ENABLED = Boolean.TRUE.toString();
+    private static final String DEFAULT_VALUE_ENABLED = Boolean.TRUE.toString();
 
     protected final BoxResourceFinder resourceFinder;
 
@@ -177,24 +193,54 @@ public abstract class HelmReleaseTh2Op<CR extends Th2CustomResource> extends Abs
 
         String resNamespace = ExtractUtils.extractNamespace(resource);
         Th2Spec resSpec = resource.getSpec();
-        OperatorState lSingleton = OperatorState.INSTANCE;
-        var grpcActiveLinks = lSingleton.getGrpcActiveLinks(resNamespace);
-        var dictionaryActiveLinks = lSingleton.getDictionaryActiveLinks(resNamespace);
+        OperatorState operatorState = OperatorState.INSTANCE;
+        var grpcActiveLinks = operatorState.getGrpcActiveLinks(resNamespace);
+        var dictionaryActiveLinks = operatorState.getDictionaryActiveLinks(resNamespace);
 
         MessageRouterConfiguration mqConfig = mqConfigFactory.createConfig(resource);
         GrpcRouterConfiguration grpcConfig = grpcConfigFactory.createConfig(resource, grpcActiveLinks);
         List<DictionaryEntity> dictionaries = dictionaryFactory.create(resource, dictionaryActiveLinks);
-        String loggingConfigChecksum = OperatorState.INSTANCE.getLoggingConfigChecksum(resNamespace);
-        loggingConfigChecksum = loggingConfigChecksum != null ? loggingConfigChecksum : "";
+        String loggingConfigChecksum = operatorState.getConfigChecksum(resNamespace, LOGGING_CM_NAME);
+        String mqRouterChecksum = operatorState.getConfigChecksum(resNamespace, MQ_ROUTER_CM_NAME);
+        String grpcRouterChecksum = operatorState.getConfigChecksum(resNamespace, GRPC_ROUTER_CM_NAME);
+        String cradleManagerChecksum = operatorState.getConfigChecksum(resNamespace, CRADLE_MANAGER_CM_NAME);
 
         helmRelease.putSpecProp(RELEASE_NAME_ALIAS,
                 ExtractUtils.extractNamespace(helmRelease) + "-" + ExtractUtils.extractName(helmRelease));
+
+        List<String> logFile = resource.getSpec().getLogFile();
+        Map<String, Object> logFileSection = new HashMap<>();
+        logFileSection.put(CONFIG_ALIAS, logFile);
+        logFileSection.put(CHECKSUM_ALIAS, loggingConfigChecksum);
+
+        Map<String, String> mqRouterConfig = resource.getSpec().getMqRouter();
+        Map<String, Object> mqRouterSection = new HashMap<>();
+        mqRouterSection.put(CONFIG_ALIAS, mqRouterConfig);
+        mqRouterSection.put(CHECKSUM_ALIAS, mqRouterChecksum);
+
+        Map<String, String> grpcRouterConfig = resource.getSpec().getGrpcRouter();
+        Map<String, Object> grpcRouterSection = new HashMap<>();
+        grpcRouterSection.put(CONFIG_ALIAS, grpcRouterConfig);
+        grpcRouterSection.put(CHECKSUM_ALIAS, grpcRouterChecksum);
+
+        Map<String, String> cradleManagerConfig = resource.getSpec().getCradleManager();
+        Map<String, Object> cradleManagerSection = new HashMap<>();
+        cradleManagerSection.put(CONFIG_ALIAS, cradleManagerConfig);
+        cradleManagerSection.put(CHECKSUM_ALIAS, cradleManagerChecksum);
+
+        HelmReleaseSecrets secrets = new HelmReleaseSecrets(OperatorConfig.INSTANCE.getSchemaSecrets());
+
         helmRelease.mergeValue(PROPERTIES_MERGE_DEPTH, ROOT_PROPERTIES_ALIAS, Map.of(
                 DOCKER_IMAGE_ALIAS, resSpec.getImageName() + ":" + resSpec.getImageVersion(),
                 COMPONENT_NAME_ALIAS, resource.getMetadata().getName(),
                 CUSTOM_CONFIG_ALIAS, resource.getSpec().getCustomConfig(),
-                MQ_CONFIG_ALIAS, JsonUtils.writeValueAsDeepMap(mqConfig),
-                GRPC_CONFIG_ALIAS, JsonUtils.writeValueAsDeepMap(grpcConfig)
+                MQ_QUEUE_CONFIG_ALIAS, JsonUtils.writeValueAsDeepMap(mqConfig),
+                GRPC_P2P_CONFIG_ALIAS, JsonUtils.writeValueAsDeepMap(grpcConfig),
+                LOGGING_ALIAS, logFileSection,
+                MQ_ROUTER_ALIAS, mqRouterSection,
+                GRPC_ROUTER_ALIAS, grpcRouterSection,
+                CRADLE_MANAGER_ALIAS, cradleManagerSection,
+                SCHEMA_SECRETS_ALIAS, secrets
         ));
 
         PrometheusConfiguration<String> prometheusConfig = resource.getSpec().getPrometheusConfiguration();
@@ -214,9 +260,6 @@ public abstract class HelmReleaseTh2Op<CR extends Th2CustomResource> extends Abs
                     Map.of(DICTIONARIES_ALIAS, dictionaries));
         }
 
-        helmRelease.mergeValue(PROPERTIES_MERGE_DEPTH, ROOT_PROPERTIES_ALIAS,
-                Map.of(LOGGING_ALIAS, loggingConfigChecksum));
-
         Map<String, Object> extendedSettings = resSpec.getExtendedSettings();
         if (extendedSettings != null) {
             helmRelease.mergeValue(PROPERTIES_MERGE_DEPTH, ROOT_PROPERTIES_ALIAS,
@@ -228,10 +271,6 @@ public abstract class HelmReleaseTh2Op<CR extends Th2CustomResource> extends Abs
             helmRelease.mergeValue(PROPERTIES_MERGE_DEPTH, ROOT_PROPERTIES_ALIAS,
                     Map.of(INGRESS_HOST_ALIAS, ingressHost));
         }
-
-        HelmReleaseSecrets secrets = new HelmReleaseSecrets(OperatorConfig.INSTANCE.getSchemaSecrets());
-        helmRelease.mergeValue(PROPERTIES_MERGE_DEPTH, ROOT_PROPERTIES_ALIAS,
-                Map.of(SCHEMA_SECRETS_ALIAS, secrets));
 
         var defaultChartConfig = OperatorConfig.INSTANCE.getComponentChartConfig();
         var chartConfig = resSpec.getChartConfig();
@@ -392,8 +431,8 @@ public abstract class HelmReleaseTh2Op<CR extends Th2CustomResource> extends Abs
                 logger.info("Updating helm release of '{}.{}' resource", namespace, resourceName);
 
                 hr.mergeValue(PROPERTIES_MERGE_DEPTH, ROOT_PROPERTIES_ALIAS, Map.of(
-                        MQ_CONFIG_ALIAS, JsonUtils.writeValueAsDeepMap(newResMqConfig),
-                        GRPC_CONFIG_ALIAS, newResRawGrpcConfig
+                        MQ_QUEUE_CONFIG_ALIAS, JsonUtils.writeValueAsDeepMap(newResMqConfig),
+                        GRPC_P2P_CONFIG_ALIAS, newResRawGrpcConfig
                 ));
 
                 createKubObj(ExtractUtils.extractNamespace(hr), hr);
@@ -451,7 +490,7 @@ public abstract class HelmReleaseTh2Op<CR extends Th2CustomResource> extends Abs
     private MessageRouterConfiguration extractHelmReleaseMqConfig(HelmRelease helmRelease) {
         var values = (Map<String, Object>) helmRelease.getValuesSection();
         var componentConfigs = (Map<String, Object>) values.get(ROOT_PROPERTIES_ALIAS);
-        var mqConfig = (Map<String, Object>) componentConfigs.get(MQ_CONFIG_ALIAS);
+        var mqConfig = (Map<String, Object>) componentConfigs.get(MQ_QUEUE_CONFIG_ALIAS);
         return JsonUtils.JSON_READER.convertValue(mqConfig, MessageRouterConfiguration.class);
     }
 
@@ -459,7 +498,7 @@ public abstract class HelmReleaseTh2Op<CR extends Th2CustomResource> extends Abs
     private Map<String, Object> extractHelmReleaseRawGrpcConfig(HelmRelease helmRelease) {
         var values = (Map<String, Object>) helmRelease.getValuesSection();
         var componentConfigs = (Map<String, Object>) values.get(ROOT_PROPERTIES_ALIAS);
-        return (Map<String, Object>) componentConfigs.get(GRPC_CONFIG_ALIAS);
+        return (Map<String, Object>) componentConfigs.get(GRPC_P2P_CONFIG_ALIAS);
     }
 
     private List<HelmRelease> getAllHelmReleases(String namespace) {

@@ -54,6 +54,14 @@ public abstract class Th2Spec implements KubernetesResource {
     @JsonProperty("prometheus")
     protected PrometheusConfiguration<String> prometheusConfiguration;
 
+    protected Map<String, String> mqRouter;
+
+    protected Map<String, String> grpcRouter;
+
+    protected Map<String, String> cradleManager;
+
+    protected List<String> logFile;
+
     protected List<ParamSpec> params = new ArrayList<>();
 
     protected List<PinSpec> pins = new ArrayList<>();
