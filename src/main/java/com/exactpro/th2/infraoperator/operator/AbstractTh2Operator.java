@@ -29,6 +29,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import com.exactpro.th2.infraoperator.Th2CrdController;
+import com.exactpro.th2.infraoperator.metrics.OperatorMetrics;
 import com.exactpro.th2.infraoperator.model.http.HttpCode;
 import com.exactpro.th2.infraoperator.model.kubernetes.client.ResourceClient;
 import com.exactpro.th2.infraoperator.spec.Th2CustomResource;
@@ -46,6 +47,7 @@ import io.fabric8.kubernetes.client.KubernetesClient;
 import io.fabric8.kubernetes.client.KubernetesClientException;
 import io.fabric8.kubernetes.client.Watcher;
 import io.fabric8.kubernetes.client.WatcherException;
+import io.prometheus.client.Histogram;
 import lombok.SneakyThrows;
 
 public abstract class AbstractTh2Operator<CR extends Th2CustomResource, KO extends HasMetadata> implements Watcher<CR> {
@@ -75,16 +77,16 @@ public abstract class AbstractTh2Operator<CR extends Th2CustomResource, KO exten
         try {
             String resourceLabel = CustomResourceUtils.annotationFor(resource);
 
+            var cachedFingerprint = fingerprints.get(resourceLabel);
+            var resourceFingerprint = new ResourceFingerprint(resource);
+
+            if (cachedFingerprint != null && action.equals(MODIFIED)
+                    && cachedFingerprint.equals(resourceFingerprint)) {
+                logger.debug("No changes detected for \"{}\"", resourceLabel);
+                return;
+            }
+            Histogram.Timer processTimer = OperatorMetrics.getEventTimer(resource.getKind());
             try {
-
-                var cachedFingerprint = fingerprints.get(resourceLabel);
-                var resourceFingerprint = new ResourceFingerprint(resource);
-
-                if (cachedFingerprint != null && action.equals(MODIFIED)
-                        && cachedFingerprint.equals(resourceFingerprint)) {
-                    logger.debug("No changes detected for \"{}\"", resourceLabel);
-                    return;
-                }
                 logger.debug("refresh-token={}", resourceFingerprint.refreshToken);
 
                 CustomResourceUtils.removeDuplicatedPins(resource);
@@ -113,6 +115,8 @@ public abstract class AbstractTh2Operator<CR extends Th2CustomResource, KO exten
 
                 logger.info("Task \"{}\" added to scheduler, with delay \"{}\" seconds",
                         triggerRedeployTask.getName(), REDEPLOY_DELAY);
+            } finally {
+                processTimer.observeDuration();
             }
 
         } catch (Exception e) {

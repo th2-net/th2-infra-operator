@@ -17,6 +17,7 @@
 package com.exactpro.th2.infraoperator.operator.manager.impl;
 
 import com.exactpro.th2.infraoperator.OperatorState;
+import com.exactpro.th2.infraoperator.metrics.OperatorMetrics;
 import com.exactpro.th2.infraoperator.spec.dictionary.Th2Dictionary;
 import com.exactpro.th2.infraoperator.util.ExtractUtils;
 import io.fabric8.kubernetes.api.model.ConfigMap;
@@ -26,6 +27,7 @@ import io.fabric8.kubernetes.client.Watcher;
 import io.fabric8.kubernetes.client.WatcherException;
 import io.fabric8.kubernetes.client.informers.SharedIndexInformer;
 import io.fabric8.kubernetes.client.informers.SharedInformerFactory;
+import io.prometheus.client.Histogram;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -92,6 +94,7 @@ public class Th2DictionaryEventHandler implements Watcher<Th2Dictionary> {
             return;
         }
 
+        Histogram.Timer processTimer = OperatorMetrics.getEventTimer(dictionary.getKind());
         logger.info("Updating all boxes with bindings to \"{}\"", resourceLabel);
 
         var resources = getBoundResources(dictionary);
@@ -111,6 +114,7 @@ public class Th2DictionaryEventHandler implements Watcher<Th2Dictionary> {
             client.configMaps().inNamespace(resNamespace).createOrReplace(toConfigMap(dictionary));
             sourceHashes.put(resourceLabel, sourceHash);
         }
+        processTimer.observeDuration();
     }
 
     private ConfigMap toConfigMap(Th2Dictionary dictionary) {

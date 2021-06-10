@@ -19,6 +19,7 @@ package com.exactpro.th2.infraoperator.operator.manager.impl;
 import com.exactpro.th2.infraoperator.OperatorState;
 import com.exactpro.th2.infraoperator.configuration.OperatorConfig;
 import com.exactpro.th2.infraoperator.configuration.RabbitMQConfig;
+import com.exactpro.th2.infraoperator.metrics.OperatorMetrics;
 import com.exactpro.th2.infraoperator.model.kubernetes.configmaps.ConfigMaps;
 import com.exactpro.th2.infraoperator.spec.strategy.linkresolver.mq.RabbitMQContext;
 import com.exactpro.th2.infraoperator.util.CustomResourceUtils;
@@ -31,6 +32,7 @@ import io.fabric8.kubernetes.client.Watcher;
 import io.fabric8.kubernetes.client.WatcherException;
 import io.fabric8.kubernetes.client.informers.SharedIndexInformer;
 import io.fabric8.kubernetes.client.informers.SharedInformerFactory;
+import io.prometheus.client.Histogram;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -85,9 +87,9 @@ public class ConfigMapEventHandler implements Watcher<ConfigMap> {
         String configMapName = resource.getMetadata().getName();
 
         if (configMapName.equals(OperatorConfig.INSTANCE.getRabbitMQConfigMapName())) {
+            Histogram.Timer processTimer = OperatorMetrics.getEventTimer(resource.getKind());
             try {
                 logger.info("Processing {} event for \"{}\"", action, resourceLabel);
-
                 var lock = OperatorState.INSTANCE.getLock(namespace);
                 try {
                     lock.lock();
@@ -118,6 +120,7 @@ public class ConfigMapEventHandler implements Watcher<ConfigMap> {
                         logger.info("RabbitMQ ConfigMap data hasn't changed");
                     }
                 } finally {
+                    processTimer.observeDuration();
                     lock.unlock();
                 }
             } catch (Exception e) {
@@ -136,6 +139,7 @@ public class ConfigMapEventHandler implements Watcher<ConfigMap> {
     }
 
     private void updateChecksum(Action action, String namespace, ConfigMap resource, String key, String resourceLabel) {
+        Histogram.Timer processTimer = OperatorMetrics.getEventTimer(resource.getKind());
         try {
             logger.info("Processing {} event for \"{}\"", action, resourceLabel);
 
@@ -151,6 +155,7 @@ public class ConfigMapEventHandler implements Watcher<ConfigMap> {
                     logger.info("{} box-definition(s) have been updated", refreshedBoxesCount);
                 }
             } finally {
+                processTimer.observeDuration();
                 lock.unlock();
             }
         } catch (Exception e) {
