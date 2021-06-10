@@ -16,6 +16,7 @@
 
 package com.exactpro.th2.infraoperator.operator.manager.impl;
 
+import com.exactpro.th2.infraoperator.metrics.OperatorMetrics;
 import com.exactpro.th2.infraoperator.spec.dictionary.Th2Dictionary;
 import com.exactpro.th2.infraoperator.spec.link.Th2Link;
 import io.fabric8.kubernetes.api.model.ConfigMap;
@@ -194,7 +195,7 @@ public class EventQueue {
                 }
 
                 priorityEvents.add((PriorityEvent) event);
-
+                OperatorMetrics.setPriorityEventCount(priorityEvents.size());
                 // Log state of queues
                 logger.debug("Preempted namespace {}, {} event(s) present in the priority queue, " +
                                 "{} event(s) in the regular queue",
@@ -208,6 +209,7 @@ public class EventQueue {
 
                 if (index == priorityEvents.size()) {
                     priorityEvents.add((PriorityEvent) event);
+                    OperatorMetrics.setPriorityEventCount(priorityEvents.size());
                 } else {
                     priorityEvents.get(index).replace(event);
                 }
@@ -217,6 +219,7 @@ public class EventQueue {
 
                 if (index == regularEvents.size()) {
                     regularEvents.add(event);
+                    OperatorMetrics.setRegularEventCount(regularEvents.size());
                 } else {
                     regularEvents.get(index).replace(event);
                 }
@@ -289,6 +292,8 @@ public class EventQueue {
         }
 
         if (event != null) {
+            OperatorMetrics.setPriorityEventCount(priorityEvents.size());
+            OperatorMetrics.setRegularEventCount(regularEvents.size());
             logger.debug("Withdrawn {}, {} event(s) present in the priority queue, {} event(s) in the regular queue",
                     event.getEventId(),
                     priorityEvents.size(),
