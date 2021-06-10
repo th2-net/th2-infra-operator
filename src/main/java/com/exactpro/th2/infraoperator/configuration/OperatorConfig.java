@@ -16,6 +16,7 @@
 
 package com.exactpro.th2.infraoperator.configuration;
 
+import com.exactpro.th2.infraoperator.spec.shared.PrometheusConfiguration;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -73,6 +74,10 @@ public enum OperatorConfig {
         return getConfig().getRabbitMQManagementConfig();
     }
 
+    public PrometheusConfiguration<String> getPrometheusConfiguration() {
+        return getConfig().getPrometheusConfiguration();
+    }
+
     private synchronized Configuration getConfig() {
         if (configuration == null) {
             configuration = loadConfiguration();
@@ -111,6 +116,8 @@ public enum OperatorConfig {
 
         private String ingressHost;
 
+        private PrometheusConfiguration<String> prometheusConfiguration;
+
         public Configuration() {
             chartConfig = new ChartConfig();
             rabbitMQManagementConfig = new RabbitMQManagementConfig();
@@ -118,6 +125,7 @@ public enum OperatorConfig {
             namespacePrefixes = new ArrayList<>();
             rabbitMQConfigMapName = DEFAULT_RABBITMQ_CONFIGMAP_NAME;
             k8sUrl = "";
+            prometheusConfiguration = PrometheusConfiguration.createDefault("true");
         }
 
         public ChartConfig getChartConfig() {
@@ -176,6 +184,10 @@ public enum OperatorConfig {
             return rabbitMQConfigMapName;
         }
 
+        public PrometheusConfiguration<String> getPrometheusConfiguration() {
+            return prometheusConfiguration;
+        }
+
         public void setRabbitMQConfigMapName(String rabbitMQConfigMapName) {
             if (rabbitMQConfigMapName != null) {
                 this.rabbitMQConfigMapName = rabbitMQConfigMapName;
@@ -204,7 +216,8 @@ public enum OperatorConfig {
                     && Objects.equals(getNamespacePrefixes(), that.getNamespacePrefixes())
                     && Objects.equals(getRabbitMQConfigMapName(), that.getRabbitMQConfigMapName())
                     && Objects.equals(getK8sUrl(), that.getK8sUrl())
-                    && Objects.equals(getIngressHost(), that.getIngressHost());
+                    && Objects.equals(getIngressHost(), that.getIngressHost())
+                    && Objects.equals(getPrometheusConfiguration(), that.getPrometheusConfiguration());
         }
     }
 }

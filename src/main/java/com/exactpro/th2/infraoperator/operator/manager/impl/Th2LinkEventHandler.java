@@ -17,6 +17,7 @@
 package com.exactpro.th2.infraoperator.operator.manager.impl;
 
 import com.exactpro.th2.infraoperator.OperatorState;
+import com.exactpro.th2.infraoperator.metrics.OperatorMetrics;
 import com.exactpro.th2.infraoperator.model.kubernetes.client.impl.LinkClient;
 import com.exactpro.th2.infraoperator.spec.link.Th2Link;
 import com.exactpro.th2.infraoperator.spec.link.Th2LinkSpec;
@@ -32,6 +33,7 @@ import io.fabric8.kubernetes.client.Watcher;
 import io.fabric8.kubernetes.client.WatcherException;
 import io.fabric8.kubernetes.client.informers.SharedIndexInformer;
 import io.fabric8.kubernetes.client.informers.SharedInformerFactory;
+import io.prometheus.client.Histogram;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -82,7 +84,7 @@ public class Th2LinkEventHandler implements Watcher<Th2Link> {
             logger.info("Link: \"{}\" has not been changed", resourceLabel);
             return;
         }
-
+        Histogram.Timer processTimer = OperatorMetrics.getEventTimer(th2Link.getKind());
         logger.info("Updating all boxes and bindings related to \"{}\"", resourceLabel);
 
         var lock = operatorState.getLock(namespace);
@@ -109,6 +111,7 @@ public class Th2LinkEventHandler implements Watcher<Th2Link> {
 
             operatorState.setLinkResources(namespace, linkResources);
         } finally {
+            processTimer.observeDuration();
             lock.unlock();
         }
 

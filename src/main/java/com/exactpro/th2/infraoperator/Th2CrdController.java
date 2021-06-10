@@ -16,6 +16,7 @@
 
 package com.exactpro.th2.infraoperator;
 
+import com.exactpro.th2.infraoperator.metrics.PrometheusServer;
 import com.exactpro.th2.infraoperator.operator.impl.BoxHelmTh2Op;
 import com.exactpro.th2.infraoperator.operator.impl.CoreBoxHelmTh2Op;
 import com.exactpro.th2.infraoperator.operator.impl.EstoreHelmTh2Op;
@@ -32,7 +33,7 @@ public class Th2CrdController {
     public static void main(String[] args) {
 
         var watchManager = DefaultWatchManager.getInstance();
-
+        PrometheusServer.start();
         try {
             watchManager.addTarget(MstoreHelmTh2Op::new);
             watchManager.addTarget(EstoreHelmTh2Op::new);
