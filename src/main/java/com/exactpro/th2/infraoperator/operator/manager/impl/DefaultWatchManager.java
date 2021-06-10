@@ -25,9 +25,6 @@ import com.exactpro.th2.infraoperator.operator.HelmReleaseTh2Op;
 import com.exactpro.th2.infraoperator.operator.context.HelmOperatorContext;
 import com.exactpro.th2.infraoperator.spec.Th2CustomResource;
 import com.exactpro.th2.infraoperator.spec.link.Th2Link;
-import com.exactpro.th2.infraoperator.spec.strategy.linkresolver.dictionary.DictionaryLinkResolver;
-import com.exactpro.th2.infraoperator.spec.strategy.linkresolver.grpc.GrpcLinkResolver;
-import com.exactpro.th2.infraoperator.spec.strategy.linkresolver.mq.impl.BindQueueLinkResolver;
 import com.exactpro.th2.infraoperator.spec.strategy.resfinder.box.impl.DefaultBoxResourceFinder;
 import com.exactpro.th2.infraoperator.spec.strategy.resfinder.box.impl.StoreDependentBoxResourceFinder;
 import com.exactpro.th2.infraoperator.spec.strategy.resfinder.dictionary.DictionaryResourceFinder;
@@ -112,8 +109,8 @@ public class DefaultWatchManager {
     }
 
     private void loadResources(EventHandlerContext context) {
-        loadLinks(context);
         loadConfigMaps(context);
+        loadLinks(context);
     }
 
     private void loadLinks(EventHandlerContext context) {
@@ -275,13 +272,8 @@ public class DefaultWatchManager {
 
         operatorBuilder.dictionaryResourceFinder(new DictionaryResourceFinder(dictionaryClient));
 
-        operatorBuilder.grpcLinkResolver(new GrpcLinkResolver(operatorBuilder.getResourceFinder()));
-
-        operatorBuilder.queueGenLinkResolver(new BindQueueLinkResolver(operatorBuilder.getResourceFinder()));
-
         var boxResFinder = operatorBuilder.getResourceFinder();
         var dicResFinder = operatorBuilder.getDictionaryResourceFinder();
-        operatorBuilder.dictionaryLinkResolver(new DictionaryLinkResolver(boxResFinder, dicResFinder));
 
         operatorBuilder.grpcConfigFactory(new GrpcRouterConfigFactory(operatorBuilder.getResourceFinder()));
 

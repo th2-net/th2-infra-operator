@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package com.exactpro.th2.infraoperator.spec.strategy.linkresolver.mq.impl;
+package com.exactpro.th2.infraoperator.spec.strategy.linkresolver.mq;
 
 import com.exactpro.th2.infraoperator.configuration.OperatorConfig;
 import com.exactpro.th2.infraoperator.configuration.RabbitMQConfig;

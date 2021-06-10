@@ -19,9 +19,6 @@ package com.exactpro.th2.infraoperator.operator.context;
 import com.exactpro.th2.infraoperator.model.box.configuration.dictionary.factory.DictionaryFactory;
 import com.exactpro.th2.infraoperator.model.box.configuration.grpc.factory.GrpcRouterConfigFactory;
 import com.exactpro.th2.infraoperator.model.box.configuration.mq.factory.MessageRouterConfigFactory;
-import com.exactpro.th2.infraoperator.spec.strategy.linkresolver.dictionary.DictionaryLinkResolver;
-import com.exactpro.th2.infraoperator.spec.strategy.linkresolver.grpc.GrpcLinkResolver;
-import com.exactpro.th2.infraoperator.spec.strategy.linkresolver.mq.QueueLinkResolver;
 import com.exactpro.th2.infraoperator.spec.strategy.resfinder.box.BoxResourceFinder;
 import io.fabric8.kubernetes.client.KubernetesClient;
 import lombok.Getter;
@@ -33,12 +30,6 @@ public class HelmOperatorContext {
 
     private final BoxResourceFinder resourceFinder;
 
-    private final GrpcLinkResolver grpcLinkResolver;
-
-    private final DictionaryLinkResolver dictionaryLinkResolver;
-
-    private final QueueLinkResolver queueGenLinkResolver;
-
     private final MessageRouterConfigFactory mqConfigFactory;
 
     private final GrpcRouterConfigFactory grpcConfigFactory;
@@ -49,9 +40,6 @@ public class HelmOperatorContext {
         this.client = builder.getClient();
         this.resourceFinder = builder.getResourceFinder();
         this.mqConfigFactory = builder.getMqConfigFactory();
-        this.grpcLinkResolver = builder.getGrpcLinkResolver();
-        this.dictionaryLinkResolver = builder.getDictionaryLinkResolver();
-        this.queueGenLinkResolver = builder.getQueueGenLinkResolver();
         this.grpcConfigFactory = builder.getGrpcConfigFactory();
         this.dictionaryFactory = builder.getDictionaryFactory();
     }
@@ -67,12 +55,6 @@ public class HelmOperatorContext {
 
         protected BoxResourceFinder resourceFinder = null;
 
-        protected GrpcLinkResolver grpcLinkResolver = null;
-
-        protected DictionaryLinkResolver dictionaryLinkResolver = null;
-
-        protected QueueLinkResolver queueGenLinkResolver = null;
-
         protected MessageRouterConfigFactory mqConfigFactory = new MessageRouterConfigFactory();
 
         protected GrpcRouterConfigFactory grpcConfigFactory = null;
@@ -85,21 +67,6 @@ public class HelmOperatorContext {
 
         public T resourceFinder(BoxResourceFinder resourceFinder) {
             this.resourceFinder = resourceFinder;
-            return self();
-        }
-
-        public T grpcLinkResolver(GrpcLinkResolver grpcLinkResolver) {
-            this.grpcLinkResolver = grpcLinkResolver;
-            return self();
-        }
-
-        public T dictionaryLinkResolver(DictionaryLinkResolver dictionaryLinkResolver) {
-            this.dictionaryLinkResolver = dictionaryLinkResolver;
-            return self();
-        }
-
-        public T queueGenLinkResolver(QueueLinkResolver queueGenLinkResolver) {
-            this.queueGenLinkResolver = queueGenLinkResolver;
             return self();
         }
 
