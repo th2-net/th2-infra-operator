@@ -22,8 +22,6 @@ import com.exactpro.th2.infraoperator.spec.Th2CustomResource;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.List;
-
 import static com.exactpro.th2.infraoperator.util.ExtractUtils.*;
 
 public abstract class StoreHelmTh2Op<CR extends Th2CustomResource> extends HelmReleaseTh2Op<CR> {
@@ -104,11 +102,6 @@ public abstract class StoreHelmTh2Op<CR extends Th2CustomResource> extends HelmR
 
     @Override
     protected void updateMsgStorageLinksAfterDelete(CR resource) {
-        // nothing
-    }
-
-    @Override
-    protected void updateDependedResourcesIfNeeded(CR resource, List<Th2CustomResource> linkedResources) {
         // nothing
     }
 

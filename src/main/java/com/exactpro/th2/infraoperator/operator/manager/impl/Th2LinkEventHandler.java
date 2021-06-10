@@ -23,7 +23,10 @@ import com.exactpro.th2.infraoperator.spec.link.Th2LinkSpec;
 import com.exactpro.th2.infraoperator.spec.link.relation.BoxesRelation;
 import com.exactpro.th2.infraoperator.spec.link.relation.dictionaries.DictionaryBinding;
 import com.exactpro.th2.infraoperator.spec.link.relation.pins.PinCoupling;
+import com.exactpro.th2.infraoperator.spec.link.relation.pins.PinCouplingGRPC;
 import com.exactpro.th2.infraoperator.spec.shared.Identifiable;
+import com.exactpro.th2.infraoperator.spec.strategy.linkresolver.mq.BindQueueLinkResolver;
+import com.exactpro.th2.infraoperator.util.ExtractUtils;
 import io.fabric8.kubernetes.client.KubernetesClient;
 import io.fabric8.kubernetes.client.Watcher;
 import io.fabric8.kubernetes.client.WatcherException;
@@ -32,10 +35,8 @@ import io.fabric8.kubernetes.client.informers.SharedInformerFactory;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.ArrayList;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Set;
+import java.util.*;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
@@ -52,6 +53,8 @@ public class Th2LinkEventHandler implements Watcher<Th2Link> {
         return linkClient;
     }
 
+    private final Map<String, String> sourceHashes = new ConcurrentHashMap<>();
+
     public static Th2LinkEventHandler newInstance(SharedInformerFactory sharedInformerFactory,
                                                   KubernetesClient client,
                                                   EventQueue eventQueue) {
@@ -64,6 +67,51 @@ public class Th2LinkEventHandler implements Watcher<Th2Link> {
         linkInformer.addEventHandler(new GenericResourceEventHandler<>(res, eventQueue));
 
         return res;
+    }
+
+    @Override
+    public void eventReceived(Action action, Th2Link th2Link) {
+
+        String namespace = extractNamespace(th2Link);
+        OperatorState operatorState = OperatorState.INSTANCE;
+        String resourceLabel = annotationFor(th2Link);
+        String sourceHash = ExtractUtils.sourceHash(th2Link, false);
+        String prevHash = sourceHashes.get(resourceLabel);
+
+        if (action == Action.MODIFIED && prevHash != null && prevHash.equals(sourceHash)) {
+            logger.info("Link: \"{}\" has not been changed", resourceLabel);
+            return;
+        }
+
+        logger.info("Updating all boxes and bindings related to \"{}\"", resourceLabel);
+
+        var lock = operatorState.getLock(namespace);
+        try {
+            lock.lock();
+
+            checkForDuplicates(th2Link);
+            removeInvalidLinks(th2Link);
+
+            var linkResources = new ArrayList<>(operatorState.getLinkResources(namespace));
+
+            Th2Link prevLink = getPreviousLink(th2Link, linkResources);
+            linkResources.remove(th2Link);
+            if (action == Action.DELETED || action == Action.ERROR) {
+                BindQueueLinkResolver.resolveLinkResource(namespace, prevLink, Th2Link.newInstance());
+                refreshAffectedBoxes(prevLink, Th2Link.newInstance());
+                sourceHashes.remove(resourceLabel);
+            } else {
+                BindQueueLinkResolver.resolveLinkResource(namespace, prevLink, th2Link);
+                refreshAffectedBoxes(prevLink, th2Link);
+                linkResources.add(th2Link);
+                sourceHashes.put(resourceLabel, sourceHash);
+            }
+
+            operatorState.setLinkResources(namespace, linkResources);
+        } finally {
+            lock.unlock();
+        }
+
     }
 
     private <T extends Identifiable> void checkForDuplicates(List<T> links, String annotation) {
@@ -140,9 +188,9 @@ public class Th2LinkEventHandler implements Watcher<Th2Link> {
 
     private Set<String> getAffectedBoxNames(Th2Link prevLink, Th2Link newLink) {
 
-        // collect box names affected by router link changes
-        List<PinCoupling> prevLinkCouplings = prevLink.getSpec().getBoxesRelation().getAllLinks();
-        List<PinCoupling> newLinkCouplings = newLink.getSpec().getBoxesRelation().getAllLinks();
+        // collect box names affected by grpc link changes
+        List<PinCouplingGRPC> prevLinkCouplings = prevLink.getSpec().getBoxesRelation().getRouterGrpc();
+        List<PinCouplingGRPC> newLinkCouplings = newLink.getSpec().getBoxesRelation().getRouterGrpc();
 
         Set<String> affectedByRouterLinks = getAffectedBoxNamesByList(prevLinkCouplings, newLinkCouplings,
                 pinCoupling -> Set.of(pinCoupling.getFrom().getBoxName(), pinCoupling.getTo().getBoxName()));
@@ -157,36 +205,6 @@ public class Th2LinkEventHandler implements Watcher<Th2Link> {
         // join two sets
         affectedByRouterLinks.addAll(affectedByDictionaryBindings);
         return affectedByRouterLinks;
-    }
-
-    @Override
-    public void eventReceived(Action action, Th2Link th2Link) {
-
-        String namespace = extractNamespace(th2Link);
-        OperatorState operatorState = OperatorState.INSTANCE;
-        var lock = operatorState.getLock(namespace);
-        try {
-            lock.lock();
-
-            checkForDuplicates(th2Link);
-            removeInvalidLinks(th2Link);
-
-            var linkResources = new ArrayList<>(operatorState.getLinkResources(namespace));
-
-            Th2Link prevLink = getPreviousLink(th2Link, linkResources);
-            linkResources.remove(th2Link);
-            if (action.equals(Action.DELETED)) {
-                refreshAffectedBoxes(prevLink, Th2Link.newInstance());
-            } else {
-                refreshAffectedBoxes(prevLink, th2Link);
-                linkResources.add(th2Link);
-            }
-
-            operatorState.setLinkResources(namespace, linkResources);
-        } finally {
-            lock.unlock();
-        }
-
     }
 
     <T extends Identifiable> Set<String> getAffectedBoxNamesByList(List<T> prevLinks, List<T> newLinks,
