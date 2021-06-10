@@ -19,7 +19,7 @@ package com.exactpro.th2.infraoperator.operator.manager.impl;
 import com.exactpro.th2.infraoperator.OperatorState;
 import com.exactpro.th2.infraoperator.configuration.OperatorConfig;
 import com.exactpro.th2.infraoperator.operator.context.EventCounter;
-import com.exactpro.th2.infraoperator.spec.strategy.linkresolver.mq.impl.RabbitMQContext;
+import com.exactpro.th2.infraoperator.spec.strategy.linkresolver.mq.RabbitMQContext;
 import com.exactpro.th2.infraoperator.util.CustomResourceUtils;
 import com.exactpro.th2.infraoperator.util.ExtractUtils;
 import com.exactpro.th2.infraoperator.util.Strings;

@@ -88,7 +88,7 @@ public class Th2DictionaryEventHandler implements Watcher<Th2Dictionary> {
         String prevHash = sourceHashes.get(resourceLabel);
 
         if (action == Action.MODIFIED && prevHash != null && prevHash.equals(sourceHash)) {
-            logger.info("Dictionary has not been changed");
+            logger.info("Dictionary: \"{}\" has not been changed", resourceLabel);
             return;
         }
 
@@ -105,8 +105,8 @@ public class Th2DictionaryEventHandler implements Watcher<Th2Dictionary> {
         }
 
         if (action == Action.DELETED || action == Action.ERROR) {
-            sourceHashes.remove(resourceLabel);
             client.configMaps().inNamespace(resNamespace).withName(resName + dictionaryAlias).delete();
+            sourceHashes.remove(resourceLabel);
         } else {
             client.configMaps().inNamespace(resNamespace).createOrReplace(toConfigMap(dictionary));
             sourceHashes.put(resourceLabel, sourceHash);

@@ -20,8 +20,7 @@ public class EventCounter {
     private static volatile long counter;
 
     public static synchronized String newEvent() {
-        String id = String.format("evt-%08d", ++counter);
-        return id;
+        return String.format("evt-%08d", ++counter);
     }
 
 }
