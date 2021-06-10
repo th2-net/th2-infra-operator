@@ -171,8 +171,6 @@ public class DefaultWatchManager {
                 eventDispatcher.getEventQueue()));
         context.addHandler(ConfigMapEventHandler.newInstance(sharedInformerFactory, client,
                 eventDispatcher.getEventQueue()));
-        context.addHandler(HelmReleaseEventHandler.newInstance(sharedInformerFactory, client,
-                eventDispatcher.getEventQueue(), operatorBuilder.getResourceFinder()));
 
         /*
              resourceClients initialization should be done first
