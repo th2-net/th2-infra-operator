@@ -64,7 +64,7 @@ public abstract class Th2Spec implements KubernetesResource {
 
     protected List<ParamSpec> params = new ArrayList<>();
 
-    protected List<PinSpec> pins = new ArrayList<>();
+    protected List<PinSpec> pins = initializeWithEstorePin();
 
     public void setPins(List<PinSpec> pins) {
         this.pins = pins;
@@ -80,10 +80,6 @@ public abstract class Th2Spec implements KubernetesResource {
         }
     }
 
-    public Map<String, Object> getExtendedSettingsOrigin() {
-        return extendedSettings;
-    }
-
     public Map<String, Object> getExtendedSettings() {
         var copy = new HashMap<>(extendedSettings);
         copy.remove(CHART_CFG_ALIAS);
@@ -96,8 +92,18 @@ public abstract class Th2Spec implements KubernetesResource {
 
     public PinSpec getPin(String name) {
         return getPins().stream()
-            .filter(p -> p.getName().equals(name))
-            .findFirst()
-            .orElse(null);
+                .filter(p -> p.getName().equals(name))
+                .findFirst()
+                .orElse(null);
+    }
+
+    private List<PinSpec> initializeWithEstorePin() {
+        List<PinSpec> pins = new ArrayList<>();
+        PinSpec pin = new PinSpec();
+        pin.setName(StoreHelmTh2Op.EVENT_STORAGE_PIN_ALIAS);
+        pin.setConnectionType(SchemaConnectionType.mq);
+        pin.setAttributes(Set.of(PinAttribute.publish.name(), PinAttribute.event.name()));
+        pins.add(pin);
+        return pins;
     }
 }
