@@ -76,10 +76,9 @@ public class MessageRouterConfigFactory {
     private Set<RouterFilterConfiguration> specToConfigFilters(Set<FilterSpec> filterSpecs) {
         return filterSpecs.stream()
                 .map(filterSpec ->
-                        RouterFilterConfiguration.builder()
-                                .metadata(SchemeMappingUtils.specToConfigFieldFilters(filterSpec.getMetadataFilter()))
-                                .message(SchemeMappingUtils.specToConfigFieldFilters(filterSpec.getMessageFilter()))
-                                .build()
+                        new RouterFilterConfiguration(
+                                SchemeMappingUtils.specToConfigFieldFilters(filterSpec.getMetadataFilter()),
+                                SchemeMappingUtils.specToConfigFieldFilters(filterSpec.getMessageFilter()))
                 ).collect(Collectors.toSet());
     }
 

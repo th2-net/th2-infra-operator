@@ -17,11 +17,7 @@
 package com.exactpro.th2.infraoperator.spec.shared;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
-import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
-import lombok.Data;
 
-@Data
-@JsonDeserialize
 public class FieldFilter {
 
     @JsonProperty("field-name")
@@ -32,4 +28,15 @@ public class FieldFilter {
 
     private FilterOperation operation;
 
+    public String getFieldName() {
+        return this.fieldName;
+    }
+
+    public String getExpectedValue() {
+        return this.expectedValue;
+    }
+
+    public FilterOperation getOperation() {
+        return this.operation;
+    }
 }

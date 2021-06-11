@@ -20,7 +20,6 @@ import com.exactpro.th2.infraoperator.model.box.configuration.mq.FilterConfigura
 import com.exactpro.th2.infraoperator.spec.shared.FieldFilter;
 
 import java.util.List;
-import java.util.Map;
 import java.util.stream.Collectors;
 
 public final class SchemeMappingUtils {
@@ -29,15 +28,9 @@ public final class SchemeMappingUtils {
         throw new AssertionError();
     }
 
-    public static Map<String, FilterConfiguration> specToConfigFieldFilters(List<FieldFilter> fieldFilters) {
-        return fieldFilters.stream()
-                .collect(Collectors.toMap(
-                        FieldFilter::getFieldName,
-                        ff -> FilterConfiguration.builder()
-                                .value(ff.getExpectedValue())
-                                .operation(ff.getOperation())
-                                .build()
-                ));
+    public static List<FilterConfiguration> specToConfigFieldFilters(List<FieldFilter> fieldFilters) {
+        return fieldFilters.stream().map(ff -> new FilterConfiguration(
+                ff.getFieldName(), ff.getExpectedValue(), ff.getOperation()
+        )).collect(Collectors.toList());
     }
-
 }

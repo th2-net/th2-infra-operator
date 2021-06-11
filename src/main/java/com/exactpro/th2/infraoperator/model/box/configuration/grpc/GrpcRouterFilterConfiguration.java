@@ -19,13 +19,9 @@ package com.exactpro.th2.infraoperator.model.box.configuration.grpc;
 import com.exactpro.th2.infraoperator.model.box.configuration.mq.FilterConfiguration;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
-import lombok.Builder;
-import lombok.Data;
 
-import java.util.Map;
+import java.util.List;
 
-@Data
-@Builder
 @JsonDeserialize
 public class GrpcRouterFilterConfiguration {
 
@@ -33,17 +29,30 @@ public class GrpcRouterFilterConfiguration {
     private String endpoint;
 
     @JsonProperty
-    private Map<String, FilterConfiguration> metadata;
+    private List<FilterConfiguration> metadata;
 
     @JsonProperty
-    private Map<String, FilterConfiguration> message;
+    private List<FilterConfiguration> message;
 
-    protected GrpcRouterFilterConfiguration() { }
+    public GrpcRouterFilterConfiguration() {
+    }
 
-    protected GrpcRouterFilterConfiguration(String endpoint, Map<String, FilterConfiguration> metadata,
-                                            Map<String, FilterConfiguration> message) {
+    public GrpcRouterFilterConfiguration(String endpoint, List<FilterConfiguration> metadata,
+                                         List<FilterConfiguration> message) {
         this.endpoint = endpoint;
         this.metadata = metadata;
         this.message = message;
+    }
+
+    public String getEndpoint() {
+        return endpoint;
+    }
+
+    public List<FilterConfiguration> getMetadata() {
+        return metadata;
+    }
+
+    public List<FilterConfiguration> getMessage() {
+        return message;
     }
 }
