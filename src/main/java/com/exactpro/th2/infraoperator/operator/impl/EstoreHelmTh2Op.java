@@ -72,10 +72,5 @@ public class EstoreHelmTh2Op extends StoreHelmTh2Op<Th2Estore> {
             return new EstoreHelmTh2Op(this);
         }
 
-        @Override
-        protected Builder self() {
-            return this;
-        }
-
     }
 }

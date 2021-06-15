@@ -16,6 +16,7 @@
 
 package com.exactpro.th2.infraoperator.model.box.configuration.grpc.factory;
 
+import com.exactpro.th2.infraoperator.OperatorState;
 import com.exactpro.th2.infraoperator.configuration.OperatorConfig;
 import com.exactpro.th2.infraoperator.model.box.configuration.grpc.*;
 import com.exactpro.th2.infraoperator.spec.Th2CustomResource;
@@ -24,7 +25,6 @@ import com.exactpro.th2.infraoperator.spec.link.relation.pins.PinGRPC;
 import com.exactpro.th2.infraoperator.spec.shared.FilterSpec;
 import com.exactpro.th2.infraoperator.spec.shared.PinSpec;
 import com.exactpro.th2.infraoperator.spec.shared.SchemaConnectionType;
-import com.exactpro.th2.infraoperator.spec.strategy.resfinder.box.BoxResourceFinder;
 import com.exactpro.th2.infraoperator.util.SchemeMappingUtils;
 import com.exactpro.th2.infraoperator.util.Strings;
 import lombok.AllArgsConstructor;
@@ -60,12 +60,6 @@ public class GrpcRouterConfigFactory {
     private static final String SERVICE_CLASS_PLACEHOLDER = "unknown";
 
     private static final GrpcServerConfiguration DEFAULT_SERVER = createServer();
-
-    private final BoxResourceFinder resourceFinder;
-
-    public GrpcRouterConfigFactory(BoxResourceFinder resourceFinder) {
-        this.resourceFinder = resourceFinder;
-    }
 
     /**
      * Creates a grpc configuration based on the th2 resource and a list of active links.
@@ -119,8 +113,10 @@ public class GrpcRouterConfigFactory {
         PinGRPC toBoxSpec = link.getTo();
         String toBoxName = toBoxSpec.getBoxName();
 
-        Th2CustomResource fromBoxResource = resourceFinder.getResource(fromBoxName, namespace);
-        Th2CustomResource toBoxResource = resourceFinder.getResource(toBoxName, namespace);
+        Th2CustomResource fromBoxResource = (Th2CustomResource) OperatorState.INSTANCE
+                .getResourceFromCache(fromBoxName, namespace);
+        Th2CustomResource toBoxResource = (Th2CustomResource) OperatorState.INSTANCE
+                .getResourceFromCache(toBoxName, namespace);
 
         PinSpec oppositePin;
         if (fromBoxSpec.getPinName().equals(currentPin.getName())) {

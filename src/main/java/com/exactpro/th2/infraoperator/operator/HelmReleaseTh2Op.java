@@ -32,7 +32,6 @@ import com.exactpro.th2.infraoperator.spec.helmrelease.HelmRelease;
 import com.exactpro.th2.infraoperator.spec.helmrelease.HelmReleaseSecrets;
 import com.exactpro.th2.infraoperator.spec.shared.PrometheusConfiguration;
 import com.exactpro.th2.infraoperator.spec.strategy.linkresolver.mq.DeclareQueueResolver;
-import com.exactpro.th2.infraoperator.spec.strategy.resfinder.box.BoxResourceFinder;
 import com.exactpro.th2.infraoperator.util.ExtractUtils;
 import com.exactpro.th2.infraoperator.util.JsonUtils;
 
@@ -112,8 +111,6 @@ public abstract class HelmReleaseTh2Op<CR extends Th2CustomResource> extends Abs
 
     private static final String DEFAULT_VALUE_ENABLED = Boolean.TRUE.toString();
 
-    protected final BoxResourceFinder resourceFinder;
-
     protected final DeclareQueueResolver declareQueueResolver;
 
     protected final MessageRouterConfigFactory mqConfigFactory;
@@ -137,7 +134,6 @@ public abstract class HelmReleaseTh2Op<CR extends Th2CustomResource> extends Abs
 
         super(builder.getClient());
 
-        this.resourceFinder = builder.getResourceFinder();
         this.mqConfigFactory = builder.getMqConfigFactory();
         this.declareQueueResolver = new DeclareQueueResolver();
         this.grpcConfigFactory = builder.getGrpcConfigFactory();
