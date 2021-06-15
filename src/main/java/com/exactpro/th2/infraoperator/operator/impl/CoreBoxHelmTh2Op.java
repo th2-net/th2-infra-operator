@@ -66,12 +66,6 @@ public class CoreBoxHelmTh2Op extends GenericHelmTh2Op<Th2CoreBox> {
         public CoreBoxHelmTh2Op build() {
             return new CoreBoxHelmTh2Op(this);
         }
-
-        @Override
-        protected CoreBoxHelmTh2Op.Builder self() {
-            return this;
-        }
-
     }
 
 }

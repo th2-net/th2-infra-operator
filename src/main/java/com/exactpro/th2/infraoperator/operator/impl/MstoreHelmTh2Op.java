@@ -72,10 +72,5 @@ public class MstoreHelmTh2Op extends StoreHelmTh2Op<Th2Mstore> {
             return new MstoreHelmTh2Op(this);
         }
 
-        @Override
-        protected Builder self() {
-            return this;
-        }
-
     }
 }

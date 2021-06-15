@@ -67,11 +67,6 @@ public class BoxHelmTh2Op extends GenericHelmTh2Op<Th2Box> {
             return new BoxHelmTh2Op(this);
         }
 
-        @Override
-        protected Builder self() {
-            return this;
-        }
-
     }
 
 }

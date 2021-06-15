@@ -17,17 +17,11 @@
 package com.exactpro.th2.infraoperator.operator.manager.impl;
 
 import com.exactpro.th2.infraoperator.configuration.OperatorConfig;
-import com.exactpro.th2.infraoperator.model.box.configuration.dictionary.factory.DictionaryFactory;
-import com.exactpro.th2.infraoperator.model.box.configuration.grpc.factory.GrpcRouterConfigFactory;
 import com.exactpro.th2.infraoperator.model.kubernetes.client.ResourceClient;
-import com.exactpro.th2.infraoperator.model.kubernetes.client.impl.DictionaryClient;
 import com.exactpro.th2.infraoperator.operator.HelmReleaseTh2Op;
 import com.exactpro.th2.infraoperator.operator.context.HelmOperatorContext;
 import com.exactpro.th2.infraoperator.spec.Th2CustomResource;
 import com.exactpro.th2.infraoperator.spec.link.Th2Link;
-import com.exactpro.th2.infraoperator.spec.strategy.resfinder.box.impl.DefaultBoxResourceFinder;
-import com.exactpro.th2.infraoperator.spec.strategy.resfinder.box.impl.StoreDependentBoxResourceFinder;
-import com.exactpro.th2.infraoperator.spec.strategy.resfinder.dictionary.DictionaryResourceFinder;
 import com.exactpro.th2.infraoperator.util.CustomResourceUtils;
 import com.exactpro.th2.infraoperator.util.Strings;
 import com.fasterxml.uuid.Generators;
@@ -59,8 +53,6 @@ public class DefaultWatchManager {
 
     private final Builder operatorBuilder;
 
-    private DictionaryClient dictionaryClient;
-
     private final List<ResourceClient<Th2CustomResource>> resourceClients = new ArrayList<>();
 
     private final List<Supplier<HelmReleaseTh2Op<Th2CustomResource>>> helmWatchersCommands = new ArrayList<>();
@@ -78,13 +70,11 @@ public class DefaultWatchManager {
     private DefaultWatchManager(Builder builder) {
         this.operatorBuilder = builder;
         this.sharedInformerFactory = builder.getClient().informers();
-        this.dictionaryClient = new DictionaryClient(operatorBuilder.getClient());
         this.eventDispatcher = new EventDispatcher();
 
         sharedInformerFactory.addSharedInformerEventListener(exception -> {
             logger.error("Exception in InformerFactory : {}", exception.getMessage());
         });
-        builderInit();
         instance = this;
     }
 
@@ -259,27 +249,6 @@ public class DefaultWatchManager {
                 CustomResourceUtils.annotationFor(resource), refreshToken);
     }
 
-    /*
-        operatorBuilder should be initialized before starting
-        operators, since operatorBuilder is HelmOperatorContext
-        for operators
-     */
-    private void builderInit() {
-
-        var resFinder = new DefaultBoxResourceFinder(resourceClients);
-        var msgStResFinder = new StoreDependentBoxResourceFinder(resFinder);
-        operatorBuilder.resourceFinder(msgStResFinder);
-
-        operatorBuilder.dictionaryResourceFinder(new DictionaryResourceFinder(dictionaryClient));
-
-        var boxResFinder = operatorBuilder.getResourceFinder();
-        var dicResFinder = operatorBuilder.getDictionaryResourceFinder();
-
-        operatorBuilder.grpcConfigFactory(new GrpcRouterConfigFactory(operatorBuilder.getResourceFinder()));
-
-        operatorBuilder.dictionaryFactory(new DictionaryFactory(operatorBuilder.getDictionaryResourceFinder()));
-    }
-
     public static Builder builder(KubernetesClient client) {
         return new Builder(client);
     }
@@ -295,20 +264,8 @@ public class DefaultWatchManager {
     @Getter
     private static class Builder extends HelmOperatorContext.Builder<DefaultWatchManager, Builder> {
 
-        private DictionaryResourceFinder dictionaryResourceFinder = null;
-
         public Builder(KubernetesClient client) {
             super(client);
-        }
-
-        public Builder dictionaryResourceFinder(DictionaryResourceFinder dictionaryResourceFinder) {
-            this.dictionaryResourceFinder = dictionaryResourceFinder;
-            return this;
-        }
-
-        @Override
-        protected Builder self() {
-            return this;
         }
 
         @Override
