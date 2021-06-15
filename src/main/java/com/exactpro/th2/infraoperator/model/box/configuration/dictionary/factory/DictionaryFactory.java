@@ -16,13 +16,13 @@
 
 package com.exactpro.th2.infraoperator.model.box.configuration.dictionary.factory;
 
+import com.exactpro.th2.infraoperator.OperatorState;
 import com.exactpro.th2.infraoperator.model.box.configuration.dictionary.DictionaryEntity;
 import com.exactpro.th2.infraoperator.spec.Th2CustomResource;
-import com.exactpro.th2.infraoperator.spec.dictionary.Th2Dictionary;
 import com.exactpro.th2.infraoperator.spec.link.relation.dictionaries.DictionaryBinding;
 import com.exactpro.th2.infraoperator.spec.link.relation.dictionaries.DictionaryDescription;
-import com.exactpro.th2.infraoperator.spec.strategy.resfinder.dictionary.DictionaryResourceFinder;
 import com.exactpro.th2.infraoperator.util.ExtractUtils;
+import io.fabric8.kubernetes.api.model.HasMetadata;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -33,12 +33,6 @@ import java.util.Objects;
  * based on the th2 resource and a list of active links.
  */
 public class DictionaryFactory {
-
-    private final DictionaryResourceFinder resourceFinder;
-
-    public DictionaryFactory(DictionaryResourceFinder resourceFinder) {
-        this.resourceFinder = resourceFinder;
-    }
 
     /**
      * Creates a list of {@link DictionaryEntity} based on the th2 resource and a list of active links.
@@ -57,7 +51,8 @@ public class DictionaryFactory {
                     DictionaryDescription dict = link.getDictionary();
                     String name = dict.getName();
                     String type = dict.getType();
-                    Th2Dictionary res = resourceFinder.getResource(name, resource.getMetadata().getNamespace());
+                    HasMetadata res = OperatorState.INSTANCE
+                            .getResourceFromCache(name, resource.getMetadata().getNamespace());
 
                     String checksum = ExtractUtils.sourceHash(Objects.requireNonNull(res), false);
                     dictionaries.add(DictionaryEntity.builder()

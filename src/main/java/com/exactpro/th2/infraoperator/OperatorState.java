@@ -19,11 +19,10 @@ package com.exactpro.th2.infraoperator;
 import com.exactpro.th2.infraoperator.spec.link.Th2Link;
 import com.exactpro.th2.infraoperator.spec.link.relation.dictionaries.DictionaryBinding;
 import com.exactpro.th2.infraoperator.spec.link.relation.pins.PinCouplingGRPC;
+import io.fabric8.kubernetes.api.model.HasMetadata;
 
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.locks.Lock;
-import java.util.concurrent.locks.ReentrantLock;
 
 public enum OperatorState {
     INSTANCE;
@@ -66,71 +65,21 @@ public enum OperatorState {
         return namespaceStates.computeIfAbsent(namespace, s -> new NamespaceState());
     }
 
+    public HasMetadata getResourceFromCache(String name, String namespace) {
+        return namespaceStates.computeIfAbsent(namespace, s -> new NamespaceState()).getResource(name);
+    }
+
+    public void putResourceInCache(HasMetadata resource, String namespace) {
+        namespaceStates.computeIfAbsent(namespace, s -> new NamespaceState()).putResource(resource);
+    }
+
+    public void removeResourceFromCache(String name, String namespace) {
+        namespaceStates.computeIfAbsent(namespace, s -> new NamespaceState()).removeResource(name);
+    }
+
     public interface NamespaceLock {
         void lock();
 
         void unlock();
     }
-
-    public static class NamespaceState implements NamespaceLock {
-
-        private List<Th2Link> linkResources = new ArrayList<>();
-
-        private Map<String, String> configChecksums = new HashMap<>();
-
-        private final Lock lock = new ReentrantLock(true);
-
-        @Override
-        public void lock() {
-            lock.lock();
-        }
-
-        @Override
-        public void unlock() {
-            lock.unlock();
-        }
-
-        public List<Th2Link> getLinkResources() {
-            return this.linkResources;
-        }
-
-        public List<PinCouplingGRPC> getGrpcLinks() {
-            List<PinCouplingGRPC> grpcLinks = new ArrayList<>();
-            for (var linkRes : linkResources) {
-                grpcLinks.addAll(linkRes.getSpec().getBoxesRelation().getRouterGrpc());
-            }
-            return grpcLinks;
-        }
-
-        public List<DictionaryBinding> getDictionaryLinks() {
-            List<DictionaryBinding> dictionaryBindings = new ArrayList<>();
-            for (var linkRes : linkResources) {
-                dictionaryBindings.addAll(linkRes.getSpec().getDictionariesRelation());
-            }
-            return dictionaryBindings;
-        }
-
-        public String getConfigChecksums(String key) {
-            return configChecksums.get(key);
-        }
-
-        public void setLinkResources(List<Th2Link> linkResources) {
-            this.linkResources = linkResources;
-        }
-
-        public void putConfigChecksums(String key, String configChecksum) {
-            this.configChecksums.put(key, configChecksum);
-        }
-
-        @Override
-        public boolean equals(final Object o) {
-            throw new AssertionError("method not supported");
-        }
-
-        @Override
-        public int hashCode() {
-            throw new AssertionError("method not supported");
-        }
-    }
-
 }
