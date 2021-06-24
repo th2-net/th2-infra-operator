@@ -73,6 +73,8 @@ public abstract class HelmReleaseTh2Op<CR extends Th2CustomResource> extends Abs
 
     private static final String CUSTOM_CONFIG_ALIAS = "custom";
 
+    private static final String SECRET_CUSTOM_CONFIG_ALIAS = "secretCustomConfig";
+
     private static final String PROMETHEUS_CONFIG_ALIAS = "prometheus";
 
     private static final String DICTIONARIES_ALIAS = "dictionaries";
@@ -217,6 +219,10 @@ public abstract class HelmReleaseTh2Op<CR extends Th2CustomResource> extends Abs
                 GRPC_ROUTER_ALIAS, grpcRouterSection,
                 CRADLE_MANAGER_ALIAS, cradleManagerSection,
                 SCHEMA_SECRETS_ALIAS, secrets
+        ));
+
+        helmRelease.mergeValue(PROPERTIES_MERGE_DEPTH, ROOT_PROPERTIES_ALIAS, Map.of(
+                SECRET_CUSTOM_CONFIG_ALIAS, resource.getSpec().getSecretCustomConfig()
         ));
 
         PrometheusConfiguration<String> prometheusConfig = resource.getSpec().getPrometheusConfiguration();
