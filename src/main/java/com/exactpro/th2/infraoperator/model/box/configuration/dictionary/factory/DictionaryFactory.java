@@ -26,7 +26,6 @@ import io.fabric8.kubernetes.api.model.HasMetadata;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Objects;
 
 /**
  * A factory that creates list of {@link DictionaryEntity}
@@ -54,7 +53,7 @@ public class DictionaryFactory {
                     HasMetadata res = OperatorState.INSTANCE
                             .getResourceFromCache(name, resource.getMetadata().getNamespace());
 
-                    String checksum = ExtractUtils.sourceHash(Objects.requireNonNull(res), false);
+                    String checksum = ExtractUtils.sourceHash(res, false);
                     dictionaries.add(DictionaryEntity.builder()
                             .setName(name)
                             .setType(type)

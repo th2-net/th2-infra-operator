@@ -26,10 +26,8 @@ import com.exactpro.th2.infraoperator.spec.shared.FilterSpec;
 import com.exactpro.th2.infraoperator.spec.shared.PinSpec;
 import com.exactpro.th2.infraoperator.spec.shared.SchemaConnectionType;
 import com.exactpro.th2.infraoperator.util.SchemeMappingUtils;
-import com.exactpro.th2.infraoperator.util.Strings;
 import lombok.AllArgsConstructor;
 import lombok.Data;
-import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -57,10 +55,6 @@ public class GrpcRouterConfigFactory {
 
     private static final String ENDPOINT_ALIAS_SUFFIX = "-endpoint";
 
-    private static final String SERVICE_CLASS_PLACEHOLDER = "unknown";
-
-    private static final GrpcServerConfiguration DEFAULT_SERVER = createServer();
-
     /**
      * Creates a grpc configuration based on the th2 resource and a list of active links.
      *
@@ -72,33 +66,34 @@ public class GrpcRouterConfigFactory {
 
         var boxName = extractName(resource);
         var boxNamespace = extractNamespace(resource);
+        // TODO initialize as null at first
+        GrpcServerConfiguration server = createServer();
         Map<String, GrpcServiceConfiguration> services = new HashMap<>();
 
         for (var pin : resource.getSpec().getPins()) {
-            if (!pin.getConnectionType().equals(SchemaConnectionType.grpc)) {
-                continue;
-            }
+            if (pin.getConnectionType().equals(SchemaConnectionType.grpc_server)) {
+                server = createServer();
+            } else if (pin.getConnectionType().equals(SchemaConnectionType.grpc_client)) {
+                for (var link : grpcActiveLinks) {
+                    var fromLink = link.getFrom();
+                    var fromBoxName = fromLink.getBoxName();
+                    var fromPinName = fromLink.getPinName();
 
-            for (var link : grpcActiveLinks) {
-                var fromLink = link.getFrom();
-                var toLink = link.getTo();
+                    var toLink = link.getTo();
+                    var toBoxName = toLink.getBoxName();
+                    var toPinName = toLink.getPinName();
 
-                var fromBoxName = fromLink.getBoxName();
-                var toBoxName = toLink.getBoxName();
-
-                var fromPinName = fromLink.getPinName();
-                var toPinName = toLink.getPinName();
-
-                if (fromBoxName.equals(boxName) && fromPinName.equals(pin.getName())) {
-                    createService(pin, toPinName, boxNamespace, link, services);
-                } else if (toBoxName.equals(boxName) && toPinName.equals(pin.getName())) {
-                    createService(pin, fromPinName, boxNamespace, link, services);
+                    if (fromBoxName.equals(boxName) && fromPinName.equals(pin.getName())) {
+                        createService(pin, toPinName, boxNamespace, link, services);
+                    } else if (toBoxName.equals(boxName) && toPinName.equals(pin.getName())) {
+                        createService(pin, fromPinName, boxNamespace, link, services);
+                    }
                 }
             }
         }
 
         return GrpcRouterConfiguration.builder()
-                .serverConfiguration(DEFAULT_SERVER)
+                .serverConfiguration(server)
                 .services(services)
                 .build();
     }
@@ -128,20 +123,18 @@ public class GrpcRouterConfigFactory {
         checkForExternal(fromBoxResource, toBoxResource, toBoxSpec);
 
         if (naturePinState.getFromPinName().equals(oppositePin.getName())) {
-            resourceToServiceConfig(currentPin, oppositePin, toBoxSpec, fromBoxSpec, services);
+            resourceToServiceConfig(currentPin, oppositePin, fromBoxSpec, services);
         } else {
-            resourceToServiceConfig(currentPin, oppositePin, fromBoxSpec, toBoxSpec, services);
+            resourceToServiceConfig(currentPin, oppositePin, toBoxSpec, services);
         }
 
     }
 
-    private void resourceToServiceConfig(PinSpec currentPin, PinSpec targetPin, PinGRPC currentBoxSpec,
-                                         PinGRPC targetBoxSpec, Map<String, GrpcServiceConfiguration> services) {
+    private void resourceToServiceConfig(PinSpec currentPin, PinSpec targetPin, PinGRPC targetBoxSpec,
+                                         Map<String, GrpcServiceConfiguration> services) {
         var targetBoxName = getTargetBoxName(targetBoxSpec);
-        var targetServiceClass = targetBoxSpec.getServiceClass();
-        var currentServiceClass = currentBoxSpec.getServiceClass();
-        var serviceClass = targetServiceClass != null ? targetServiceClass : currentServiceClass;
-        var serviceName = getServiceName(serviceClass);
+        var serviceClass = currentPin.getServiceClass();
+        var serviceName = currentPin.getName();
         var targetPort = getTargetBoxPort(targetBoxSpec);
         var config = services.get(serviceName);
 
@@ -153,14 +146,14 @@ public class GrpcRouterConfigFactory {
                         .build()
         ));
 
-        if (Objects.isNull(config)) {
+        if (config == null) {
 
             config = GrpcServiceConfiguration.builder()
                     .serviceClass(serviceClass)
                     .endpoints(endpoints)
                     .build();
 
-            var strategy = targetBoxSpec.getStrategy();
+            var strategy = currentPin.getStrategy();
 
             if (strategy.equals(ROBIN.getActualName())) {
                 config.setStrategy(GrpcRobinStrategy.builder()
@@ -192,16 +185,6 @@ public class GrpcRouterConfigFactory {
         }
     }
 
-    private String getServiceName(String serviceClass) {
-        if (Strings.isNullOrEmpty(serviceClass)) {
-            return SERVICE_CLASS_PLACEHOLDER;
-        }
-
-        var classParts = serviceClass.split("\\.");
-
-        return StringUtils.uncapitalize(classParts[classParts.length - 1]);
-    }
-
     private NaturePinState getNaturePinState(String firstPinName, String secondPinName, PinCouplingGRPC link) {
         if (link.getFrom().getPinName().equals(firstPinName)) {
             return new NaturePinState(firstPinName, secondPinName);
@@ -229,6 +212,7 @@ public class GrpcRouterConfigFactory {
         private String toPinName;
     }
 
+    //TODO add serviceClasses to server config
     private static GrpcServerConfiguration createServer() {
         return GrpcServerConfiguration.builder()
                 .workers(DEFAULT_SERVER_WORKERS_COUNT)

@@ -16,6 +16,7 @@
 
 package com.exactpro.th2.infraoperator;
 
+import com.exactpro.th2.infraoperator.spec.helmrelease.HelmRelease;
 import com.exactpro.th2.infraoperator.spec.link.Th2Link;
 import com.exactpro.th2.infraoperator.spec.link.relation.dictionaries.DictionaryBinding;
 import com.exactpro.th2.infraoperator.spec.link.relation.pins.PinCouplingGRPC;
@@ -66,7 +67,11 @@ public enum OperatorState {
     }
 
     public HasMetadata getResourceFromCache(String name, String namespace) {
-        return namespaceStates.computeIfAbsent(namespace, s -> new NamespaceState()).getResource(name);
+        HasMetadata resource = namespaceStates.computeIfAbsent(namespace, s -> new NamespaceState()).getResource(name);
+        if (resource == null) {
+            throw new RuntimeException(String.format("Resource \"%s:%s\" not found in cache", namespace, name));
+        }
+        return resource;
     }
 
     public void putResourceInCache(HasMetadata resource, String namespace) {
@@ -75,6 +80,18 @@ public enum OperatorState {
 
     public void removeResourceFromCache(String name, String namespace) {
         namespaceStates.computeIfAbsent(namespace, s -> new NamespaceState()).removeResource(name);
+    }
+
+    public HelmRelease getHelmReleaseFromCache(String name, String namespace) {
+        return namespaceStates.computeIfAbsent(namespace, s -> new NamespaceState()).getHelmRelease(name);
+    }
+
+    public void putHelmReleaseInCache(HelmRelease resource, String namespace) {
+        namespaceStates.computeIfAbsent(namespace, s -> new NamespaceState()).putHelmRelease(resource);
+    }
+
+    public void removeHelmReleaseFromCache(String name, String namespace) {
+        namespaceStates.computeIfAbsent(namespace, s -> new NamespaceState()).removeHelmRelease(name);
     }
 
     public interface NamespaceLock {
