@@ -63,7 +63,7 @@ public abstract class Th2Spec implements KubernetesResource {
 
     protected Map<String, String> cradleManager;
 
-    protected List<String> logFile;
+    protected String logFile;
 
     protected List<ParamSpec> params = new ArrayList<>();
 
