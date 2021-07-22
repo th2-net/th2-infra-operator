@@ -16,22 +16,18 @@
 
 package com.exactpro.th2.infraoperator.util;
 
-import com.exactpro.th2.infraoperator.operator.StoreHelmTh2Op;
-import com.exactpro.th2.infraoperator.spec.Th2CustomResource;
-import com.exactpro.th2.infraoperator.spec.shared.PinSpec;
-import com.exactpro.th2.infraoperator.spec.shared.SchemaConnectionType;
-import io.fabric8.kubernetes.api.model.HasMetadata;
-import org.jetbrains.annotations.Nullable;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
-public final class ExtractUtils {
+import com.exactpro.th2.infraoperator.operator.StoreHelmTh2Op;
+import com.exactpro.th2.infraoperator.spec.Th2CustomResource;
+import com.exactpro.th2.infraoperator.spec.shared.PinSpec;
+import com.exactpro.th2.infraoperator.spec.shared.SchemaConnectionType;
 
-    private static final Logger logger = LoggerFactory.getLogger(ExtractUtils.class);
+import io.fabric8.kubernetes.api.model.HasMetadata;
+
+public final class ExtractUtils {
 
     private static final String KEY_SOURCE_HASH = "th2.exactpro.com/source-hash";
 
@@ -39,10 +35,6 @@ public final class ExtractUtils {
 
     private ExtractUtils() {
         throw new AssertionError();
-    }
-
-    public static String extractFullName(HasMetadata obj) {
-        return extractNamespace(obj) + "." + extractName(obj);
     }
 
     public static String extractName(HasMetadata obj) {
@@ -73,17 +65,6 @@ public final class ExtractUtils {
 
     public static String extractType(Object object) {
         return object.getClass().getSimpleName();
-    }
-
-    @Nullable
-    public static String extractOwnerFullName(HasMetadata obj) {
-        var ownerReferences = obj.getMetadata().getOwnerReferences();
-        if (ownerReferences.size() > 0) {
-            return extractNamespace(obj) + "." + ownerReferences.get(0).getName();
-        } else {
-            logger.warn("[{}<{}>] doesn't have owner resource", extractType(obj), extractFullName(obj));
-            return null;
-        }
     }
 
     public static boolean isStorageBox(String name) {

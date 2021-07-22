@@ -16,16 +16,28 @@
 
 package com.exactpro.th2.infraoperator.operator;
 
+import static io.fabric8.kubernetes.client.Watcher.Action.MODIFIED;
+
+import java.io.InputStream;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Objects;
+import java.util.concurrent.ConcurrentHashMap;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import com.exactpro.th2.infraoperator.Th2CrdController;
 import com.exactpro.th2.infraoperator.model.http.HttpCode;
 import com.exactpro.th2.infraoperator.model.kubernetes.client.ResourceClient;
 import com.exactpro.th2.infraoperator.spec.Th2CustomResource;
-import com.exactpro.th2.infraoperator.spec.helmrelease.HelmRelease;
 import com.exactpro.th2.infraoperator.spec.strategy.redeploy.NonTerminalException;
 import com.exactpro.th2.infraoperator.spec.strategy.redeploy.RetryableTaskQueue;
 import com.exactpro.th2.infraoperator.spec.strategy.redeploy.tasks.TriggerRedeployTask;
 import com.exactpro.th2.infraoperator.util.CustomResourceUtils;
 import com.exactpro.th2.infraoperator.util.ExtractUtils;
+
 import io.fabric8.kubernetes.api.model.HasMetadata;
 import io.fabric8.kubernetes.api.model.Namespace;
 import io.fabric8.kubernetes.api.model.OwnerReference;
@@ -35,19 +47,6 @@ import io.fabric8.kubernetes.client.KubernetesClientException;
 import io.fabric8.kubernetes.client.Watcher;
 import io.fabric8.kubernetes.client.WatcherException;
 import lombok.SneakyThrows;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
-import java.io.InputStream;
-import java.security.MessageDigest;
-import java.security.NoSuchAlgorithmException;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Objects;
-import java.util.concurrent.ConcurrentHashMap;
-
-import static io.fabric8.kubernetes.client.Watcher.Action.MODIFIED;
 
 public abstract class AbstractTh2Operator<CR extends Th2CustomResource, KO extends HasMetadata> implements Watcher<CR> {
 
@@ -275,7 +274,7 @@ public abstract class AbstractTh2Operator<CR extends Th2CustomResource, KO exten
         var resMD = resource.getMetadata();
         String resName = resMD.getName();
         String annotation = CustomResourceUtils.annotationFor(resource);
-        String finalName = hashNameIfNeeded(resName);
+        String finalName = CustomResourceUtils.extractHashedName(resource);
 
         if (!finalName.equals(resName)) {
             logger.info("Name of resource \"{}\" exceeds limitations. Will be substituted with \"{}\"",
@@ -290,27 +289,6 @@ public abstract class AbstractTh2Operator<CR extends Th2CustomResource, KO exten
 
         kubObjMD.getAnnotations().put(ANTECEDENT_LABEL_KEY_ALIAS, annotation);
 
-    }
-
-    public static String hashNameIfNeeded(String resName) {
-        if (resName.length() >= HelmRelease.NAME_LENGTH_LIMIT) {
-            return digest(resName);
-        }
-        return resName;
-    }
-
-    private static String digest(String data) {
-        try {
-            MessageDigest md = MessageDigest.getInstance("SHA-256");
-            byte[] digest = md.digest(data.getBytes());
-            StringBuilder sb = new StringBuilder();
-            for (byte b : digest) {
-                sb.append(String.format("%02x", b));
-            }
-            return sb.substring(0, HelmRelease.NAME_LENGTH_LIMIT);
-        } catch (NoSuchAlgorithmException e) {
-            throw new RuntimeException(e);
-        }
     }
 
     protected OwnerReference createOwnerReference(CR resource) {
