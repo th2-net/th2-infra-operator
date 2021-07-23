@@ -116,7 +116,7 @@ public final class CustomResourceUtils {
         return resName;
     }
 
-    private static String digest(String data) {
+    static String digest(String data) {
         try {
             MessageDigest md = MessageDigest.getInstance("SHA-256");
             byte[] digest = md.digest(data.getBytes());
