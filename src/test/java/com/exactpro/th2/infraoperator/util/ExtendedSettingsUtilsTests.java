@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.exactpro.th2.infraoperator.util;
 
 import static com.exactpro.th2.infraoperator.spec.helmrelease.HelmRelease.NAME_LENGTH_LIMIT;
@@ -24,7 +25,6 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.List;
 
 import org.junit.jupiter.api.Test;
@@ -39,6 +39,7 @@ import io.fabric8.kubernetes.api.model.OwnerReference;
 public class ExtendedSettingsUtilsTests {
 
     private final String sourceNamespace = "namespace";
+
     private final String sourceName = "123456789_123456789_123456789";
 
     @Test
