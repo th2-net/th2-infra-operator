@@ -16,6 +16,7 @@
 
 package com.exactpro.th2.infraoperator;
 
+import com.exactpro.th2.infraoperator.spec.helmrelease.HelmRelease;
 import com.exactpro.th2.infraoperator.spec.link.Th2Link;
 import com.exactpro.th2.infraoperator.spec.link.relation.dictionaries.DictionaryBinding;
 import com.exactpro.th2.infraoperator.spec.link.relation.pins.PinCouplingGRPC;
@@ -34,6 +35,8 @@ public class NamespaceState implements OperatorState.NamespaceLock {
     private Map<String, String> configChecksums = new HashMap<>();
 
     private final Map<String, HasMetadata> resources = new HashMap<>();
+
+    private final Map<String, HelmRelease> helmReleaseMap = new HashMap<>();
 
     private final Lock lock = new ReentrantLock(true);
 
@@ -90,6 +93,19 @@ public class NamespaceState implements OperatorState.NamespaceLock {
 
     public void removeResource(String resName) {
         resources.remove(resName);
+    }
+
+    public HelmRelease getHelmRelease(String resName) {
+        return helmReleaseMap.get(resName);
+    }
+
+    public void putHelmRelease(HelmRelease resource) {
+        String resName = resource.getMetadata().getName();
+        helmReleaseMap.put(resName, resource);
+    }
+
+    public void removeHelmRelease(String resName) {
+        helmReleaseMap.remove(resName);
     }
 
     @Override

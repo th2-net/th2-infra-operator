@@ -16,16 +16,13 @@
 
 package com.exactpro.th2.infraoperator.spec.link.relation.pins;
 
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonProperty;
 
 import java.util.Objects;
 
+@JsonIgnoreProperties(ignoreUnknown = true)
 public class PinGRPC extends AbstractPin {
-
-    @JsonProperty("service-class")
-    private String serviceClass;
-
-    private String strategy;
 
     private boolean hostNetwork;
 
@@ -38,22 +35,6 @@ public class PinGRPC extends AbstractPin {
     public PinGRPC(@JsonProperty("box") String boxName,
                    @JsonProperty("pin") String pinName) {
         super(boxName, pinName);
-    }
-
-    public String getServiceClass() {
-        return serviceClass;
-    }
-
-    public void setServiceClass(String serviceClass) {
-        this.serviceClass = serviceClass;
-    }
-
-    public String getStrategy() {
-        return strategy;
-    }
-
-    public void setStrategy(String strategy) {
-        this.strategy = strategy;
     }
 
     public boolean isHostNetwork() {

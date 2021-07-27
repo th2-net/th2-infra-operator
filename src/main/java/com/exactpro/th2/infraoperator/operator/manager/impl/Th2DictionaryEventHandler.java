@@ -69,11 +69,9 @@ public class Th2DictionaryEventHandler implements Watcher<Th2Dictionary> {
 
         OperatorState operatorState = OperatorState.INSTANCE;
 
-        for (var th2link : operatorState.getLinkResources(namespace)) {
-            for (var dictionaryBinding : th2link.getSpec().getDictionariesRelation()) {
-                if (dictionaryBinding.getDictionary().getName().equals(extractName(dictionary))) {
-                    resources.add(dictionaryBinding.getBox());
-                }
+        for (var dictionaryBinding : operatorState.getDictionaryLinks(namespace)) {
+            if (dictionaryBinding.getDictionary().getName().equals(extractName(dictionary))) {
+                resources.add(dictionaryBinding.getBox());
             }
         }
 

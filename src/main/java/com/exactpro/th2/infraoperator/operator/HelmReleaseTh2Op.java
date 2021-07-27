@@ -30,11 +30,13 @@ import com.exactpro.th2.infraoperator.spec.Th2CustomResource;
 import com.exactpro.th2.infraoperator.spec.Th2Spec;
 import com.exactpro.th2.infraoperator.spec.helmrelease.HelmRelease;
 import com.exactpro.th2.infraoperator.spec.helmrelease.HelmReleaseSecrets;
+import com.exactpro.th2.infraoperator.spec.link.relation.pins.PinCouplingGRPC;
 import com.exactpro.th2.infraoperator.spec.shared.PrometheusConfiguration;
 import com.exactpro.th2.infraoperator.spec.strategy.linkresolver.mq.DeclareQueueResolver;
-import com.exactpro.th2.infraoperator.util.ExtractUtils;
+import com.exactpro.th2.infraoperator.util.CustomResourceUtils;
 import com.exactpro.th2.infraoperator.util.JsonUtils;
 
+import io.fabric8.kubernetes.api.model.HasMetadata;
 import io.fabric8.kubernetes.api.model.KubernetesResourceList;
 import io.fabric8.kubernetes.client.dsl.MixedOperation;
 import io.fabric8.kubernetes.client.dsl.Resource;
@@ -49,6 +51,7 @@ import java.util.*;
 import static com.exactpro.th2.infraoperator.operator.manager.impl.ConfigMapEventHandler.*;
 import static com.exactpro.th2.infraoperator.spec.strategy.linkresolver.mq.BindQueueLinkResolver.resolveBoxResource;
 import static com.exactpro.th2.infraoperator.util.ExtendedSettingsUtils.convertField;
+import static com.exactpro.th2.infraoperator.util.ExtractUtils.*;
 
 public abstract class HelmReleaseTh2Op<CR extends Th2CustomResource> extends AbstractTh2Operator<CR, HelmRelease> {
 
@@ -169,7 +172,7 @@ public abstract class HelmReleaseTh2Op<CR extends Th2CustomResource> extends Abs
     protected void mapProperties(CR resource, HelmRelease helmRelease) {
         super.mapProperties(resource, helmRelease);
 
-        String resNamespace = ExtractUtils.extractNamespace(resource);
+        String resNamespace = extractNamespace(resource);
         Th2Spec resSpec = resource.getSpec();
         OperatorState operatorState = OperatorState.INSTANCE;
         var grpcActiveLinks = operatorState.getGrpLinks(resNamespace);
@@ -183,8 +186,7 @@ public abstract class HelmReleaseTh2Op<CR extends Th2CustomResource> extends Abs
         String grpcRouterChecksum = operatorState.getConfigChecksum(resNamespace, GRPC_ROUTER_CM_NAME);
         String cradleManagerChecksum = operatorState.getConfigChecksum(resNamespace, CRADLE_MANAGER_CM_NAME);
 
-        helmRelease.putSpecProp(RELEASE_NAME_ALIAS,
-                ExtractUtils.extractNamespace(helmRelease) + "-" + ExtractUtils.extractName(helmRelease));
+        helmRelease.putSpecProp(RELEASE_NAME_ALIAS, extractNamespace(helmRelease) + "-" + extractName(helmRelease));
 
         String logFile = resource.getSpec().getLogFile();
         Map<String, Object> logFileSection = new HashMap<>();
@@ -262,7 +264,7 @@ public abstract class HelmReleaseTh2Op<CR extends Th2CustomResource> extends Abs
 
         helmRelease.mergeSpecProp(CHART_PROPERTIES_ALIAS, defaultChartConfig.toMap());
         helmRelease.mergeValue(Map.of(ANNOTATIONS_ALIAS,
-                ExtractUtils.extractAnnotations(resource).get(ANTECEDENT_LABEL_KEY_ALIAS)));
+                extractAnnotations(resource).get(ANTECEDENT_LABEL_KEY_ALIAS)));
 
         convertField(helmRelease, Boolean::valueOf, ENABLED_ALIAS, ROOT_PROPERTIES_ALIAS,
                 EXTENDED_SETTINGS_ALIAS, SERVICE_ALIAS);
@@ -275,7 +277,7 @@ public abstract class HelmReleaseTh2Op<CR extends Th2CustomResource> extends Abs
     @Override
     protected void addedEvent(CR resource) {
 
-        String namespace = ExtractUtils.extractNamespace(resource);
+        String namespace = extractNamespace(resource);
         var lock = OperatorState.INSTANCE.getLock(namespace);
         try {
             lock.lock();
@@ -284,6 +286,7 @@ public abstract class HelmReleaseTh2Op<CR extends Th2CustomResource> extends Abs
             updateMsgStorageLinksBeforeAdd(resource);
             declareQueueResolver.resolveAdd(resource);
             resolveBoxResource(namespace, OperatorState.INSTANCE.getLinkResources(namespace), resource);
+            updateGrpcLinkedResourcesIfNeeded(resource);
             super.addedEvent(resource);
         } finally {
             lock.unlock();
@@ -294,7 +297,7 @@ public abstract class HelmReleaseTh2Op<CR extends Th2CustomResource> extends Abs
     @Override
     protected void modifiedEvent(CR resource) {
 
-        String namespace = ExtractUtils.extractNamespace(resource);
+        String namespace = extractNamespace(resource);
         var lock = OperatorState.INSTANCE.getLock(namespace);
         try {
             lock.lock();
@@ -303,6 +306,7 @@ public abstract class HelmReleaseTh2Op<CR extends Th2CustomResource> extends Abs
             updateMsgStorageLinksBeforeAdd(resource);
             declareQueueResolver.resolveAdd(resource);
             resolveBoxResource(namespace, OperatorState.INSTANCE.getLinkResources(namespace), resource);
+            updateGrpcLinkedResourcesIfNeeded(resource);
             super.modifiedEvent(resource);
         } finally {
             lock.unlock();
@@ -312,7 +316,7 @@ public abstract class HelmReleaseTh2Op<CR extends Th2CustomResource> extends Abs
     @Override
     protected void deletedEvent(CR resource) {
 
-        var lock = OperatorState.INSTANCE.getLock(ExtractUtils.extractNamespace(resource));
+        var lock = OperatorState.INSTANCE.getLock(extractNamespace(resource));
         try {
             lock.lock();
             super.deletedEvent(resource);
@@ -332,6 +336,7 @@ public abstract class HelmReleaseTh2Op<CR extends Th2CustomResource> extends Abs
     @Override
     protected void createKubObj(String namespace, HelmRelease helmRelease) {
         helmReleaseClient.inNamespace(namespace).createOrReplace(helmRelease);
+        OperatorState.INSTANCE.putHelmReleaseInCache(helmRelease, namespace);
     }
 
     @Override
@@ -354,4 +359,73 @@ public abstract class HelmReleaseTh2Op<CR extends Th2CustomResource> extends Abs
     protected void updateMsgStorageLinksAfterDelete(CR resource) {
         msgStLinkUpdaterOnDelete.updateStorageResLinks(resource);
     }
+
+    private void updateGrpcLinkedResourcesIfNeeded(CR currentResource) {
+
+        var currentResName = extractName(currentResource);
+
+        var namespace = extractNamespace(currentResource);
+
+        var lSingleton = OperatorState.INSTANCE;
+
+        var grpcLinks = lSingleton.getGrpLinks(namespace);
+
+        Set<String> linkedResources = getGrpcLinkedResources(currentResource, grpcLinks);
+
+        if (!linkedResources.isEmpty()) {
+            logger.info("Updating all linked boxes of '{}.{}' resource...", namespace, currentResName);
+
+            for (var linkedResourceName : linkedResources) {
+                logger.debug("Linked resource: '{}.{}'", namespace, linkedResourceName);
+
+                var hr = OperatorState.INSTANCE.getHelmReleaseFromCache(linkedResourceName, namespace);
+                if (hr == null) {
+                    logger.info("HelmRelease of '{}.{}' resource not found in cache", namespace, linkedResourceName);
+                    continue;
+                } else {
+                    logger.debug("Found HelmRelease \"{}\"", CustomResourceUtils.annotationFor(hr));
+                }
+
+                var hrRawGrpcConfig = extractHelmReleaseRawGrpcConfig(hr);
+
+                HasMetadata linkedResource = OperatorState.INSTANCE.getResourceFromCache(linkedResourceName, namespace);
+                var newResGrpcConfig = grpcConfigFactory.createConfig((Th2CustomResource) linkedResource, grpcLinks);
+
+                var newResRawGrpcConfig = JsonUtils.writeValueAsDeepMap(newResGrpcConfig);
+
+                if (!newResRawGrpcConfig.equals(hrRawGrpcConfig)) {
+                    logger.info("Updating helm release of '{}.{}' resource", namespace, linkedResourceName);
+
+                    hr.mergeValue(PROPERTIES_MERGE_DEPTH, ROOT_PROPERTIES_ALIAS, Map.of(
+                            GRPC_P2P_CONFIG_ALIAS, newResRawGrpcConfig
+                    ));
+
+                    createKubObj(extractNamespace(hr), hr);
+                    logger.debug("Updated HelmRelease \"{}\"", CustomResourceUtils.annotationFor(hr));
+
+                } else {
+                    logger.info("Resource '{}.{}' doesn't need updating", namespace, linkedResourceName);
+                }
+
+            }
+        }
+    }
+
+    private Map<String, Object> extractHelmReleaseRawGrpcConfig(HelmRelease helmRelease) {
+        var values = (Map<String, Object>) helmRelease.getValuesSection();
+        var componentConfigs = (Map<String, Object>) values.get(ROOT_PROPERTIES_ALIAS);
+        return (Map<String, Object>) componentConfigs.get(GRPC_P2P_CONFIG_ALIAS);
+    }
+
+    private Set<String> getGrpcLinkedResources(Th2CustomResource resource, List<PinCouplingGRPC> grpcLinks) {
+        Set<String> resources = new HashSet<>();
+
+        for (var grpcLink : grpcLinks) {
+            if (grpcLink.getTo().getBoxName().equals(extractName(resource))) {
+                resources.add(grpcLink.getFrom().getBoxName());
+            }
+        }
+        return resources;
+    }
+
 }
