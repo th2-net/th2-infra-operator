@@ -16,18 +16,7 @@
 
 package com.exactpro.th2.infraoperator.operator;
 
-import static io.fabric8.kubernetes.client.Watcher.Action.MODIFIED;
-
-import java.io.InputStream;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Objects;
-import java.util.concurrent.ConcurrentHashMap;
-
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
+import com.exactpro.th2.infraoperator.OperatorState;
 import com.exactpro.th2.infraoperator.Th2CrdController;
 import com.exactpro.th2.infraoperator.metrics.OperatorMetrics;
 import com.exactpro.th2.infraoperator.model.http.HttpCode;
@@ -49,6 +38,19 @@ import io.fabric8.kubernetes.client.Watcher;
 import io.fabric8.kubernetes.client.WatcherException;
 import io.prometheus.client.Histogram;
 import lombok.SneakyThrows;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import java.io.InputStream;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Objects;
+import java.util.concurrent.ConcurrentHashMap;
+
+import static com.exactpro.th2.infraoperator.util.ExtractUtils.extractName;
+import static com.exactpro.th2.infraoperator.util.ExtractUtils.extractNamespace;
+import static io.fabric8.kubernetes.client.Watcher.Action.MODIFIED;
 
 public abstract class AbstractTh2Operator<CR extends Th2CustomResource, KO extends HasMetadata> implements Watcher<CR> {
 
@@ -195,6 +197,7 @@ public abstract class AbstractTh2Operator<CR extends Th2CustomResource, KO exten
 
         String resourceLabel = CustomResourceUtils.annotationFor(resource);
         fingerprints.remove(resourceLabel);
+        OperatorState.INSTANCE.removeHelmReleaseFromCache(extractName(resource), extractNamespace(resource));
     }
 
     protected void errorEvent(CR resource) {
@@ -216,7 +219,7 @@ public abstract class AbstractTh2Operator<CR extends Th2CustomResource, KO exten
                                 "already changed on the server. Trying to sync a resource...",
                         resourceLabel, resource.getStatus().getPhase());
                 var freshRes = resClient.inNamespace(ExtractUtils.extractNamespace(resource)).list().getItems().stream()
-                        .filter(r -> ExtractUtils.extractName(r).equals(ExtractUtils.extractName(resource)))
+                        .filter(r -> extractName(r).equals(extractName(resource)))
                         .findFirst()
                         .orElse(null);
                 if (Objects.nonNull(freshRes)) {
@@ -251,7 +254,7 @@ public abstract class AbstractTh2Operator<CR extends Th2CustomResource, KO exten
 
         String kubObjType = kubObj.getClass().getSimpleName();
 
-        resource.getStatus().succeeded(kubObjType + " successfully deployed", ExtractUtils.extractName(kubObj));
+        resource.getStatus().succeeded(kubObjType + " successfully deployed", extractName(kubObj));
 
         updateStatus(resource);
     }
@@ -298,7 +301,7 @@ public abstract class AbstractTh2Operator<CR extends Th2CustomResource, KO exten
     protected OwnerReference createOwnerReference(CR resource) {
         return new OwnerReferenceBuilder()
                 .withKind(resource.getKind())
-                .withName(ExtractUtils.extractName(resource))
+                .withName(extractName(resource))
                 .withApiVersion(resource.getApiVersion())
                 .withUid(resource.getMetadata().getUid())
                 .withBlockOwnerDeletion(true)

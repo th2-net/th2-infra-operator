@@ -22,7 +22,9 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import lombok.Data;
 
+import java.util.ArrayList;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Set;
 
 @Data
@@ -41,5 +43,13 @@ public class PinSpec {
     protected Set<String> attributes = new HashSet<>();
 
     protected Set<FilterSpec> filters = new HashSet<>();
+
+    @JsonProperty("service-classes")
+    protected List<String> serviceClasses = new ArrayList<>();
+
+    @JsonProperty("service-class")
+    protected String serviceClass;
+
+    protected String strategy;
 
 }

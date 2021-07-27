@@ -6,7 +6,7 @@ metadata:
 spec:
   resetValues: true
   wait: false
-  forceUpgrade: false
+  forceUpgrade: true
   releaseName: th2-box
   chart:
     secretRef:
