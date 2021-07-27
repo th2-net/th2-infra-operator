@@ -40,6 +40,7 @@ import com.exactpro.th2.infraoperator.spec.strategy.resfinder.box.BoxResourceFin
 import com.exactpro.th2.infraoperator.util.CustomResourceUtils;
 import com.exactpro.th2.infraoperator.util.ExtractUtils;
 import com.exactpro.th2.infraoperator.util.JsonUtils;
+
 import io.fabric8.kubernetes.api.model.KubernetesResourceList;
 import io.fabric8.kubernetes.client.dsl.MixedOperation;
 import io.fabric8.kubernetes.client.dsl.Resource;
@@ -409,7 +410,7 @@ public abstract class HelmReleaseTh2Op<CR extends Th2CustomResource> extends Abs
 
             var resourceName = ExtractUtils.extractName(res);
 
-            var hr = getHelmRelease(res, helmReleases);
+            var hr = CustomResourceUtils.search(helmReleases, res);
             if (hr == null) {
                 logger.info("Release of '{}.{}' resource not found", namespace, resourceName);
                 continue;
@@ -473,17 +474,6 @@ public abstract class HelmReleaseTh2Op<CR extends Th2CustomResource> extends Abs
                 resources.put(name, resource);
             }
         }
-    }
-
-    private HelmRelease getHelmRelease(Th2CustomResource resource, List<HelmRelease> helmReleases) {
-        String resFullName = ExtractUtils.extractFullName(resource);
-        String resName = hashNameIfNeeded(resFullName);
-        return helmReleases.stream()
-                .filter(hr -> {
-                    var owner = ExtractUtils.extractOwnerFullName(hr);
-                    return Objects.nonNull(owner) && owner.equals(resName);
-                }).findFirst()
-                .orElse(null);
     }
 
     @SuppressWarnings("unchecked")

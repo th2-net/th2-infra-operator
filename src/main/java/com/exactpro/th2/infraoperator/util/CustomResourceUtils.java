@@ -16,16 +16,26 @@
 
 package com.exactpro.th2.infraoperator.util;
 
+import static com.exactpro.th2.infraoperator.util.ExtractUtils.extractName;
+import static com.exactpro.th2.infraoperator.util.ExtractUtils.extractNamespace;
+import static com.exactpro.th2.infraoperator.util.ExtractUtils.extractType;
+
 import com.exactpro.th2.infraoperator.spec.Th2CustomResource;
+import com.exactpro.th2.infraoperator.spec.helmrelease.HelmRelease;
 import com.exactpro.th2.infraoperator.spec.shared.PinSpec;
 import io.fabric8.kubernetes.api.model.HasMetadata;
+
+import org.jetbrains.annotations.Nullable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 
 public final class CustomResourceUtils {
 
@@ -59,5 +69,64 @@ public final class CustomResourceUtils {
             }
         }
         resource.getSpec().setPins(new ArrayList<>(uniquePins.values()));
+    }
+
+    @Nullable
+    public static HelmRelease search(List<HelmRelease> helmReleases, Th2CustomResource resource) {
+        String resFullName = extractHashedFullName(resource);
+        return helmReleases.stream()
+                .filter(hr -> {
+                    var owner = extractOwnerFullName(hr);
+                    return Objects.nonNull(owner) && owner.equals(resFullName);
+                }).findFirst()
+                .orElse(null);
+    }
+
+    public static String extractHashedName(Th2CustomResource customResource) {
+        return hashNameIfNeeded(extractName(customResource));
+    }
+
+    private static String extractHashedFullName(Th2CustomResource customResource) {
+        return concatFullName(extractNamespace(customResource), extractHashedName(customResource));
+    }
+
+    @Nullable
+    private static String extractOwnerFullName(HelmRelease helmRelease) {
+        var ownerReferences = helmRelease.getMetadata().getOwnerReferences();
+        if (ownerReferences.size() > 0) {
+            return concatFullName(extractNamespace(helmRelease), ownerReferences.get(0).getName());
+        } else {
+            logger.warn("[{}<{}>] doesn't have owner resource", extractType(helmRelease), extractFullName(helmRelease));
+            return null;
+        }
+    }
+
+    private static String extractFullName(HasMetadata obj) {
+        return concatFullName(extractNamespace(obj), extractName(obj));
+    }
+
+    private static String concatFullName(String namespace, String name) {
+        return namespace + "." + name;
+    }
+
+    private static String hashNameIfNeeded(String resName) {
+        if (resName.length() >= HelmRelease.NAME_LENGTH_LIMIT) {
+            return digest(resName);
+        }
+        return resName;
+    }
+
+    static String digest(String data) {
+        try {
+            MessageDigest md = MessageDigest.getInstance("SHA-256");
+            byte[] digest = md.digest(data.getBytes());
+            StringBuilder sb = new StringBuilder();
+            for (byte b : digest) {
+                sb.append(String.format("%02x", b));
+            }
+            return sb.substring(0, HelmRelease.NAME_LENGTH_LIMIT);
+        } catch (NoSuchAlgorithmException e) {
+            throw new RuntimeException(e);
+        }
     }
 }
