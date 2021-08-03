@@ -50,6 +50,7 @@ import static com.exactpro.th2.infraoperator.util.CustomResourceUtils.RESYNC_TIM
 import static com.exactpro.th2.infraoperator.util.CustomResourceUtils.annotationFor;
 import static com.exactpro.th2.infraoperator.util.ExtractUtils.extractName;
 import static com.exactpro.th2.infraoperator.util.ExtractUtils.extractNamespace;
+import static com.exactpro.th2.infraoperator.util.HelmReleaseUtils.extractDictionariesConfig;
 
 public class Th2DictionaryEventHandler implements Watcher<Th2Dictionary> {
 
@@ -253,12 +254,6 @@ public class Th2DictionaryEventHandler implements Watcher<Th2Dictionary> {
             createKubObj(namespace, hr);
             logger.debug("Updated \"{}\"", CustomResourceUtils.annotationFor(hr));
         }
-    }
-
-    private List<DictionaryEntity> extractDictionariesConfig(HelmRelease helmRelease) {
-        var values = (Map<String, Object>) helmRelease.getValuesSection();
-        var componentConfigs = (Map<String, Object>) values.get(ROOT_PROPERTIES_ALIAS);
-        return (List<DictionaryEntity>) componentConfigs.get(DICTIONARIES_ALIAS);
     }
 
     protected void createKubObj(String namespace, HelmRelease helmRelease) {

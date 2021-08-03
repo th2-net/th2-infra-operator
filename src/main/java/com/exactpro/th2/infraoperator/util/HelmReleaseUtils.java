@@ -16,6 +16,7 @@
 
 package com.exactpro.th2.infraoperator.util;
 
+import com.exactpro.th2.infraoperator.model.box.configuration.dictionary.DictionaryEntity;
 import com.exactpro.th2.infraoperator.model.box.configuration.grpc.GrpcEndpointMapping;
 import com.exactpro.th2.infraoperator.model.box.configuration.grpc.GrpcExternalEndpointMapping;
 import com.exactpro.th2.infraoperator.spec.Th2CustomResource;
@@ -164,5 +165,11 @@ public class HelmReleaseUtils {
         var values = (Map<String, Object>) helmRelease.getValuesSection();
         var componentConfigs = (Map<String, Object>) values.get(ROOT_PROPERTIES_ALIAS);
         return (Map<String, Object>) componentConfigs.get(key);
+    }
+
+    public static List<DictionaryEntity> extractDictionariesConfig(HelmRelease helmRelease) {
+        var values = (Map<String, Object>) helmRelease.getValuesSection();
+        var componentConfigs = (Map<String, Object>) values.get(ROOT_PROPERTIES_ALIAS);
+        return (List<DictionaryEntity>) componentConfigs.get(DICTIONARIES_ALIAS);
     }
 }
