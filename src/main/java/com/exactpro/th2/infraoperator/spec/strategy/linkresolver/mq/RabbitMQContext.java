@@ -44,8 +44,6 @@ public final class RabbitMQContext {
 
     private static final Map<String, ChannelContext> channelContexts = new ConcurrentHashMap<>();
 
-    private static final Map<String, Boolean> exchangeResets = new ConcurrentHashMap<>();
-
     private RabbitMQContext() {
     }
 
@@ -102,15 +100,6 @@ public final class RabbitMQContext {
             context.close();
             channelContexts.remove(namespace);
         }
-    }
-
-    public static boolean isExchangeReset(String namespace) {
-        Boolean reset = exchangeResets.get(namespace);
-        return (reset != null) && reset;
-    }
-
-    public static void markExchangeReset(String namespace) {
-        exchangeResets.put(namespace, Boolean.TRUE);
     }
 
     public static Map<String, Object> generateQueueArguments(PinSettings pinSettings) throws NumberFormatException {
