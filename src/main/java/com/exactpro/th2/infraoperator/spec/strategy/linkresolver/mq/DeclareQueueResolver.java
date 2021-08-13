@@ -153,13 +153,6 @@ public class DeclareQueueResolver {
             channel = RabbitMQContext.getChannel(namespace);
             logger.info("RabbitMQ connection has been restored");
         }
-
-        String exchangeName = RabbitMQContext.getExchangeName(namespace);
-        if (!RabbitMQContext.isExchangeReset(namespace)) {
-            logger.info("Deleting exchange in vHost: {}", namespace);
-            channel.exchangeDelete(exchangeName);
-            RabbitMQContext.markExchangeReset(namespace);
-        }
         return channel;
     }
 
