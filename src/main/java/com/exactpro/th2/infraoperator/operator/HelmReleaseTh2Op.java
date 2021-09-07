@@ -193,7 +193,7 @@ public abstract class HelmReleaseTh2Op<CR extends Th2CustomResource> extends Abs
 
         helmRelease.putSpecProp(RELEASE_NAME_ALIAS, extractNamespace(helmRelease) + "-" + extractName(helmRelease));
 
-        String logFile = resource.getSpec().getLogFile();
+        String logFile = resource.getSpec().getLoggingConfig();
         Map<String, Object> logFileSection = new HashMap<>();
         logFileSection.put(CONFIG_ALIAS, logFile);
         logFileSection.put(CHECKSUM_ALIAS, loggingConfigChecksum);
