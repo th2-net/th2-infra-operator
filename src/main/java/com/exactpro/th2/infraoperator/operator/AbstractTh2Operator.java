@@ -86,7 +86,7 @@ public abstract class AbstractTh2Operator<CR extends Th2CustomResource, KO exten
                 logger.debug("No changes detected for \"{}\"", resourceLabel);
                 return;
             }
-            Histogram.Timer processTimer = OperatorMetrics.getEventTimer(resource.getKind());
+            Histogram.Timer processTimer = OperatorMetrics.getCustomResourceEventTimer(resource);
             try {
                 logger.debug("refresh-token={}", resourceFingerprint.refreshToken);
 
@@ -117,7 +117,10 @@ public abstract class AbstractTh2Operator<CR extends Th2CustomResource, KO exten
                         triggerRedeployTask.getName(), REDEPLOY_DELAY);
             } finally {
                 fingerprints.put(resourceLabel, resourceFingerprint);
+                //observe event processing time for only operator
                 processTimer.observeDuration();
+                //observe time it took to process event only by both manager and operator
+                OperatorMetrics.observeTotal(resource);
             }
 
         } catch (Exception e) {

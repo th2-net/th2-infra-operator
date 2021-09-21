@@ -92,7 +92,7 @@ public class Th2LinkEventHandler implements Watcher<Th2Link> {
             logger.info("Link: \"{}\" has not been changed", resourceLabel);
             return;
         }
-        Histogram.Timer processTimer = OperatorMetrics.getEventTimer(th2Link.getKind());
+        Histogram.Timer processTimer = OperatorMetrics.getCustomResourceEventTimer(th2Link);
         logger.info("Updating all boxes and bindings related to \"{}\"", resourceLabel);
 
         var lock = operatorState.getLock(namespace);
@@ -140,7 +140,10 @@ public class Th2LinkEventHandler implements Watcher<Th2Link> {
             logger.error("Terminal Exception processing {} event for {}. Will not try to redeploy",
                     action, resourceLabel, e);
         } finally {
+            //observe event processing time for only operator
             processTimer.observeDuration();
+            //observe time it took to process event only by both manager and operator
+            OperatorMetrics.observeTotal(th2Link);
             lock.unlock();
         }
 

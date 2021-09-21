@@ -95,7 +95,6 @@ public class ConfigMapEventHandler implements Watcher<ConfigMap> {
         String configMapName = resource.getMetadata().getName();
 
         if (configMapName.equals(OperatorConfig.INSTANCE.getRabbitMQConfigMapName())) {
-            Histogram.Timer processTimer = OperatorMetrics.getEventTimer(resource.getKind());
             try {
                 logger.info("Processing {} event for \"{}\"", action, resourceLabel);
                 var lock = OperatorState.INSTANCE.getLock(namespace);
@@ -118,17 +117,18 @@ public class ConfigMapEventHandler implements Watcher<ConfigMap> {
                             opConfig.getSchemaSecrets().getRabbitMQ()));
 
                     if (!Objects.equals(rabbitMQConfig, newRabbitMQConfig)) {
+                        Histogram.Timer processTimer = OperatorMetrics.getConfigMapEventTimer(resource);
                         configMaps.setRabbitMQConfig4Namespace(namespace, newRabbitMQConfig);
                         RabbitMQContext.createVHostIfAbsent(namespace);
                         logger.info("RabbitMQ ConfigMap has been updated in namespace \"{}\". Updating all boxes",
                                 namespace);
                         int refreshedBoxesCount = DefaultWatchManager.getInstance().refreshBoxes(namespace);
                         logger.info("{} box-definition(s) have been updated", refreshedBoxesCount);
+                        processTimer.observeDuration();
                     } else {
                         logger.info("RabbitMQ ConfigMap data hasn't changed");
                     }
                 } finally {
-                    processTimer.observeDuration();
                     lock.unlock();
                 }
             } catch (Exception e) {
@@ -147,7 +147,6 @@ public class ConfigMapEventHandler implements Watcher<ConfigMap> {
     }
 
     private void updateChecksum(Action action, String namespace, ConfigMap resource, String key, String resourceLabel) {
-        Histogram.Timer processTimer = OperatorMetrics.getEventTimer(resource.getKind());
         try {
             logger.info("Processing {} event for \"{}\"", action, resourceLabel);
             if (action == Action.DELETED) {
@@ -164,13 +163,14 @@ public class ConfigMapEventHandler implements Watcher<ConfigMap> {
                 String oldChecksum = OperatorState.INSTANCE.getConfigChecksum(namespace, key);
                 String newChecksum = ExtractUtils.sourceHash(resource, false);
                 if (!newChecksum.equals(oldChecksum)) {
+                    Histogram.Timer processTimer = OperatorMetrics.getConfigMapEventTimer(resource);
                     OperatorState.INSTANCE.putConfigChecksum(namespace, key, newChecksum);
                     logger.info("\"{}\" has been updated. Updating all boxes", resourceLabel);
                     int refreshedBoxesCount = updateResources(namespace, newChecksum, key);
                     logger.info("{} HelmRelease(s) have been updated", refreshedBoxesCount);
+                    processTimer.observeDuration();
                 }
             } finally {
-                processTimer.observeDuration();
                 lock.unlock();
             }
         } catch (Exception e) {
