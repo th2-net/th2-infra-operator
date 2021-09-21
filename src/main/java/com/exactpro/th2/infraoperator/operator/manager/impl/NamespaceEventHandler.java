@@ -18,7 +18,6 @@ package com.exactpro.th2.infraoperator.operator.manager.impl;
 
 import com.exactpro.th2.infraoperator.OperatorState;
 import com.exactpro.th2.infraoperator.configuration.OperatorConfig;
-import com.exactpro.th2.infraoperator.metrics.OperatorMetrics;
 import com.exactpro.th2.infraoperator.operator.context.EventCounter;
 import com.exactpro.th2.infraoperator.spec.strategy.linkresolver.mq.RabbitMQContext;
 import com.exactpro.th2.infraoperator.util.CustomResourceUtils;
@@ -30,7 +29,6 @@ import io.fabric8.kubernetes.client.WatcherException;
 import io.fabric8.kubernetes.client.informers.ResourceEventHandler;
 import io.fabric8.kubernetes.client.informers.SharedIndexInformer;
 import io.fabric8.kubernetes.client.informers.SharedInformerFactory;
-import io.prometheus.client.Histogram;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -106,7 +104,6 @@ public class NamespaceEventHandler implements ResourceEventHandler<Namespace>, W
     public void eventReceived(Action action, Namespace resource) {
         String namespaceName = resource.getMetadata().getName();
 
-        Histogram.Timer processTimer = OperatorMetrics.getEventTimer(resource.getKind());
         var lock = OperatorState.INSTANCE.getLock(namespaceName);
 
         try {
@@ -123,7 +120,6 @@ public class NamespaceEventHandler implements ResourceEventHandler<Namespace>, W
             } catch (Exception e) {
                 logger.error("Exception processing event for \"{}\"", resourceLabel, e);
             } finally {
-                processTimer.observeDuration();
                 lock.unlock();
             }
 

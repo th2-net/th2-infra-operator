@@ -195,7 +195,7 @@ public class EventQueue {
                 }
 
                 priorityEvents.add((PriorityEvent) event);
-                OperatorMetrics.setPriorityEventCount(priorityEvents.size());
+                OperatorMetrics.setPriorityEventCount(priorityEvents.size(), event.namespace);
                 // Log state of queues
                 logger.debug("Preempted namespace {}, {} event(s) present in the priority queue, " +
                                 "{} event(s) in the regular queue",
@@ -209,7 +209,7 @@ public class EventQueue {
 
                 if (index == priorityEvents.size()) {
                     priorityEvents.add((PriorityEvent) event);
-                    OperatorMetrics.setPriorityEventCount(priorityEvents.size());
+                    OperatorMetrics.setPriorityEventCount(priorityEvents.size(), event.namespace);
                 } else {
                     priorityEvents.get(index).replace(event);
                 }
@@ -219,7 +219,7 @@ public class EventQueue {
 
                 if (index == regularEvents.size()) {
                     regularEvents.add(event);
-                    OperatorMetrics.setRegularEventCount(regularEvents.size());
+                    OperatorMetrics.setRegularEventCount(regularEvents.size(), event.namespace);
                 } else {
                     regularEvents.get(index).replace(event);
                 }
@@ -292,8 +292,8 @@ public class EventQueue {
         }
 
         if (event != null) {
-            OperatorMetrics.setPriorityEventCount(priorityEvents.size());
-            OperatorMetrics.setRegularEventCount(regularEvents.size());
+            OperatorMetrics.setPriorityEventCount(priorityEvents.size(), event.namespace);
+            OperatorMetrics.setRegularEventCount(regularEvents.size(), event.namespace);
             logger.debug("Withdrawn {}, {} event(s) present in the priority queue, {} event(s) in the regular queue",
                     event.getEventId(),
                     priorityEvents.size(),

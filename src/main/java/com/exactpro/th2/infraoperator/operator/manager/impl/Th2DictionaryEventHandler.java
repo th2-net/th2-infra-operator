@@ -84,8 +84,9 @@ public class Th2DictionaryEventHandler implements Watcher<Th2Dictionary> {
 
     @Override
     public void eventReceived(Action action, Th2Dictionary dictionary) {
-        Histogram.Timer processTimer = OperatorMetrics.getEventTimer(dictionary.getKind());
+        Histogram.Timer processTimer = OperatorMetrics.getDictionaryEventTimer(dictionary);
         try {
+
             switch (action) {
                 case ADDED:
                     processAdded(dictionary);
@@ -124,9 +125,9 @@ public class Th2DictionaryEventHandler implements Watcher<Th2Dictionary> {
             logger.error("Terminal Exception processing {} event for {}. Will not try to redeploy",
                     action, resourceLabel, e);
         } finally {
+            //observe event processing time for only operator
             processTimer.observeDuration();
         }
-        processTimer.observeDuration();
     }
 
     private void processAdded(Th2Dictionary dictionary) {
