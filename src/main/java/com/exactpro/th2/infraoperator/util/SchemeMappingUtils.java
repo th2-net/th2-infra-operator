@@ -18,34 +18,19 @@ package com.exactpro.th2.infraoperator.util;
 
 import com.exactpro.th2.infraoperator.model.box.configuration.mq.FilterConfiguration;
 import com.exactpro.th2.infraoperator.spec.shared.FieldFilter;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
+import java.util.stream.Collectors;
 
 public final class SchemeMappingUtils {
-
-    private static final Logger logger = LoggerFactory.getLogger(SchemeMappingUtils.class);
 
     private SchemeMappingUtils() {
         throw new AssertionError();
     }
 
-    public static Map<String, FilterConfiguration> specToConfigFieldFilters(List<FieldFilter> fieldFilters) {
-        Map<String, FilterConfiguration> filterConfigurationMap = new HashMap<>();
-        for (FieldFilter fieldFilter : fieldFilters) {
-            FilterConfiguration alreadyPresent = filterConfigurationMap.put(fieldFilter.getFieldName(),
-                    FilterConfiguration.builder()
-                            .value(fieldFilter.getExpectedValue())
-                            .operation(fieldFilter.getOperation())
-                            .build());
-            if (alreadyPresent != null) {
-                logger.warn("Duplicated key \"{}\" detected. will be replaced by the latest occurrence",
-                        fieldFilter.getFieldName());
-            }
-        }
-        return filterConfigurationMap;
+    public static List<FilterConfiguration> specToConfigFieldFilters(List<FieldFilter> fieldFilters) {
+        return fieldFilters.stream().map(ff -> new FilterConfiguration(
+                ff.getFieldName(), ff.getExpectedValue(), ff.getOperation()
+        )).collect(Collectors.toList());
     }
 }

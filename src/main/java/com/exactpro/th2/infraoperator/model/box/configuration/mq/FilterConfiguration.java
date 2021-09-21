@@ -17,24 +17,34 @@
 package com.exactpro.th2.infraoperator.model.box.configuration.mq;
 
 import com.exactpro.th2.infraoperator.spec.shared.FilterOperation;
-import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
-import lombok.Builder;
-import lombok.Data;
 
-@Data
-@Builder
-@JsonDeserialize
 public class FilterConfiguration {
 
-    private String value;
+    private String fieldName;
+
+    private String expectedValue;
 
     private FilterOperation operation;
 
-    protected FilterConfiguration() { }
+    public FilterConfiguration() {
+    }
 
-    protected FilterConfiguration(String value, FilterOperation operation) {
-        this.value = value;
+    public FilterConfiguration(String fieldName, String expectedValue, FilterOperation operation) {
+        this.fieldName = fieldName;
+        this.expectedValue = expectedValue;
         this.operation = operation;
+    }
+
+    public String getFieldName() {
+        return this.fieldName;
+    }
+
+    public String getExpectedValue() {
+        return this.expectedValue;
+    }
+
+    public FilterOperation getOperation() {
+        return this.operation;
     }
 }
 
