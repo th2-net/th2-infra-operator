@@ -50,7 +50,7 @@ import java.util.*;
 
 import static com.exactpro.th2.infraoperator.operator.manager.impl.ConfigMapEventHandler.*;
 import static com.exactpro.th2.infraoperator.spec.strategy.linkresolver.mq.BindQueueLinkResolver.resolveBoxResource;
-import static com.exactpro.th2.infraoperator.util.ExtendedSettingsUtils.convertField;
+import static com.exactpro.th2.infraoperator.util.HelmReleaseUtils.convertField;
 import static com.exactpro.th2.infraoperator.util.ExtractUtils.*;
 
 public abstract class HelmReleaseTh2Op<CR extends Th2CustomResource> extends AbstractTh2Operator<CR, HelmRelease> {
@@ -86,11 +86,11 @@ public abstract class HelmReleaseTh2Op<CR extends Th2CustomResource> extends Abs
 
     private static final String GRPC_P2P_CONFIG_ALIAS = "grpc";
 
-    private static final String MQ_ROUTER_ALIAS = "mqRouter";
+    public static final String MQ_ROUTER_ALIAS = "mqRouter";
 
-    private static final String GRPC_ROUTER_ALIAS = "grpcRouter";
+    public static final String GRPC_ROUTER_ALIAS = "grpcRouter";
 
-    private static final String CRADLE_MANAGER_ALIAS = "cradleManager";
+    public static final String CRADLE_MANAGER_ALIAS = "cradleManager";
 
     public static final String LOGGING_ALIAS = "logging";
 
@@ -98,21 +98,21 @@ public abstract class HelmReleaseTh2Op<CR extends Th2CustomResource> extends Abs
 
     public static final String INGRESS_HOST_ALIAS = "ingressHost";
 
-    private static final String EXTENDED_SETTINGS_ALIAS = "extendedSettings";
+    public static final String EXTENDED_SETTINGS_ALIAS = "extendedSettings";
 
     //extended settings section
-    private static final String SERVICE_ALIAS = "service";
+    public static final String SERVICE_ALIAS = "service";
 
-    private static final String EXTERNAL_BOX_ALIAS = "externalBox";
+    public static final String EXTERNAL_BOX_ALIAS = "externalBox";
 
     private static final String SHARED_MEMORY_ALIAS = "sharedMemory";
 
     //general aliases
     private static final String CONFIG_ALIAS = "config";
 
-    private static final String CHECKSUM_ALIAS = "checksum";
+    public static final String CHECKSUM_ALIAS = "checksum";
 
-    private static final String ENABLED_ALIAS = "enabled";
+    public static final String ENABLED_ALIAS = "enabled";
 
     private static final String DEFAULT_VALUE_ENABLED = Boolean.TRUE.toString();
 
@@ -181,10 +181,10 @@ public abstract class HelmReleaseTh2Op<CR extends Th2CustomResource> extends Abs
         MessageRouterConfiguration mqConfig = mqConfigFactory.createConfig(resource);
         GrpcRouterConfiguration grpcConfig = grpcConfigFactory.createConfig(resource, grpcActiveLinks);
         List<DictionaryEntity> dictionaries = dictionaryFactory.create(resource, dictionaryActiveLinks);
-        String loggingConfigChecksum = operatorState.getConfigChecksum(resNamespace, LOGGING_CM_NAME);
-        String mqRouterChecksum = operatorState.getConfigChecksum(resNamespace, MQ_ROUTER_CM_NAME);
-        String grpcRouterChecksum = operatorState.getConfigChecksum(resNamespace, GRPC_ROUTER_CM_NAME);
-        String cradleManagerChecksum = operatorState.getConfigChecksum(resNamespace, CRADLE_MANAGER_CM_NAME);
+        String loggingConfigChecksum = operatorState.getConfigChecksum(resNamespace, LOGGING_ALIAS);
+        String mqRouterChecksum = operatorState.getConfigChecksum(resNamespace, MQ_ROUTER_ALIAS);
+        String grpcRouterChecksum = operatorState.getConfigChecksum(resNamespace, GRPC_ROUTER_ALIAS);
+        String cradleManagerChecksum = operatorState.getConfigChecksum(resNamespace, CRADLE_MANAGER_ALIAS);
 
         helmRelease.putSpecProp(RELEASE_NAME_ALIAS, extractNamespace(helmRelease) + "-" + extractName(helmRelease));
 

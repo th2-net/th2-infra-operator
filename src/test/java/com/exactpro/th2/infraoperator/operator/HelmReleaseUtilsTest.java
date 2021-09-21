@@ -24,10 +24,10 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-import static com.exactpro.th2.infraoperator.util.ExtendedSettingsUtils.convertField;
+import static com.exactpro.th2.infraoperator.util.HelmReleaseUtils.convertField;
 import static org.junit.jupiter.api.Assertions.*;
 
-public class ExtendedSettingsUtilsTest {
+public class HelmReleaseUtilsTest {
 
     public static final String ROOT_PROPERTIES_ALIAS = "component";
 

@@ -22,10 +22,7 @@ import com.exactpro.th2.infraoperator.spec.link.relation.dictionaries.Dictionary
 import com.exactpro.th2.infraoperator.spec.link.relation.pins.PinCouplingGRPC;
 import io.fabric8.kubernetes.api.model.HasMetadata;
 
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
 
@@ -106,6 +103,10 @@ public class NamespaceState implements OperatorState.NamespaceLock {
 
     public void removeHelmRelease(String resName) {
         helmReleaseMap.remove(resName);
+    }
+
+    public Collection<HelmRelease> getAllHelmReleases() {
+        return helmReleaseMap.values();
     }
 
     @Override

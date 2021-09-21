@@ -27,14 +27,11 @@ import java.util.List;
 import java.util.Map;
 import java.util.function.Function;
 
+import static com.exactpro.th2.infraoperator.operator.HelmReleaseTh2Op.*;
 import static com.exactpro.th2.infraoperator.util.CustomResourceUtils.annotationFor;
 import static com.exactpro.th2.infraoperator.util.JsonUtils.JSON_READER;
 
-public class ExtendedSettingsUtils {
-
-    private static final String EXTENDED_SETTINGS_ALIAS = "extendedSettings";
-
-    private static final String EXTERNAL_BOX_ALIAS = "externalBox";
+public class HelmReleaseUtils {
 
     private static final String HOST_NETWORK_ALIAS = "hostNetwork";
 
@@ -42,13 +39,9 @@ public class ExtendedSettingsUtils {
 
     private static final String ADDRESS_ALIAS = "address";
 
-    private static final String ENABLED_ALIAS = "enabled";
-
-    private static final String SERVICE_ALIAS = "service";
-
     private static final String GRPC_ALIAS = "grpc";
 
-    private ExtendedSettingsUtils() {
+    private HelmReleaseUtils() {
     }
 
     public static boolean isHostNetwork(Map<String, Object> boxExtendedSettings) {
@@ -66,7 +59,8 @@ public class ExtendedSettingsUtils {
         JsonNode endpointsNode = getFieldAsNode(boxSettings, SERVICE_ALIAS, ENDPOINTS_ALIAS);
         if (endpointsNode != null) {
             List<GrpcEndpointMapping> grpcEndpointMappings = JSON_READER.convertValue(endpointsNode,
-                    new TypeReference<>() { });
+                    new TypeReference<>() {
+                    });
             for (GrpcEndpointMapping grpcEndpointMapping : grpcEndpointMappings) {
                 if (grpcEndpointMapping.getName().equals(GRPC_ALIAS)) {
                     return grpcEndpointMapping;
@@ -83,7 +77,8 @@ public class ExtendedSettingsUtils {
         JsonNode endpointsNode = getFieldAsNode(boxSettings, EXTERNAL_BOX_ALIAS, ENDPOINTS_ALIAS);
         if (endpointsNode != null) {
             List<GrpcExternalEndpointMapping> externalEndpoints = JSON_READER.convertValue(endpointsNode,
-                    new TypeReference<>() { });
+                    new TypeReference<>() {
+                    });
             for (GrpcExternalEndpointMapping grpcExternalEndpointMapping : externalEndpoints) {
                 if (grpcExternalEndpointMapping.getName().equals(GRPC_ALIAS)) {
                     return grpcExternalEndpointMapping;
@@ -163,5 +158,11 @@ public class ExtendedSettingsUtils {
                 section.put(fieldName, converter.apply(currentValue.toString()));
             }
         }
+    }
+
+    public static Map<String, Object> extractConfigSection(HelmRelease helmRelease, String key) {
+        var values = (Map<String, Object>) helmRelease.getValuesSection();
+        var componentConfigs = (Map<String, Object>) values.get(ROOT_PROPERTIES_ALIAS);
+        return (Map<String, Object>) componentConfigs.get(key);
     }
 }
