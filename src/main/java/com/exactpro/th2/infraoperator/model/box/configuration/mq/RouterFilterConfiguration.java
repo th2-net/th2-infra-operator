@@ -16,26 +16,27 @@
 
 package com.exactpro.th2.infraoperator.model.box.configuration.mq;
 
-import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
-import lombok.Builder;
-import lombok.Data;
+import java.util.List;
 
-import java.util.Map;
-
-@Data
-@Builder
-@JsonDeserialize
 public class RouterFilterConfiguration {
 
-    private Map<String, FilterConfiguration> metadata;
+    private List<FilterConfiguration> metadata;
 
-    private Map<String, FilterConfiguration> message;
+    private List<FilterConfiguration> message;
 
-    protected RouterFilterConfiguration() { }
+    public RouterFilterConfiguration() {
+    }
 
-    protected RouterFilterConfiguration(Map<String, FilterConfiguration> metadata,
-                                        Map<String, FilterConfiguration> message) {
+    public RouterFilterConfiguration(List<FilterConfiguration> metadata, List<FilterConfiguration> message) {
         this.metadata = metadata;
         this.message = message;
+    }
+
+    public List<FilterConfiguration> getMetadata() {
+        return this.metadata;
+    }
+
+    public List<FilterConfiguration> getMessage() {
+        return this.message;
     }
 }
