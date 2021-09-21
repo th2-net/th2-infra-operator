@@ -48,10 +48,9 @@ import org.slf4j.LoggerFactory;
 import java.io.InputStream;
 import java.util.*;
 
-import static com.exactpro.th2.infraoperator.operator.manager.impl.ConfigMapEventHandler.*;
 import static com.exactpro.th2.infraoperator.spec.strategy.linkresolver.mq.BindQueueLinkResolver.resolveBoxResource;
-import static com.exactpro.th2.infraoperator.util.HelmReleaseUtils.convertField;
 import static com.exactpro.th2.infraoperator.util.ExtractUtils.*;
+import static com.exactpro.th2.infraoperator.util.HelmReleaseUtils.*;
 
 public abstract class HelmReleaseTh2Op<CR extends Th2CustomResource> extends AbstractTh2Operator<CR, HelmRelease> {
 
@@ -76,7 +75,9 @@ public abstract class HelmReleaseTh2Op<CR extends Th2CustomResource> extends Abs
 
     private static final String CUSTOM_CONFIG_ALIAS = "custom";
 
-    private static final String SECRET_CUSTOM_CONFIG_ALIAS = "secretCustomConfig";
+    private static final String SECRET_VALUES_CONFIG_ALIAS = "secretValuesConfig";
+
+    private static final String SECRET_PATHS_CONFIG_ALIAS = "secretPathsConfig";
 
     private static final String PROMETHEUS_CONFIG_ALIAS = "prometheus";
 
@@ -213,7 +214,6 @@ public abstract class HelmReleaseTh2Op<CR extends Th2CustomResource> extends Abs
         helmRelease.mergeValue(PROPERTIES_MERGE_DEPTH, ROOT_PROPERTIES_ALIAS, Map.of(
                 DOCKER_IMAGE_ALIAS, resSpec.getImageName() + ":" + resSpec.getImageVersion(),
                 COMPONENT_NAME_ALIAS, resource.getMetadata().getName(),
-                CUSTOM_CONFIG_ALIAS, resource.getSpec().getCustomConfig(),
                 MQ_QUEUE_CONFIG_ALIAS, JsonUtils.writeValueAsDeepMap(mqConfig),
                 GRPC_P2P_CONFIG_ALIAS, JsonUtils.writeValueAsDeepMap(grpcConfig),
                 LOGGING_ALIAS, logFileSection,
@@ -223,8 +223,13 @@ public abstract class HelmReleaseTh2Op<CR extends Th2CustomResource> extends Abs
                 SCHEMA_SECRETS_ALIAS, secrets
         ));
 
+        Map<String, String> secretValuesConfig = new HashMap<>();
+        Map<String, String> secretPathsConfig = new HashMap<>();
+        generateSecretsConfig(resource.getSpec().getCustomConfig(), secretValuesConfig, secretPathsConfig);
         helmRelease.mergeValue(PROPERTIES_MERGE_DEPTH, ROOT_PROPERTIES_ALIAS, Map.of(
-                SECRET_CUSTOM_CONFIG_ALIAS, resource.getSpec().getSecretCustomConfig()
+                CUSTOM_CONFIG_ALIAS, resource.getSpec().getCustomConfig(),
+                SECRET_VALUES_CONFIG_ALIAS, secretValuesConfig,
+                SECRET_PATHS_CONFIG_ALIAS, secretPathsConfig
         ));
 
         PrometheusConfiguration<String> prometheusConfig = resource.getSpec().getPrometheusConfiguration();
