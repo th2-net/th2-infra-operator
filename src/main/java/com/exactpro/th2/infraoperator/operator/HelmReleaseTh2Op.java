@@ -108,6 +108,10 @@ public abstract class HelmReleaseTh2Op<CR extends Th2CustomResource> extends Abs
 
     private static final String SHARED_MEMORY_ALIAS = "sharedMemory";
 
+    private static final String K8S_PROBES = "k8sProbes";
+
+    private static final String HOST_NETWORK = "hostNetwork";
+
     //general aliases
     private static final String CONFIG_ALIAS = "config";
 
@@ -277,6 +281,10 @@ public abstract class HelmReleaseTh2Op<CR extends Th2CustomResource> extends Abs
                 EXTENDED_SETTINGS_ALIAS, EXTERNAL_BOX_ALIAS);
         convertField(helmRelease, Boolean::valueOf, ENABLED_ALIAS, ROOT_PROPERTIES_ALIAS,
                 EXTENDED_SETTINGS_ALIAS, SHARED_MEMORY_ALIAS);
+        convertField(helmRelease, Boolean::valueOf, K8S_PROBES, ROOT_PROPERTIES_ALIAS,
+                EXTENDED_SETTINGS_ALIAS);
+        convertField(helmRelease, Boolean::valueOf, HOST_NETWORK, ROOT_PROPERTIES_ALIAS,
+                EXTENDED_SETTINGS_ALIAS);
     }
 
     @Override
