@@ -16,3 +16,12 @@ spec:
     component:
       image: will-be-replaced
       name: will-be-replaced
+      mqRouter:
+        checksum: initial-checksum
+        config: will-be-replaced
+      grpcRouter:
+        checksum: initial-checksum
+        config: will-be-replaced
+      cradleManager:
+        checksum: initial-checksum
+        config: will-be-replaced

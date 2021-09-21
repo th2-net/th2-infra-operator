@@ -36,7 +36,7 @@ import io.fabric8.kubernetes.api.model.HasMetadata;
 import io.fabric8.kubernetes.api.model.ObjectMeta;
 import io.fabric8.kubernetes.api.model.OwnerReference;
 
-public class ExtendedSettingsUtilsTests {
+public class CustomResourceUtilsTests {
 
     private final String sourceNamespace = "namespace";
 

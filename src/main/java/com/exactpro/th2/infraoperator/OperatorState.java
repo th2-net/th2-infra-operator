@@ -94,6 +94,10 @@ public enum OperatorState {
         namespaceStates.computeIfAbsent(namespace, s -> new NamespaceState()).removeHelmRelease(name);
     }
 
+    public Collection<HelmRelease> getAllHelmReleases(String namespace) {
+        return namespaceStates.computeIfAbsent(namespace, s -> new NamespaceState()).getAllHelmReleases();
+    }
+
     public interface NamespaceLock {
         void lock();
 

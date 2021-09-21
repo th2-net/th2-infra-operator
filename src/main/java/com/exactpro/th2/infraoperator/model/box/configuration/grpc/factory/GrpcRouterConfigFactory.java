@@ -37,7 +37,7 @@ import java.util.stream.Collectors;
 import static com.exactpro.th2.infraoperator.model.box.configuration.grpc.StrategyType.FILTER;
 import static com.exactpro.th2.infraoperator.model.box.configuration.grpc.StrategyType.ROBIN;
 import static com.exactpro.th2.infraoperator.util.CustomResourceUtils.annotationFor;
-import static com.exactpro.th2.infraoperator.util.ExtendedSettingsUtils.*;
+import static com.exactpro.th2.infraoperator.util.HelmReleaseUtils.*;
 import static com.exactpro.th2.infraoperator.util.ExtractUtils.extractName;
 import static com.exactpro.th2.infraoperator.util.ExtractUtils.extractNamespace;
 

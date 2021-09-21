@@ -21,24 +21,29 @@ import com.exactpro.th2.infraoperator.configuration.OperatorConfig;
 import com.exactpro.th2.infraoperator.configuration.RabbitMQConfig;
 import com.exactpro.th2.infraoperator.metrics.OperatorMetrics;
 import com.exactpro.th2.infraoperator.model.kubernetes.configmaps.ConfigMaps;
+import com.exactpro.th2.infraoperator.spec.helmrelease.HelmRelease;
 import com.exactpro.th2.infraoperator.spec.strategy.linkresolver.mq.RabbitMQContext;
 import com.exactpro.th2.infraoperator.util.CustomResourceUtils;
 import com.exactpro.th2.infraoperator.util.ExtractUtils;
+import com.exactpro.th2.infraoperator.util.HelmReleaseUtils;
 import com.exactpro.th2.infraoperator.util.Strings;
 import io.fabric8.kubernetes.api.model.ConfigMap;
+import io.fabric8.kubernetes.api.model.KubernetesResourceList;
 import io.fabric8.kubernetes.api.model.Secret;
 import io.fabric8.kubernetes.client.KubernetesClient;
 import io.fabric8.kubernetes.client.Watcher;
 import io.fabric8.kubernetes.client.WatcherException;
+import io.fabric8.kubernetes.client.dsl.MixedOperation;
+import io.fabric8.kubernetes.client.dsl.Resource;
 import io.fabric8.kubernetes.client.informers.SharedIndexInformer;
 import io.fabric8.kubernetes.client.informers.SharedInformerFactory;
 import io.prometheus.client.Histogram;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.Base64;
-import java.util.Objects;
+import java.util.*;
 
+import static com.exactpro.th2.infraoperator.operator.HelmReleaseTh2Op.*;
 import static com.exactpro.th2.infraoperator.util.CustomResourceUtils.annotationFor;
 import static com.exactpro.th2.infraoperator.util.JsonUtils.JSON_READER;
 
@@ -57,6 +62,8 @@ public class ConfigMapEventHandler implements Watcher<ConfigMap> {
 
     private KubernetesClient client;
 
+    private MixedOperation<HelmRelease, KubernetesResourceList<HelmRelease>, Resource<HelmRelease>> helmClient;
+
     public KubernetesClient getClient() {
         return client;
     }
@@ -66,6 +73,7 @@ public class ConfigMapEventHandler implements Watcher<ConfigMap> {
                                                     EventQueue eventQueue) {
         var res = new ConfigMapEventHandler(client);
         res.client = client;
+        res.helmClient = client.customResources(HelmRelease.class);
 
         SharedIndexInformer<ConfigMap> configMapInformer = sharedInformerFactory.sharedIndexInformerFor(
                 ConfigMap.class,
@@ -127,13 +135,13 @@ public class ConfigMapEventHandler implements Watcher<ConfigMap> {
                 logger.error("Exception processing {} event for \"{}\"", action, resourceLabel, e);
             }
         } else if (configMapName.equals(LOGGING_CM_NAME)) {
-            updateChecksum(action, namespace, resource, LOGGING_CM_NAME, resourceLabel);
+            updateChecksum(action, namespace, resource, LOGGING_ALIAS, resourceLabel);
         } else if (configMapName.equals(MQ_ROUTER_CM_NAME)) {
-            updateChecksum(action, namespace, resource, MQ_ROUTER_CM_NAME, resourceLabel);
+            updateChecksum(action, namespace, resource, MQ_ROUTER_ALIAS, resourceLabel);
         } else if (configMapName.equals(GRPC_ROUTER_CM_NAME)) {
-            updateChecksum(action, namespace, resource, GRPC_ROUTER_CM_NAME, resourceLabel);
+            updateChecksum(action, namespace, resource, GRPC_ROUTER_ALIAS, resourceLabel);
         } else if (configMapName.equals(CRADLE_MANAGER_CM_NAME)) {
-            updateChecksum(action, namespace, resource, CRADLE_MANAGER_CM_NAME, resourceLabel);
+            updateChecksum(action, namespace, resource, CRADLE_MANAGER_ALIAS, resourceLabel);
         }
 
     }
@@ -142,17 +150,24 @@ public class ConfigMapEventHandler implements Watcher<ConfigMap> {
         Histogram.Timer processTimer = OperatorMetrics.getEventTimer(resource.getKind());
         try {
             logger.info("Processing {} event for \"{}\"", action, resourceLabel);
-
+            if (action == Action.DELETED) {
+                logger.error("DELETED action is not supported for \"{}\". ", resourceLabel);
+                return;
+            }
+            if (action == Action.ERROR) {
+                logger.error("Received ERROR action for \"{}\" Canceling update", resourceLabel);
+                return;
+            }
             var lock = OperatorState.INSTANCE.getLock(namespace);
             try {
                 lock.lock();
-                String prevHash = OperatorState.INSTANCE.getConfigChecksum(namespace, key);
-                String currentHash = ExtractUtils.sourceHash(resource, false);
-                if (!currentHash.equals(prevHash)) {
-                    OperatorState.INSTANCE.putConfigChecksum(namespace, key, currentHash);
+                String oldChecksum = OperatorState.INSTANCE.getConfigChecksum(namespace, key);
+                String newChecksum = ExtractUtils.sourceHash(resource, false);
+                if (!newChecksum.equals(oldChecksum)) {
+                    OperatorState.INSTANCE.putConfigChecksum(namespace, key, newChecksum);
                     logger.info("\"{}\" has been updated. Updating all boxes", resourceLabel);
-                    int refreshedBoxesCount = DefaultWatchManager.getInstance().refreshBoxes(namespace);
-                    logger.info("{} box-definition(s) have been updated", refreshedBoxesCount);
+                    int refreshedBoxesCount = updateResources(namespace, newChecksum, key);
+                    logger.info("{} HelmRelease(s) have been updated", refreshedBoxesCount);
                 }
             } finally {
                 processTimer.observeDuration();
@@ -161,6 +176,27 @@ public class ConfigMapEventHandler implements Watcher<ConfigMap> {
         } catch (Exception e) {
             logger.error("Exception processing {} event for \"{}\"", action, resourceLabel, e);
         }
+    }
+
+    private int updateResources(String namespace, String checksum, String key) {
+        Collection<HelmRelease> helmReleases = OperatorState.INSTANCE.getAllHelmReleases(namespace);
+        for (var hr : helmReleases) {
+            Map<String, Object> config = HelmReleaseUtils.extractConfigSection(hr, key);
+            config.put(CHECKSUM_ALIAS, checksum);
+            hr.mergeValue(PROPERTIES_MERGE_DEPTH, ROOT_PROPERTIES_ALIAS,
+                    Map.of(key, config));
+
+            logger.debug("Updating \"{}\" resource", CustomResourceUtils.annotationFor(hr));
+            createKubObj(namespace, hr);
+            logger.debug("\"{}\" Updated", CustomResourceUtils.annotationFor(hr));
+        }
+        return helmReleases.size();
+    }
+
+    protected void createKubObj(String namespace, HelmRelease helmRelease) {
+        helmClient.inNamespace(namespace).createOrReplace(helmRelease);
+        //TODO check if any concurrency issues with 'HelmReleaseTh2Op.createKubObj'
+        OperatorState.INSTANCE.putHelmReleaseInCache(helmRelease, namespace);
     }
 
     @Override
