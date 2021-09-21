@@ -23,6 +23,9 @@ import com.exactpro.th2.infraoperator.spec.Th2CustomResource;
 import com.exactpro.th2.infraoperator.spec.helmrelease.HelmRelease;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.JsonNode;
+import org.apache.commons.text.StringSubstitutor;
+import org.apache.commons.text.lookup.StringLookup;
+import org.apache.commons.text.lookup.StringLookupFactory;
 
 import java.util.List;
 import java.util.Map;
@@ -41,6 +44,10 @@ public class HelmReleaseUtils {
     private static final String ADDRESS_ALIAS = "address";
 
     private static final String GRPC_ALIAS = "grpc";
+
+    private static final String SECRET_VALUE_PREFIX = "secret_value";
+
+    private static final String SECRET_PATH_PREFIX = "secret_path";
 
     private HelmReleaseUtils() {
     }
@@ -171,5 +178,57 @@ public class HelmReleaseUtils {
         var values = (Map<String, Object>) helmRelease.getValuesSection();
         var componentConfigs = (Map<String, Object>) values.get(ROOT_PROPERTIES_ALIAS);
         return (List<DictionaryEntity>) componentConfigs.get(DICTIONARIES_ALIAS);
+    }
+
+    public static void generateSecretsConfig(Map<String, Object> customConfig,
+                                             Map<String, String> valuesCollector,
+                                             Map<String, String> pathsCollector) {
+        StringSubstitutor stringSubstitutor = new StringSubstitutor(
+                StringLookupFactory.INSTANCE.interpolatorStringLookup(
+                        Map.of(SECRET_VALUE_PREFIX, new CustomLookupValues(valuesCollector),
+                                SECRET_PATH_PREFIX, new CustomLookupPaths(pathsCollector)
+                        ), null, false
+                ));
+        for (var entry : customConfig.entrySet()) {
+            var value = entry.getValue();
+            if (value instanceof String) {
+                String valueStr = (String) value;
+                String substituted = stringSubstitutor.replace(valueStr);
+                customConfig.put(entry.getKey(), substituted);
+            } else if (value instanceof Map) {
+                generateSecretsConfig((Map<String, Object>) value, valuesCollector, pathsCollector);
+            }
+        }
+    }
+
+    static class CustomLookup implements StringLookup {
+        int id = 0;
+
+        private Map<String, String> collector;
+
+        public CustomLookup(Map<String, String> collector) {
+            this.collector = collector;
+        }
+
+        @Override
+        public String lookup(String key) {
+            String envVarName = Strings.toUnderScoreUpperCase(key);
+            String envVarWithId = Strings.toUnderScoreUpperCaseWithId(envVarName, id);
+            id++;
+            collector.put(envVarWithId, key);
+            return String.format("${%s}", envVarWithId);
+        }
+    }
+
+    static final class CustomLookupPaths extends CustomLookup {
+        public CustomLookupPaths(Map<String, String> collector) {
+            super(collector);
+        }
+    }
+
+    static final class CustomLookupValues extends CustomLookup {
+        public CustomLookupValues(Map<String, String> collector) {
+            super(collector);
+        }
     }
 }

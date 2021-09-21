@@ -29,4 +29,21 @@ public class Strings {
                 && prefixes.size() > 0
                 && prefixes.stream().noneMatch(namespace::startsWith));
     }
+
+    public static String toUnderScoreUpperCase(String camelCase) {
+        StringBuilder result = new StringBuilder();
+        for (int i = 0; i < camelCase.length(); i++) {
+            char c = camelCase.charAt(i);
+            if (Character.isUpperCase(c)) {
+                result.append("_").append(c);
+            } else {
+                result.append(Character.toUpperCase(c));
+            }
+        }
+        return result.toString();
+    }
+
+    public static String toUnderScoreUpperCaseWithId(String varName, int id) {
+        return String.format("%s_%d", varName, id);
+    }
 }
