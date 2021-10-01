@@ -94,7 +94,6 @@ public abstract class AbstractTh2Operator<CR extends Th2CustomResource, KO exten
                 CustomResourceUtils.removeDuplicatedPins(resource);
 
                 processEvent(action, resource);
-                fingerprints.put(resourceLabel, resourceFingerprint);
 
             } catch (NonTerminalException e) {
                 logger.error("Non-terminal Exception processing {} event for \"{}\". Will try to redeploy.",
@@ -118,6 +117,7 @@ public abstract class AbstractTh2Operator<CR extends Th2CustomResource, KO exten
                 logger.info("Task \"{}\" added to scheduler, with delay \"{}\" seconds",
                         triggerRedeployTask.getName(), REDEPLOY_DELAY);
             } finally {
+                fingerprints.put(resourceLabel, resourceFingerprint);
                 processTimer.observeDuration();
             }
 
