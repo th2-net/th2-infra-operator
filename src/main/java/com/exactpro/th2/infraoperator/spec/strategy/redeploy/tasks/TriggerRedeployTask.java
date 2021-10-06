@@ -17,12 +17,12 @@
 package com.exactpro.th2.infraoperator.spec.strategy.redeploy.tasks;
 
 import com.exactpro.th2.infraoperator.model.kubernetes.client.ResourceClient;
-import com.exactpro.th2.infraoperator.spec.Th2CustomResource;
 import com.exactpro.th2.infraoperator.spec.strategy.redeploy.RetryableTaskQueue;
 import com.exactpro.th2.infraoperator.util.CustomResourceUtils;
 import com.fasterxml.uuid.Generators;
 import io.fabric8.kubernetes.api.model.Namespace;
 import io.fabric8.kubernetes.api.model.ObjectMeta;
+import io.fabric8.kubernetes.client.CustomResource;
 import io.fabric8.kubernetes.client.KubernetesClient;
 import io.fabric8.kubernetes.client.Watcher;
 import org.slf4j.Logger;
@@ -38,7 +38,7 @@ public class TriggerRedeployTask implements RetryableTaskQueue.Task {
 
     public static final String PHASE_ACTIVE = "Active";
 
-    private final ResourceClient<? extends Th2CustomResource> resourceClient;
+    private final ResourceClient<? extends CustomResource> resourceClient;
 
     private final KubernetesClient kubClient;
 
@@ -54,9 +54,9 @@ public class TriggerRedeployTask implements RetryableTaskQueue.Task {
 
     public TriggerRedeployTask(
             Watcher watcher,
-            ResourceClient<? extends Th2CustomResource> resourceClient,
+            ResourceClient<? extends CustomResource> resourceClient,
             KubernetesClient kubClient,
-            Th2CustomResource resource,
+            CustomResource resource,
             Watcher.Action action,
             long retryDelay
     ) {
@@ -94,7 +94,7 @@ public class TriggerRedeployTask implements RetryableTaskQueue.Task {
             return;
         }
 
-        Th2CustomResource resource = resourceClient.getInstance()
+        CustomResource resource = resourceClient.getInstance()
                 .inNamespace(namespace)
                 .withName(boxName)
                 .get();
@@ -130,7 +130,7 @@ public class TriggerRedeployTask implements RetryableTaskQueue.Task {
         return true;
     }
 
-    private void refreshToken(Th2CustomResource resource) {
+    private void refreshToken(CustomResource resource) {
         String token = Generators.timeBasedGenerator().generate().toString();
         ObjectMeta resMeta = resource.getMetadata();
         resMeta.setAnnotations(resMeta.getAnnotations() == null ? new HashMap<>() : resMeta.getAnnotations());

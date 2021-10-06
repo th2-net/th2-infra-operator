@@ -27,7 +27,11 @@ import com.exactpro.th2.infraoperator.spec.link.relation.pins.PinCoupling;
 import com.exactpro.th2.infraoperator.spec.link.relation.pins.PinCouplingGRPC;
 import com.exactpro.th2.infraoperator.spec.shared.Identifiable;
 import com.exactpro.th2.infraoperator.spec.strategy.linkresolver.mq.BindQueueLinkResolver;
+import com.exactpro.th2.infraoperator.spec.strategy.redeploy.NonTerminalException;
+import com.exactpro.th2.infraoperator.spec.strategy.redeploy.RetryableTaskQueue;
+import com.exactpro.th2.infraoperator.spec.strategy.redeploy.tasks.TriggerRedeployTask;
 import com.exactpro.th2.infraoperator.util.ExtractUtils;
+import io.fabric8.kubernetes.api.model.Namespace;
 import io.fabric8.kubernetes.client.KubernetesClient;
 import io.fabric8.kubernetes.client.Watcher;
 import io.fabric8.kubernetes.client.WatcherException;
@@ -49,10 +53,14 @@ import static com.exactpro.th2.infraoperator.util.ExtractUtils.extractNamespace;
 public class Th2LinkEventHandler implements Watcher<Th2Link> {
     private static final Logger logger = LoggerFactory.getLogger(Th2LinkEventHandler.class);
 
-    private LinkClient linkClient;
+    private static final int REDEPLOY_DELAY = 120;
+
+    private final RetryableTaskQueue retryableTaskQueue = new RetryableTaskQueue();
+
+    private KubernetesClient kubClient;
 
     public LinkClient getLinkClient() {
-        return linkClient;
+        return new LinkClient(kubClient);
     }
 
     private final Map<String, String> sourceHashes = new ConcurrentHashMap<>();
@@ -61,7 +69,7 @@ public class Th2LinkEventHandler implements Watcher<Th2Link> {
                                                   KubernetesClient client,
                                                   EventQueue eventQueue) {
         var res = new Th2LinkEventHandler();
-        res.linkClient = new LinkClient(client);
+        res.kubClient = client;
 
         SharedIndexInformer<Th2Link> linkInformer = sharedInformerFactory.sharedIndexInformerForCustomResource(
                 Th2Link.class, RESYNC_TIME);
@@ -110,6 +118,27 @@ public class Th2LinkEventHandler implements Watcher<Th2Link> {
             }
 
             operatorState.setLinkResources(namespace, linkResources);
+        } catch (NonTerminalException e) {
+            logger.error("Non-terminal Exception processing {} event for \"{}\". Will try to redeploy.",
+                    action, resourceLabel, e);
+
+
+            Namespace namespaceObj = kubClient.namespaces().withName(namespace).get();
+            if (namespaceObj == null || !namespaceObj.getStatus().getPhase().equals("Active")) {
+                logger.info("Namespace \"{}\" deleted or not active, cancelling", namespace);
+                return;
+            }
+
+            //create and schedule task to redeploy failed component
+            TriggerRedeployTask triggerRedeployTask = new TriggerRedeployTask(this,
+                    getLinkClient(), kubClient, th2Link, action, REDEPLOY_DELAY);
+            retryableTaskQueue.add(triggerRedeployTask, true);
+
+            logger.info("Task \"{}\" added to scheduler, with delay \"{}\" seconds",
+                    triggerRedeployTask.getName(), REDEPLOY_DELAY);
+        } catch (Exception e) {
+            logger.error("Terminal Exception processing {} event for {}. Will not try to redeploy",
+                    action, resourceLabel, e);
         } finally {
             processTimer.observeDuration();
             lock.unlock();
