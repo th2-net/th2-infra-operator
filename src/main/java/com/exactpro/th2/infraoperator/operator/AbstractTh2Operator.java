@@ -75,10 +75,9 @@ public abstract class AbstractTh2Operator<CR extends Th2CustomResource, KO exten
 
     @Override
     public void eventReceived(Action action, CR resource) {
+        String resourceLabel = CustomResourceUtils.annotationFor(resource);
 
         try {
-            String resourceLabel = CustomResourceUtils.annotationFor(resource);
-
             var cachedFingerprint = fingerprints.get(resourceLabel);
             var resourceFingerprint = new ResourceFingerprint(resource);
 
@@ -122,7 +121,8 @@ public abstract class AbstractTh2Operator<CR extends Th2CustomResource, KO exten
             }
 
         } catch (Exception e) {
-            logger.error("Terminal Exception processing {} event. Will not try to redeploy", action, e);
+            logger.error("Terminal Exception processing {} event for {}. Will not try to redeploy",
+                    action, resourceLabel, e);
         }
     }
 
