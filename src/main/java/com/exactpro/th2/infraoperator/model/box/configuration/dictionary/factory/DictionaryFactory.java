@@ -54,11 +54,7 @@ public class DictionaryFactory {
                             .getResourceFromCache(name, resource.getMetadata().getNamespace());
 
                     String checksum = ExtractUtils.sourceHash(res, false);
-                    dictionaries.add(DictionaryEntity.builder()
-                            .setName(name)
-                            .setType(type)
-                            .setChecksum(checksum)
-                            .build());
+                    dictionaries.add(new DictionaryEntity(name, type, checksum));
                 }
             } catch (Exception e) {
                 throw new RuntimeException(e);

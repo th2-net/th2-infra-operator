@@ -57,7 +57,7 @@ public abstract class HelmReleaseTh2Op<CR extends Th2CustomResource> extends Abs
 
     private static final Logger logger = LoggerFactory.getLogger(HelmReleaseTh2Op.class);
 
-    private static final int PROPERTIES_MERGE_DEPTH = 1;
+    public static final int PROPERTIES_MERGE_DEPTH = 1;
 
     //spec section
     private static final String CHART_PROPERTIES_ALIAS = "chart";
@@ -65,7 +65,7 @@ public abstract class HelmReleaseTh2Op<CR extends Th2CustomResource> extends Abs
     public static final String RELEASE_NAME_ALIAS = "releaseName";
 
     //values section
-    private static final String ROOT_PROPERTIES_ALIAS = "component";
+    public static final String ROOT_PROPERTIES_ALIAS = "component";
 
     public static final String ANNOTATIONS_ALIAS = "annotations";
 
@@ -80,7 +80,7 @@ public abstract class HelmReleaseTh2Op<CR extends Th2CustomResource> extends Abs
 
     private static final String PROMETHEUS_CONFIG_ALIAS = "prometheus";
 
-    private static final String DICTIONARIES_ALIAS = "dictionaries";
+    public static final String DICTIONARIES_ALIAS = "dictionaries";
 
     private static final String MQ_QUEUE_CONFIG_ALIAS = "mq";
 
@@ -376,7 +376,7 @@ public abstract class HelmReleaseTh2Op<CR extends Th2CustomResource> extends Abs
             logger.info("Updating all linked boxes of '{}.{}' resource...", namespace, currentResName);
 
             for (var linkedResourceName : linkedResources) {
-                logger.debug("Linked resource: '{}.{}'", namespace, linkedResourceName);
+                logger.debug("Checking linked resource: '{}.{}'", namespace, linkedResourceName);
 
                 var hr = OperatorState.INSTANCE.getHelmReleaseFromCache(linkedResourceName, namespace);
                 if (hr == null) {
