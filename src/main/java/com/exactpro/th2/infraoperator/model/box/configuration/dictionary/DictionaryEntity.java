@@ -24,7 +24,7 @@ public class DictionaryEntity {
 
     private final String checksum;
 
-    DictionaryEntity(String name, String type, String checksum) {
+    public DictionaryEntity(String name, String type, String checksum) {
         this.name = name;
         this.type = type;
         this.checksum = checksum;
@@ -40,39 +40,5 @@ public class DictionaryEntity {
 
     public String getChecksum() {
         return this.checksum;
-    }
-
-    public static Builder builder() {
-        return new Builder();
-    }
-
-    public static class Builder {
-        private String name;
-
-        private String type;
-
-        private String checksum;
-
-        public Builder() {
-        }
-
-        public Builder setName(String name) {
-            this.name = name;
-            return this;
-        }
-
-        public Builder setType(String type) {
-            this.type = type;
-            return this;
-        }
-
-        public Builder setChecksum(String checksum) {
-            this.checksum = checksum;
-            return this;
-        }
-
-        public DictionaryEntity build() {
-            return new DictionaryEntity(name, type, checksum);
-        }
     }
 }
