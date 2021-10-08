@@ -43,6 +43,10 @@ public final class CustomResourceUtils {
 
     public static final long RESYNC_TIME = 180000;
 
+    private static final String GIT_COMMIT_HASH = "th2.exactpro.com/git-commit-hash";
+
+    private static final int SHORT_HASH_LENGTH = 8;
+
     private CustomResourceUtils() {
         throw new AssertionError();
     }
@@ -51,11 +55,16 @@ public final class CustomResourceUtils {
         return String.format("%s:%s/%s", namespace, kind, resourceName);
     }
 
+    public static String annotationFor(String namespace, String kind, String resourceName, String commitHash) {
+        return String.format("%s:%s/%s(commit-%s)", namespace, kind, resourceName, commitHash);
+    }
+
     public static String annotationFor(HasMetadata resource) {
         return annotationFor(
                 resource.getMetadata().getNamespace(),
                 resource.getKind(),
-                resource.getMetadata().getName()
+                resource.getMetadata().getName(),
+                extractShortCommitHash(resource)
         );
     }
 
@@ -127,6 +136,15 @@ public final class CustomResourceUtils {
             return sb.substring(0, HelmRelease.NAME_LENGTH_LIMIT);
         } catch (NoSuchAlgorithmException e) {
             throw new RuntimeException(e);
+        }
+    }
+
+    private static String extractShortCommitHash(HasMetadata resource) {
+        String hash = resource.getMetadata().getAnnotations().get(GIT_COMMIT_HASH);
+        if (hash != null) {
+            return hash.substring(0, SHORT_HASH_LENGTH);
+        } else {
+            return "NOT_PRESENT";
         }
     }
 }
