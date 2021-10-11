@@ -84,12 +84,9 @@ public class NamespaceEventHandler implements ResourceEventHandler<Namespace>, W
             return;
         }
 
-        String resourceLabel = CustomResourceUtils.annotationFor(namespace);
+        String resourceLabel = String.format("namespace:%s", namespaceName);
         String eventId = EventCounter.newEvent();
-        logger.debug("Received DELETED event ({}) for \"{}\" {}",
-                eventId,
-                resourceLabel,
-                ExtractUtils.sourceHash(namespace, true));
+        logger.debug("Received DELETED event for namespace: \"{}\"", namespaceName);
 
         eventQueue.addEvent(EventQueue.generateEvent(
                 eventId,
@@ -109,7 +106,7 @@ public class NamespaceEventHandler implements ResourceEventHandler<Namespace>, W
         try {
             long startDateTime = System.currentTimeMillis();
 
-            String resourceLabel = CustomResourceUtils.annotationFor(resource);
+            String resourceLabel = String.format("namespace:%s", namespaceName);
 
             try {
                 lock.lock();
