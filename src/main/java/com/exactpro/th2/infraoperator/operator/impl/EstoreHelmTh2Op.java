@@ -37,7 +37,7 @@ public class EstoreHelmTh2Op extends StoreHelmTh2Op<Th2Estore> {
 
     @Override
     public SharedIndexInformer<Th2Estore> generateInformerFromFactory(SharedInformerFactory factory) {
-        return factory.sharedIndexInformerForCustomResource(
+        return factory.sharedIndexInformerFor(
                 Th2Estore.class,
                 CustomResourceUtils.RESYNC_TIME);
     }

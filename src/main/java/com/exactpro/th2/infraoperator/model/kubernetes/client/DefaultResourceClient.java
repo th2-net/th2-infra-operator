@@ -47,7 +47,7 @@ public abstract class DefaultResourceClient<CR extends CustomResource> implement
         this.resourceType = resourceType;
         this.crdName = crdName;
 
-        instance = client.customResources(resourceType);
+        instance = client.resources(resourceType);
     }
 
     @Override

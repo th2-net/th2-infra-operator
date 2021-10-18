@@ -71,7 +71,7 @@ public class Th2LinkEventHandler implements Watcher<Th2Link> {
         var res = new Th2LinkEventHandler();
         res.kubClient = client;
 
-        SharedIndexInformer<Th2Link> linkInformer = sharedInformerFactory.sharedIndexInformerForCustomResource(
+        SharedIndexInformer<Th2Link> linkInformer = sharedInformerFactory.sharedIndexInformerFor(
                 Th2Link.class, RESYNC_TIME);
 
         linkInformer.addEventHandler(new GenericResourceEventHandler<>(res, eventQueue));

@@ -73,7 +73,7 @@ public class ConfigMapEventHandler implements Watcher<ConfigMap> {
                                                     EventQueue eventQueue) {
         var res = new ConfigMapEventHandler(client);
         res.client = client;
-        res.helmClient = client.customResources(HelmRelease.class);
+        res.helmClient = client.resources(HelmRelease.class);
 
         SharedIndexInformer<ConfigMap> configMapInformer = sharedInformerFactory.sharedIndexInformerFor(
                 ConfigMap.class,

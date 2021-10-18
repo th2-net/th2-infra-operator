@@ -42,7 +42,7 @@ public class CoreBoxHelmTh2Op extends GenericHelmTh2Op<Th2CoreBox> {
 
     @Override
     public SharedIndexInformer<Th2CoreBox> generateInformerFromFactory(SharedInformerFactory factory) {
-        return factory.sharedIndexInformerForCustomResource(
+        return factory.sharedIndexInformerFor(
                 Th2CoreBox.class,
                 CustomResourceUtils.RESYNC_TIME);
     }

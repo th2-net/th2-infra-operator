@@ -37,7 +37,7 @@ public class MstoreHelmTh2Op extends StoreHelmTh2Op<Th2Mstore> {
 
     @Override
     public SharedIndexInformer<Th2Mstore> generateInformerFromFactory(SharedInformerFactory factory) {
-        return factory.sharedIndexInformerForCustomResource(
+        return factory.sharedIndexInformerFor(
                 Th2Mstore.class,
                 CustomResourceUtils.RESYNC_TIME);
     }
