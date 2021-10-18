@@ -73,9 +73,9 @@ public class Th2DictionaryEventHandler implements Watcher<Th2Dictionary> {
                                                         EventQueue eventQueue) {
         var res = new Th2DictionaryEventHandler();
         res.kubClient = kubernetesClient;
-        res.helmClient = kubernetesClient.customResources(HelmRelease.class);
+        res.helmClient = kubernetesClient.resources(HelmRelease.class);
         SharedIndexInformer<Th2Dictionary> dictionaryInformer =
-                sharedInformerFactory.sharedIndexInformerForCustomResource(
+                sharedInformerFactory.sharedIndexInformerFor(
                         Th2Dictionary.class, RESYNC_TIME);
 
         dictionaryInformer.addEventHandler(new GenericResourceEventHandler<>(res, eventQueue));

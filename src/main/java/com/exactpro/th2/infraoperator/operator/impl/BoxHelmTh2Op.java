@@ -37,7 +37,7 @@ public class BoxHelmTh2Op extends GenericHelmTh2Op<Th2Box> {
 
     @Override
     public SharedIndexInformer<Th2Box> generateInformerFromFactory(SharedInformerFactory factory) {
-        return factory.sharedIndexInformerForCustomResource(
+        return factory.sharedIndexInformerFor(
                 Th2Box.class,
                 CustomResourceUtils.RESYNC_TIME);
     }

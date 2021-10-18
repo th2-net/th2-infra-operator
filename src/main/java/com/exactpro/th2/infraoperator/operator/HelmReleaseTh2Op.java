@@ -149,7 +149,7 @@ public abstract class HelmReleaseTh2Op<CR extends Th2CustomResource> extends Abs
         this.grpcConfigFactory = builder.getGrpcConfigFactory();
         this.dictionaryFactory = builder.getDictionaryFactory();
 
-        helmReleaseClient = kubClient.customResources(HelmRelease.class);
+        helmReleaseClient = kubClient.resources(HelmRelease.class);
 
         var msgStContext = MsgStorageContext.builder()
                 .linkResourceName(StoreHelmTh2Op.MSG_ST_LINK_RESOURCE_NAME)
