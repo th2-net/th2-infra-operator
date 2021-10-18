@@ -4,6 +4,7 @@ kind: HelmRelease
 metadata:
   name: will-be-replaced
 spec:
+  maxHistory: 2
   resetValues: true
   wait: false
   forceUpgrade: true
