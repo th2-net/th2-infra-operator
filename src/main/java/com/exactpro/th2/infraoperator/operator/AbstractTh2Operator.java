@@ -124,6 +124,8 @@ public abstract class AbstractTh2Operator<CR extends Th2CustomResource, KO exten
             }
 
         } catch (Exception e) {
+            resource.getStatus().failed(e.getMessage());
+            updateStatus(resource);
             logger.error("Terminal Exception processing {} event for {}. Will not try to redeploy",
                     action, resourceLabel, e);
         }
