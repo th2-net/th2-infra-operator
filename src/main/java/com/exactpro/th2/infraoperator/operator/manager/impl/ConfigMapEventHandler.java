@@ -62,7 +62,7 @@ public class ConfigMapEventHandler implements Watcher<ConfigMap> {
 
     private KubernetesClient client;
 
-    private MixedOperation<HelmRelease, KubernetesResourceList<HelmRelease>, Resource<HelmRelease>> helmClient;
+    private MixedOperation<HelmRelease, KubernetesResourceList<HelmRelease>, Resource<HelmRelease>> helmReleaseClient;
 
     public KubernetesClient getClient() {
         return client;
@@ -73,7 +73,7 @@ public class ConfigMapEventHandler implements Watcher<ConfigMap> {
                                                     EventQueue eventQueue) {
         var res = new ConfigMapEventHandler(client);
         res.client = client;
-        res.helmClient = client.resources(HelmRelease.class);
+        res.helmReleaseClient = client.resources(HelmRelease.class);
 
         SharedIndexInformer<ConfigMap> configMapInformer = sharedInformerFactory.sharedIndexInformerFor(
                 ConfigMap.class,
@@ -194,8 +194,7 @@ public class ConfigMapEventHandler implements Watcher<ConfigMap> {
     }
 
     protected void createKubObj(String namespace, HelmRelease helmRelease) {
-        helmClient.inNamespace(namespace).createOrReplace(helmRelease);
-        //TODO check if any concurrency issues with 'HelmReleaseTh2Op.createKubObj'
+        helmReleaseClient.inNamespace(namespace).createOrReplace(helmRelease);
         OperatorState.INSTANCE.putHelmReleaseInCache(helmRelease, namespace);
     }
 

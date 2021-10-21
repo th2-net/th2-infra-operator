@@ -18,5 +18,5 @@ package com.exactpro.th2.infraoperator.spec.helmrelease;
 
 import java.util.HashMap;
 
-class InstantiableMap extends HashMap<String, Object> {
+public class InstantiableMap extends HashMap<String, Object> {
 }

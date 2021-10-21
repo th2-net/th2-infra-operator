@@ -62,7 +62,7 @@ public class Th2DictionaryEventHandler implements Watcher<Th2Dictionary> {
 
     private KubernetesClient kubClient;
 
-    private MixedOperation<HelmRelease, KubernetesResourceList<HelmRelease>, Resource<HelmRelease>> helmClient;
+    private MixedOperation<HelmRelease, KubernetesResourceList<HelmRelease>, Resource<HelmRelease>> helmReleaseClient;
 
     private final String dictionaryAlias = "-dictionary";
 
@@ -73,7 +73,7 @@ public class Th2DictionaryEventHandler implements Watcher<Th2Dictionary> {
                                                         EventQueue eventQueue) {
         var res = new Th2DictionaryEventHandler();
         res.kubClient = kubernetesClient;
-        res.helmClient = kubernetesClient.resources(HelmRelease.class);
+        res.helmReleaseClient = kubernetesClient.resources(HelmRelease.class);
         SharedIndexInformer<Th2Dictionary> dictionaryInformer =
                 sharedInformerFactory.sharedIndexInformerFor(
                         Th2Dictionary.class, RESYNC_TIME);
@@ -258,7 +258,7 @@ public class Th2DictionaryEventHandler implements Watcher<Th2Dictionary> {
     }
 
     protected void createKubObj(String namespace, HelmRelease helmRelease) {
-        helmClient.inNamespace(namespace).createOrReplace(helmRelease);
+        helmReleaseClient.inNamespace(namespace).createOrReplace(helmRelease);
         OperatorState.INSTANCE.putHelmReleaseInCache(helmRelease, namespace);
     }
 
