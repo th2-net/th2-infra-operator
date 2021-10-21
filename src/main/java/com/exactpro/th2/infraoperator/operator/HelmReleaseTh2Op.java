@@ -30,6 +30,7 @@ import com.exactpro.th2.infraoperator.spec.Th2CustomResource;
 import com.exactpro.th2.infraoperator.spec.Th2Spec;
 import com.exactpro.th2.infraoperator.spec.helmrelease.HelmRelease;
 import com.exactpro.th2.infraoperator.spec.helmrelease.HelmReleaseSecrets;
+import com.exactpro.th2.infraoperator.spec.helmrelease.InstantiableMap;
 import com.exactpro.th2.infraoperator.spec.link.relation.pins.PinCouplingGRPC;
 import com.exactpro.th2.infraoperator.spec.shared.PrometheusConfiguration;
 import com.exactpro.th2.infraoperator.spec.strategy.linkresolver.mq.DeclareQueueResolver;
@@ -348,6 +349,14 @@ public abstract class HelmReleaseTh2Op<CR extends Th2CustomResource> extends Abs
 
     @Override
     protected void createKubObj(String namespace, HelmRelease helmRelease) {
+        String hrName = extractName(helmRelease);
+        HelmRelease currentRelease = helmReleaseClient.inNamespace(namespace).withName(hrName).get();
+        if (currentRelease != null) {
+            InstantiableMap statusSection = currentRelease.getStatus();
+            if (statusSection != null && statusSection.get("phase").equals("Failed")) {
+                helmReleaseClient.inNamespace(namespace).withName(hrName).delete();
+            }
+        }
         helmReleaseClient.inNamespace(namespace).createOrReplace(helmRelease);
         OperatorState.INSTANCE.putHelmReleaseInCache(helmRelease, namespace);
     }
