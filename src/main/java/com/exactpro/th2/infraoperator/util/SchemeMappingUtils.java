@@ -17,9 +17,11 @@
 package com.exactpro.th2.infraoperator.util;
 
 import com.exactpro.th2.infraoperator.model.box.configuration.mq.FilterConfiguration;
+import com.exactpro.th2.infraoperator.model.box.configuration.mq.FilterConfigurationOld;
 import com.exactpro.th2.infraoperator.spec.shared.FieldFilter;
 
 import java.util.List;
+import java.util.Map;
 import java.util.stream.Collectors;
 
 public final class SchemeMappingUtils {
@@ -28,9 +30,19 @@ public final class SchemeMappingUtils {
         throw new AssertionError();
     }
 
-    public static List<FilterConfiguration> specToConfigFieldFilters(List<FieldFilter> fieldFilters) {
+    public static List<FilterConfiguration> specToConfigFieldFiltersNew(List<FieldFilter> fieldFilters) {
         return fieldFilters.stream().map(ff -> new FilterConfiguration(
                 ff.getFieldName(), ff.getExpectedValue(), ff.getOperation()
         )).collect(Collectors.toList());
     }
+
+    //TODO remove
+    public static Map<String, FilterConfigurationOld> specToConfigFieldFiltersOld(List<FieldFilter> fieldFilters) {
+        return fieldFilters.stream()
+                .collect(Collectors.toMap(
+                        FieldFilter::getFieldName,
+                        ff -> new FilterConfigurationOld(ff.getExpectedValue(), ff.getOperation())
+                ));
+    }
+
 }

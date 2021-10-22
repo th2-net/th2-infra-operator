@@ -198,8 +198,8 @@ public class GrpcRouterConfigFactory {
                 .map(filterSpec ->
                         new GrpcRouterFilterConfiguration(
                                 targetHostName,
-                                SchemeMappingUtils.specToConfigFieldFilters(filterSpec.getMetadataFilter()),
-                                SchemeMappingUtils.specToConfigFieldFilters(filterSpec.getMessageFilter())
+                                SchemeMappingUtils.specToConfigFieldFiltersNew(filterSpec.getMetadataFilter()),
+                                SchemeMappingUtils.specToConfigFieldFiltersNew(filterSpec.getMessageFilter())
                         )
                 ).collect(Collectors.toList());
     }

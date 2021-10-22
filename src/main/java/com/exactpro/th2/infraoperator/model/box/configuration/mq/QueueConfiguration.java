@@ -32,9 +32,10 @@ public final class QueueConfiguration {
 
     private Set<String> attributes;
 
-    private Set<RouterFilterConfiguration> filters;
+    //TODO change from Object to RouterFilterConfiguration
+    private Set<Object> filters;
 
-    public QueueConfiguration(QueueDescription queue, Set<String> attributes, Set<RouterFilterConfiguration> filters) {
+    public QueueConfiguration(QueueDescription queue, Set<String> attributes, Set<Object> filters) {
         this.queue = queue;
         this.attributes = attributes;
         this.filters = filters;
@@ -61,7 +62,7 @@ public final class QueueConfiguration {
     }
 
     @JsonProperty("filters")
-    public Set<RouterFilterConfiguration> getFilters() {
+    public Set<Object> getFilters() {
         return this.filters;
     }
 
@@ -93,7 +94,7 @@ public final class QueueConfiguration {
 
         private Set<String> attributes;
 
-        private Set<RouterFilterConfiguration> filters;
+        private Set<Object> filters;
 
         Builder() { }
 
@@ -122,7 +123,7 @@ public final class QueueConfiguration {
         }
 
         @JsonProperty("filters")
-        public Builder filters(Set<RouterFilterConfiguration> filters) {
+        public Builder filters(Set<Object> filters) {
             this.filters = filters;
             return this;
         }
