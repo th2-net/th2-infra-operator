@@ -19,6 +19,7 @@ package com.exactpro.th2.infraoperator.model.box.configuration.mq.factory;
 import com.exactpro.th2.infraoperator.model.box.configuration.mq.MessageRouterConfiguration;
 import com.exactpro.th2.infraoperator.model.box.configuration.mq.QueueConfiguration;
 import com.exactpro.th2.infraoperator.model.box.configuration.mq.RouterFilterConfiguration;
+import com.exactpro.th2.infraoperator.model.box.configuration.mq.RouterFilterConfigurationOld;
 import com.exactpro.th2.infraoperator.model.box.schema.link.QueueDescription;
 import com.exactpro.th2.infraoperator.model.kubernetes.configmaps.ConfigMaps;
 import com.exactpro.th2.infraoperator.spec.Th2CustomResource;
@@ -31,17 +32,23 @@ import com.exactpro.th2.infraoperator.spec.strategy.linkresolver.queue.RoutingKe
 import com.exactpro.th2.infraoperator.spec.strategy.redeploy.NonTerminalException;
 import com.exactpro.th2.infraoperator.util.ExtractUtils;
 import com.exactpro.th2.infraoperator.util.SchemeMappingUtils;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
 
+import static com.exactpro.th2.infraoperator.util.CustomResourceUtils.annotationFor;
+
 /**
  * A factory that creates a mq configuration
  * based on the th2 resource and a list of active links.
  */
 public class MessageRouterConfigFactory {
+
+    private static final Logger logger = LoggerFactory.getLogger(MessageRouterConfigFactory.class);
 
     /**
      * Creates a mq configuration based on the th2 resource and a list of active links.
@@ -51,6 +58,7 @@ public class MessageRouterConfigFactory {
      */
     public MessageRouterConfiguration createConfig(Th2CustomResource resource) {
 
+        String resourceAnnotation = annotationFor(resource);
         Map<String, QueueConfiguration> queues = new HashMap<>();
 
         for (var pin : ExtractUtils.extractMqPins(resource)) {
@@ -66,20 +74,38 @@ public class MessageRouterConfigFactory {
                 queueSpec = createQueueBunch(ExtractUtils.extractNamespace(resource), mqPin, null);
             }
 
-            queues.put(pin.getName(),
-                    new QueueConfiguration(queueSpec, pin.getAttributes(), specToConfigFilters(pin.getFilters())));
+            String pinName = pin.getName();
+            queues.put(pinName,
+                    new QueueConfiguration(
+                            queueSpec,
+                            pin.getAttributes(),
+                            specToConfigFilters(pin.getFilters(), resourceAnnotation, pinName)
+                    )
+            );
         }
 
         return MessageRouterConfiguration.builder().queues(queues).build();
     }
 
-    private Set<RouterFilterConfiguration> specToConfigFilters(Set<FilterSpec> filterSpecs) {
-        return filterSpecs.stream()
-                .map(filterSpec ->
-                        new RouterFilterConfiguration(
-                                SchemeMappingUtils.specToConfigFieldFilters(filterSpec.getMetadataFilter()),
-                                SchemeMappingUtils.specToConfigFieldFilters(filterSpec.getMessageFilter()))
-                ).collect(Collectors.toSet());
+    private Set<Object> specToConfigFilters(Set<FilterSpec> filterSpecs, String annotation, String pinName) {
+        // TODO remove old format
+        try {
+            return filterSpecs.stream()
+                    .map(filterSpec ->
+                            new RouterFilterConfigurationOld(
+                                    SchemeMappingUtils.specToConfigFieldFiltersOld(filterSpec.getMetadataFilter()),
+                                    SchemeMappingUtils.specToConfigFieldFiltersOld(filterSpec.getMessageFilter()))
+                    ).collect(Collectors.toSet());
+        } catch (IllegalStateException e) {
+            logger.warn("Failed to generate filters for resource: " +
+                    "\"{}\" pin: {} with old format, generating with new format", annotation, pinName);
+            return filterSpecs.stream()
+                    .map(filterSpec ->
+                            new RouterFilterConfiguration(
+                                    SchemeMappingUtils.specToConfigFieldFiltersNew(filterSpec.getMetadataFilter()),
+                                    SchemeMappingUtils.specToConfigFieldFiltersNew(filterSpec.getMessageFilter()))
+                    ).collect(Collectors.toSet());
+        }
     }
 
     private QueueDescription createQueueBunch(String namespace, PinMQ to, PinMQ from) {
