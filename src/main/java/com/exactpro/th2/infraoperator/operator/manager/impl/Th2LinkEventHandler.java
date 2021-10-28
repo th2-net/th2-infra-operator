@@ -205,7 +205,7 @@ public class Th2LinkEventHandler implements Watcher<Th2Link> {
         return index < 0 ? Th2Link.newInstance() : linkResources.get(index);
     }
 
-    private int refreshAffectedBoxes(Th2Link prevLink, Th2Link newLink) {
+    private void refreshAffectedBoxes(Th2Link prevLink, Th2Link newLink) {
 
         String namespace = extractNamespace(prevLink);
         namespace = namespace != null ? namespace : extractNamespace(newLink);
@@ -214,11 +214,16 @@ public class Th2LinkEventHandler implements Watcher<Th2Link> {
         int items = boxesNamesToUpdate.size();
         if (items == 0) {
             logger.info("No boxes needs to be updated");
-            return 0;
-        } else {
-            logger.info("{} box(es) needs to be updated", items);
-            return DefaultWatchManager.getInstance().refreshBoxes(namespace, boxesNamesToUpdate);
+            return;
         }
+        Namespace namespaceObj = kubClient.namespaces().withName(namespace).get();
+        if (namespaceObj == null || !namespaceObj.getStatus().getPhase().equals("Active")) {
+            logger.info("Namespace \"{}\" deleted or not active, cancelling", namespace);
+            return;
+        }
+        logger.info("{} box(es) needs to be updated", items);
+        DefaultWatchManager.getInstance().refreshBoxes(namespace, boxesNamesToUpdate);
+
     }
 
     private Set<String> getAffectedBoxNames(Th2Link prevLink, Th2Link newLink) {

@@ -226,6 +226,11 @@ public class Th2DictionaryEventHandler implements Watcher<Th2Dictionary> {
     private void updateLinkedResources(String dictionaryName, String namespace,
                                        String checksum, Set<String> linkedResources) {
 
+        Namespace namespaceObj = kubClient.namespaces().withName(namespace).get();
+        if (namespaceObj == null || !namespaceObj.getStatus().getPhase().equals("Active")) {
+            logger.info("Namespace \"{}\" deleted or not active, cancelling", namespace);
+            return;
+        }
         for (var linkedResourceName : linkedResources) {
             logger.debug("Checking linked resource: '{}.{}'", namespace, linkedResourceName);
 

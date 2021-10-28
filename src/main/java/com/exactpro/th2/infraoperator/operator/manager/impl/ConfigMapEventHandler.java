@@ -122,8 +122,8 @@ public class ConfigMapEventHandler implements Watcher<ConfigMap> {
                         RabbitMQContext.createVHostIfAbsent(namespace);
                         logger.info("RabbitMQ ConfigMap has been updated in namespace \"{}\". Updating all boxes",
                                 namespace);
-                        int refreshedBoxesCount = DefaultWatchManager.getInstance().refreshBoxes(namespace);
-                        logger.info("{} box-definition(s) have been updated", refreshedBoxesCount);
+                        DefaultWatchManager.getInstance().refreshBoxes(namespace);
+                        logger.info("box-definition(s) have been updated");
                         processTimer.observeDuration();
                     } else {
                         logger.info("RabbitMQ ConfigMap data hasn't changed");
