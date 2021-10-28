@@ -98,15 +98,15 @@ public abstract class AbstractTh2Operator<CR extends Th2CustomResource, KO exten
                 logger.error("Non-terminal Exception processing {} event for \"{}\". Will try to redeploy.",
                         action, resourceLabel, e);
 
-                resource.getStatus().failed(e.getMessage());
-                updateStatus(resource);
-
                 String namespace = resource.getMetadata().getNamespace();
                 Namespace namespaceObj = kubClient.namespaces().withName(namespace).get();
                 if (namespaceObj == null || !namespaceObj.getStatus().getPhase().equals("Active")) {
                     logger.info("Namespace \"{}\" deleted or not active, cancelling", namespace);
                     return;
                 }
+
+                resource.getStatus().failed(e.getMessage());
+                updateStatus(resource);
 
                 //create and schedule task to redeploy failed component
                 TriggerRedeployTask triggerRedeployTask = new TriggerRedeployTask(this,
@@ -124,6 +124,12 @@ public abstract class AbstractTh2Operator<CR extends Th2CustomResource, KO exten
             }
 
         } catch (Exception e) {
+            String namespace = resource.getMetadata().getNamespace();
+            Namespace namespaceObj = kubClient.namespaces().withName(namespace).get();
+            if (namespaceObj == null || !namespaceObj.getStatus().getPhase().equals("Active")) {
+                logger.info("Namespace \"{}\" deleted or not active, cancelling", namespace);
+                return;
+            }
             resource.getStatus().failed(e.getMessage());
             updateStatus(resource);
             logger.error("Terminal Exception processing {} event for {}. Will not try to redeploy",

@@ -202,24 +202,24 @@ public class DefaultWatchManager {
         });
     }
 
-    int refreshBoxes(String namespace) {
-        return refreshBoxes(namespace, null, true);
+    void refreshBoxes(String namespace) {
+         refreshBoxes(namespace, null, true);
     }
 
-    int refreshBoxes(String namespace, Set<String> boxes) {
-        return refreshBoxes(namespace, boxes, false);
+    void refreshBoxes(String namespace, Set<String> boxes) {
+        refreshBoxes(namespace, boxes, false);
     }
 
-    private int refreshBoxes(String namespace, Set<String> boxes, boolean refreshAllBoxes) {
+    private void refreshBoxes(String namespace, Set<String> boxes, boolean refreshAllBoxes) {
 
         if (!refreshAllBoxes && (boxes == null || boxes.size() == 0)) {
             logger.warn("Empty set of boxes was given to refresh");
-            return 0;
+            return;
         }
 
         if (!isWatching()) {
             logger.warn("Not watching for resources yet");
-            return 0;
+            return;
         }
 
         var refreshedBoxes = 0;
@@ -234,7 +234,6 @@ public class DefaultWatchManager {
         }
 
         logger.info("{} boxes updated", refreshedBoxes);
-        return refreshedBoxes;
     }
 
     private void createResource(String linkNamespace, Th2CustomResource resource,
