@@ -107,12 +107,6 @@ public abstract class HelmReleaseTh2Op<CR extends Th2CustomResource> extends Abs
 
     public static final String EXTERNAL_BOX_ALIAS = "externalBox";
 
-    private static final String SHARED_MEMORY_ALIAS = "sharedMemory";
-
-    private static final String K8S_PROBES = "k8sProbes";
-
-    private static final String HOST_NETWORK = "hostNetwork";
-
     //general aliases
     private static final String CONFIG_ALIAS = "config";
 
@@ -276,16 +270,7 @@ public abstract class HelmReleaseTh2Op<CR extends Th2CustomResource> extends Abs
         helmRelease.mergeValue(Map.of(ANNOTATIONS_ALIAS,
                 extractAnnotations(resource).get(ANTECEDENT_LABEL_KEY_ALIAS)));
 
-        convertField(helmRelease, Boolean::valueOf, ENABLED_ALIAS, ROOT_PROPERTIES_ALIAS,
-                EXTENDED_SETTINGS_ALIAS, SERVICE_ALIAS);
-        convertField(helmRelease, Boolean::valueOf, ENABLED_ALIAS, ROOT_PROPERTIES_ALIAS,
-                EXTENDED_SETTINGS_ALIAS, EXTERNAL_BOX_ALIAS);
-        convertField(helmRelease, Boolean::valueOf, ENABLED_ALIAS, ROOT_PROPERTIES_ALIAS,
-                EXTENDED_SETTINGS_ALIAS, SHARED_MEMORY_ALIAS);
-        convertField(helmRelease, Boolean::valueOf, K8S_PROBES, ROOT_PROPERTIES_ALIAS,
-                EXTENDED_SETTINGS_ALIAS);
-        convertField(helmRelease, Boolean::valueOf, HOST_NETWORK, ROOT_PROPERTIES_ALIAS,
-                EXTENDED_SETTINGS_ALIAS);
+        convertBooleanFields(helmRelease);
     }
 
     @Override
@@ -350,10 +335,12 @@ public abstract class HelmReleaseTh2Op<CR extends Th2CustomResource> extends Abs
     @Override
     protected void createKubObj(String namespace, HelmRelease helmRelease) {
         String hrName = extractName(helmRelease);
-        HelmRelease currentRelease = helmReleaseClient.inNamespace(namespace).withName(hrName).get();
-        if (currentRelease != null) {
-            InstantiableMap statusSection = currentRelease.getStatus();
-            if (statusSection != null && statusSection.get("phase").equals("Failed")) {
+        HelmRelease existingRelease = helmReleaseClient.inNamespace(namespace).withName(hrName).get();
+
+        if (existingRelease != null) {
+            InstantiableMap statusSection = existingRelease.getStatus();
+            if ((statusSection != null && statusSection.get("phase").equals("Failed")) ||
+                    containsFailingChanges(helmRelease, existingRelease)) {
                 helmReleaseClient.inNamespace(namespace).withName(hrName).delete();
             }
         }
