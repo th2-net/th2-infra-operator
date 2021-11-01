@@ -24,7 +24,7 @@ import java.util.Map;
 import static com.exactpro.th2.infraoperator.util.HelmReleaseUtils.generateSecretsConfig;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
-public class HelmReleaseUtilsTests {
+public class SecretConfigTest {
 
     @Test
     public void singleLevelConfigTest() {

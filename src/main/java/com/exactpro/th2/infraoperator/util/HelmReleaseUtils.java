@@ -23,6 +23,7 @@ import com.exactpro.th2.infraoperator.spec.Th2CustomResource;
 import com.exactpro.th2.infraoperator.spec.helmrelease.HelmRelease;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import org.apache.commons.text.StringSubstitutor;
 import org.apache.commons.text.lookup.StringLookup;
 import org.apache.commons.text.lookup.StringLookupFactory;
@@ -48,6 +49,12 @@ public class HelmReleaseUtils {
     private static final String SECRET_VALUE_PREFIX = "secret_value";
 
     private static final String SECRET_PATH_PREFIX = "secret_path";
+
+    private static final String SHARED_MEMORY_ALIAS = "sharedMemory";
+
+    private static final String K8S_PROBES = "k8sProbes";
+
+    private static final String HOST_NETWORK = "hostNetwork";
 
     private HelmReleaseUtils() {
     }
@@ -168,6 +175,19 @@ public class HelmReleaseUtils {
         }
     }
 
+    public static void convertBooleanFields(HelmRelease helmRelease) {
+        convertField(helmRelease, Boolean::valueOf, ENABLED_ALIAS, ROOT_PROPERTIES_ALIAS,
+                EXTENDED_SETTINGS_ALIAS, SERVICE_ALIAS);
+        convertField(helmRelease, Boolean::valueOf, ENABLED_ALIAS, ROOT_PROPERTIES_ALIAS,
+                EXTENDED_SETTINGS_ALIAS, EXTERNAL_BOX_ALIAS);
+        convertField(helmRelease, Boolean::valueOf, ENABLED_ALIAS, ROOT_PROPERTIES_ALIAS,
+                EXTENDED_SETTINGS_ALIAS, SHARED_MEMORY_ALIAS);
+        convertField(helmRelease, Boolean::valueOf, K8S_PROBES, ROOT_PROPERTIES_ALIAS,
+                EXTENDED_SETTINGS_ALIAS);
+        convertField(helmRelease, Boolean::valueOf, HOST_NETWORK, ROOT_PROPERTIES_ALIAS,
+                EXTENDED_SETTINGS_ALIAS);
+    }
+
     public static Map<String, Object> extractConfigSection(HelmRelease helmRelease, String key) {
         var values = (Map<String, Object>) helmRelease.getValuesSection();
         var componentConfigs = (Map<String, Object>) values.get(ROOT_PROPERTIES_ALIAS);
@@ -178,6 +198,49 @@ public class HelmReleaseUtils {
         var values = (Map<String, Object>) helmRelease.getValuesSection();
         var componentConfigs = (Map<String, Object>) values.get(ROOT_PROPERTIES_ALIAS);
         return (List<DictionaryEntity>) componentConfigs.get(DICTIONARIES_ALIAS);
+    }
+
+    public static boolean containsFailingChanges(HelmRelease newHelmRelease, HelmRelease oldHelmRelease) {
+        return containsFailingService(newHelmRelease, oldHelmRelease) ||
+                containsFailingExternalBox(newHelmRelease, oldHelmRelease) ||
+                containsFailingHostNetwork(newHelmRelease, oldHelmRelease);
+    }
+
+    private static boolean containsFailingService(HelmRelease newHelmRelease, HelmRelease oldHelmRelease) {
+        Map<String, Object> newServiceSection = getSectionReference(newHelmRelease.getValuesSection(),
+                ROOT_PROPERTIES_ALIAS, EXTENDED_SETTINGS_ALIAS, SERVICE_ALIAS);
+        Map<String, Object> oldServiceSection = getSectionReference(oldHelmRelease.getValuesSection(),
+                ROOT_PROPERTIES_ALIAS, EXTENDED_SETTINGS_ALIAS, SERVICE_ALIAS);
+        if (newServiceSection == null && oldServiceSection == null) {
+            return false;
+        }
+        if (newServiceSection == null ^ oldServiceSection == null) {
+            return true;
+        }
+        ObjectMapper mapper = new ObjectMapper();
+        try {
+            String newServiceSectionStr = mapper.writeValueAsString(newServiceSection);
+            String oldServiceSectionStr = mapper.writeValueAsString(oldServiceSection);
+            return !newServiceSectionStr.equals(oldServiceSectionStr);
+        } catch (Exception e) {
+            return true;
+        }
+    }
+
+    private static boolean containsFailingExternalBox(HelmRelease newHelmRelease, HelmRelease oldHelmRelease) {
+        boolean newExternalBoxEnabled = getFieldAsBoolean(newHelmRelease.getValuesSection(),
+                ROOT_PROPERTIES_ALIAS, EXTENDED_SETTINGS_ALIAS, EXTERNAL_BOX_ALIAS, ENABLED_ALIAS);
+        boolean oldExternalBoxEnabled = getFieldAsBoolean(oldHelmRelease.getValuesSection(),
+                ROOT_PROPERTIES_ALIAS, EXTENDED_SETTINGS_ALIAS, EXTERNAL_BOX_ALIAS, ENABLED_ALIAS);
+        return newExternalBoxEnabled ^ oldExternalBoxEnabled;
+    }
+
+    private static boolean containsFailingHostNetwork(HelmRelease newHelmRelease, HelmRelease oldHelmRelease) {
+        boolean newHostNetworkEnabled = getFieldAsBoolean(newHelmRelease.getValuesSection(),
+                ROOT_PROPERTIES_ALIAS, EXTENDED_SETTINGS_ALIAS, HOST_NETWORK);
+        boolean oldHostNetworkEnabled = getFieldAsBoolean(oldHelmRelease.getValuesSection(),
+                ROOT_PROPERTIES_ALIAS, EXTENDED_SETTINGS_ALIAS, HOST_NETWORK);
+        return newHostNetworkEnabled ^ oldHostNetworkEnabled;
     }
 
     public static void generateSecretsConfig(Map<String, Object> customConfig,
