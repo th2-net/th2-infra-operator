@@ -246,11 +246,17 @@ public class GrpcRouterConfigFactory {
                     annotationFor(fromBox), annotationFor(toBox));
             GrpcExternalEndpointMapping grpcExternalEndpointMapping = getGrpcExternalMapping(toBoxSettings);
             if (grpcExternalEndpointMapping != null) {
-                targetBox.setPort(Integer.parseInt(grpcExternalEndpointMapping.getTargetPort()));
-                targetBox.setExternalHost(getExternalHost(toBoxSettings));
-                targetBox.setExternalBox(true);
+                String targetPort = grpcExternalEndpointMapping.getTargetPort();
+                if (targetPort != null) {
+                    targetBox.setPort(Integer.parseInt(targetPort));
+                    targetBox.setExternalHost(getExternalHost(toBoxSettings));
+                    targetBox.setExternalBox(true);
+                } else {
+                    logger.warn("targetPort for resource \"{}\" was null", annotationFor(toBox));
+                    externalBoxEndpointNotFound(toBox);
+                }
             } else {
-                logger.debug("grpcMapping for resource \"{}\" was null", annotationFor(toBox));
+                logger.warn("grpcMapping for resource \"{}\" was null", annotationFor(toBox));
                 externalBoxEndpointNotFound(toBox);
             }
         } else if (isHostNetwork(fromBoxSettings) || isHostNetwork(toBoxSettings) || isExternalBox(fromBoxSettings)) {
@@ -258,10 +264,16 @@ public class GrpcRouterConfigFactory {
                     annotationFor(fromBox), annotationFor(toBox));
             GrpcEndpointMapping grpcMapping = getGrpcMapping(toBoxSettings);
             if (grpcMapping != null) {
-                targetBox.setPort(Integer.parseInt(grpcMapping.getNodePort()));
-                targetBox.setHostNetwork(true);
+                String nodePort = grpcMapping.getNodePort();
+                if(nodePort != null) {
+                    targetBox.setPort(Integer.parseInt(nodePort));
+                    targetBox.setHostNetwork(true);
+                }else {
+                    logger.warn("nodePort for resource \"{}\" was null", annotationFor(toBox));
+                    hostNetworkEndpointNotFound(toBox);
+                }
             } else {
-                logger.debug("grpcMapping for resource \"{}\" was null", annotationFor(toBox));
+                logger.warn("grpcMapping for resource \"{}\" was null", annotationFor(toBox));
                 hostNetworkEndpointNotFound(toBox);
             }
         } else {
