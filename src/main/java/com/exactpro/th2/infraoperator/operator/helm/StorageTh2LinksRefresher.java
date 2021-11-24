@@ -23,6 +23,7 @@ import com.exactpro.th2.infraoperator.spec.link.relation.pins.PinCouplingMQ;
 import com.exactpro.th2.infraoperator.spec.link.relation.pins.PinMQ;
 import com.exactpro.th2.infraoperator.spec.shared.PinAttribute;
 import com.exactpro.th2.infraoperator.spec.shared.PinSpec;
+import com.exactpro.th2.infraoperator.spec.strategy.linkresolver.mq.BindQueueLinkResolver;
 import com.exactpro.th2.infraoperator.util.ExtractUtils;
 import lombok.SneakyThrows;
 import org.slf4j.Logger;
@@ -43,25 +44,27 @@ public abstract class StorageTh2LinksRefresher<CR extends Th2CustomResource> {
 
     public void updateStorageResLinks(CR resource) {
 
-        var resName = ExtractUtils.extractName(resource);
+        String resName = ExtractUtils.extractName(resource);
 
-        var resNamespace = ExtractUtils.extractNamespace(resource);
+        String resNamespace = ExtractUtils.extractNamespace(resource);
 
-        var lSingleton = OperatorState.INSTANCE;
+        OperatorState lSingleton = OperatorState.INSTANCE;
 
-        var linkResources = new ArrayList<>(lSingleton.getLinkResources(resNamespace));
+        ArrayList<Th2Link> linkResources = new ArrayList<>(lSingleton.getLinkResources(resNamespace));
 
-        var hiddenLinksRes = getStLinkResAndCreateIfAbsent(resNamespace, linkResources);
+        Th2Link hiddenLinksRes = getStLinkResAndCreateIfAbsent(resNamespace, linkResources);
 
-        var oldHiddenLinks = hiddenLinksRes.getSpec().getBoxesRelation().getRouterMq();
+        List<PinCouplingMQ> oldHiddenLinks = hiddenLinksRes.getSpec().getBoxesRelation().getRouterMq();
 
-        var newHiddenLinks = createHiddenLinks(resource);
+        List<PinCouplingMQ> newHiddenLinks = createHiddenLinks(resource);
 
-        var updatedHiddenLinks = update(oldHiddenLinks, newHiddenLinks);
+        List<PinCouplingMQ> updatedHiddenLinks = update(oldHiddenLinks, newHiddenLinks, resName);
 
         hiddenLinksRes.getSpec().getBoxesRelation().setRouterMq(updatedHiddenLinks);
 
         OperatorState.INSTANCE.setLinkResources(resNamespace, linkResources);
+
+        BindQueueLinkResolver.removeExtinctBindings(resNamespace, oldHiddenLinks, updatedHiddenLinks);
 
         logger.info("{} hidden links has been refreshed successfully with '{}.{}'", context.getBoxAlias(),
                 resNamespace, resName);
@@ -129,5 +132,6 @@ public abstract class StorageTh2LinksRefresher<CR extends Th2CustomResource> {
     }
 
     protected abstract List<PinCouplingMQ> update(List<PinCouplingMQ> oldHiddenLinks,
-                                                  List<PinCouplingMQ> newHiddenLinks);
+                                                  List<PinCouplingMQ> newHiddenLinks,
+                                                  String resName);
 }

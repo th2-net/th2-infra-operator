@@ -265,10 +265,10 @@ public class GrpcRouterConfigFactory {
             GrpcEndpointMapping grpcMapping = getGrpcMapping(toBoxSettings);
             if (grpcMapping != null) {
                 String nodePort = grpcMapping.getNodePort();
-                if(nodePort != null) {
+                if (nodePort != null) {
                     targetBox.setPort(Integer.parseInt(nodePort));
                     targetBox.setHostNetwork(true);
-                }else {
+                } else {
                     logger.warn("nodePort for resource \"{}\" was null", annotationFor(toBox));
                     hostNetworkEndpointNotFound(toBox);
                 }

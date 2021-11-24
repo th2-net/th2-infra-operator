@@ -19,8 +19,8 @@ package com.exactpro.th2.infraoperator.operator.helm;
 import com.exactpro.th2.infraoperator.spec.Th2CustomResource;
 import com.exactpro.th2.infraoperator.spec.link.relation.pins.PinCouplingMQ;
 
-import java.util.ArrayList;
 import java.util.List;
+import java.util.stream.Collectors;
 
 public class StorageTh2LinksUpdater<CR extends Th2CustomResource> extends StorageTh2LinksRefresher<CR> {
 
@@ -29,16 +29,15 @@ public class StorageTh2LinksUpdater<CR extends Th2CustomResource> extends Storag
     }
 
     @Override
-    protected List<PinCouplingMQ> update(List<PinCouplingMQ> oldHiddenLinks, List<PinCouplingMQ> newHiddenLinks) {
-        List<PinCouplingMQ> updated = new ArrayList<>(oldHiddenLinks);
+    protected List<PinCouplingMQ> update(List<PinCouplingMQ> oldHiddenLinks,
+                                         List<PinCouplingMQ> newHiddenLinks,
+                                         String resName) {
+        List<PinCouplingMQ> updated = oldHiddenLinks.stream()
+                .filter(link -> !link.getFrom().getBoxName().equals(resName))
+                .collect(Collectors.toList());
 
-        for (var newLink : newHiddenLinks) {
-            if (!updated.contains(newLink)) {
-                updated.add(newLink);
-            }
-        }
+        updated.addAll(newHiddenLinks);
 
         return updated;
     }
-
 }
