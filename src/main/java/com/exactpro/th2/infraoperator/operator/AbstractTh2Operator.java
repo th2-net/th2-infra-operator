@@ -162,9 +162,6 @@ public abstract class AbstractTh2Operator<CR extends Th2CustomResource, KO exten
         String resourceLabel = CustomResourceUtils.annotationFor(resource);
         logger.debug("Processing event {} for \"{}\"", action, resourceLabel);
 
-        resource.getStatus().idle();
-        resource = updateStatus(resource);
-
         switch (action) {
             case ADDED:
                 resource.getStatus().installing();

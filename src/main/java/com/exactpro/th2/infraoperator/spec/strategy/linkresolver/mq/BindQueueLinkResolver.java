@@ -20,6 +20,7 @@ import com.exactpro.th2.infraoperator.model.box.schema.link.EnqueuedLink;
 import com.exactpro.th2.infraoperator.model.box.schema.link.QueueDescription;
 import com.exactpro.th2.infraoperator.spec.Th2CustomResource;
 import com.exactpro.th2.infraoperator.spec.link.Th2Link;
+import com.exactpro.th2.infraoperator.spec.link.relation.pins.PinCouplingMQ;
 import com.exactpro.th2.infraoperator.spec.strategy.linkresolver.queue.QueueName;
 import com.exactpro.th2.infraoperator.spec.strategy.linkresolver.queue.RoutingKeyName;
 import com.exactpro.th2.infraoperator.spec.strategy.redeploy.NonTerminalException;
@@ -70,14 +71,12 @@ public class BindQueueLinkResolver {
             );
             bindQueues(namespace, queueBunch);
         }
-        List<EnqueuedLink> oldLinks = convert(oldLinkRes, namespace, exchange);
-        List<EnqueuedLink> newLinks = convert(newLinkRes, namespace, exchange);
-        removeExtinctBindings(namespace, oldLinks, newLinks);
+        removeExtinctBindings(namespace, oldLinkRes, newLinkRes);
     }
 
-    private static List<EnqueuedLink> convert(Th2Link linkRes, String namespace, String exchange) {
+    private static List<EnqueuedLink> convert(List<PinCouplingMQ> links, String namespace, String exchange) {
         List<EnqueuedLink> mqEnqueuedLinks = new ArrayList<>();
-        for (var pinCouple : linkRes.getSpec().getBoxesRelation().getRouterMq()) {
+        for (var pinCouple : links) {
             var queueBunch = new QueueDescription(
                     new QueueName(namespace, pinCouple.getTo()),
                     new RoutingKeyName(namespace, pinCouple.getFrom()),
@@ -118,8 +117,22 @@ public class BindQueueLinkResolver {
 
     @SneakyThrows
     private static void removeExtinctBindings(String namespace,
-                                              List<EnqueuedLink> oldLinks,
-                                              List<EnqueuedLink> newLinks) {
+                                              Th2Link oldLinkRes,
+                                              Th2Link newLinkRes) {
+        removeExtinctBindings(namespace,
+                oldLinkRes.getSpec().getBoxesRelation().getRouterMq(),
+                newLinkRes.getSpec().getBoxesRelation().getRouterMq());
+    }
+
+    @SneakyThrows
+    public static void removeExtinctBindings(String namespace,
+                                              List<PinCouplingMQ> oldLinksCoupling,
+                                              List<PinCouplingMQ> newLinksCoupling) {
+
+        String exchange = RabbitMQContext.getExchangeName(namespace);
+
+        List<EnqueuedLink> oldLinks = convert(oldLinksCoupling, namespace, exchange);
+        List<EnqueuedLink> newLinks = convert(newLinksCoupling, namespace, exchange);
 
         oldLinks.removeIf(qlb -> newLinks.stream().anyMatch(newQlb ->
                 qlb.getQueueDescription().getQueueName().equals(newQlb.getQueueDescription().getQueueName())
