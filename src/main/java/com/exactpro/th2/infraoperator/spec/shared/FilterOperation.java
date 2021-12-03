@@ -23,7 +23,8 @@ public enum FilterOperation {
     EQUAL(0),
     NOT_EQUAL(1),
     EMPTY(2),
-    NOT_EMPTY(3);
+    NOT_EMPTY(3),
+    WILDCARD(4);
 
     private int id;
 
