@@ -39,7 +39,7 @@ public class BindQueueLinkResolver {
     public static void resolveBoxResource(String namespace,
                                           List<Th2Link> linkResources,
                                           Th2CustomResource affectedResource) {
-        String exchange = RabbitMQContext.getExchangeName(namespace);
+
         String affectedResourceName = affectedResource.getMetadata().getName();
 
         for (var lRes : linkResources) {
@@ -47,7 +47,7 @@ public class BindQueueLinkResolver {
                 var queueBunch = new QueueDescription(
                         new QueueName(namespace, pinCouple.getTo()),
                         new RoutingKeyName(namespace, pinCouple.getFrom()),
-                        exchange
+                        namespace
                 );
 
                 if (affectedResourceName.equals(pinCouple.getFrom().getBoxName())
@@ -61,13 +61,12 @@ public class BindQueueLinkResolver {
     public static void resolveLinkResource(String namespace,
                                            Th2Link oldLinkRes,
                                            Th2Link newLinkRes) {
-        String exchange = RabbitMQContext.getExchangeName(namespace);
 
         for (var pinCouple : newLinkRes.getSpec().getBoxesRelation().getRouterMq()) {
             var queueBunch = new QueueDescription(
                     new QueueName(namespace, pinCouple.getTo()),
                     new RoutingKeyName(namespace, pinCouple.getFrom()),
-                    exchange
+                    namespace
             );
             bindQueues(namespace, queueBunch);
         }
@@ -91,17 +90,17 @@ public class BindQueueLinkResolver {
     private static void bindQueues(String namespace, QueueDescription queue) {
 
         try {
-            Channel channel = RabbitMQContext.getChannel(namespace);
+            Channel channel = RabbitMQContext.getChannel();
 
             if (!channel.isOpen()) {
                 logger.warn("RabbitMQ connection is broken, trying to reconnect...");
-                RabbitMQContext.closeChannel(namespace);
-                channel = RabbitMQContext.getChannel(namespace);
+                RabbitMQContext.closeChannel();
+                channel = RabbitMQContext.getChannel();
                 logger.info("RabbitMQ connection has been restored");
             }
 
             String queueName = queue.getQueueName().toString();
-            var currentQueue = RabbitMQContext.getQueue(namespace, queueName);
+            var currentQueue = RabbitMQContext.getQueue(queueName);
             if (currentQueue == null) {
                 logger.info("Queue '{}' does not yet exist. skipping binding", queueName);
                 return;
@@ -126,10 +125,10 @@ public class BindQueueLinkResolver {
 
     @SneakyThrows
     public static void removeExtinctBindings(String namespace,
-                                              List<PinCouplingMQ> oldLinksCoupling,
-                                              List<PinCouplingMQ> newLinksCoupling) {
+                                             List<PinCouplingMQ> oldLinksCoupling,
+                                             List<PinCouplingMQ> newLinksCoupling) {
 
-        String exchange = RabbitMQContext.getExchangeName(namespace);
+        String exchange = namespace;
 
         List<EnqueuedLink> oldLinks = convert(oldLinksCoupling, namespace, exchange);
         List<EnqueuedLink> newLinks = convert(newLinksCoupling, namespace, exchange);
@@ -140,7 +139,14 @@ public class BindQueueLinkResolver {
                         .equals(newQlb.getQueueDescription().getRoutingKey())
         ));
         try {
-            Channel channel = RabbitMQContext.getChannel(namespace);
+            Channel channel = RabbitMQContext.getChannel();
+
+            if (!channel.isOpen()) {
+                logger.warn("RabbitMQ connection is broken, trying to reconnect...");
+                RabbitMQContext.closeChannel();
+                channel = RabbitMQContext.getChannel();
+                logger.info("RabbitMQ connection has been restored");
+            }
 
             for (var extinctLink : oldLinks) {
 
@@ -150,7 +156,7 @@ public class BindQueueLinkResolver {
                 var queueName = queueBunch.getQueueName().toString();
                 var routingKey = queueBunch.getRoutingKey().toString();
 
-                var currentQueue = RabbitMQContext.getQueue(namespace, queueName);
+                var currentQueue = RabbitMQContext.getQueue(queueName);
                 if (currentQueue == null) {
                     logger.info("Queue '{}' already removed. skipping unbinding", queueName);
                     return;
