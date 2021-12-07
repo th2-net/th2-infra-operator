@@ -36,70 +36,135 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.*;
-import java.util.concurrent.ConcurrentHashMap;
+
+import static java.lang.String.format;
 
 public final class RabbitMQContext {
 
     private static final Logger logger = LoggerFactory.getLogger(RabbitMQContext.class);
 
-    private static final Map<String, ChannelContext> channelContexts = new ConcurrentHashMap<>();
+    private static volatile RabbitMQManagementConfig managementConfig;
+
+    private static volatile ChannelContext channelContext;
+
+    private static volatile Client rmqClient;
 
     private RabbitMQContext() {
     }
 
-    private static volatile RabbitMQManagementConfig managementConfig;
-
-    private static RabbitMQManagementConfig getManagementConfig() {
-        // we do not need to synchronize as we are assigning immutable object from singleton
-        if (managementConfig == null) {
-            managementConfig = OperatorConfig.INSTANCE.getRabbitMQManagementConfig();
-        }
-        return managementConfig;
+    public static void declareTopicExchange() throws Exception {
+        declareExchange(getManagementConfig().getExchangeName(), "topic");
     }
 
-    // call to this method should be synchronized externally per namespace
-    public static Channel getChannel(String namespace) {
+    private static void declareExchange(String exchangeName, String type) throws Exception {
+        RabbitMQManagementConfig rabbitMQManagementConfig = getManagementConfig();
+        String vHostName = rabbitMQManagementConfig.getVHostName();
 
-        var rabbitMQManagementConfig = getManagementConfig();
-        var rabbitMQConfig = getRabbitMQConfig(namespace);
+        try {
+            Client rmqClient = getClient();
 
-        String signature = ChannelContext.signatureFor(rabbitMQManagementConfig, rabbitMQConfig);
+            // check vhost
+            if (rmqClient.getVhost(vHostName) == null) {
+                logger.error("vHost: \"{}\" is not present", vHostName);
+                return;
+            }
 
-        var context = channelContexts.computeIfAbsent(namespace, k -> ChannelContext.contextFor(rabbitMQConfig));
+            Channel channel = getChannel();
 
-        // check if we need to recreate channel for this namespace
-        // due to configuration change
-        if (!context.signature.equals(signature)) {
-            context = ChannelContext.contextFor(rabbitMQConfig);
-            channelContexts.put(namespace, context);
+            // check channel
+            if (!channel.isOpen()) {
+                logger.warn("RabbitMQ connection is broken, trying to reconnect...");
+                closeChannel();
+                channel = getChannel();
+                logger.info("RabbitMQ connection has been restored");
+            }
+
+            channel.exchangeDeclare(exchangeName, type, rabbitMQManagementConfig.isPersistence());
+
+        } catch (Exception e) {
+            logger.error("Exception setting up exchange: \"{}\" on vHost: \"{}\"", exchangeName, vHostName, e);
+            throw e;
         }
-
-        return context.channel;
     }
 
-    public static RabbitMQConfig getRabbitMQConfig(String namespace) {
+    public static void createUser(String namespace) {
 
-        RabbitMQConfig rabbitMQConfig = ConfigMaps.INSTANCE.getRabbitMQConfig4Namespace(namespace);
-        if (rabbitMQConfig == null) {
-            throw new NonTerminalException(String.format(
-                    "RabbitMQ configuration for namespace \"%s\" is not available", namespace));
+        RabbitMQManagementConfig rabbitMQManagementConfig = getManagementConfig();
+        RabbitMQConfig rabbitMQConfig = getRabbitMQConfig(namespace);
+
+        String username = rabbitMQConfig.getUsername();
+        String password = rabbitMQConfig.getPassword();
+        String vHostName = rabbitMQManagementConfig.getVHostName();
+
+        if (Strings.isNullOrEmpty(username)) {
+            return;
         }
-        return rabbitMQConfig;
+
+        try {
+            Client rmqClient = getClient();
+
+            if (rmqClient.getVhost(vHostName) == null) {
+                logger.error("vHost: \"{}\" is not present", vHostName);
+                return;
+            }
+
+            rmqClient.createUser(username, password.toCharArray(), new ArrayList<>());
+            logger.info("Created user \"{}\" for vHost \"{}\"", username, vHostName);
+
+            // set permissions
+            RabbitMQNamespacePermissions rabbitMQNamespacePermissions =
+                    rabbitMQManagementConfig.getRabbitMQNamespacePermissions();
+            UserPermissions permissions = new UserPermissions();
+            permissions.setConfigure(rabbitMQNamespacePermissions.getConfigure());
+            permissions.setRead(rabbitMQNamespacePermissions.getRead());
+            permissions.setWrite(rabbitMQNamespacePermissions.getWrite());
+
+            rmqClient.updatePermissions(vHostName, username, permissions);
+            logger.info("User \"{}\" permissions set in RabbitMQ", username);
+        } catch (Exception e) {
+            String message = format("Exception setting up user: \"%s\" for vHost: \"%s\"", username, vHostName);
+            logger.error(message, e);
+            throw new NonTerminalException(message, e);
+        }
     }
 
-    public static String getExchangeName(String namespace) {
+    public static void cleanupSchemaExchange(String exchangeName) throws Exception {
 
-        return getRabbitMQConfig(namespace).getExchangeName();
+        String vHostName = getManagementConfig().getVHostName();
+
+        try {
+            Client rmqClient = getClient();
+
+            // check vhost
+            if (rmqClient.getVhost(vHostName) == null) {
+                logger.error("vHost: \"{}\" is not present", vHostName);
+                return;
+            }
+
+            Channel channel = getChannel();
+
+            // check channel
+            if (!channel.isOpen()) {
+                logger.warn("RabbitMQ connection is broken, trying to reconnect...");
+                closeChannel();
+                channel = getChannel();
+                logger.info("RabbitMQ connection has been restored");
+            }
+
+            channel.exchangeDelete(exchangeName);
+
+        } catch (Exception e) {
+            logger.error("Exception deleting exchange: \"{}\" from vHost: \"{}\"", exchangeName, vHostName, e);
+            throw e;
+        }
     }
 
-    // call to this method should be synchronized externally per namespace
-    public static void closeChannel(String namespace) {
+    public static Channel getChannel() {
+        return getChannelContext().channel;
+    }
 
-        var context = channelContexts.get(namespace);
-        if (context != null) {
-            context.close();
-            channelContexts.remove(namespace);
-        }
+    public static void closeChannel() {
+        getChannelContext().close();
     }
 
     public static Map<String, Object> generateQueueArguments(PinSettings pinSettings) throws NumberFormatException {
@@ -117,111 +182,12 @@ public final class RabbitMQContext {
         }
     }
 
-    private static Client getClient(String apiUrl, String username, String password) throws Exception {
-        return new Client(new ClientParameters()
-                .url(apiUrl)
-                .username(username)
-                .password(password)
-                .restTemplateConfigurator(new OkHttpRestTemplateConfigurator())
-        );
-    }
+    public static List<QueueInfo> getQueues() {
 
-    public static void createVHostIfAbsent(String namespace) {
-
-        RabbitMQManagementConfig rabbitMQManagementConfig = getManagementConfig();
-        RabbitMQConfig rabbitMQConfig = getRabbitMQConfig(namespace);
-
-        String vHostName = rabbitMQConfig.getVHost();
-        String username = rabbitMQConfig.getUsername();
-
-        if (Strings.isNullOrEmpty(username)) {
-            return;
-        }
+        String vHostName = getManagementConfig().getVHostName();
 
         try {
-            Client rmqClient = getClient(
-                    String.format("http://%s:%s/api", rabbitMQConfig.getHost(), rabbitMQManagementConfig.getPort())
-                    , rabbitMQManagementConfig.getUsername()
-                    , rabbitMQManagementConfig.getPassword()
-            );
-
-            // check vhost
-            if (rmqClient.getVhost(vHostName) == null) {
-                rmqClient.createVhost(vHostName);
-                logger.info("Created vHost in RabbitMQ for namespace \"{}\"", namespace);
-            } else {
-                logger.info("vHost \"{}\" was already present in RabbitMQ", vHostName);
-            }
-
-            rmqClient.createUser(username, rabbitMQConfig.getPassword().toCharArray(), new ArrayList<>());
-            logger.info("Created user \"{}\" in RabbitMQ for namespace \"{}\"", username, namespace);
-
-            // set permissions
-            RabbitMQNamespacePermissions rabbitMQNamespacePermissions =
-                    rabbitMQManagementConfig.getRabbitMQNamespacePermissions();
-            UserPermissions permissions = new UserPermissions();
-            permissions.setConfigure(rabbitMQNamespacePermissions.getConfigure());
-            permissions.setRead(rabbitMQNamespacePermissions.getRead());
-            permissions.setWrite(rabbitMQNamespacePermissions.getWrite());
-
-            rmqClient.updatePermissions(vHostName, username, permissions);
-            logger.info("User \"{}\" permissions set in RabbitMQ", username);
-        } catch (Exception e) {
-            String message = "Exception setting up vHost";
-            logger.error(message, e);
-            throw new NonTerminalException(message, e);
-        }
-    }
-
-    public static void cleanupVHost(String namespace) {
-
-        RabbitMQManagementConfig rabbitMQManagementConfig = getManagementConfig();
-        RabbitMQConfig rabbitMQConfig = getRabbitMQConfig(namespace);
-
-        String vHostName = rabbitMQConfig.getVHost();
-        String username = rabbitMQConfig.getUsername();
-
-        try {
-            Client rmqClient = getClient(
-                    String.format("http://%s:%s/api", rabbitMQConfig.getHost(), rabbitMQManagementConfig.getPort())
-                    , rabbitMQManagementConfig.getUsername()
-                    , rabbitMQManagementConfig.getPassword()
-            );
-
-            // delete user
-            if (rmqClient.getUser(username) != null) {
-                rmqClient.deleteUser(username);
-                logger.info("Deleted user \"{}\" in RabbitMQ", username);
-            }
-
-            //close channel
-            closeChannel(namespace);
-
-            // delete vhost
-            if (rmqClient.getVhost(vHostName) != null) {
-                rmqClient.deleteVhost(vHostName);
-                logger.info("Deleted vHost \"{}\" in RabbitMQ", username);
-            }
-        } catch (Exception e) {
-            String message = "Exception cleaning up vHost";
-            logger.error(message, e);
-            throw new RuntimeException(message, e);
-        }
-    }
-
-    public static List<QueueInfo> getQueues(String namespace) {
-
-        RabbitMQManagementConfig rabbitMQManagementConfig = getManagementConfig();
-        RabbitMQConfig rabbitMQConfig = getRabbitMQConfig(namespace);
-        String vHostName = rabbitMQConfig.getVHost();
-
-        try {
-            Client rmqClient = getClient(
-                    String.format("http://%s:%s/api", rabbitMQManagementConfig.getHost(),
-                            rabbitMQManagementConfig.getPort())
-                    , rabbitMQManagementConfig.getUsername()
-                    , rabbitMQManagementConfig.getPassword()
-            );
+            Client rmqClient = getClient();
             return rmqClient.getQueues(vHostName);
         } catch (Exception e) {
             String message = "Exception while fetching queues";
@@ -230,18 +196,11 @@ public final class RabbitMQContext {
         }
     }
 
-    public static QueueInfo getQueue(String namespace, String queueName) {
+    public static QueueInfo getQueue(String queueName) {
 
-        RabbitMQManagementConfig rabbitMQManagementConfig = getManagementConfig();
-        RabbitMQConfig rabbitMQConfig = getRabbitMQConfig(namespace);
-        String vHostName = rabbitMQConfig.getVHost();
+        String vHostName = getManagementConfig().getVHostName();
         try {
-            Client rmqClient = getClient(
-                    String.format("http://%s:%s/api", rabbitMQManagementConfig.getHost(),
-                            rabbitMQManagementConfig.getPort())
-                    , rabbitMQManagementConfig.getUsername()
-                    , rabbitMQManagementConfig.getPassword()
-            );
+            Client rmqClient = getClient();
             return rmqClient.getQueue(vHostName, queueName);
         } catch (Exception e) {
             String message = "Exception while fetching queue";
@@ -250,20 +209,62 @@ public final class RabbitMQContext {
         }
     }
 
+    private static RabbitMQManagementConfig getManagementConfig() {
+        // we do not need to synchronize as we are assigning immutable object from singleton
+        if (managementConfig == null) {
+            managementConfig = OperatorConfig.INSTANCE.getRabbitMQManagementConfig();
+        }
+        return managementConfig;
+    }
+
+    private static Client getClient() throws Exception {
+        if (rmqClient == null) {
+            RabbitMQManagementConfig rabbitMQMngConfig = getManagementConfig();
+            String apiStr = "http://%s:%s/api";
+            rmqClient = new Client(new ClientParameters()
+                    .url(format(apiStr, rabbitMQMngConfig.getHost(), rabbitMQMngConfig.getManagementPort()))
+                    .username(rabbitMQMngConfig.getUsername())
+                    .password(rabbitMQMngConfig.getPassword())
+                    .restTemplateConfigurator(new OkHttpRestTemplateConfigurator())
+            );
+        }
+        return rmqClient;
+    }
+
+    private static ChannelContext getChannelContext() {
+        // we do not need to synchronize as we are assigning immutable object from singleton
+        if (channelContext == null) {
+            channelContext = new ChannelContext();
+        }
+        return channelContext;
+    }
+
+    private static RabbitMQConfig getRabbitMQConfig(String namespace) {
+
+        RabbitMQConfig rabbitMQConfig = ConfigMaps.INSTANCE.getRabbitMQConfig4Namespace(namespace);
+        if (rabbitMQConfig == null) {
+            throw new NonTerminalException(format(
+                    "RabbitMQ configuration for namespace \"%s\" is not available", namespace));
+        }
+        return rabbitMQConfig;
+    }
+
     static class ChannelContext {
-
-        private static final Map<String, ConnectionFactory> connectionFactories = new ConcurrentHashMap<>();
-
-        private final String signature;
 
         private Connection connection;
 
         private Channel channel;
 
-        ChannelContext(ConnectionFactory factory, String signature) {
-            this.signature = signature;
+        ChannelContext() {
+            RabbitMQManagementConfig rabbitMQManagementConfig = getManagementConfig();
+            ConnectionFactory connectionFactory = new ConnectionFactory();
+            connectionFactory.setHost(rabbitMQManagementConfig.getHost());
+            connectionFactory.setPort(rabbitMQManagementConfig.getApplicationPort());
+            connectionFactory.setVirtualHost(rabbitMQManagementConfig.getVHostName());
+            connectionFactory.setUsername(rabbitMQManagementConfig.getUsername());
+            connectionFactory.setPassword(rabbitMQManagementConfig.getPassword());
             try {
-                this.connection = factory.newConnection();
+                this.connection = connectionFactory.newConnection();
                 this.channel = connection.createChannel();
             } catch (Exception e) {
                 close();
@@ -273,54 +274,23 @@ public final class RabbitMQContext {
             }
         }
 
-        static ChannelContext contextFor(RabbitMQConfig namespaceConfig) {
-
-            RabbitMQManagementConfig rabbitMQManagementConfig = getManagementConfig();
-            String signature = signatureFor(rabbitMQManagementConfig, namespaceConfig);
-            var connectionFactory = getConnectionFactory(namespaceConfig);
-            return new ChannelContext(connectionFactory, signature);
-        }
-
-        static ConnectionFactory getConnectionFactory(RabbitMQConfig rabbitMQConfig) {
-
-            RabbitMQManagementConfig rabbitMQManagementConfig = getManagementConfig();
-            String signature = ChannelContext.signatureFor(rabbitMQManagementConfig, rabbitMQConfig);
-            return connectionFactories.computeIfAbsent(signature, k -> {
-
-                var connectionFactory = new ConnectionFactory();
-                connectionFactory.setHost(rabbitMQConfig.getHost());
-                connectionFactory.setPort(rabbitMQConfig.getPort());
-                connectionFactory.setVirtualHost(rabbitMQConfig.getVHost());
-                connectionFactory.setUsername(rabbitMQManagementConfig.getUsername());
-                connectionFactory.setPassword(rabbitMQManagementConfig.getPassword());
-                return connectionFactory;
-            });
-        }
-
         synchronized void close() {
             try {
                 if (channel != null && channel.isOpen()) {
                     channel.close();
                 }
             } catch (Exception e) {
-                logger.error("Exception closing RabbitMQ channel for \"{}\"", signature, e);
+                logger.error("Exception closing RabbitMQ channel", e);
             }
             try {
                 if (connection != null && connection.isOpen()) {
                     connection.close();
                 }
             } catch (Exception e) {
-                logger.error("Exception closing RabbitMQ connection for \"{}\"", signature, e);
+                logger.error("Exception closing RabbitMQ connection for", e);
             }
             channel = null;
             connection = null;
-        }
-
-        static String signatureFor(RabbitMQManagementConfig managementConfig, RabbitMQConfig rabbitMQConfig) {
-            return rabbitMQConfig.getHost()
-                    + ":" + rabbitMQConfig.getPort()
-                    + ":" + rabbitMQConfig.getVHost()
-                    + ":" + managementConfig.getUsername();
         }
     }
 }

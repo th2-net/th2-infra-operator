@@ -37,7 +37,8 @@ public class ConfigurationTests {
 
         expected.setChartConfig(ChartConfig.builder().withGit("git").withPath("path").withRef("ref").build());
         expected.setRabbitMQManagementConfig(
-                RabbitMQManagementConfig.builder().withHost("host").withPort(8080)
+                RabbitMQManagementConfig.builder().withHost("host").withManagementPort(8080).withApplicationPort(8080)
+                        .withVHostName("th2").withExchangeName("exchange")
                         .withUsername("username").withPassword("password").withPersistence(true)
                         .withRabbitMQNamespacePermissions(RabbitMQNamespacePermissions.builder()
                                 .withConfigure("configure").withRead("read").withWrite("write").build())
@@ -171,7 +172,8 @@ public class ConfigurationTests {
         beforeEach("src/test/resources/rabbitMQManagementConfig.yml");
 
         expected.setRabbitMQManagementConfig(
-                RabbitMQManagementConfig.builder().withHost("host").withPort(8080)
+                RabbitMQManagementConfig.builder().withHost("host").withManagementPort(8080).withApplicationPort(8080)
+                        .withVHostName("th2").withExchangeName("exchange")
                         .withUsername("username").withPassword("password").withPersistence(true)
                         .withRabbitMQNamespacePermissions(RabbitMQNamespacePermissions.builder()
                                 .withConfigure("configure").withRead("read").withWrite("write").build())
@@ -210,7 +212,7 @@ public class ConfigurationTests {
 
         Assertions.assertNull(OperatorConfig.INSTANCE.loadConfiguration().getRabbitMQManagementConfig().getHost());
         Assertions.assertEquals(0,
-                OperatorConfig.INSTANCE.loadConfiguration().getRabbitMQManagementConfig().getPort());
+                OperatorConfig.INSTANCE.loadConfiguration().getRabbitMQManagementConfig().getManagementPort());
         Assertions.assertNull(OperatorConfig.INSTANCE.loadConfiguration().getRabbitMQManagementConfig().getUsername());
         Assertions.assertNull(OperatorConfig.INSTANCE.loadConfiguration().getRabbitMQManagementConfig().getPassword());
         Assertions.assertFalse(OperatorConfig.INSTANCE.loadConfiguration().getRabbitMQManagementConfig()
