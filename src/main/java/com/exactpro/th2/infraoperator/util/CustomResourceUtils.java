@@ -140,10 +140,9 @@ public final class CustomResourceUtils {
     }
 
     private static String extractShortCommitHash(HasMetadata resource) {
-        String hash = resource.getMetadata().getAnnotations().get(GIT_COMMIT_HASH);
-        if (hash != null) {
-            return hash.substring(0, SHORT_HASH_LENGTH);
-        } else {
+        try {
+            return resource.getMetadata().getAnnotations().get(GIT_COMMIT_HASH).substring(0, SHORT_HASH_LENGTH);
+        } catch (NullPointerException e) {
             return "NOT_PRESENT";
         }
     }
