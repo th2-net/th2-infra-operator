@@ -16,6 +16,7 @@
 
 package com.exactpro.th2.infraoperator.model.box.configuration.mq.factory;
 
+import com.exactpro.th2.infraoperator.configuration.OperatorConfig;
 import com.exactpro.th2.infraoperator.model.box.configuration.mq.MessageRouterConfiguration;
 import com.exactpro.th2.infraoperator.model.box.configuration.mq.QueueConfiguration;
 import com.exactpro.th2.infraoperator.model.box.configuration.mq.RouterFilterConfiguration;
@@ -84,7 +85,8 @@ public class MessageRouterConfigFactory {
             );
         }
 
-        return MessageRouterConfiguration.builder().queues(queues).build();
+        String exchange = OperatorConfig.INSTANCE.getRabbitMQManagementConfig().getExchangeName();
+        return new MessageRouterConfiguration(queues, exchange);
     }
 
     private Set<Object> specToConfigFilters(Set<FilterSpec> filterSpecs, String annotation, String pinName) {

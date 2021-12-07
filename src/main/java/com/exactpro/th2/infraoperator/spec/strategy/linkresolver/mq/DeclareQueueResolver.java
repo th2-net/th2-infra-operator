@@ -17,7 +17,6 @@
 package com.exactpro.th2.infraoperator.spec.strategy.linkresolver.mq;
 
 import com.exactpro.th2.infraoperator.configuration.OperatorConfig;
-import com.exactpro.th2.infraoperator.configuration.RabbitMQConfig;
 import com.exactpro.th2.infraoperator.configuration.RabbitMQManagementConfig;
 import com.exactpro.th2.infraoperator.spec.Th2CustomResource;
 import com.exactpro.th2.infraoperator.spec.link.relation.pins.PinMQ;
@@ -54,7 +53,6 @@ public class DeclareQueueResolver {
     public void resolveAdd(Th2CustomResource resource) {
 
         String namespace = ExtractUtils.extractNamespace(resource);
-        RabbitMQContext.createVHostIfAbsent(namespace);
         try {
             declareQueueBunch(namespace, resource);
         } catch (Exception e) {
@@ -68,9 +66,9 @@ public class DeclareQueueResolver {
 
         String namespace = ExtractUtils.extractNamespace(resource);
         try {
-            Channel channel = getChannel(namespace);
+            Channel channel = getChannel();
             //get queues that are associated with current box.
-            Set<String> boxQueueNames = getBoxQueues(namespace, resource);
+            Set<String> boxQueueNames = generateBoxQueues(namespace, resource);
             removeExtinctQueues(channel, boxQueueNames, CustomResourceUtils.annotationFor(resource));
         } catch (Exception e) {
             String message = "Exception while working with rabbitMq";
@@ -82,10 +80,9 @@ public class DeclareQueueResolver {
     @SneakyThrows
     private void declareQueueBunch(String namespace, Th2CustomResource resource) {
 
-        Channel channel = getChannel(namespace);
-        String exchangeName = RabbitMQContext.getExchangeName(namespace);
+        Channel channel = getChannel();
 
-        channel.exchangeDeclare(exchangeName, "direct", rabbitMQManagementConfig.isPersistence());
+        channel.exchangeDeclare(namespace, "direct", rabbitMQManagementConfig.isPersistence());
         //get queues that are associated with current box and are not linked through Th2Link resources
         Set<String> boxQueues = getBoxQueuesFromRabbit(namespace, extractName(resource));
 
@@ -99,7 +96,7 @@ public class DeclareQueueResolver {
                 //remove from set if pin for queue still exists.
                 boxQueues.remove(queueName);
                 var newQueueArguments = RabbitMQContext.generateQueueArguments(pin.getSettings());
-                var currentQueue = RabbitMQContext.getQueue(namespace, queueName);
+                var currentQueue = RabbitMQContext.getQueue(queueName);
                 if (currentQueue != null && !currentQueue.getArguments().equals(newQueueArguments)) {
                     logger.warn("Arguments for queue '{}' were modified. Recreating with new arguments", queueName);
                     channel.queueDelete(queueName);
@@ -120,20 +117,19 @@ public class DeclareQueueResolver {
     @SneakyThrows
     private Set<String> getBoxQueuesFromRabbit(String namespace, String boxName) {
 
-        RabbitMQConfig rabbitMQConfig = RabbitMQContext.getRabbitMQConfig(namespace);
-        List<QueueInfo> queueInfoList = RabbitMQContext.getQueues(rabbitMQConfig.getVHost());
+        List<QueueInfo> queueInfoList = RabbitMQContext.getQueues();
 
         Set<String> queueNames = new HashSet<>();
         queueInfoList.forEach(q -> {
             var queue = QueueName.fromString(q.getName());
-            if (queue != null && queue.getBoxName().equals(boxName)) {
+            if (queue != null && queue.getBoxName().equals(boxName) && queue.getNamespace().equals(namespace)) {
                 queueNames.add(q.getName());
             }
         });
         return queueNames;
     }
 
-    private Set<String> getBoxQueues(String namespace, Th2CustomResource resource) {
+    private Set<String> generateBoxQueues(String namespace, Th2CustomResource resource) {
         Set<String> queueNames = new HashSet<>();
         String boxName = ExtractUtils.extractName(resource);
         for (PinSpec mqPin : ExtractUtils.extractMqPins(resource)) {
@@ -145,12 +141,12 @@ public class DeclareQueueResolver {
     }
 
     @SneakyThrows
-    private Channel getChannel(String namespace) {
-        Channel channel = RabbitMQContext.getChannel(namespace);
+    private Channel getChannel() {
+        Channel channel = RabbitMQContext.getChannel();
         if (!channel.isOpen()) {
             logger.warn("RabbitMQ connection is broken, trying to reconnect...");
-            RabbitMQContext.closeChannel(namespace);
-            channel = RabbitMQContext.getChannel(namespace);
+            RabbitMQContext.closeChannel();
+            channel = RabbitMQContext.getChannel();
             logger.info("RabbitMQ connection has been restored");
         }
         return channel;

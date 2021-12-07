@@ -8,7 +8,10 @@ chart:
   version:
 rabbitMQManagement:
   host:
-  port:
+  managementPort:
+  applicationPort:
+  vhostName:
+  exchangeName:
   username:
   password:
   persistence:
