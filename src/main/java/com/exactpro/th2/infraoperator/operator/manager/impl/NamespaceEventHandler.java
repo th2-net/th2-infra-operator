@@ -110,7 +110,7 @@ public class NamespaceEventHandler implements ResourceEventHandler<Namespace>, W
                 lock.lock();
 
                 logger.debug("Processing {} event for namespace: \"{}\"", action, namespaceName);
-                RabbitMQContext.cleanupVHost(namespaceName);
+                RabbitMQContext.cleanupSchemaExchange(namespaceName);
                 logger.info("Deleted namespace {}", namespaceName);
             } catch (Exception e) {
                 logger.error("Exception processing event for \"{}\"", resourceLabel, e);

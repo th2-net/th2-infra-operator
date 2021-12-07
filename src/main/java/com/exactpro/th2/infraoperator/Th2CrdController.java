@@ -22,6 +22,7 @@ import com.exactpro.th2.infraoperator.operator.impl.CoreBoxHelmTh2Op;
 import com.exactpro.th2.infraoperator.operator.impl.EstoreHelmTh2Op;
 import com.exactpro.th2.infraoperator.operator.impl.MstoreHelmTh2Op;
 import com.exactpro.th2.infraoperator.operator.manager.impl.DefaultWatchManager;
+import com.exactpro.th2.infraoperator.spec.strategy.linkresolver.mq.RabbitMQContext;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -39,6 +40,8 @@ public class Th2CrdController {
             watchManager.addTarget(EstoreHelmTh2Op::new);
             watchManager.addTarget(BoxHelmTh2Op::new);
             watchManager.addTarget(CoreBoxHelmTh2Op::new);
+
+            RabbitMQContext.declareTopicExchange();
 
             watchManager.startInformers();
 

@@ -7,7 +7,10 @@ chart:
   ref: ref
 rabbitMQManagement:
   host: host
-  port: 8080
+  managementPort: 8080
+  applicationPort: 8080
+  vhostName: th2
+  exchangeName: exchange
   username: username
   password: password
   persistence: true

@@ -30,11 +30,17 @@ public class RabbitMQManagementConfig {
 
     private String password;
 
-    private int port;
+    private int managementPort;
+
+    private int applicationPort;
 
     private String host;
 
     private boolean persistence;
+
+    private String vhostName;
+
+    private String exchangeName;
 
     private RabbitMQNamespacePermissions rabbitMQNamespacePermissions;
 
@@ -42,11 +48,21 @@ public class RabbitMQManagementConfig {
         rabbitMQNamespacePermissions = new RabbitMQNamespacePermissions();
     }
 
-    protected RabbitMQManagementConfig(String username, String password, int port, String host, boolean persistence,
+    protected RabbitMQManagementConfig(String username,
+                                       String password,
+                                       int managementPort,
+                                       int applicationPort,
+                                       String vhostName,
+                                       String exchangeName,
+                                       String host,
+                                       boolean persistence,
                                        RabbitMQNamespacePermissions rabbitMQNamespacePermissions) {
         this.username = username;
         this.password = password;
-        this.port = port;
+        this.managementPort = managementPort;
+        this.applicationPort = applicationPort;
+        this.vhostName = vhostName;
+        this.exchangeName = exchangeName;
         this.host = host;
         this.persistence = persistence;
         this.rabbitMQNamespacePermissions = rabbitMQNamespacePermissions != null ?
@@ -61,8 +77,20 @@ public class RabbitMQManagementConfig {
         return password;
     }
 
-    public int getPort() {
-        return port;
+    public int getManagementPort() {
+        return managementPort;
+    }
+
+    public String getVHostName() {
+        return vhostName;
+    }
+
+    public String getExchangeName() {
+        return exchangeName;
+    }
+
+    public int getApplicationPort() {
+        return applicationPort;
     }
 
     public String getHost() {
@@ -90,7 +118,8 @@ public class RabbitMQManagementConfig {
             return false;
         }
         RabbitMQManagementConfig that = (RabbitMQManagementConfig) o;
-        return getPort() == that.getPort()
+        return getManagementPort() == that.getManagementPort()
+                && getApplicationPort() == that.getApplicationPort()
                 && isPersistence() == that.isPersistence()
                 && Objects.equals(getUsername(), that.getUsername())
                 && Objects.equals(getPassword(), that.getPassword())
@@ -104,16 +133,23 @@ public class RabbitMQManagementConfig {
 
         private String password;
 
-        private int port;
+        private int managementPort;
+
+        private int applicationPort;
 
         private String host;
 
         private boolean persistence;
 
+        private String vHostName;
+
+        private String exchangeName;
+
         @JsonProperty("schemaPermissions")
         private RabbitMQNamespacePermissions rabbitMQNamespacePermissions;
 
-        RabbitMQManagementConfigBuilder() { }
+        RabbitMQManagementConfigBuilder() {
+        }
 
         public RabbitMQManagementConfigBuilder withUsername(String username) {
             this.username = username;
@@ -125,8 +161,23 @@ public class RabbitMQManagementConfig {
             return this;
         }
 
-        public RabbitMQManagementConfigBuilder withPort(int port) {
-            this.port = port;
+        public RabbitMQManagementConfigBuilder withManagementPort(int port) {
+            this.managementPort = port;
+            return this;
+        }
+
+        public RabbitMQManagementConfigBuilder withApplicationPort(int port) {
+            this.applicationPort = port;
+            return this;
+        }
+
+        public RabbitMQManagementConfigBuilder withVHostName(String vHostName) {
+            this.vHostName = vHostName;
+            return this;
+        }
+
+        public RabbitMQManagementConfigBuilder withExchangeName(String exchangeName) {
+            this.exchangeName = exchangeName;
             return this;
         }
 
@@ -147,8 +198,17 @@ public class RabbitMQManagementConfig {
         }
 
         public RabbitMQManagementConfig build() {
-            return new RabbitMQManagementConfig(username, password, port, host, persistence,
-                    rabbitMQNamespacePermissions);
+            return new RabbitMQManagementConfig(
+                    username,
+                    password,
+                    managementPort,
+                    applicationPort,
+                    vHostName,
+                    exchangeName,
+                    host,
+                    persistence,
+                    rabbitMQNamespacePermissions
+            );
         }
     }
 }

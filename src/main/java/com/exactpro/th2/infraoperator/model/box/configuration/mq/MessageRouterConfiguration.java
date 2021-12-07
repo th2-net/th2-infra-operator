@@ -16,22 +16,29 @@
 
 package com.exactpro.th2.infraoperator.model.box.configuration.mq;
 
-import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
-import lombok.Builder;
-import lombok.Data;
+import com.exactpro.th2.infraoperator.model.box.configuration.mq.factory.GlobalNotification;
 
 import java.util.Map;
 
-@Data
-@Builder
-@JsonDeserialize
 public class MessageRouterConfiguration {
 
     private Map<String, QueueConfiguration> queues;
 
-    protected MessageRouterConfiguration() { }
+    private GlobalNotification globalNotification;
 
-    protected MessageRouterConfiguration(Map<String, QueueConfiguration> queues) {
+    public MessageRouterConfiguration() {
+    }
+
+    public MessageRouterConfiguration(Map<String, QueueConfiguration> queues, String exchange) {
         this.queues = queues;
+        this.globalNotification = new GlobalNotification(exchange);
+    }
+
+    public Map<String, QueueConfiguration> getQueues() {
+        return queues;
+    }
+
+    public GlobalNotification getGlobalNotification() {
+        return globalNotification;
     }
 }
