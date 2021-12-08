@@ -105,6 +105,10 @@ public abstract class HelmReleaseTh2Op<CR extends Th2CustomResource> extends Abs
 
     public static final String CRADLE_MGR_ALIAS = "cradleManager";
 
+    public static final String BOOK_CONFIG_ALIAS = "bookConfig";
+
+    public static final String BOOK_NAME_ALIAS = "bookName";
+
     public static final String LOGGING_ALIAS = "logging";
 
     public static final String SCHEMA_SECRETS_ALIAS = "secrets";
@@ -204,6 +208,8 @@ public abstract class HelmReleaseTh2Op<CR extends Th2CustomResource> extends Abs
         String mqRouterChecksum = operatorState.getConfigChecksum(resNamespace, MQ_ROUTER_ALIAS);
         String grpcRouterChecksum = operatorState.getConfigChecksum(resNamespace, GRPC_ROUTER_ALIAS);
         String cradleManagerChecksum = operatorState.getConfigChecksum(resNamespace, CRADLE_MGR_ALIAS);
+        String defaultBookName = operatorState.getBookName(resNamespace);
+
 
         helmRelease.putSpecProp(RELEASE_NAME_ALIAS, extractNamespace(helmRelease) + "-" + extractName(helmRelease));
 
@@ -247,6 +253,10 @@ public abstract class HelmReleaseTh2Op<CR extends Th2CustomResource> extends Abs
             throw new RuntimeException(e);
         }
 
+        String crBookName = resource.getSpec().getBookName();
+        Map<String, String> bookConfigSection = new HashMap<>();
+        bookConfigSection.put(BOOK_NAME_ALIAS, crBookName != null ? crBookName : defaultBookName);
+
         HelmReleaseSecrets secrets = new HelmReleaseSecrets(OperatorConfig.INSTANCE.getSchemaSecrets());
 
         helmRelease.mergeValue(PROPERTIES_MERGE_DEPTH, ROOT_PROPERTIES_ALIAS, Map.of(
@@ -258,6 +268,7 @@ public abstract class HelmReleaseTh2Op<CR extends Th2CustomResource> extends Abs
                 MQ_ROUTER_ALIAS, mqRouterSection,
                 GRPC_ROUTER_ALIAS, grpcRouterSection,
                 CRADLE_MGR_ALIAS, cradleManagerSection,
+                BOOK_CONFIG_ALIAS, bookConfigSection,
                 SCHEMA_SECRETS_ALIAS, secrets
         ));
 

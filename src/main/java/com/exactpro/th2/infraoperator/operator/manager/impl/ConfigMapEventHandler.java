@@ -70,6 +70,10 @@ public class ConfigMapEventHandler implements Watcher<ConfigMap> {
 
     private static final String CRADLE_MANAGER_FILE_NAME = "cradle_manager.json";
 
+    public static final String BOOK_CONFIG_CM_NAME = "book-config";
+
+    private static final String DEFAULT_BOOK = "defaultBook";
+
     private static final Logger logger = LoggerFactory.getLogger(ConfigMapEventHandler.class);
 
     private KubernetesClient client;
@@ -154,6 +158,8 @@ public class ConfigMapEventHandler implements Watcher<ConfigMap> {
             updateConfigMap(action, namespace, resource, GRPC_ROUTER_ALIAS, GRPC_ROUTER_FILE_NAME, resourceLabel);
         } else if (configMapName.equals(CRADLE_MANAGER_CM_NAME)) {
             updateConfigMap(action, namespace, resource, CRADLE_MGR_ALIAS, CRADLE_MANAGER_FILE_NAME, resourceLabel);
+        } else if (configMapName.equals(BOOK_CONFIG_CM_NAME)) {
+            updateDefaultBookName(action, namespace, resource, resourceLabel);
         }
 
     }
@@ -230,6 +236,38 @@ public class ConfigMapEventHandler implements Watcher<ConfigMap> {
                     logger.info("\"{}\" has been updated. Updating all boxes", resourceLabel);
                     int refreshedBoxesCount = updateResourceChecksumAndData(namespace, newChecksum, cmData, key);
                     logger.info("{} HelmRelease(s) have been updated", refreshedBoxesCount);
+                    processTimer.observeDuration();
+                }
+            } finally {
+                lock.unlock();
+            }
+        } catch (Exception e) {
+            logger.error("Exception processing {} event for \"{}\"", action, resourceLabel, e);
+        }
+    }
+
+    private void updateDefaultBookName(Action action, String namespace, ConfigMap resource, String resourceLabel) {
+        try {
+            logger.info("Processing {} event for \"{}\"", action, resourceLabel);
+            if (action == Action.DELETED) {
+                logger.error("DELETED action is not supported for \"{}\". ", resourceLabel);
+                return;
+            }
+            if (action == Action.ERROR) {
+                logger.error("Received ERROR action for \"{}\" Canceling update", resourceLabel);
+                return;
+            }
+            var lock = OperatorState.INSTANCE.getLock(namespace);
+            try {
+                lock.lock();
+                String oldBookName = OperatorState.INSTANCE.getBookName(namespace);
+                String newBookName = resource.getData().get(DEFAULT_BOOK);
+                if (!newBookName.equals(oldBookName)) {
+                    Histogram.Timer processTimer = OperatorMetrics.getConfigMapEventTimer(resource);
+                    OperatorState.INSTANCE.setBookName(namespace, newBookName);
+                    logger.info("\"{}\" has been updated. Updating all boxes", resourceLabel);
+                    DefaultWatchManager.getInstance().refreshBoxes(namespace);
+                    logger.info("box-definition(s) have been updated");
                     processTimer.observeDuration();
                 }
             } finally {
