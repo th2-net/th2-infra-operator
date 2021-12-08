@@ -60,6 +60,15 @@ public enum OperatorState {
         return checksum != null ? checksum : "";
     }
 
+    public String getBookName(String namespace) {
+        String bookName = namespaceStates.get(namespace).getBookName();
+        return bookName != null ? bookName : "";
+    }
+
+    public void setBookName(String namespace, String bookName) {
+        namespaceStates.get(namespace).setBookName(bookName);
+    }
+
     public void putConfigChecksum(String namespace, String key, String checkSum) {
         namespaceStates.get(namespace).getConfigMapDataContainer(key).setChecksum(checkSum);
     }
