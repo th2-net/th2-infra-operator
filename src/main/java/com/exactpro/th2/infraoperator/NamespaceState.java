@@ -36,6 +36,8 @@ public class NamespaceState implements OperatorState.NamespaceLock {
 
     private final Map<String, HelmRelease> helmReleaseMap = new HashMap<>();
 
+    private String bookName;
+
     private final Lock lock = new ReentrantLock(true);
 
     @Override
@@ -78,6 +80,14 @@ public class NamespaceState implements OperatorState.NamespaceLock {
 
     public ConfigMapDataContainer getConfigMapDataContainer(String key) {
         return configMapDataContainerMap.computeIfAbsent(key, k -> new ConfigMapDataContainer());
+    }
+
+    public String getBookName() {
+        return bookName;
+    }
+
+    public void setBookName(String bookName) {
+        this.bookName = bookName;
     }
 
     public void setLinkResources(List<Th2Link> linkResources) {
