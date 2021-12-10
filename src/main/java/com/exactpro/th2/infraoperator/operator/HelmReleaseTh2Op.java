@@ -30,7 +30,6 @@ import com.exactpro.th2.infraoperator.spec.Th2CustomResource;
 import com.exactpro.th2.infraoperator.spec.Th2Spec;
 import com.exactpro.th2.infraoperator.spec.helmrelease.HelmRelease;
 import com.exactpro.th2.infraoperator.spec.helmrelease.HelmReleaseSecrets;
-import com.exactpro.th2.infraoperator.spec.helmrelease.InstantiableMap;
 import com.exactpro.th2.infraoperator.spec.link.relation.pins.PinCouplingGRPC;
 import com.exactpro.th2.infraoperator.spec.shared.PrometheusConfiguration;
 import com.exactpro.th2.infraoperator.spec.strategy.linkresolver.mq.DeclareQueueResolver;
@@ -337,12 +336,8 @@ public abstract class HelmReleaseTh2Op<CR extends Th2CustomResource> extends Abs
         String hrName = extractName(helmRelease);
         HelmRelease existingRelease = helmReleaseClient.inNamespace(namespace).withName(hrName).get();
 
-        if (existingRelease != null) {
-            InstantiableMap statusSection = existingRelease.getStatus();
-            if ((statusSection != null && statusSection.get("phase").equals("Failed")) ||
-                    containsFailingChanges(helmRelease, existingRelease)) {
-                helmReleaseClient.inNamespace(namespace).withName(hrName).delete();
-            }
+        if (needsToBeDeleted(helmRelease, existingRelease)) {
+            helmReleaseClient.inNamespace(namespace).withName(hrName).delete();
         }
         helmReleaseClient.inNamespace(namespace).createOrReplace(helmRelease);
         OperatorState.INSTANCE.putHelmReleaseInCache(helmRelease, namespace);

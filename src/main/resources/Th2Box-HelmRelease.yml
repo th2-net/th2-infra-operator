@@ -7,7 +7,6 @@ spec:
   maxHistory: 2
   resetValues: true
   wait: false
-  forceUpgrade: true
   releaseName: th2-box
   chart:
     secretRef:
