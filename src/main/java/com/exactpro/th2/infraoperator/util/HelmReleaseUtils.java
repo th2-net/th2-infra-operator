@@ -21,12 +21,15 @@ import com.exactpro.th2.infraoperator.model.box.configuration.grpc.GrpcEndpointM
 import com.exactpro.th2.infraoperator.model.box.configuration.grpc.GrpcExternalEndpointMapping;
 import com.exactpro.th2.infraoperator.spec.Th2CustomResource;
 import com.exactpro.th2.infraoperator.spec.helmrelease.HelmRelease;
+import com.exactpro.th2.infraoperator.spec.helmrelease.InstantiableMap;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.apache.commons.text.StringSubstitutor;
 import org.apache.commons.text.lookup.StringLookup;
 import org.apache.commons.text.lookup.StringLookupFactory;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.util.List;
 import java.util.Map;
@@ -34,9 +37,12 @@ import java.util.function.Function;
 
 import static com.exactpro.th2.infraoperator.operator.HelmReleaseTh2Op.*;
 import static com.exactpro.th2.infraoperator.util.CustomResourceUtils.annotationFor;
+import static com.exactpro.th2.infraoperator.util.ExtractUtils.extractName;
 import static com.exactpro.th2.infraoperator.util.JsonUtils.JSON_READER;
 
 public class HelmReleaseUtils {
+
+    private static final Logger logger = LoggerFactory.getLogger(HelmReleaseUtils.class);
 
     private static final String HOST_NETWORK_ALIAS = "hostNetwork";
 
@@ -200,10 +206,39 @@ public class HelmReleaseUtils {
         return (List<DictionaryEntity>) componentConfigs.get(DICTIONARIES_ALIAS);
     }
 
-    public static boolean containsFailingChanges(HelmRelease newHelmRelease, HelmRelease oldHelmRelease) {
-        return containsFailingService(newHelmRelease, oldHelmRelease) ||
-                containsFailingExternalBox(newHelmRelease, oldHelmRelease) ||
-                containsFailingHostNetwork(newHelmRelease, oldHelmRelease);
+    public static boolean needsToBeDeleted(HelmRelease newHelmRelease, HelmRelease oldHelmRelease) {
+        if (oldHelmRelease == null) {
+            return false;
+        }
+        return isAlreadyFailed(oldHelmRelease)
+                || containsFailingService(newHelmRelease, oldHelmRelease)
+                || containsFailingExternalBox(newHelmRelease, oldHelmRelease)
+                || containsFailingHostNetwork(newHelmRelease, oldHelmRelease);
+    }
+
+    private static boolean isAlreadyFailed(HelmRelease oldHelmRelease) {
+        InstantiableMap statusSection = oldHelmRelease.getStatus();
+        if (statusSection == null) {
+            logger.warn("Status section for HelmRelease \"{}\" was null. will be recreated",
+                    extractName(oldHelmRelease));
+            return true;
+        }
+        if (statusSection.get("phase") == null) {
+            logger.warn("PHASE value for HelmRelease \"{}\" was null. will be recreated",
+                    extractName(oldHelmRelease));
+            return true;
+        }
+        if (statusSection.get("releaseStatus") == null) {
+            logger.warn("releaseStatus value for HelmRelease \"{}\" was null. will be recreated",
+                    extractName(oldHelmRelease));
+            return true;
+        }
+        if (!statusSection.get("phase").equals("Succeeded") || !statusSection.get("releaseStatus").equals("deployed")) {
+            logger.warn("HelmRelease \"{}\" was failed. will be recreated",
+                    extractName(oldHelmRelease));
+            return true;
+        }
+        return false;
     }
 
     private static boolean containsFailingService(HelmRelease newHelmRelease, HelmRelease oldHelmRelease) {
