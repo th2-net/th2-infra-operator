@@ -10,4 +10,4 @@ FROM adoptopenjdk/openjdk11:alpine
 COPY --from=build /home/app /home/app
 
 WORKDIR /home/app/
-ENTRYPOINT ["java", "-Dlog4j.configuration=file:/var/th2/config/log4j.properties", "-jar", "/home/app/application.jar"]
+ENTRYPOINT ["java", "-Dlog4j2.configurationFile=file:/var/th2/config/log4j2.properties", "-jar", "/home/app/application.jar"]
