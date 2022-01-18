@@ -14,35 +14,28 @@
  * limitations under the License.
  */
 
-package com.exactpro.th2.infraoperator.model.box.configuration.dictionary;
+package com.exactpro.th2.infraoperator.spec.link.relation.dictionaries;
 
-public class DictionaryEntity {
+import com.exactpro.th2.infraoperator.spec.shared.Identifiable;
 
-    private final String name;
+public abstract class AbstractDictionaryBinding implements Identifiable {
 
-    private final String type;
+    protected final String name;
 
-    private String checksum;
+    protected final String box;
 
-    public DictionaryEntity(String name, String type, String checksum) {
+    protected AbstractDictionaryBinding(String name, String box) {
         this.name = name;
-        this.type = type;
-        this.checksum = checksum;
+        this.box = box;
     }
 
+    @Override
     public String getName() {
         return this.name;
     }
 
-    public String getType() {
-        return this.type;
+    public String getBox() {
+        return this.box;
     }
 
-    public String getChecksum() {
-        return this.checksum;
-    }
-
-    public void updateChecksum(String checksum) {
-        this.checksum = checksum;
-    }
 }

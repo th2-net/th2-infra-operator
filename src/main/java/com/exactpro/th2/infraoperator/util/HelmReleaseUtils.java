@@ -17,6 +17,7 @@
 package com.exactpro.th2.infraoperator.util;
 
 import com.exactpro.th2.infraoperator.model.box.configuration.dictionary.DictionaryEntity;
+import com.exactpro.th2.infraoperator.model.box.configuration.dictionary.MultiDictionaryEntity;
 import com.exactpro.th2.infraoperator.model.box.configuration.grpc.GrpcEndpointMapping;
 import com.exactpro.th2.infraoperator.model.box.configuration.grpc.GrpcExternalEndpointMapping;
 import com.exactpro.th2.infraoperator.spec.Th2CustomResource;
@@ -200,10 +201,16 @@ public class HelmReleaseUtils {
         return (Map<String, Object>) componentConfigs.get(key);
     }
 
-    public static List<DictionaryEntity> extractDictionariesConfig(HelmRelease helmRelease) {
+    public static List<DictionaryEntity> extractOldDictionariesConfig(HelmRelease helmRelease) {
         var values = (Map<String, Object>) helmRelease.getValuesSection();
         var componentConfigs = (Map<String, Object>) values.get(ROOT_PROPERTIES_ALIAS);
         return (List<DictionaryEntity>) componentConfigs.get(DICTIONARIES_ALIAS);
+    }
+
+    public static List<MultiDictionaryEntity> extractMultiDictionariesConfig(HelmRelease helmRelease) {
+        var values = (Map<String, Object>) helmRelease.getValuesSection();
+        var componentConfigs = (Map<String, Object>) values.get(ROOT_PROPERTIES_ALIAS);
+        return (List<MultiDictionaryEntity>) componentConfigs.get(MULTI_DICTIONARIES_ALIAS);
     }
 
     public static boolean needsToBeDeleted(HelmRelease newHelmRelease, HelmRelease oldHelmRelease) {

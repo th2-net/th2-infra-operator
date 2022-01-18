@@ -19,24 +19,24 @@ package com.exactpro.th2.infraoperator.spec.link.relation.dictionaries;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 
-import java.util.Objects;
+import java.util.*;
 
-@JsonDeserialize(builder = DictionaryBinding.Builder.class)
-public final class DictionaryBinding extends AbstractDictionaryBinding {
+@JsonDeserialize(builder = MultiDictionaryBinding.Builder.class)
+public final class MultiDictionaryBinding extends AbstractDictionaryBinding {
 
-    private final DictionaryDescription dictionary;
+    private final List<MultiDictionaryDescription> dictionaries;
 
-    private DictionaryBinding(String name, String box, DictionaryDescription dictionary) {
+    private MultiDictionaryBinding(String name, String box, List<MultiDictionaryDescription> dictionaries) {
         super(name, box);
-        this.dictionary = dictionary;
+        this.dictionaries = dictionaries != null ? dictionaries : new ArrayList<>();
     }
 
     public static Builder builder() {
         return new Builder();
     }
 
-    public DictionaryDescription getDictionary() {
-        return this.dictionary;
+    public List<MultiDictionaryDescription> getDictionaries() {
+        return dictionaries;
     }
 
     @Override
@@ -44,11 +44,11 @@ public final class DictionaryBinding extends AbstractDictionaryBinding {
         if (this == o) {
             return true;
         }
-        if (!(o instanceof DictionaryBinding)) {
+        if (!(o instanceof MultiDictionaryBinding)) {
             return false;
         }
-        DictionaryBinding that = (DictionaryBinding) o;
-        return Objects.equals(box, that.box) && Objects.equals(dictionary, that.dictionary);
+        MultiDictionaryBinding that = (MultiDictionaryBinding) o;
+        return Objects.equals(box, that.box) && Objects.equals(dictionaries, that.dictionaries);
     }
 
     @Override
@@ -61,13 +61,22 @@ public final class DictionaryBinding extends AbstractDictionaryBinding {
         return String.format("%s[%s:%s]",
                 this.getClass().getSimpleName(),
                 this.box,
-                this.dictionary == null ? "null" : this.dictionary.getName());
+                this.dictionaries == null ? "null" : asString());
     }
 
     @Override
     public String toString() {
-        return String.format("name: %s box: %s dictionary: %s (%s)", name, box,
-                dictionary.getName(), dictionary.getType());
+        return String.format("name: %s box: %s dictionaries: %s", name, box, asString());
+    }
+
+    private String asString() {
+        StringBuilder dictionaryNames = new StringBuilder();
+        for (MultiDictionaryDescription dictionaryDescription : dictionaries) {
+            dictionaryNames.append(dictionaryDescription.getName())
+                    .append("-")
+                    .append(dictionaryDescription.getAlias());
+        }
+        return dictionaryNames.toString();
     }
 
     public static class Builder {
@@ -76,7 +85,7 @@ public final class DictionaryBinding extends AbstractDictionaryBinding {
 
         private String box;
 
-        private DictionaryDescription dictionary;
+        private List<MultiDictionaryDescription> dictionaries;
 
         Builder() {
         }
@@ -93,14 +102,14 @@ public final class DictionaryBinding extends AbstractDictionaryBinding {
             return this;
         }
 
-        @JsonProperty("dictionary")
-        public Builder dictionary(DictionaryDescription dictionary) {
-            this.dictionary = dictionary;
+        @JsonProperty("dictionaries")
+        public Builder dictionaries(List<MultiDictionaryDescription> dictionaries) {
+            this.dictionaries = dictionaries;
             return this;
         }
 
-        private DictionaryBinding build() {
-            return new DictionaryBinding(name, box, dictionary);
+        private MultiDictionaryBinding build() {
+            return new MultiDictionaryBinding(name, box, dictionaries);
         }
     }
 }

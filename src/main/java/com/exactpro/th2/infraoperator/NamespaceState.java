@@ -19,6 +19,7 @@ package com.exactpro.th2.infraoperator;
 import com.exactpro.th2.infraoperator.spec.helmrelease.HelmRelease;
 import com.exactpro.th2.infraoperator.spec.link.Th2Link;
 import com.exactpro.th2.infraoperator.spec.link.relation.dictionaries.DictionaryBinding;
+import com.exactpro.th2.infraoperator.spec.link.relation.dictionaries.MultiDictionaryBinding;
 import com.exactpro.th2.infraoperator.spec.link.relation.pins.PinCouplingGRPC;
 import io.fabric8.kubernetes.api.model.HasMetadata;
 
@@ -65,6 +66,14 @@ public class NamespaceState implements OperatorState.NamespaceLock {
             dictionaryBindings.addAll(linkRes.getSpec().getDictionariesRelation());
         }
         return dictionaryBindings;
+    }
+
+    public List<MultiDictionaryBinding> getMultiDictionaryLinks() {
+        List<MultiDictionaryBinding> multiDictionaryBindings = new ArrayList<>();
+        for (var linkRes : linkResources) {
+            multiDictionaryBindings.addAll(linkRes.getSpec().getMultiDictionariesRelation());
+        }
+        return multiDictionaryBindings;
     }
 
     public String getConfigChecksums(String key) {

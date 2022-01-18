@@ -19,7 +19,9 @@ package com.exactpro.th2.infraoperator.operator;
 import com.exactpro.th2.infraoperator.OperatorState;
 import com.exactpro.th2.infraoperator.configuration.OperatorConfig;
 import com.exactpro.th2.infraoperator.model.box.configuration.dictionary.DictionaryEntity;
+import com.exactpro.th2.infraoperator.model.box.configuration.dictionary.MultiDictionaryEntity;
 import com.exactpro.th2.infraoperator.model.box.configuration.dictionary.factory.DictionaryFactory;
+import com.exactpro.th2.infraoperator.model.box.configuration.dictionary.factory.MultiDictionaryFactory;
 import com.exactpro.th2.infraoperator.model.box.configuration.grpc.GrpcRouterConfiguration;
 import com.exactpro.th2.infraoperator.model.box.configuration.grpc.factory.GrpcRouterConfigFactory;
 import com.exactpro.th2.infraoperator.model.box.configuration.mq.MessageRouterConfiguration;
@@ -81,7 +83,9 @@ public abstract class HelmReleaseTh2Op<CR extends Th2CustomResource> extends Abs
 
     private static final String PROMETHEUS_CONFIG_ALIAS = "prometheus";
 
-    public static final String DICTIONARIES_ALIAS = "dictionaries";
+    public static final String DICTIONARIES_ALIAS = "oldDictionaries";
+
+    public static final String MULTI_DICTIONARIES_ALIAS = "dictionaries";
 
     private static final String MQ_QUEUE_CONFIG_ALIAS = "mq";
 
@@ -123,6 +127,8 @@ public abstract class HelmReleaseTh2Op<CR extends Th2CustomResource> extends Abs
 
     protected final DictionaryFactory dictionaryFactory;
 
+    protected final MultiDictionaryFactory multiDictionaryFactory;
+
     protected final MixedOperation<HelmRelease, KubernetesResourceList<HelmRelease>, Resource<HelmRelease>>
             helmReleaseClient;
 
@@ -142,6 +148,7 @@ public abstract class HelmReleaseTh2Op<CR extends Th2CustomResource> extends Abs
         this.declareQueueResolver = new DeclareQueueResolver();
         this.grpcConfigFactory = builder.getGrpcConfigFactory();
         this.dictionaryFactory = builder.getDictionaryFactory();
+        this.multiDictionaryFactory = builder.getMultiDictionaryFactory();
 
         helmReleaseClient = kubClient.resources(HelmRelease.class);
 
@@ -176,10 +183,13 @@ public abstract class HelmReleaseTh2Op<CR extends Th2CustomResource> extends Abs
         OperatorState operatorState = OperatorState.INSTANCE;
         var grpcActiveLinks = operatorState.getGrpLinks(resNamespace);
         var dictionaryActiveLinks = operatorState.getDictionaryLinks(resNamespace);
+        var multiDictionaryActiveLinks = operatorState.getMultiDictionaryLinks(resNamespace);
 
         MessageRouterConfiguration mqConfig = mqConfigFactory.createConfig(resource);
         GrpcRouterConfiguration grpcConfig = grpcConfigFactory.createConfig(resource, grpcActiveLinks);
         List<DictionaryEntity> dictionaries = dictionaryFactory.create(resource, dictionaryActiveLinks);
+        List<MultiDictionaryEntity> multiDict = multiDictionaryFactory.create(resource, multiDictionaryActiveLinks);
+
         String loggingConfigChecksum = operatorState.getConfigChecksum(resNamespace, LOGGING_ALIAS);
         String mqRouterChecksum = operatorState.getConfigChecksum(resNamespace, MQ_ROUTER_ALIAS);
         String grpcRouterChecksum = operatorState.getConfigChecksum(resNamespace, GRPC_ROUTER_ALIAS);
@@ -245,6 +255,11 @@ public abstract class HelmReleaseTh2Op<CR extends Th2CustomResource> extends Abs
         if (!dictionaries.isEmpty()) {
             helmRelease.mergeValue(PROPERTIES_MERGE_DEPTH, ROOT_PROPERTIES_ALIAS,
                     Map.of(DICTIONARIES_ALIAS, dictionaries));
+        }
+
+        if (!multiDict.isEmpty()) {
+            helmRelease.mergeValue(PROPERTIES_MERGE_DEPTH, ROOT_PROPERTIES_ALIAS,
+                    Map.of(MULTI_DICTIONARIES_ALIAS, multiDict));
         }
 
         Map<String, Object> extendedSettings = resSpec.getExtendedSettings();

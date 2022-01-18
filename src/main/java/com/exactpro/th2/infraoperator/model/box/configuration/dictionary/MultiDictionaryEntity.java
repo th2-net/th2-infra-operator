@@ -16,30 +16,30 @@
 
 package com.exactpro.th2.infraoperator.model.box.configuration.dictionary;
 
-public class DictionaryEntity {
+public class MultiDictionaryEntity {
 
     private final String name;
 
-    private final String type;
-
     private String checksum;
 
-    public DictionaryEntity(String name, String type, String checksum) {
+    private final String alias;
+
+    public MultiDictionaryEntity(String name, String checksum, String alias) {
         this.name = name;
-        this.type = type;
         this.checksum = checksum;
+        this.alias = alias;
     }
 
     public String getName() {
         return this.name;
     }
 
-    public String getType() {
-        return this.type;
-    }
-
     public String getChecksum() {
         return this.checksum;
+    }
+
+    public String getAlias() {
+        return alias;
     }
 
     public void updateChecksum(String checksum) {

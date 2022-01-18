@@ -18,6 +18,7 @@ package com.exactpro.th2.infraoperator.spec.link;
 
 import com.exactpro.th2.infraoperator.spec.link.relation.BoxesRelation;
 import com.exactpro.th2.infraoperator.spec.link.relation.dictionaries.DictionaryBinding;
+import com.exactpro.th2.infraoperator.spec.link.relation.dictionaries.MultiDictionaryBinding;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import io.fabric8.kubernetes.api.model.KubernetesResource;
@@ -32,10 +33,17 @@ public final class Th2LinkSpec implements KubernetesResource {
 
     private List<DictionaryBinding> dictionariesRelation;
 
-    private Th2LinkSpec(BoxesRelation boxesRelation, List<DictionaryBinding> dictionariesRelation) {
+    private List<MultiDictionaryBinding> multiDictionariesRelation;
+
+    private Th2LinkSpec(BoxesRelation boxesRelation,
+                        List<DictionaryBinding> dictionariesRelation,
+                        List<MultiDictionaryBinding> multiDictionariesRelation) {
 
         this.boxesRelation = (boxesRelation == null) ? BoxesRelation.newEmptyRelation() : boxesRelation;
         this.dictionariesRelation = (dictionariesRelation == null) ? new ArrayList<>() : dictionariesRelation;
+        this.multiDictionariesRelation = (multiDictionariesRelation == null)
+                ? new ArrayList<>() : multiDictionariesRelation;
+
     }
 
     public BoxesRelation getBoxesRelation() {
@@ -44,6 +52,10 @@ public final class Th2LinkSpec implements KubernetesResource {
 
     public List<DictionaryBinding> getDictionariesRelation() {
         return this.dictionariesRelation;
+    }
+
+    public List<MultiDictionaryBinding> getMultiDictionariesRelation() {
+        return multiDictionariesRelation;
     }
 
     @Override
@@ -66,7 +78,10 @@ public final class Th2LinkSpec implements KubernetesResource {
 
         private List<DictionaryBinding> dictionariesRelation;
 
-        private Builder() { }
+        private List<MultiDictionaryBinding> multiDictionariesRelation;
+
+        private Builder() {
+        }
 
         @JsonProperty("boxes-relation")
         public Builder boxesRelation(BoxesRelation boxesRelation) {
@@ -80,8 +95,14 @@ public final class Th2LinkSpec implements KubernetesResource {
             return this;
         }
 
+        @JsonProperty("multi-dictionaries-relation")
+        public Builder multiDictionariesRelation(List<MultiDictionaryBinding> multiDictionariesRelation) {
+            this.multiDictionariesRelation = multiDictionariesRelation;
+            return this;
+        }
+
         public Th2LinkSpec build() {
-            return new Th2LinkSpec(boxesRelation, dictionariesRelation);
+            return new Th2LinkSpec(boxesRelation, dictionariesRelation, multiDictionariesRelation);
         }
     }
 }

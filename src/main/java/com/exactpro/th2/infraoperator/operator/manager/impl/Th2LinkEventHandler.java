@@ -23,6 +23,7 @@ import com.exactpro.th2.infraoperator.spec.link.Th2Link;
 import com.exactpro.th2.infraoperator.spec.link.Th2LinkSpec;
 import com.exactpro.th2.infraoperator.spec.link.relation.BoxesRelation;
 import com.exactpro.th2.infraoperator.spec.link.relation.dictionaries.DictionaryBinding;
+import com.exactpro.th2.infraoperator.spec.link.relation.dictionaries.MultiDictionaryBinding;
 import com.exactpro.th2.infraoperator.spec.link.relation.pins.PinCoupling;
 import com.exactpro.th2.infraoperator.spec.link.relation.pins.PinCouplingGRPC;
 import com.exactpro.th2.infraoperator.spec.shared.Identifiable;
@@ -189,6 +190,7 @@ public class Th2LinkEventHandler implements Watcher<Th2Link> {
         checkForDuplicates(spec.getBoxesRelation().getRouterMq(), resourceLabel);
         checkForDuplicates(spec.getBoxesRelation().getRouterGrpc(), resourceLabel);
         checkForDuplicates(spec.getDictionariesRelation(), resourceLabel);
+        checkForDuplicates(spec.getMultiDictionariesRelation(), resourceLabel);
     }
 
     private void removeInvalidLinks(Th2Link th2Link) {
@@ -242,8 +244,16 @@ public class Th2LinkEventHandler implements Watcher<Th2Link> {
         Set<String> affectedByDictionaryBindings = getAffectedBoxNamesByList(prevDictionaryBindings,
                 newDictionaryBindings, binding -> Set.of(binding.getBox()));
 
-        // join two sets
+        // collect box names affected by multi dictionary binding changes
+        List<MultiDictionaryBinding> prevMultiDictionaryBindings = prevLink.getSpec().getMultiDictionariesRelation();
+        List<MultiDictionaryBinding> newMultiDictionaryBindings = newLink.getSpec().getMultiDictionariesRelation();
+
+        Set<String> affectedByMultiDictionaryBindings = getAffectedBoxNamesByList(prevMultiDictionaryBindings,
+                newMultiDictionaryBindings, binding -> Set.of(binding.getBox()));
+
+        // join three sets
         affectedByRouterLinks.addAll(affectedByDictionaryBindings);
+        affectedByRouterLinks.addAll(affectedByMultiDictionaryBindings);
         return affectedByRouterLinks;
     }
 
