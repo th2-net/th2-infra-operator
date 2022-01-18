@@ -19,6 +19,7 @@ package com.exactpro.th2.infraoperator;
 import com.exactpro.th2.infraoperator.spec.helmrelease.HelmRelease;
 import com.exactpro.th2.infraoperator.spec.link.Th2Link;
 import com.exactpro.th2.infraoperator.spec.link.relation.dictionaries.DictionaryBinding;
+import com.exactpro.th2.infraoperator.spec.link.relation.dictionaries.MultiDictionaryBinding;
 import com.exactpro.th2.infraoperator.spec.link.relation.pins.PinCouplingGRPC;
 import io.fabric8.kubernetes.api.model.HasMetadata;
 
@@ -47,6 +48,11 @@ public enum OperatorState {
     public List<DictionaryBinding> getDictionaryLinks(String namespace) {
         var links = namespaceStates.get(namespace);
         return Objects.nonNull(links) ? Collections.unmodifiableList(links.getDictionaryLinks()) : List.of();
+    }
+
+    public List<MultiDictionaryBinding> getMultiDictionaryLinks(String namespace) {
+        var links = namespaceStates.get(namespace);
+        return Objects.nonNull(links) ? Collections.unmodifiableList(links.getMultiDictionaryLinks()) : List.of();
     }
 
     public String getConfigChecksum(String namespace, String key) {

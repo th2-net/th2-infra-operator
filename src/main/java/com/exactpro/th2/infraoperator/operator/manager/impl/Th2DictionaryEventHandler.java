@@ -18,6 +18,7 @@ package com.exactpro.th2.infraoperator.operator.manager.impl;
 
 import com.exactpro.th2.infraoperator.OperatorState;
 import com.exactpro.th2.infraoperator.metrics.OperatorMetrics;
+import com.exactpro.th2.infraoperator.model.box.configuration.dictionary.MultiDictionaryEntity;
 import com.exactpro.th2.infraoperator.model.kubernetes.client.impl.DictionaryClient;
 import com.exactpro.th2.infraoperator.model.box.configuration.dictionary.DictionaryEntity;
 import com.exactpro.th2.infraoperator.spec.dictionary.Th2Dictionary;
@@ -50,7 +51,8 @@ import static com.exactpro.th2.infraoperator.util.CustomResourceUtils.RESYNC_TIM
 import static com.exactpro.th2.infraoperator.util.CustomResourceUtils.annotationFor;
 import static com.exactpro.th2.infraoperator.util.ExtractUtils.extractName;
 import static com.exactpro.th2.infraoperator.util.ExtractUtils.extractNamespace;
-import static com.exactpro.th2.infraoperator.util.HelmReleaseUtils.extractDictionariesConfig;
+import static com.exactpro.th2.infraoperator.util.HelmReleaseUtils.extractMultiDictionariesConfig;
+import static com.exactpro.th2.infraoperator.util.HelmReleaseUtils.extractOldDictionariesConfig;
 
 public class Th2DictionaryEventHandler implements Watcher<Th2Dictionary> {
 
@@ -192,8 +194,14 @@ public class Th2DictionaryEventHandler implements Watcher<Th2Dictionary> {
 
         OperatorState operatorState = OperatorState.INSTANCE;
 
+        String dictionaryName = extractName(dictionary);
         for (var dictionaryBinding : operatorState.getDictionaryLinks(namespace)) {
-            if (dictionaryBinding.getDictionary().getName().equals(extractName(dictionary))) {
+            if (dictionaryBinding.getDictionary().getName().equals(dictionaryName)) {
+                resources.add(dictionaryBinding.getBox());
+            }
+        }
+        for (var dictionaryBinding : operatorState.getMultiDictionaryLinks(namespace)) {
+            if (dictionaryBinding.getDictionaries().stream().anyMatch(dict -> dict.getName().equals(dictionaryName))) {
                 resources.add(dictionaryBinding.getBox());
             }
         }
@@ -242,20 +250,27 @@ public class Th2DictionaryEventHandler implements Watcher<Th2Dictionary> {
                 logger.debug("Found HelmRelease \"{}\"", CustomResourceUtils.annotationFor(hr));
             }
 
-            List<DictionaryEntity> oldConfig = extractDictionariesConfig(hr);
-            List<DictionaryEntity> newConfig = new ArrayList<>();
-            for (var entity : oldConfig) {
-                if (entity.getName().equals(dictionaryName)) {
-                    String type = entity.getType();
-                    DictionaryEntity modifiedEntity = new DictionaryEntity(dictionaryName, type, checksum);
-                    newConfig.add(modifiedEntity);
-                } else {
-                    newConfig.add(entity);
+            List<DictionaryEntity> dictionaryConfig = extractOldDictionariesConfig(hr);
+            if (dictionaryConfig != null) {
+                for (var entity : dictionaryConfig) {
+                    if (entity.getName().equals(dictionaryName)) {
+                        entity.updateChecksum(checksum);
+                    }
                 }
+                hr.mergeValue(PROPERTIES_MERGE_DEPTH, ROOT_PROPERTIES_ALIAS,
+                        Map.of(DICTIONARIES_ALIAS, dictionaryConfig));
             }
-            hr.mergeValue(PROPERTIES_MERGE_DEPTH, ROOT_PROPERTIES_ALIAS,
-                    Map.of(DICTIONARIES_ALIAS, newConfig));
 
+            List<MultiDictionaryEntity> multiDictionaryConfig = extractMultiDictionariesConfig(hr);
+            if (multiDictionaryConfig != null) {
+                for (var entity : multiDictionaryConfig) {
+                    if (entity.getName().equals(dictionaryName)) {
+                        entity.updateChecksum(checksum);
+                    }
+                }
+                hr.mergeValue(PROPERTIES_MERGE_DEPTH, ROOT_PROPERTIES_ALIAS,
+                        Map.of(MULTI_DICTIONARIES_ALIAS, multiDictionaryConfig));
+            }
             logger.debug("Updating \"{}\"", CustomResourceUtils.annotationFor(hr));
             createKubObj(namespace, hr);
             logger.debug("Updated \"{}\"", CustomResourceUtils.annotationFor(hr));
