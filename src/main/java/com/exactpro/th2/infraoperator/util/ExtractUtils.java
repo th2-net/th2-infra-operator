@@ -17,6 +17,7 @@
 package com.exactpro.th2.infraoperator.util;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -47,6 +48,14 @@ public final class ExtractUtils {
 
     public static Map<String, String> extractAnnotations(HasMetadata obj) {
         return obj.getMetadata().getAnnotations();
+    }
+
+    public static Map<String, String> extractNeededAnnotations(HasMetadata obj, String antecedent, String commitHash) {
+        Map<String, String> neededAnnotations = new HashMap<>();
+        var resourceAnnotations = obj.getMetadata().getAnnotations();
+        neededAnnotations.put(antecedent, resourceAnnotations.get(antecedent));
+        neededAnnotations.put(commitHash, resourceAnnotations.get(commitHash));
+        return neededAnnotations;
     }
 
     public static List<PinSpec> extractMqPins(Th2CustomResource resource) {
