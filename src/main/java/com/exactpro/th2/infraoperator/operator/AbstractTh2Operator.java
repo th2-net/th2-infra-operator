@@ -48,6 +48,7 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.concurrent.ConcurrentHashMap;
 
+import static com.exactpro.th2.infraoperator.operator.HelmReleaseTh2Op.ANTECEDENT_LABEL_KEY_ALIAS;
 import static com.exactpro.th2.infraoperator.util.ExtractUtils.extractName;
 import static com.exactpro.th2.infraoperator.util.ExtractUtils.extractNamespace;
 import static io.fabric8.kubernetes.client.Watcher.Action.MODIFIED;
@@ -59,8 +60,6 @@ public abstract class AbstractTh2Operator<CR extends Th2CustomResource, KO exten
     private static final int REDEPLOY_DELAY = 120;
 
     public static final String REFRESH_TOKEN_ALIAS = "refresh-token";
-
-    public static final String ANTECEDENT_LABEL_KEY_ALIAS = "th2.exactpro.com/antecedent";
 
     private final RetryableTaskQueue retryableTaskQueue = new RetryableTaskQueue();
 

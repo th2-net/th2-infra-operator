@@ -60,6 +60,10 @@ public abstract class HelmReleaseTh2Op<CR extends Th2CustomResource> extends Abs
 
     public static final int PROPERTIES_MERGE_DEPTH = 1;
 
+    public static final String ANTECEDENT_LABEL_KEY_ALIAS = "th2.exactpro.com/antecedent";
+
+    public static final String COMMIT_HASH_LABEL_KEY_ALIAS = "th2.exactpro.com/git-commit-hash";
+
     //spec section
     private static final String CHART_PROPERTIES_ALIAS = "chart";
 
@@ -282,7 +286,7 @@ public abstract class HelmReleaseTh2Op<CR extends Th2CustomResource> extends Abs
 
         helmRelease.mergeSpecProp(CHART_PROPERTIES_ALIAS, defaultChartConfig.toMap());
         helmRelease.mergeValue(Map.of(ANNOTATIONS_ALIAS,
-                extractAnnotations(resource).get(ANTECEDENT_LABEL_KEY_ALIAS)));
+                extractNeededAnnotations(resource, ANTECEDENT_LABEL_KEY_ALIAS, COMMIT_HASH_LABEL_KEY_ALIAS)));
 
         convertBooleanFields(helmRelease);
     }

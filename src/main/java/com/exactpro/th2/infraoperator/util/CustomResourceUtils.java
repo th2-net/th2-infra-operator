@@ -143,7 +143,7 @@ public final class CustomResourceUtils {
         try {
             return resource.getMetadata().getAnnotations().get(GIT_COMMIT_HASH).substring(0, SHORT_HASH_LENGTH);
         } catch (NullPointerException e) {
-            return "NOT_PRESENT";
+            return "not related to specific commit, using default value";
         }
     }
 }
