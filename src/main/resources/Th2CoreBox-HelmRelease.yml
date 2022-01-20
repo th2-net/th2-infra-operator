@@ -9,8 +9,6 @@ spec:
   wait: false
   releaseName: th2-core-box
   chart:
-    secretRef:
-      name: git-chart-creds
     skipDepUpdate: true
   values:
     component:
