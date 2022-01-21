@@ -24,8 +24,7 @@ import com.exactpro.th2.infraoperator.spec.link.relation.dictionaries.Dictionary
 import com.exactpro.th2.infraoperator.util.ExtractUtils;
 import io.fabric8.kubernetes.api.model.HasMetadata;
 
-import java.util.ArrayList;
-import java.util.List;
+import java.util.*;
 
 /**
  * A factory that creates list of {@link DictionaryEntity}
@@ -40,9 +39,9 @@ public class DictionaryFactory {
      * @param activeLinks active links
      * @return list of {@link DictionaryEntity} based on provided active {@code activeLinks} and {@code resource}
      */
-    public List<DictionaryEntity> create(Th2CustomResource resource, List<DictionaryBinding> activeLinks) {
+    public Collection<DictionaryEntity> create(Th2CustomResource resource, List<DictionaryBinding> activeLinks) {
 
-        List<DictionaryEntity> dictionaries = new ArrayList<>();
+        Map<String, DictionaryEntity> dictionaries = new HashMap<>();
 
         activeLinks.forEach(link -> {
             try {
@@ -54,13 +53,18 @@ public class DictionaryFactory {
                             .getResourceFromCache(name, resource.getMetadata().getNamespace());
 
                     String checksum = ExtractUtils.sourceHash(res, false);
-                    dictionaries.add(new DictionaryEntity(name, type, checksum));
+                    if (dictionaries.containsKey(type)) {
+                        throw new Exception(
+                                String.format("multiple dictionaries linked with same type: %s", type)
+                        );
+                    }
+                    dictionaries.put(type, new DictionaryEntity(name, type, checksum));
                 }
             } catch (Exception e) {
                 throw new RuntimeException(e);
             }
         });
 
-        return dictionaries;
+        return dictionaries.values();
     }
 }

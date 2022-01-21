@@ -250,7 +250,7 @@ public class Th2DictionaryEventHandler implements Watcher<Th2Dictionary> {
                 logger.debug("Found HelmRelease \"{}\"", CustomResourceUtils.annotationFor(hr));
             }
 
-            List<DictionaryEntity> dictionaryConfig = extractOldDictionariesConfig(hr);
+            Collection<DictionaryEntity> dictionaryConfig = extractOldDictionariesConfig(hr);
             if (dictionaryConfig != null) {
                 for (var entity : dictionaryConfig) {
                     if (entity.getName().equals(dictionaryName)) {
