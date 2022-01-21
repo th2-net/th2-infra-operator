@@ -191,7 +191,7 @@ public abstract class HelmReleaseTh2Op<CR extends Th2CustomResource> extends Abs
 
         MessageRouterConfiguration mqConfig = mqConfigFactory.createConfig(resource);
         GrpcRouterConfiguration grpcConfig = grpcConfigFactory.createConfig(resource, grpcActiveLinks);
-        List<DictionaryEntity> dictionaries = dictionaryFactory.create(resource, dictionaryActiveLinks);
+        Collection<DictionaryEntity> dictionaries = dictionaryFactory.create(resource, dictionaryActiveLinks);
         List<MultiDictionaryEntity> multiDict = multiDictionaryFactory.create(resource, multiDictionaryActiveLinks);
 
         String loggingConfigChecksum = operatorState.getConfigChecksum(resNamespace, LOGGING_ALIAS);

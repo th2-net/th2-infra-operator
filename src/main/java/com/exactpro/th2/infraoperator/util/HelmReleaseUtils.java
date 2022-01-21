@@ -32,6 +32,7 @@ import org.apache.commons.text.lookup.StringLookupFactory;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 import java.util.function.Function;
@@ -201,10 +202,10 @@ public class HelmReleaseUtils {
         return (Map<String, Object>) componentConfigs.get(key);
     }
 
-    public static List<DictionaryEntity> extractOldDictionariesConfig(HelmRelease helmRelease) {
+    public static Collection<DictionaryEntity> extractOldDictionariesConfig(HelmRelease helmRelease) {
         var values = (Map<String, Object>) helmRelease.getValuesSection();
         var componentConfigs = (Map<String, Object>) values.get(ROOT_PROPERTIES_ALIAS);
-        return (List<DictionaryEntity>) componentConfigs.get(DICTIONARIES_ALIAS);
+        return (Collection<DictionaryEntity>) componentConfigs.get(DICTIONARIES_ALIAS);
     }
 
     public static List<MultiDictionaryEntity> extractMultiDictionariesConfig(HelmRelease helmRelease) {
