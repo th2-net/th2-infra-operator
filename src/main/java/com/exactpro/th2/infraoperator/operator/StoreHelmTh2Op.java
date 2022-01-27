@@ -22,6 +22,8 @@ import com.exactpro.th2.infraoperator.spec.Th2CustomResource;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.io.IOException;
+
 import static com.exactpro.th2.infraoperator.util.ExtractUtils.*;
 
 public abstract class StoreHelmTh2Op<CR extends Th2CustomResource> extends HelmReleaseTh2Op<CR> {
@@ -48,7 +50,7 @@ public abstract class StoreHelmTh2Op<CR extends Th2CustomResource> extends HelmR
         super(builder);
     }
 
-    private void nameCheck(CR resource) {
+    private void nameCheck(CR resource) throws IOException {
         var msNamespace = extractNamespace(resource);
         var lock = OperatorState.INSTANCE.getLock(msNamespace);
 
@@ -76,12 +78,12 @@ public abstract class StoreHelmTh2Op<CR extends Th2CustomResource> extends HelmR
     }
 
     @Override
-    protected void addedEvent(CR resource) {
+    protected void addedEvent(CR resource) throws IOException {
         nameCheck(resource);
     }
 
     @Override
-    protected void modifiedEvent(CR resource) {
+    protected void modifiedEvent(CR resource) throws IOException {
         nameCheck(resource);
     }
 
