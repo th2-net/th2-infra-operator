@@ -28,7 +28,6 @@ import com.exactpro.th2.infraoperator.util.CustomResourceUtils;
 import com.exactpro.th2.infraoperator.util.ExtractUtils;
 import com.rabbitmq.client.Channel;
 import com.rabbitmq.http.client.domain.QueueInfo;
-import lombok.SneakyThrows;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -45,7 +44,6 @@ public class DeclareQueueResolver {
 
     private final RabbitMQManagementConfig rabbitMQManagementConfig;
 
-    @SneakyThrows
     public DeclareQueueResolver() {
         this.rabbitMQManagementConfig = OperatorConfig.INSTANCE.getRabbitMQManagementConfig();
     }
@@ -77,8 +75,7 @@ public class DeclareQueueResolver {
         }
     }
 
-    @SneakyThrows
-    private void declareQueueBunch(String namespace, Th2CustomResource resource) {
+    private void declareQueueBunch(String namespace, Th2CustomResource resource) throws IOException {
 
         Channel channel = getChannel();
 
@@ -114,7 +111,6 @@ public class DeclareQueueResolver {
         removeExtinctQueues(channel, boxQueues, CustomResourceUtils.annotationFor(resource));
     }
 
-    @SneakyThrows
     private Set<String> getBoxQueuesFromRabbit(String namespace, String boxName) {
 
         List<QueueInfo> queueInfoList = RabbitMQContext.getQueues();
@@ -140,7 +136,6 @@ public class DeclareQueueResolver {
         return queueNames;
     }
 
-    @SneakyThrows
     private Channel getChannel() {
         Channel channel = RabbitMQContext.getChannel();
         if (!channel.isOpen()) {
