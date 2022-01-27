@@ -19,6 +19,7 @@ package com.exactpro.th2.infraoperator.operator;
 import com.exactpro.th2.infraoperator.spec.helmrelease.HelmRelease;
 import org.junit.jupiter.api.Test;
 
+import java.io.IOException;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
@@ -40,7 +41,7 @@ public class HelmReleaseUtilsTest {
     private static final String ENABLED_ALIAS = "enabled";
 
     @Test
-    void testNull() {
+    void testNull() throws IOException {
         Map<String, Object> component = new HashMap<>();
         component.put(EXTENDED_SETTINGS_ALIAS, null);
         HelmRelease hr = HelmRelease.of("src/test/resources/helmRelease.yml");
@@ -53,7 +54,7 @@ public class HelmReleaseUtilsTest {
     }
 
     @Test
-    void testServiceEmptyMap() {
+    void testServiceEmptyMap() throws IOException {
         Map<String, Object> component = new HashMap<>();
         component.put(EXTENDED_SETTINGS_ALIAS, Collections.emptyMap());
         HelmRelease hr = HelmRelease.of("src/test/resources/helmRelease.yml");
@@ -65,7 +66,7 @@ public class HelmReleaseUtilsTest {
     }
 
     @Test
-    void testNonMapElement() {
+    void testNonMapElement() throws IOException {
 
         Map<String, Object> service = Collections.emptyMap();
         List<Object> notMap = Collections.singletonList(service);
@@ -79,7 +80,7 @@ public class HelmReleaseUtilsTest {
     }
 
     @Test
-    void testEnabledTrue() {
+    void testEnabledTrue() throws IOException {
         Map<String, Object> service = new HashMap<>();
         service.put(ENABLED_ALIAS, "true");
         Map<String, Object> externalBox = new HashMap<>();
@@ -101,7 +102,7 @@ public class HelmReleaseUtilsTest {
     }
 
     @Test
-    void testServiceEnabledFalse() {
+    void testServiceEnabledFalse() throws IOException {
         Map<String, Object> service = new HashMap<>();
         service.put(ENABLED_ALIAS, "false");
         Map<String, Object> externalBox = new HashMap<>();

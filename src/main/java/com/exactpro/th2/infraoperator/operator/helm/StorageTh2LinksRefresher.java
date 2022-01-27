@@ -25,7 +25,6 @@ import com.exactpro.th2.infraoperator.spec.shared.PinAttribute;
 import com.exactpro.th2.infraoperator.spec.shared.PinSpec;
 import com.exactpro.th2.infraoperator.spec.strategy.linkresolver.mq.BindQueueLinkResolver;
 import com.exactpro.th2.infraoperator.util.ExtractUtils;
-import lombok.SneakyThrows;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -71,7 +70,6 @@ public abstract class StorageTh2LinksRefresher<CR extends Th2CustomResource> {
 
     }
 
-    @SneakyThrows
     protected Th2Link getStLinkResAndCreateIfAbsent(String namespace, List<Th2Link> linkResources) {
 
         var linkResourceName = context.getLinkResourceName();
