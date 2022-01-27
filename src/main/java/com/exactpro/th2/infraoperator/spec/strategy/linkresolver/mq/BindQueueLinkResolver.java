@@ -25,7 +25,6 @@ import com.exactpro.th2.infraoperator.spec.strategy.linkresolver.queue.QueueName
 import com.exactpro.th2.infraoperator.spec.strategy.linkresolver.queue.RoutingKeyName;
 import com.exactpro.th2.infraoperator.spec.strategy.redeploy.NonTerminalException;
 import com.rabbitmq.client.Channel;
-import lombok.SneakyThrows;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -86,7 +85,6 @@ public class BindQueueLinkResolver {
         return mqEnqueuedLinks;
     }
 
-    @SneakyThrows
     private static void bindQueues(String namespace, QueueDescription queue) {
 
         try {
@@ -114,7 +112,6 @@ public class BindQueueLinkResolver {
         }
     }
 
-    @SneakyThrows
     private static void removeExtinctBindings(String namespace,
                                               Th2Link oldLinkRes,
                                               Th2Link newLinkRes) {
@@ -123,7 +120,6 @@ public class BindQueueLinkResolver {
                 newLinkRes.getSpec().getBoxesRelation().getRouterMq());
     }
 
-    @SneakyThrows
     public static void removeExtinctBindings(String namespace,
                                              List<PinCouplingMQ> oldLinksCoupling,
                                              List<PinCouplingMQ> newLinksCoupling) {

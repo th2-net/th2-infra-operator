@@ -48,6 +48,7 @@ import io.fabric8.kubernetes.client.informers.SharedInformerFactory;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.io.IOException;
 import java.io.InputStream;
 import java.util.*;
 
@@ -333,7 +334,7 @@ public abstract class HelmReleaseTh2Op<CR extends Th2CustomResource> extends Abs
     }
 
     @Override
-    protected void addedEvent(CR resource) {
+    protected void addedEvent(CR resource) throws IOException {
 
         String namespace = extractNamespace(resource);
         var lock = OperatorState.INSTANCE.getLock(namespace);
@@ -353,7 +354,7 @@ public abstract class HelmReleaseTh2Op<CR extends Th2CustomResource> extends Abs
     }
 
     @Override
-    protected void modifiedEvent(CR resource) {
+    protected void modifiedEvent(CR resource) throws IOException {
 
         String namespace = extractNamespace(resource);
         var lock = OperatorState.INSTANCE.getLock(namespace);

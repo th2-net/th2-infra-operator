@@ -38,10 +38,10 @@ import io.fabric8.kubernetes.client.KubernetesClientException;
 import io.fabric8.kubernetes.client.Watcher;
 import io.fabric8.kubernetes.client.WatcherException;
 import io.prometheus.client.Histogram;
-import lombok.SneakyThrows;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.io.IOException;
 import java.io.InputStream;
 import java.util.HashMap;
 import java.util.List;
@@ -139,8 +139,7 @@ public abstract class AbstractTh2Operator<CR extends Th2CustomResource, KO exten
 
     public abstract ResourceClient<CR> getResourceClient();
 
-    @SneakyThrows
-    protected KO loadKubObj(String kubObjDefPath) {
+    protected KO loadKubObj(String kubObjDefPath) throws IOException {
 
         try (var somePodYml = Th2CrdController.class.getResourceAsStream(kubObjDefPath)) {
 
@@ -157,7 +156,7 @@ public abstract class AbstractTh2Operator<CR extends Th2CustomResource, KO exten
         return (KO) kubClient.load(stream).get().get(0);
     }
 
-    protected void processEvent(Action action, CR resource) {
+    protected void processEvent(Action action, CR resource) throws IOException {
 
         String resourceLabel = CustomResourceUtils.annotationFor(resource);
         logger.debug("Processing event {} for \"{}\"", action, resourceLabel);
@@ -208,11 +207,11 @@ public abstract class AbstractTh2Operator<CR extends Th2CustomResource, KO exten
         }
     }
 
-    protected void addedEvent(CR resource) {
+    protected void addedEvent(CR resource) throws IOException {
         setupAndCreateKubObj(resource);
     }
 
-    protected void modifiedEvent(CR resource) {
+    protected void modifiedEvent(CR resource) throws IOException {
         setupAndCreateKubObj(resource);
     }
 
@@ -265,7 +264,7 @@ public abstract class AbstractTh2Operator<CR extends Th2CustomResource, KO exten
         }
     }
 
-    protected void setupAndCreateKubObj(CR resource) {
+    protected void setupAndCreateKubObj(CR resource) throws IOException {
 
         var kubObj = loadKubObj(getKubObjDefPath(resource));
 

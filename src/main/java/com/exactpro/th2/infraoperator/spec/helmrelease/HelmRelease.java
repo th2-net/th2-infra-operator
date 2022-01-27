@@ -23,9 +23,9 @@ import io.fabric8.kubernetes.client.CustomResource;
 import io.fabric8.kubernetes.model.annotation.Group;
 import io.fabric8.kubernetes.model.annotation.Kind;
 import io.fabric8.kubernetes.model.annotation.Version;
-import lombok.SneakyThrows;
 
 import java.io.File;
+import java.io.IOException;
 import java.nio.file.Path;
 import java.util.LinkedHashMap;
 import java.util.Map;
@@ -44,16 +44,15 @@ public class HelmRelease extends CustomResource<InstantiableMap, InstantiableMap
 
     private MergePutter mergePutter = new MergePutter();
 
-    @SneakyThrows
-    public static HelmRelease of(File customResourceFile) {
+    public static HelmRelease of(File customResourceFile) throws IOException {
         return YAML_READER.readValue(customResourceFile, HelmRelease.class);
     }
 
-    public static HelmRelease of(String customResourcePath) {
+    public static HelmRelease of(String customResourcePath) throws IOException {
         return of(new File(customResourcePath));
     }
 
-    public static HelmRelease of(Path customResourcePath) {
+    public static HelmRelease of(Path customResourcePath) throws IOException {
         return of(customResourcePath.toFile());
     }
 
