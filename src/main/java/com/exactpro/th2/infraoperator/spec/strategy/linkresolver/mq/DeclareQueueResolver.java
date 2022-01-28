@@ -36,6 +36,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 
+import static com.exactpro.th2.infraoperator.spec.strategy.linkresolver.mq.RabbitMQContext.getChannel;
 import static com.exactpro.th2.infraoperator.util.ExtractUtils.extractName;
 
 public class DeclareQueueResolver {
@@ -134,17 +135,6 @@ public class DeclareQueueResolver {
             }
         }
         return queueNames;
-    }
-
-    private Channel getChannel() {
-        Channel channel = RabbitMQContext.getChannel();
-        if (!channel.isOpen()) {
-            logger.warn("RabbitMQ connection is broken, trying to reconnect...");
-            RabbitMQContext.closeChannel();
-            channel = RabbitMQContext.getChannel();
-            logger.info("RabbitMQ connection has been restored");
-        }
-        return channel;
     }
 
     private void removeExtinctQueues(Channel channel, Set<String> extinctQueueNames, String resourceLabel) {
