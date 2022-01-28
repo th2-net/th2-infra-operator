@@ -51,7 +51,7 @@ public class BindQueueLinkResolver {
 
                 if (affectedResourceName.equals(pinCouple.getFrom().getBoxName())
                         || affectedResourceName.equals(pinCouple.getTo().getBoxName())) {
-                    bindQueues(namespace, queueBunch);
+                    bindQueues(queueBunch);
                 }
             }
         }
@@ -67,7 +67,7 @@ public class BindQueueLinkResolver {
                     new RoutingKeyName(namespace, pinCouple.getFrom()),
                     namespace
             );
-            bindQueues(namespace, queueBunch);
+            bindQueues(queueBunch);
         }
         removeExtinctBindings(namespace, oldLinkRes, newLinkRes);
     }
@@ -85,17 +85,10 @@ public class BindQueueLinkResolver {
         return mqEnqueuedLinks;
     }
 
-    private static void bindQueues(String namespace, QueueDescription queue) {
+    private static void bindQueues(QueueDescription queue) {
 
         try {
             Channel channel = RabbitMQContext.getChannel();
-
-            if (!channel.isOpen()) {
-                logger.warn("RabbitMQ connection is broken, trying to reconnect...");
-                RabbitMQContext.closeChannel();
-                channel = RabbitMQContext.getChannel();
-                logger.info("RabbitMQ connection has been restored");
-            }
 
             String queueName = queue.getQueueName().toString();
             var currentQueue = RabbitMQContext.getQueue(queueName);
@@ -124,10 +117,8 @@ public class BindQueueLinkResolver {
                                              List<PinCouplingMQ> oldLinksCoupling,
                                              List<PinCouplingMQ> newLinksCoupling) {
 
-        String exchange = namespace;
-
-        List<EnqueuedLink> oldLinks = convert(oldLinksCoupling, namespace, exchange);
-        List<EnqueuedLink> newLinks = convert(newLinksCoupling, namespace, exchange);
+        List<EnqueuedLink> oldLinks = convert(oldLinksCoupling, namespace, namespace);
+        List<EnqueuedLink> newLinks = convert(newLinksCoupling, namespace, namespace);
 
         oldLinks.removeIf(qlb -> newLinks.stream().anyMatch(newQlb ->
                 qlb.getQueueDescription().getQueueName().equals(newQlb.getQueueDescription().getQueueName())
@@ -136,13 +127,6 @@ public class BindQueueLinkResolver {
         ));
         try {
             Channel channel = RabbitMQContext.getChannel();
-
-            if (!channel.isOpen()) {
-                logger.warn("RabbitMQ connection is broken, trying to reconnect...");
-                RabbitMQContext.closeChannel();
-                channel = RabbitMQContext.getChannel();
-                logger.info("RabbitMQ connection has been restored");
-            }
 
             for (var extinctLink : oldLinks) {
 
