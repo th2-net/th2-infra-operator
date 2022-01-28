@@ -22,6 +22,7 @@ import com.exactpro.th2.infraoperator.configuration.RabbitMQManagementConfig;
 import com.exactpro.th2.infraoperator.configuration.RabbitMQNamespacePermissions;
 import com.exactpro.th2.infraoperator.model.kubernetes.configmaps.ConfigMaps;
 import com.exactpro.th2.infraoperator.spec.shared.PinSettings;
+import com.exactpro.th2.infraoperator.spec.strategy.linkresolver.queue.QueueName;
 import com.exactpro.th2.infraoperator.spec.strategy.redeploy.NonTerminalException;
 import com.exactpro.th2.infraoperator.util.Strings;
 import com.rabbitmq.client.Channel;
@@ -34,6 +35,7 @@ import com.rabbitmq.http.client.domain.UserPermissions;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.io.IOException;
 import java.util.*;
 
 import static java.lang.String.format;
@@ -57,31 +59,10 @@ public final class RabbitMQContext {
 
     private static void declareExchange(String exchangeName, String type) throws Exception {
         RabbitMQManagementConfig rabbitMQManagementConfig = getManagementConfig();
-        String vHostName = rabbitMQManagementConfig.getVHostName();
-
         try {
-            Client rmqClient = getClient();
-
-            // check vhost
-            if (rmqClient.getVhost(vHostName) == null) {
-                logger.error("vHost: \"{}\" is not present", vHostName);
-                return;
-            }
-
-            Channel channel = getChannel();
-
-            // check channel
-            if (!channel.isOpen()) {
-                logger.warn("RabbitMQ connection is broken, trying to reconnect...");
-                closeChannel();
-                channel = getChannel();
-                logger.info("RabbitMQ connection has been restored");
-            }
-
-            channel.exchangeDeclare(exchangeName, type, rabbitMQManagementConfig.isPersistence());
-
+            getChannel().exchangeDeclare(exchangeName, type, rabbitMQManagementConfig.isPersistence());
         } catch (Exception e) {
-            logger.error("Exception setting up exchange: \"{}\" on vHost: \"{}\"", exchangeName, vHostName, e);
+            logger.error("Exception setting up exchange: \"{}\"", exchangeName, e);
             throw e;
         }
     }
@@ -127,43 +108,50 @@ public final class RabbitMQContext {
         }
     }
 
-    public static void cleanupSchemaExchange(String exchangeName) throws Exception {
+    public static void cleanupRabbit(String namespace) {
+        removeSchemaExchange(namespace);
+        removeSchemaQueues(namespace);
+    }
 
-        String vHostName = getManagementConfig().getVHostName();
-
+    private static void removeSchemaExchange(String exchangeName) {
         try {
-            Client rmqClient = getClient();
+            getChannel().exchangeDelete(exchangeName);
+        } catch (Exception e) {
+            logger.error("Exception deleting exchange: \"{}\"", exchangeName, e);
+        }
+    }
 
-            // check vhost
-            if (rmqClient.getVhost(vHostName) == null) {
-                logger.error("vHost: \"{}\" is not present", vHostName);
-                return;
-            }
-
+    private static void removeSchemaQueues(String namespace) {
+        try {
             Channel channel = getChannel();
 
-            // check channel
-            if (!channel.isOpen()) {
-                logger.warn("RabbitMQ connection is broken, trying to reconnect...");
-                closeChannel();
-                channel = getChannel();
-                logger.info("RabbitMQ connection has been restored");
-            }
-
-            channel.exchangeDelete(exchangeName);
-
+            List<QueueInfo> queueInfoList = getQueues();
+            queueInfoList.forEach(q -> {
+                String queueName = q.getName();
+                var queue = QueueName.fromString(queueName);
+                if (queue != null && queue.getNamespace().equals(namespace)) {
+                    try {
+                        channel.queueDelete(queueName);
+                        logger.info("Deleted queue: [{}]", queueName);
+                    } catch (IOException e) {
+                        logger.error("Exception deleting queue: [{}]", queueName, e);
+                    }
+                }
+            });
         } catch (Exception e) {
-            logger.error("Exception deleting exchange: \"{}\" from vHost: \"{}\"", exchangeName, vHostName, e);
-            throw e;
+            logger.error("Exception cleaning up queues for: \"{}\"", namespace, e);
         }
     }
 
     public static Channel getChannel() {
-        return getChannelContext().channel;
-    }
-
-    public static void closeChannel() {
-        getChannelContext().close();
+        Channel channel = getChannelContext().channel;
+        if (!channel.isOpen()) {
+            logger.warn("RabbitMQ connection is broken, trying to reconnect...");
+            getChannelContext().close();
+            channel = getChannelContext().channel;
+            logger.info("RabbitMQ connection has been restored");
+        }
+        return channel;
     }
 
     public static Map<String, Object> generateQueueArguments(PinSettings pinSettings) throws NumberFormatException {
@@ -289,6 +277,7 @@ public final class RabbitMQContext {
             }
             channel = null;
             connection = null;
+            channelContext = null;
         }
     }
 }
