@@ -16,9 +16,11 @@
 
 package com.exactpro.th2.infraoperator.spec.strategy.linkresolver.mq;
 
+import com.exactpro.th2.infraoperator.OperatorState;
 import com.exactpro.th2.infraoperator.configuration.OperatorConfig;
 import com.exactpro.th2.infraoperator.configuration.RabbitMQManagementConfig;
 import com.exactpro.th2.infraoperator.spec.Th2CustomResource;
+import com.exactpro.th2.infraoperator.spec.helmrelease.HelmRelease;
 import com.exactpro.th2.infraoperator.spec.link.relation.pins.PinMQ;
 import com.exactpro.th2.infraoperator.spec.shared.PinAttribute;
 import com.exactpro.th2.infraoperator.spec.shared.PinSpec;
@@ -26,6 +28,7 @@ import com.exactpro.th2.infraoperator.spec.strategy.linkresolver.queue.QueueName
 import com.exactpro.th2.infraoperator.spec.strategy.redeploy.NonTerminalException;
 import com.exactpro.th2.infraoperator.util.CustomResourceUtils;
 import com.exactpro.th2.infraoperator.util.ExtractUtils;
+import com.exactpro.th2.infraoperator.util.HelmReleaseUtils;
 import com.rabbitmq.client.Channel;
 import com.rabbitmq.http.client.domain.QueueInfo;
 import org.slf4j.Logger;
@@ -82,7 +85,7 @@ public class DeclareQueueResolver {
 
         channel.exchangeDeclare(namespace, "direct", rabbitMQManagementConfig.isPersistence());
         //get queues that are associated with current box and are not linked through Th2Link resources
-        Set<String> boxQueues = getBoxQueuesFromRabbit(namespace, extractName(resource));
+        Set<String> boxQueues = getBoxPreviousQueues(namespace, extractName(resource));
 
         for (var pin : ExtractUtils.extractMqPins(resource)) {
             var attrs = pin.getAttributes();
@@ -110,6 +113,14 @@ public class DeclareQueueResolver {
         }
         //remove from rabbit queues that are left i.e. inactive
         removeExtinctQueues(channel, boxQueues, CustomResourceUtils.annotationFor(resource));
+    }
+
+    private Set<String> getBoxPreviousQueues(String namespace, String boxName) {
+        HelmRelease hr = OperatorState.INSTANCE.getHelmReleaseFromCache(boxName, namespace);
+        if (hr == null) {
+            return getBoxQueuesFromRabbit(namespace, boxName);
+        }
+        return HelmReleaseUtils.extractQueues(hr.getValuesSection());
     }
 
     private Set<String> getBoxQueuesFromRabbit(String namespace, String boxName) {
