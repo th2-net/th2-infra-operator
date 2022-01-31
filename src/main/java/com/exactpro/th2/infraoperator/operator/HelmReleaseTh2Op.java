@@ -96,7 +96,7 @@ public abstract class HelmReleaseTh2Op<CR extends Th2CustomResource> extends Abs
 
     public static final String MULTI_DICTIONARIES_ALIAS = "dictionaries";
 
-    private static final String MQ_QUEUE_CONFIG_ALIAS = "mq";
+    public static final String MQ_QUEUE_CONFIG_ALIAS = "mq";
 
     private static final String GRPC_P2P_CONFIG_ALIAS = "grpc";
 
