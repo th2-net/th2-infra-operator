@@ -20,6 +20,8 @@ import com.exactpro.th2.infraoperator.model.box.configuration.dictionary.Diction
 import com.exactpro.th2.infraoperator.model.box.configuration.dictionary.MultiDictionaryEntity;
 import com.exactpro.th2.infraoperator.model.box.configuration.grpc.GrpcEndpointMapping;
 import com.exactpro.th2.infraoperator.model.box.configuration.grpc.GrpcExternalEndpointMapping;
+import com.exactpro.th2.infraoperator.model.box.configuration.mq.MessageRouterConfiguration;
+import com.exactpro.th2.infraoperator.model.box.configuration.mq.QueueConfiguration;
 import com.exactpro.th2.infraoperator.spec.Th2CustomResource;
 import com.exactpro.th2.infraoperator.spec.helmrelease.HelmRelease;
 import com.exactpro.th2.infraoperator.spec.helmrelease.InstantiableMap;
@@ -32,10 +34,13 @@ import org.apache.commons.text.lookup.StringLookupFactory;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import javax.swing.*;
 import java.util.Collection;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.function.Function;
+import java.util.stream.Collectors;
 
 import static com.exactpro.th2.infraoperator.operator.HelmReleaseTh2Op.*;
 import static com.exactpro.th2.infraoperator.util.CustomResourceUtils.annotationFor;
@@ -62,6 +67,8 @@ public class HelmReleaseUtils {
     private static final String K8S_PROBES = "k8sProbes";
 
     private static final String HOST_NETWORK = "hostNetwork";
+
+    private static final ObjectMapper mapper = new ObjectMapper();
 
     private HelmReleaseUtils() {
     }
@@ -255,7 +262,6 @@ public class HelmReleaseUtils {
         if (newServiceSection == null ^ oldServiceSection == null) {
             return true;
         }
-        ObjectMapper mapper = new ObjectMapper();
         try {
             String newServiceSectionStr = mapper.writeValueAsString(newServiceSection);
             String oldServiceSectionStr = mapper.writeValueAsString(oldServiceSection);
@@ -300,6 +306,15 @@ public class HelmReleaseUtils {
                 generateSecretsConfig((Map<String, Object>) value, valuesCollector, pathsCollector);
             }
         }
+    }
+
+    public static Set<String> extractQueues(Map<String, Object> values) {
+        var mqConfigObj = getFieldAsNode(values, ROOT_PROPERTIES_ALIAS, MQ_QUEUE_CONFIG_ALIAS);
+        MessageRouterConfiguration mqConfig = mapper.convertValue(mqConfigObj, MessageRouterConfiguration.class);
+        return mqConfig.getQueues().values()
+                .stream()
+                .filter(queueConfiguration -> !(queueConfiguration.getQueueName().isEmpty()))
+                .map(QueueConfiguration::getQueueName).collect(Collectors.toSet());
     }
 
     static class CustomLookup implements StringLookup {
