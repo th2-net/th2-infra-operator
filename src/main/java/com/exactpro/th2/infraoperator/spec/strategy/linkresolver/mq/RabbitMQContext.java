@@ -24,6 +24,9 @@ import com.exactpro.th2.infraoperator.model.kubernetes.configmaps.ConfigMaps;
 import com.exactpro.th2.infraoperator.spec.shared.PinSettings;
 import com.exactpro.th2.infraoperator.spec.strategy.linkresolver.queue.QueueName;
 import com.exactpro.th2.infraoperator.spec.strategy.redeploy.NonTerminalException;
+import com.exactpro.th2.infraoperator.spec.strategy.redeploy.RetryableTaskQueue;
+import com.exactpro.th2.infraoperator.spec.strategy.redeploy.tasks.RetryMqUserTask;
+import com.exactpro.th2.infraoperator.spec.strategy.redeploy.tasks.RetryTopicExchangeTask;
 import com.exactpro.th2.infraoperator.util.Strings;
 import com.rabbitmq.client.Channel;
 import com.rabbitmq.client.Connection;
@@ -45,26 +48,30 @@ public final class RabbitMQContext {
 
     private static final Logger logger = LoggerFactory.getLogger(RabbitMQContext.class);
 
+    private static final int RETRY_DELAY = 120;
+
     private static volatile RabbitMQManagementConfig managementConfig;
 
     private static volatile ChannelContext channelContext;
 
     private static volatile Client rmqClient;
 
+    private static final RetryableTaskQueue retryableTaskQueue = new RetryableTaskQueue();
+
     private RabbitMQContext() {
     }
 
-    public static void declareTopicExchange() throws Exception {
-        declareExchange(getManagementConfig().getExchangeName(), "topic");
-    }
-
-    private static void declareExchange(String exchangeName, String type) throws Exception {
+    public static void declareTopicExchange() {
+        String exchangeName = getManagementConfig().getExchangeName();
         RabbitMQManagementConfig rabbitMQManagementConfig = getManagementConfig();
         try {
-            getChannel().exchangeDeclare(exchangeName, type, rabbitMQManagementConfig.isPersistence());
+            getChannel().exchangeDeclare(exchangeName, "topic", rabbitMQManagementConfig.isPersistence());
         } catch (Exception e) {
             logger.error("Exception setting up exchange: \"{}\"", exchangeName, e);
-            throw e;
+            RetryTopicExchangeTask retryTopicExchangeTask = new RetryTopicExchangeTask(exchangeName, RETRY_DELAY);
+            retryableTaskQueue.add(retryTopicExchangeTask, true);
+            logger.info("Task \"{}\" added to scheduler, with delay \"{}\" seconds",
+                    retryTopicExchangeTask.getName(), RETRY_DELAY);
         }
     }
 
@@ -103,9 +110,11 @@ public final class RabbitMQContext {
             rmqClient.updatePermissions(vHostName, username, permissions);
             logger.info("User \"{}\" permissions set in RabbitMQ", username);
         } catch (Exception e) {
-            String message = format("Exception setting up user: \"%s\" for vHost: \"%s\"", username, vHostName);
-            logger.error(message, e);
-            throw new NonTerminalException(message, e);
+            logger.error("Exception setting up user: \"{}\" for vHost: \"{}\"", username, vHostName, e);
+            RetryMqUserTask retryMqUserTask = new RetryMqUserTask(namespace, RETRY_DELAY);
+            retryableTaskQueue.add(retryMqUserTask, true);
+            logger.info("Task \"{}\" added to scheduler, with delay \"{}\" seconds",
+                    retryMqUserTask.getName(), RETRY_DELAY);
         }
     }
 
