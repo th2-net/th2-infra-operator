@@ -40,6 +40,8 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
+import java.net.MalformedURLException;
+import java.net.URISyntaxException;
 import java.util.*;
 
 import static java.lang.String.format;
@@ -80,11 +82,10 @@ public final class RabbitMQContext {
         RabbitMQManagementConfig rabbitMQManagementConfig = getManagementConfig();
         RabbitMQConfig rabbitMQConfig = getRabbitMQConfig(namespace);
 
-        String username = rabbitMQConfig.getUsername();
         String password = rabbitMQConfig.getPassword();
         String vHostName = rabbitMQManagementConfig.getVHostName();
 
-        if (Strings.isNullOrEmpty(username)) {
+        if (Strings.isNullOrEmpty(namespace)) {
             return;
         }
 
@@ -96,8 +97,8 @@ public final class RabbitMQContext {
                 return;
             }
 
-            rmqClient.createUser(username, password.toCharArray(), new ArrayList<>());
-            logger.info("Created user \"{}\" for vHost \"{}\"", username, vHostName);
+            rmqClient.createUser(namespace, password.toCharArray(), new ArrayList<>());
+            logger.info("Created user \"{}\" on vHost \"{}\"", namespace, vHostName);
 
             // set permissions
             RabbitMQNamespacePermissions rabbitMQNamespacePermissions =
@@ -107,10 +108,10 @@ public final class RabbitMQContext {
             permissions.setRead(rabbitMQNamespacePermissions.getRead());
             permissions.setWrite(rabbitMQNamespacePermissions.getWrite());
 
-            rmqClient.updatePermissions(vHostName, username, permissions);
-            logger.info("User \"{}\" permissions set in RabbitMQ", username);
+            rmqClient.updatePermissions(vHostName, namespace, permissions);
+            logger.info("User \"{}\" permissions set in RabbitMQ", namespace);
         } catch (Exception e) {
-            logger.error("Exception setting up user: \"{}\" for vHost: \"{}\"", username, vHostName, e);
+            logger.error("Exception setting up user: \"{}\" for vHost: \"{}\"", namespace, vHostName, e);
             RetryMqUserTask retryMqUserTask = new RetryMqUserTask(namespace, RETRY_DELAY);
             retryableTaskQueue.add(retryMqUserTask, true);
             logger.info("Task \"{}\" added to scheduler, with delay \"{}\" seconds",
@@ -118,9 +119,28 @@ public final class RabbitMQContext {
         }
     }
 
-    public static void cleanupRabbit(String namespace) {
+    public static void cleanupRabbit(String namespace) throws Exception {
         removeSchemaExchange(namespace);
         removeSchemaQueues(namespace);
+        removeSchemaUser(namespace);
+
+    }
+
+    private static void removeSchemaUser(String namespace) throws Exception {
+        RabbitMQManagementConfig rabbitMQManagementConfig = getManagementConfig();
+
+        String vHostName = rabbitMQManagementConfig.getVHostName();
+
+        Client rmqClient = getClient();
+
+        if (rmqClient.getVhost(vHostName) == null) {
+            logger.error("vHost: \"{}\" is not present", vHostName);
+            return;
+        }
+
+        rmqClient.deleteUser(namespace);
+        logger.info("Deleted user \"{}\" from vHost \"{}\"", namespace, vHostName);
+
     }
 
     private static void removeSchemaExchange(String exchangeName) {
@@ -214,7 +234,7 @@ public final class RabbitMQContext {
         return managementConfig;
     }
 
-    private static Client getClient() throws Exception {
+    private static Client getClient() throws MalformedURLException, URISyntaxException {
         if (rmqClient == null) {
             RabbitMQManagementConfig rabbitMQMngConfig = getManagementConfig();
             String apiStr = "http://%s:%s/api";
