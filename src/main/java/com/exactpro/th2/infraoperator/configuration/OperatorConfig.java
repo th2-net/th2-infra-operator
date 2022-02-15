@@ -26,10 +26,7 @@ import org.apache.commons.text.lookup.StringLookupFactory;
 
 import java.io.FileInputStream;
 import java.io.IOException;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Map;
-import java.util.Objects;
+import java.util.*;
 
 public enum OperatorConfig {
     INSTANCE;
@@ -78,6 +75,10 @@ public enum OperatorConfig {
         return getConfig().getPrometheusConfiguration();
     }
 
+    public Map<String, String> getCommonAnnotations() {
+        return getConfig().getCommonAnnotations();
+    }
+
     private synchronized Configuration getConfig() {
         if (configuration == null) {
             configuration = loadConfiguration();
@@ -118,6 +119,8 @@ public enum OperatorConfig {
 
         private PrometheusConfiguration<String> prometheusConfiguration;
 
+        private Map<String, String> commonAnnotations;
+
         public Configuration() {
             chartConfig = new ChartConfig();
             rabbitMQManagementConfig = new RabbitMQManagementConfig();
@@ -126,6 +129,7 @@ public enum OperatorConfig {
             rabbitMQConfigMapName = DEFAULT_RABBITMQ_CONFIGMAP_NAME;
             k8sUrl = "";
             prometheusConfiguration = PrometheusConfiguration.createDefault("true");
+            commonAnnotations = new HashMap<>();
         }
 
         public ChartConfig getChartConfig() {
@@ -188,6 +192,14 @@ public enum OperatorConfig {
             return prometheusConfiguration;
         }
 
+        public Map<String, String> getCommonAnnotations() {
+            return commonAnnotations;
+        }
+
+        public void setCommonAnnotations(Map<String, String> commonAnnotations) {
+            this.commonAnnotations = commonAnnotations;
+        }
+
         public void setRabbitMQConfigMapName(String rabbitMQConfigMapName) {
             if (rabbitMQConfigMapName != null) {
                 this.rabbitMQConfigMapName = rabbitMQConfigMapName;
@@ -217,6 +229,7 @@ public enum OperatorConfig {
                     && Objects.equals(getRabbitMQConfigMapName(), that.getRabbitMQConfigMapName())
                     && Objects.equals(getK8sUrl(), that.getK8sUrl())
                     && Objects.equals(getIngressHost(), that.getIngressHost())
+                    && Objects.equals(getCommonAnnotations(), that.getCommonAnnotations())
                     && Objects.equals(getPrometheusConfiguration(), that.getPrometheusConfiguration());
         }
     }
