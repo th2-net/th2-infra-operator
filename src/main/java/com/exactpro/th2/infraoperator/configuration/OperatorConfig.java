@@ -202,7 +202,7 @@ public enum OperatorConfig {
         }
 
         public void setCommonAnnotations(Map<String, String> commonAnnotations) {
-            this.commonAnnotations = commonAnnotations;
+            this.commonAnnotations = Objects.requireNonNullElseGet(commonAnnotations, HashMap::new);
         }
 
         public void setRabbitMQConfigMapName(String rabbitMQConfigMapName) {
