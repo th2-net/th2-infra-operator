@@ -96,7 +96,7 @@ public abstract class HelmReleaseTh2Op<CR extends Th2CustomResource> extends Abs
 
     public static final String SCHEMA_SECRETS_ALIAS = "secrets";
 
-    public static final String INGRESS_HOST_ALIAS = "ingressHost";
+    public static final String INGRESS_ALIAS = "ingress";
 
     private static final String EXTENDED_SETTINGS_ALIAS = "extendedSettings";
 
@@ -250,10 +250,10 @@ public abstract class HelmReleaseTh2Op<CR extends Th2CustomResource> extends Abs
                     Map.of(EXTENDED_SETTINGS_ALIAS, extendedSettings));
         }
 
-        String ingressHost = OperatorConfig.INSTANCE.getIngressHost();
-        if (ingressHost != null && !ingressHost.isEmpty()) {
+        Object ingress = OperatorConfig.INSTANCE.getIngress();
+        if (ingress != null) {
             helmRelease.mergeValue(PROPERTIES_MERGE_DEPTH, ROOT_PROPERTIES_ALIAS,
-                    Map.of(INGRESS_HOST_ALIAS, ingressHost));
+                    Map.of(INGRESS_ALIAS, ingress));
         }
 
         var defaultChartConfig = OperatorConfig.INSTANCE.getComponentChartConfig();
