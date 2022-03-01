@@ -55,10 +55,6 @@ public enum OperatorConfig {
         return getConfig().getK8sUrl();
     }
 
-    public String getIngressHost() {
-        return getConfig().getIngressHost();
-    }
-
     public SchemaSecrets getSchemaSecrets() {
         return getConfig().getSchemaSecrets();
     }
@@ -77,6 +73,10 @@ public enum OperatorConfig {
 
     public Map<String, String> getCommonAnnotations() {
         return getConfig().getCommonAnnotations();
+    }
+
+    public Object getIngress() {
+        return getConfig().getIngress();
     }
 
     private synchronized Configuration getConfig() {
@@ -115,11 +115,11 @@ public enum OperatorConfig {
 
         private String k8sUrl;
 
-        private String ingressHost;
-
         private PrometheusConfiguration<String> prometheusConfiguration;
 
         private Map<String, String> commonAnnotations;
+
+        private Object ingress;
 
         public Configuration() {
             chartConfig = new ChartConfig();
@@ -130,6 +130,7 @@ public enum OperatorConfig {
             k8sUrl = "";
             prometheusConfiguration = PrometheusConfiguration.createDefault("true");
             commonAnnotations = new HashMap<>();
+            ingress = null;
         }
 
         public ChartConfig getChartConfig() {
@@ -180,10 +181,6 @@ public enum OperatorConfig {
             this.k8sUrl = k8sUrl;
         }
 
-        public String getIngressHost() {
-            return ingressHost;
-        }
-
         public String getRabbitMQConfigMapName() {
             return rabbitMQConfigMapName;
         }
@@ -198,6 +195,14 @@ public enum OperatorConfig {
 
         public void setCommonAnnotations(Map<String, String> commonAnnotations) {
             this.commonAnnotations = commonAnnotations;
+        }
+
+        public Object getIngress() {
+            return ingress;
+        }
+
+        public void setIngress(Object ingress) {
+            this.ingress = ingress;
         }
 
         public void setRabbitMQConfigMapName(String rabbitMQConfigMapName) {
@@ -228,8 +233,8 @@ public enum OperatorConfig {
                     && Objects.equals(getNamespacePrefixes(), that.getNamespacePrefixes())
                     && Objects.equals(getRabbitMQConfigMapName(), that.getRabbitMQConfigMapName())
                     && Objects.equals(getK8sUrl(), that.getK8sUrl())
-                    && Objects.equals(getIngressHost(), that.getIngressHost())
                     && Objects.equals(getCommonAnnotations(), that.getCommonAnnotations())
+                    && Objects.equals(getIngress(), that.getIngress())
                     && Objects.equals(getPrometheusConfiguration(), that.getPrometheusConfiguration());
         }
     }
