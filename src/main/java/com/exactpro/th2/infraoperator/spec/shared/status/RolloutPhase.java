@@ -24,9 +24,11 @@ public enum RolloutPhase {
     UPGRADING("Upgrading", "ComponentUpgrading"),
     DELETING("Deleting", "ComponentDeleting"),
     SUCCEEDED("Succeeded", "Succeeded"),
-    FAILED("Failed", "SomeExceptionOccurred");
+    FAILED("Failed", "SomeExceptionOccurred"),
+    DISABLED("Disabled", "ResourceDisabled");
 
     private final String name;
+
     private final String reason;
 
     RolloutPhase(String name, String reason) {

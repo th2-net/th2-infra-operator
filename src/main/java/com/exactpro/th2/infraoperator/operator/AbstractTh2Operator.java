@@ -22,6 +22,7 @@ import com.exactpro.th2.infraoperator.metrics.OperatorMetrics;
 import com.exactpro.th2.infraoperator.model.http.HttpCode;
 import com.exactpro.th2.infraoperator.model.kubernetes.client.ResourceClient;
 import com.exactpro.th2.infraoperator.spec.Th2CustomResource;
+import com.exactpro.th2.infraoperator.spec.helmrelease.HelmRelease;
 import com.exactpro.th2.infraoperator.spec.strategy.redeploy.NonTerminalException;
 import com.exactpro.th2.infraoperator.spec.strategy.redeploy.RetryableTaskQueue;
 import com.exactpro.th2.infraoperator.spec.strategy.redeploy.tasks.TriggerRedeployTask;
@@ -160,6 +161,23 @@ public abstract class AbstractTh2Operator<CR extends Th2CustomResource, KO exten
 
         String resourceLabel = CustomResourceUtils.annotationFor(resource);
         logger.debug("Processing event {} for \"{}\"", action, resourceLabel);
+
+        if (resource.getSpec().getDisabled().equals("true")) {
+            try {
+                logger.info("Resource \"{}\" has been disabled, executing DELETE action", resourceLabel);
+                deletedEvent(resource);
+                kubClient.resources(HelmRelease.class)
+                        .inNamespace(extractNamespace(resource)).withName(extractName(resource)).delete();
+                resource.getStatus().disabled("Resource has been disabled");
+                updateStatus(resource);
+                logger.info("Resource \"{}\" has been deleted", resourceLabel);
+            } catch (Exception e) {
+                resource.getStatus().failed("Unknown error");
+                updateStatus(resource);
+                logger.error("Exception while processing disable feature for: \"{}\"", resourceLabel, e);
+            }
+            return;
+        }
 
         switch (action) {
             case ADDED:

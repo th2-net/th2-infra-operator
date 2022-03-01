@@ -45,6 +45,8 @@ public abstract class Th2Spec implements KubernetesResource {
 
     protected String type;
 
+    protected String disabled = "false";
+
     @JsonProperty("extended-settings")
     protected Map<String, Object> extendedSettings = new HashMap<>();
 
