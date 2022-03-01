@@ -72,7 +72,7 @@ public abstract class HelmReleaseTh2Op<CR extends Th2CustomResource> extends Abs
     //values section
     public static final String ROOT_PROPERTIES_ALIAS = "component";
 
-    public static final String ANNOTATIONS_ALIAS = "annotations";
+    public static final String ANNOTATIONS_ALIAS = "commonAnnotations";
 
     //component section
     private static final String COMPONENT_NAME_ALIAS = "name";
@@ -285,8 +285,10 @@ public abstract class HelmReleaseTh2Op<CR extends Th2CustomResource> extends Abs
         }
 
         helmRelease.mergeSpecProp(CHART_PROPERTIES_ALIAS, defaultChartConfig.toMap());
+        var annotations = OperatorConfig.INSTANCE.getCommonAnnotations();
+        annotations.putAll(extractNeededAnnotations(resource, ANTECEDENT_LABEL_KEY_ALIAS, COMMIT_HASH_LABEL_KEY_ALIAS));
         helmRelease.mergeValue(Map.of(ANNOTATIONS_ALIAS,
-                extractNeededAnnotations(resource, ANTECEDENT_LABEL_KEY_ALIAS, COMMIT_HASH_LABEL_KEY_ALIAS)));
+                annotations));
 
         convertBooleanFields(helmRelease);
     }
