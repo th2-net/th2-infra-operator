@@ -81,6 +81,10 @@ public class StatusSpec {
         refreshCondition(Condition.Type.DEPLOYED, RolloutPhase.FAILED, false, message);
     }
 
+    public void disabled(String message) {
+        refreshCondition(Condition.Type.DEPLOYED, RolloutPhase.DISABLED, false, message);
+    }
+
     private void refreshCondition(Condition.Type type, RolloutPhase phase, boolean status, String message) {
         refreshCondition(type, phase, SUB_RESOURCE_NAME_PLACEHOLDER, status, message);
     }
