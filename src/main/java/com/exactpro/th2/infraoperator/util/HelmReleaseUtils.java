@@ -39,7 +39,6 @@ import java.util.function.Function;
 
 import static com.exactpro.th2.infraoperator.operator.HelmReleaseTh2Op.*;
 import static com.exactpro.th2.infraoperator.util.CustomResourceUtils.annotationFor;
-import static com.exactpro.th2.infraoperator.util.ExtractUtils.extractName;
 import static com.exactpro.th2.infraoperator.util.JsonUtils.JSON_READER;
 
 public class HelmReleaseUtils {
@@ -228,22 +227,22 @@ public class HelmReleaseUtils {
         InstantiableMap statusSection = oldHelmRelease.getStatus();
         if (statusSection == null) {
             logger.warn("Status section for HelmRelease \"{}\" was null. will be recreated",
-                    extractName(oldHelmRelease));
+                    annotationFor(oldHelmRelease));
             return true;
         }
         if (statusSection.get("phase") == null) {
             logger.warn("PHASE value for HelmRelease \"{}\" was null. will be recreated",
-                    extractName(oldHelmRelease));
+                    annotationFor(oldHelmRelease));
             return true;
         }
         if (statusSection.get("releaseStatus") == null) {
             logger.warn("releaseStatus value for HelmRelease \"{}\" was null. will be recreated",
-                    extractName(oldHelmRelease));
+                    annotationFor(oldHelmRelease));
             return true;
         }
         if (!statusSection.get("phase").equals("Succeeded") || !statusSection.get("releaseStatus").equals("deployed")) {
             logger.warn("HelmRelease \"{}\" was failed. will be recreated",
-                    extractName(oldHelmRelease));
+                    annotationFor(oldHelmRelease));
             return true;
         }
         return false;
