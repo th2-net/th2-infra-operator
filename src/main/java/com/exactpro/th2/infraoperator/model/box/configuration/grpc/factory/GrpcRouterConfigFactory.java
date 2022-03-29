@@ -151,6 +151,7 @@ public class GrpcRouterConfigFactory {
             config = GrpcServiceConfiguration.builder()
                     .serviceClass(serviceClass)
                     .endpoints(endpoints)
+                    .filters(schemeFiltersToGrpcFilters(currentPin.getFilters()))
                     .build();
 
             var strategy = currentPin.getStrategy();
@@ -161,7 +162,7 @@ public class GrpcRouterConfigFactory {
                         .build());
             } else if (strategy.equals(FILTER.getActualName())) {
                 config.setStrategy(GrpcFilterStrategy.builder()
-                        .filters(schemeFiltersToGrpcFilters(targetBoxName, targetPin.getFilters()))
+                        .endpoints(new ArrayList<>(endpoints.keySet()))
                         .build());
             } else {
                 // should never happen if the existing list of strategies has not been expanded
@@ -175,12 +176,14 @@ public class GrpcRouterConfigFactory {
 
             config.getEndpoints().putAll(endpoints);
 
+            config.getFilters().addAll(schemeFiltersToGrpcFilters(currentPin.getFilters()));
+
             if (strategy.getType().equals(ROBIN)) {
                 var robinStrategy = (GrpcRobinStrategy) strategy;
                 robinStrategy.getEndpoints().addAll(endpoints.keySet());
             } else if (strategy.getType().equals(FILTER)) {
                 var filterStrategy = (GrpcFilterStrategy) strategy;
-                filterStrategy.getFilters().addAll(schemeFiltersToGrpcFilters(targetBoxName, targetPin.getFilters()));
+                filterStrategy.getEndpoints().addAll(endpoints.keySet());
             }
         }
     }
@@ -192,14 +195,11 @@ public class GrpcRouterConfigFactory {
         return new NaturePinState(secondPinName, firstPinName);
     }
 
-    private List<GrpcRouterFilterConfiguration> schemeFiltersToGrpcFilters(String targetHostName,
-                                                                           Set<FilterSpec> filterSpecs) {
+    private List<GrpcRouterFilterConfiguration> schemeFiltersToGrpcFilters(Set<FilterSpec> filterSpecs) {
         return filterSpecs.stream()
                 .map(filterSpec ->
                         new GrpcRouterFilterConfiguration(
-                                targetHostName,
-                                SchemeMappingUtils.specToConfigFieldFiltersNew(filterSpec.getMetadataFilter()),
-                                SchemeMappingUtils.specToConfigFieldFiltersNew(filterSpec.getMessageFilter())
+                                SchemeMappingUtils.specToConfigFieldFiltersNew(filterSpec.getPropertiesFilter())
                         )
                 ).collect(Collectors.toList());
     }

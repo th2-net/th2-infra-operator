@@ -30,13 +30,14 @@ public class GrpcFilterStrategy implements RoutingStrategy {
     @Builder.Default
     protected String name = "filter";
 
-    protected List<GrpcRouterFilterConfiguration> filters;
+    protected List<String> endpoints;
 
-    protected GrpcFilterStrategy() { }
+    protected GrpcFilterStrategy() {
+    }
 
-    protected GrpcFilterStrategy(String name, List<GrpcRouterFilterConfiguration> filters) {
+    protected GrpcFilterStrategy(String name, List<String> endpoints) {
         this.name = name;
-        this.filters = filters;
+        this.endpoints = endpoints;
     }
 
     @Override

@@ -21,6 +21,7 @@ import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import lombok.Builder;
 import lombok.Data;
 
+import java.util.List;
 import java.util.Map;
 
 @Data
@@ -37,12 +38,18 @@ public class GrpcServiceConfiguration {
     @JsonProperty(required = true)
     private Map<String, GrpcEndpointConfiguration> endpoints;
 
-    protected GrpcServiceConfiguration() { }
+    @JsonProperty(required = true)
+    private List<GrpcRouterFilterConfiguration> filters;
+
+    protected GrpcServiceConfiguration() {
+    }
 
     protected GrpcServiceConfiguration(RoutingStrategy strategy, String serviceClass,
-                                       Map<String, GrpcEndpointConfiguration> endpoints) {
+                                       Map<String, GrpcEndpointConfiguration> endpoints,
+                                       List<GrpcRouterFilterConfiguration> filters) {
         this.strategy = strategy;
         this.serviceClass = serviceClass;
         this.endpoints = endpoints;
+        this.filters = filters;
     }
 }
