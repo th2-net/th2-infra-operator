@@ -35,4 +35,6 @@ public class FilterSpec {
     @JsonProperty("message")
     private List<FieldFilter> messageFilter = new ArrayList<>();
 
+    @JsonProperty("properties")
+    private List<FieldFilter> propertiesFilter = new ArrayList<>();
 }

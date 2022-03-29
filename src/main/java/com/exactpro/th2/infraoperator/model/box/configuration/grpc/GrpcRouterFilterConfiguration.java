@@ -25,34 +25,17 @@ import java.util.List;
 @JsonDeserialize
 public class GrpcRouterFilterConfiguration {
 
-    @JsonProperty(required = true)
-    private String endpoint;
-
     @JsonProperty
-    private List<FilterConfiguration> metadata;
-
-    @JsonProperty
-    private List<FilterConfiguration> message;
+    private List<FilterConfiguration> properties;
 
     public GrpcRouterFilterConfiguration() {
     }
 
-    public GrpcRouterFilterConfiguration(String endpoint, List<FilterConfiguration> metadata,
-                                         List<FilterConfiguration> message) {
-        this.endpoint = endpoint;
-        this.metadata = metadata;
-        this.message = message;
+    public GrpcRouterFilterConfiguration(List<FilterConfiguration> properties) {
+        this.properties = properties;
     }
 
-    public String getEndpoint() {
-        return endpoint;
-    }
-
-    public List<FilterConfiguration> getMetadata() {
-        return metadata;
-    }
-
-    public List<FilterConfiguration> getMessage() {
-        return message;
+    public List<FilterConfiguration> getProperties() {
+        return properties;
     }
 }
