@@ -79,6 +79,10 @@ public enum OperatorConfig {
         return getConfig().getIngress();
     }
 
+    public List<String> getSecretNames() {
+        return getConfig().getSecretNames();
+    }
+
     private synchronized Configuration getConfig() {
         if (configuration == null) {
             configuration = loadConfiguration();
@@ -121,11 +125,14 @@ public enum OperatorConfig {
 
         private Object ingress;
 
+        private List<String> secretNames;
+
         public Configuration() {
             chartConfig = new ChartConfig();
             rabbitMQManagementConfig = new RabbitMQManagementConfig();
             schemaSecrets = new SchemaSecrets();
             namespacePrefixes = new ArrayList<>();
+            secretNames = new ArrayList<>();
             rabbitMQConfigMapName = DEFAULT_RABBITMQ_CONFIGMAP_NAME;
             k8sUrl = "";
             prometheusConfiguration = PrometheusConfiguration.createDefault("true");
@@ -190,7 +197,7 @@ public enum OperatorConfig {
         }
 
         public Map<String, String> getCommonAnnotations() {
-            return this.commonAnnotations = Objects.requireNonNullElseGet(commonAnnotations, HashMap::new);
+            return Objects.requireNonNullElseGet(commonAnnotations, HashMap::new);
         }
 
         public void setCommonAnnotations(Map<String, String> commonAnnotations) {
@@ -203,6 +210,10 @@ public enum OperatorConfig {
 
         public void setIngress(Object ingress) {
             this.ingress = ingress;
+        }
+
+        public List<String> getSecretNames() {
+            return Objects.requireNonNullElseGet(secretNames, ArrayList::new);
         }
 
         public void setRabbitMQConfigMapName(String rabbitMQConfigMapName) {
@@ -235,6 +246,7 @@ public enum OperatorConfig {
                     && Objects.equals(getK8sUrl(), that.getK8sUrl())
                     && Objects.equals(getCommonAnnotations(), that.getCommonAnnotations())
                     && Objects.equals(getIngress(), that.getIngress())
+                    && Objects.equals(getSecretNames(), that.getSecretNames())
                     && Objects.equals(getPrometheusConfiguration(), that.getPrometheusConfiguration());
         }
     }
