@@ -56,12 +56,21 @@ public enum OperatorState {
     }
 
     public String getConfigChecksum(String namespace, String key) {
-        String checksum = namespaceStates.get(namespace).getConfigChecksums(key);
+        String checksum = namespaceStates.get(namespace).getConfigMapDataContainer(key).getChecksum();
         return checksum != null ? checksum : "";
     }
 
     public void putConfigChecksum(String namespace, String key, String checkSum) {
-        namespaceStates.get(namespace).putConfigChecksums(key, checkSum);
+        namespaceStates.get(namespace).getConfigMapDataContainer(key).setChecksum(checkSum);
+    }
+
+    public String getConfigData(String namespace, String key) {
+        String checksum = namespaceStates.get(namespace).getConfigMapDataContainer(key).getData();
+        return checksum != null ? checksum : "";
+    }
+
+    public void putConfigData(String namespace, String key, String data) {
+        namespaceStates.get(namespace).getConfigMapDataContainer(key).setData(data);
     }
 
     public NamespaceLock getLock(String namespace) {

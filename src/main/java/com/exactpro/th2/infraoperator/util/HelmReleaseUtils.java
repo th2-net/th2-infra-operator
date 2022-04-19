@@ -201,6 +201,12 @@ public class HelmReleaseUtils {
         return (Map<String, Object>) componentConfigs.get(key);
     }
 
+    public static String extractComponentName(HelmRelease helmRelease) {
+        var values = (Map<String, Object>) helmRelease.getValuesSection();
+        var componentConfigs = (Map<String, Object>) values.get(ROOT_PROPERTIES_ALIAS);
+        return (String) componentConfigs.get("name");
+    }
+
     public static Collection<DictionaryEntity> extractOldDictionariesConfig(HelmRelease helmRelease) {
         var values = (Map<String, Object>) helmRelease.getValuesSection();
         var componentConfigs = (Map<String, Object>) values.get(ROOT_PROPERTIES_ALIAS);

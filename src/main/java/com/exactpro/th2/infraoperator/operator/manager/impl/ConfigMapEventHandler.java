@@ -21,15 +21,21 @@ import com.exactpro.th2.infraoperator.configuration.OperatorConfig;
 import com.exactpro.th2.infraoperator.configuration.RabbitMQConfig;
 import com.exactpro.th2.infraoperator.metrics.OperatorMetrics;
 import com.exactpro.th2.infraoperator.model.kubernetes.configmaps.ConfigMaps;
+import com.exactpro.th2.infraoperator.spec.Th2Spec;
 import com.exactpro.th2.infraoperator.spec.helmrelease.HelmRelease;
 import com.exactpro.th2.infraoperator.spec.strategy.linkresolver.mq.RabbitMQContext;
 import com.exactpro.th2.infraoperator.util.CustomResourceUtils;
 import com.exactpro.th2.infraoperator.util.ExtractUtils;
 import com.exactpro.th2.infraoperator.util.HelmReleaseUtils;
 import com.exactpro.th2.infraoperator.util.Strings;
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.core.type.TypeReference;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.ObjectReader;
 import io.fabric8.kubernetes.api.model.ConfigMap;
 import io.fabric8.kubernetes.api.model.KubernetesResourceList;
 import io.fabric8.kubernetes.api.model.Secret;
+import io.fabric8.kubernetes.client.CustomResource;
 import io.fabric8.kubernetes.client.KubernetesClient;
 import io.fabric8.kubernetes.client.Watcher;
 import io.fabric8.kubernetes.client.WatcherException;
@@ -57,6 +63,12 @@ public class ConfigMapEventHandler implements Watcher<ConfigMap> {
     public static final String GRPC_ROUTER_CM_NAME = "grpc-router";
 
     public static final String CRADLE_MANAGER_CM_NAME = "cradle-manager";
+
+    private static final String MQ_ROUTER_FILE_NAME = "mq_router.json";
+
+    private static final String GRPC_ROUTER_FILE_NAME = "grpc_router.json";
+
+    private static final String CRADLE_MANAGER_FILE_NAME = "cradle_manager.json";
 
     private static final Logger logger = LoggerFactory.getLogger(ConfigMapEventHandler.class);
 
@@ -135,18 +147,66 @@ public class ConfigMapEventHandler implements Watcher<ConfigMap> {
                 logger.error("Exception processing {} event for \"{}\"", action, resourceLabel, e);
             }
         } else if (configMapName.equals(LOGGING_CM_NAME)) {
-            updateChecksum(action, namespace, resource, LOGGING_ALIAS, resourceLabel);
+            updateLoggingConfigMap(action, namespace, resource, resourceLabel);
         } else if (configMapName.equals(MQ_ROUTER_CM_NAME)) {
-            updateChecksum(action, namespace, resource, MQ_ROUTER_ALIAS, resourceLabel);
+            updateConfigMap(action, namespace, resource, MQ_ROUTER_ALIAS, MQ_ROUTER_FILE_NAME, resourceLabel);
         } else if (configMapName.equals(GRPC_ROUTER_CM_NAME)) {
-            updateChecksum(action, namespace, resource, GRPC_ROUTER_ALIAS, resourceLabel);
+            updateConfigMap(action, namespace, resource, GRPC_ROUTER_ALIAS, GRPC_ROUTER_FILE_NAME, resourceLabel);
         } else if (configMapName.equals(CRADLE_MANAGER_CM_NAME)) {
-            updateChecksum(action, namespace, resource, CRADLE_MANAGER_ALIAS, resourceLabel);
+            updateConfigMap(action, namespace, resource, CRADLE_MGR_ALIAS, CRADLE_MANAGER_FILE_NAME, resourceLabel);
         }
 
     }
 
-    private void updateChecksum(Action action, String namespace, ConfigMap resource, String key, String resourceLabel) {
+    private void updateLoggingConfigMap(Action action, String namespace, ConfigMap resource, String resourceLabel) {
+        try {
+            logger.info("Processing {} event for \"{}\"", action, resourceLabel);
+            if (action == Action.DELETED) {
+                logger.error("DELETED action is not supported for \"{}\". ", resourceLabel);
+                return;
+            }
+            if (action == Action.ERROR) {
+                logger.error("Received ERROR action for \"{}\" Canceling update", resourceLabel);
+                return;
+            }
+            var lock = OperatorState.INSTANCE.getLock(namespace);
+            try {
+                lock.lock();
+                String oldChecksum = OperatorState.INSTANCE.getConfigChecksum(namespace, LOGGING_ALIAS);
+                String newChecksum = ExtractUtils.sourceHash(resource, false);
+                if (!newChecksum.equals(oldChecksum)) {
+                    Histogram.Timer processTimer = OperatorMetrics.getConfigMapEventTimer(resource);
+                    OperatorState.INSTANCE.putConfigChecksum(namespace, LOGGING_ALIAS, newChecksum);
+                    logger.info("\"{}\" has been updated. Updating all boxes", resourceLabel);
+                    int refreshedBoxesCount = updateResourceChecksums(namespace, newChecksum, LOGGING_ALIAS);
+                    logger.info("{} HelmRelease(s) have been updated", refreshedBoxesCount);
+                    processTimer.observeDuration();
+                }
+            } finally {
+                lock.unlock();
+            }
+        } catch (Exception e) {
+            logger.error("Exception processing {} event for \"{}\"", action, resourceLabel, e);
+        }
+    }
+
+    private int updateResourceChecksums(String namespace, String checksum, String key) {
+        Collection<HelmRelease> helmReleases = OperatorState.INSTANCE.getAllHelmReleases(namespace);
+        for (var hr : helmReleases) {
+            Map<String, Object> config = HelmReleaseUtils.extractConfigSection(hr, key);
+            config.put(CHECKSUM_ALIAS, checksum);
+            hr.mergeValue(PROPERTIES_MERGE_DEPTH, ROOT_PROPERTIES_ALIAS,
+                    Map.of(key, config));
+
+            logger.debug("Updating \"{}\" resource", CustomResourceUtils.annotationFor(hr));
+            createKubObj(namespace, hr);
+            logger.debug("\"{}\" Updated", CustomResourceUtils.annotationFor(hr));
+        }
+        return helmReleases.size();
+    }
+
+    private void updateConfigMap(Action action, String namespace, ConfigMap resource, String key, String dataFileName,
+                                 String resourceLabel) {
         try {
             logger.info("Processing {} event for \"{}\"", action, resourceLabel);
             if (action == Action.DELETED) {
@@ -165,8 +225,10 @@ public class ConfigMapEventHandler implements Watcher<ConfigMap> {
                 if (!newChecksum.equals(oldChecksum)) {
                     Histogram.Timer processTimer = OperatorMetrics.getConfigMapEventTimer(resource);
                     OperatorState.INSTANCE.putConfigChecksum(namespace, key, newChecksum);
+                    String cmData = resource.getData().get(dataFileName);
+                    OperatorState.INSTANCE.putConfigData(namespace, key, cmData);
                     logger.info("\"{}\" has been updated. Updating all boxes", resourceLabel);
-                    int refreshedBoxesCount = updateResources(namespace, newChecksum, key);
+                    int refreshedBoxesCount = updateResourceChecksumAndData(namespace, newChecksum, cmData, key);
                     logger.info("{} HelmRelease(s) have been updated", refreshedBoxesCount);
                     processTimer.observeDuration();
                 }
@@ -178,10 +240,19 @@ public class ConfigMapEventHandler implements Watcher<ConfigMap> {
         }
     }
 
-    private int updateResources(String namespace, String checksum, String key) {
+    private int updateResourceChecksumAndData(String namespace, String checksum, String cmData, String key)
+            throws JsonProcessingException {
         Collection<HelmRelease> helmReleases = OperatorState.INSTANCE.getAllHelmReleases(namespace);
         for (var hr : helmReleases) {
             Map<String, Object> config = HelmReleaseUtils.extractConfigSection(hr, key);
+            CustomResource cr = (CustomResource) OperatorState.INSTANCE.getResourceFromCache(
+                    HelmReleaseUtils.extractComponentName(hr),
+                    namespace
+            );
+            Map<String, Object> configInCR = getConfigFromCR(cr, key);
+            if (configInCR != null) {
+                config.put(CONFIG_ALIAS, mergeConfigs(cmData, configInCR));
+            }
             config.put(CHECKSUM_ALIAS, checksum);
             hr.mergeValue(PROPERTIES_MERGE_DEPTH, ROOT_PROPERTIES_ALIAS,
                     Map.of(key, config));
@@ -196,6 +267,19 @@ public class ConfigMapEventHandler implements Watcher<ConfigMap> {
     protected void createKubObj(String namespace, HelmRelease helmRelease) {
         helmReleaseClient.inNamespace(namespace).createOrReplace(helmRelease);
         OperatorState.INSTANCE.putHelmReleaseInCache(helmRelease, namespace);
+    }
+
+    private Map<String, Object> getConfigFromCR(CustomResource customResource, String key) {
+        Th2Spec spec = (Th2Spec) customResource.getSpec();
+        switch (key) {
+            case MQ_ROUTER_ALIAS:
+                return spec.getMqRouter();
+            case GRPC_ROUTER_ALIAS:
+                return spec.getGrpcRouter();
+            case CRADLE_MGR_ALIAS:
+                return spec.getCradleManager();
+        }
+        return null;
     }
 
     @Override
@@ -224,4 +308,16 @@ public class ConfigMapEventHandler implements Watcher<ConfigMap> {
         }
         return password;
     }
+
+    public static Map<String, Object> mergeConfigs(String initialDataStr,
+                                                   Map<String, Object> newData) throws JsonProcessingException {
+        ObjectMapper objectMapper = new ObjectMapper();
+        Map<String, Object> defaults = objectMapper.readValue(initialDataStr, new TypeReference<>() {
+        });
+        ObjectReader updater = objectMapper.readerForUpdating(defaults);
+        String newDataStr = objectMapper.writeValueAsString(newData);
+        return objectMapper.convertValue(updater.readValue(newDataStr), new TypeReference<>() {
+        });
+    }
+
 }
