@@ -30,7 +30,7 @@ import java.util.concurrent.locks.ReentrantLock;
 public class NamespaceState implements OperatorState.NamespaceLock {
     private List<Th2Link> linkResources = new ArrayList<>();
 
-    private Map<String, String> configChecksums = new HashMap<>();
+    private final Map<String, ConfigMapDataContainer> configMapDataContainerMap = new HashMap<>();
 
     private final Map<String, HasMetadata> resources = new HashMap<>();
 
@@ -76,16 +76,12 @@ public class NamespaceState implements OperatorState.NamespaceLock {
         return multiDictionaryBindings;
     }
 
-    public String getConfigChecksums(String key) {
-        return configChecksums.get(key);
+    public ConfigMapDataContainer getConfigMapDataContainer(String key) {
+        return configMapDataContainerMap.computeIfAbsent(key, k -> new ConfigMapDataContainer());
     }
 
     public void setLinkResources(List<Th2Link> linkResources) {
         this.linkResources = linkResources;
-    }
-
-    public void putConfigChecksums(String key, String configChecksum) {
-        this.configChecksums.put(key, configChecksum);
     }
 
     public HasMetadata getResource(String resName) {
@@ -128,6 +124,25 @@ public class NamespaceState implements OperatorState.NamespaceLock {
         throw new AssertionError("method not supported");
     }
 
-    static final class ResourceCache {
+    static final class ConfigMapDataContainer {
+        private String checksum;
+
+        private String data;
+
+        public String getChecksum() {
+            return checksum;
+        }
+
+        public String getData() {
+            return data;
+        }
+
+        public void setChecksum(String checksum) {
+            this.checksum = checksum;
+        }
+
+        public void setData(String data) {
+            this.data = data;
+        }
     }
 }

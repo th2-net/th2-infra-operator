@@ -38,6 +38,7 @@ import com.exactpro.th2.infraoperator.spec.strategy.linkresolver.mq.DeclareQueue
 import com.exactpro.th2.infraoperator.util.CustomResourceUtils;
 import com.exactpro.th2.infraoperator.util.JsonUtils;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
 import io.fabric8.kubernetes.api.model.HasMetadata;
 import io.fabric8.kubernetes.api.model.KubernetesResourceList;
 import io.fabric8.kubernetes.client.dsl.MixedOperation;
@@ -50,6 +51,7 @@ import org.slf4j.LoggerFactory;
 import java.io.InputStream;
 import java.util.*;
 
+import static com.exactpro.th2.infraoperator.operator.manager.impl.ConfigMapEventHandler.mergeConfigs;
 import static com.exactpro.th2.infraoperator.spec.strategy.linkresolver.mq.BindQueueLinkResolver.resolveBoxResource;
 import static com.exactpro.th2.infraoperator.util.ExtractUtils.*;
 import static com.exactpro.th2.infraoperator.util.HelmReleaseUtils.*;
@@ -99,7 +101,7 @@ public abstract class HelmReleaseTh2Op<CR extends Th2CustomResource> extends Abs
 
     public static final String GRPC_ROUTER_ALIAS = "grpcRouter";
 
-    public static final String CRADLE_MANAGER_ALIAS = "cradleManager";
+    public static final String CRADLE_MGR_ALIAS = "cradleManager";
 
     public static final String LOGGING_ALIAS = "logging";
 
@@ -117,7 +119,7 @@ public abstract class HelmReleaseTh2Op<CR extends Th2CustomResource> extends Abs
     public static final String EXTERNAL_BOX_ALIAS = "externalBox";
 
     //general aliases
-    private static final String CONFIG_ALIAS = "config";
+    public static final String CONFIG_ALIAS = "config";
 
     public static final String CHECKSUM_ALIAS = "checksum";
 
@@ -199,7 +201,7 @@ public abstract class HelmReleaseTh2Op<CR extends Th2CustomResource> extends Abs
         String loggingConfigChecksum = operatorState.getConfigChecksum(resNamespace, LOGGING_ALIAS);
         String mqRouterChecksum = operatorState.getConfigChecksum(resNamespace, MQ_ROUTER_ALIAS);
         String grpcRouterChecksum = operatorState.getConfigChecksum(resNamespace, GRPC_ROUTER_ALIAS);
-        String cradleManagerChecksum = operatorState.getConfigChecksum(resNamespace, CRADLE_MANAGER_ALIAS);
+        String cradleManagerChecksum = operatorState.getConfigChecksum(resNamespace, CRADLE_MGR_ALIAS);
 
         helmRelease.putSpecProp(RELEASE_NAME_ALIAS, extractNamespace(helmRelease) + "-" + extractName(helmRelease));
 
@@ -208,20 +210,40 @@ public abstract class HelmReleaseTh2Op<CR extends Th2CustomResource> extends Abs
         logFileSection.put(CONFIG_ALIAS, logFile);
         logFileSection.put(CHECKSUM_ALIAS, loggingConfigChecksum);
 
-        Map<String, String> mqRouterConfig = resource.getSpec().getMqRouter();
         Map<String, Object> mqRouterSection = new HashMap<>();
-        mqRouterSection.put(CONFIG_ALIAS, mqRouterConfig);
-        mqRouterSection.put(CHECKSUM_ALIAS, mqRouterChecksum);
-
-        Map<String, String> grpcRouterConfig = resource.getSpec().getGrpcRouter();
         Map<String, Object> grpcRouterSection = new HashMap<>();
-        grpcRouterSection.put(CONFIG_ALIAS, grpcRouterConfig);
-        grpcRouterSection.put(CHECKSUM_ALIAS, grpcRouterChecksum);
-
-        Map<String, String> cradleManagerConfig = resource.getSpec().getCradleManager();
         Map<String, Object> cradleManagerSection = new HashMap<>();
-        cradleManagerSection.put(CONFIG_ALIAS, cradleManagerConfig);
-        cradleManagerSection.put(CHECKSUM_ALIAS, cradleManagerChecksum);
+
+        try {
+            Map<String, Object> mqRouterConfig = resource.getSpec().getMqRouter();
+            if (mqRouterConfig != null) {
+                mqRouterSection.put(CONFIG_ALIAS,
+                        mergeConfigs(operatorState.getConfigData(resNamespace, MQ_ROUTER_ALIAS), mqRouterConfig));
+            } else {
+                mqRouterSection.put(CONFIG_ALIAS, null);
+            }
+            mqRouterSection.put(CHECKSUM_ALIAS, mqRouterChecksum);
+
+            Map<String, Object> grpcRouterConfig = resource.getSpec().getGrpcRouter();
+            if (grpcRouterConfig != null) {
+                grpcRouterSection.put(CONFIG_ALIAS,
+                        mergeConfigs(operatorState.getConfigData(resNamespace, GRPC_ROUTER_ALIAS), grpcRouterConfig));
+            } else {
+                grpcRouterSection.put(CONFIG_ALIAS, null);
+            }
+            grpcRouterSection.put(CHECKSUM_ALIAS, grpcRouterChecksum);
+
+            Map<String, Object> cradleManagerConfig = resource.getSpec().getCradleManager();
+            if (cradleManagerConfig != null) {
+                cradleManagerSection.put(CONFIG_ALIAS,
+                        mergeConfigs(operatorState.getConfigData(resNamespace, CRADLE_MGR_ALIAS), cradleManagerConfig));
+            } else {
+                cradleManagerSection.put(CONFIG_ALIAS, null);
+            }
+            cradleManagerSection.put(CHECKSUM_ALIAS, cradleManagerChecksum);
+        } catch (JsonProcessingException e) {
+            throw new RuntimeException(e);
+        }
 
         HelmReleaseSecrets secrets = new HelmReleaseSecrets(OperatorConfig.INSTANCE.getSchemaSecrets());
 
@@ -233,7 +255,7 @@ public abstract class HelmReleaseTh2Op<CR extends Th2CustomResource> extends Abs
                 LOGGING_ALIAS, logFileSection,
                 MQ_ROUTER_ALIAS, mqRouterSection,
                 GRPC_ROUTER_ALIAS, grpcRouterSection,
-                CRADLE_MANAGER_ALIAS, cradleManagerSection,
+                CRADLE_MGR_ALIAS, cradleManagerSection,
                 SCHEMA_SECRETS_ALIAS, secrets
         ));
 
