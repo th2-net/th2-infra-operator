@@ -109,7 +109,7 @@ public abstract class HelmReleaseTh2Op<CR extends Th2CustomResource> extends Abs
 
     public static final String INGRESS_ALIAS = "ingress";
 
-    public static final String SECRET_NAMES_ALIAS = "secretNames";
+    public static final String PULL_SECRETS_ALIAS = "imagePullSecrets";
 
     public static final String EXTENDED_SETTINGS_ALIAS = "extendedSettings";
 
@@ -316,7 +316,7 @@ public abstract class HelmReleaseTh2Op<CR extends Th2CustomResource> extends Abs
                 annotations));
 
         helmRelease.mergeValue(PROPERTIES_MERGE_DEPTH, ROOT_PROPERTIES_ALIAS,
-                Map.of(SECRET_NAMES_ALIAS, OperatorConfig.INSTANCE.getSecretNames()));
+                Map.of(PULL_SECRETS_ALIAS, OperatorConfig.INSTANCE.getImagePullSecrets()));
 
         convertBooleanFields(helmRelease);
     }
