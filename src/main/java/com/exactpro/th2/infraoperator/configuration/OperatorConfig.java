@@ -79,8 +79,8 @@ public enum OperatorConfig {
         return getConfig().getIngress();
     }
 
-    public List<String> getSecretNames() {
-        return getConfig().getSecretNames();
+    public List<String> getImagePullSecrets() {
+        return getConfig().getImagePullSecrets();
     }
 
     private synchronized Configuration getConfig() {
@@ -119,20 +119,20 @@ public enum OperatorConfig {
 
         private String k8sUrl;
 
-        private PrometheusConfiguration<String> prometheusConfiguration;
+        private final PrometheusConfiguration<String> prometheusConfiguration;
 
         private Map<String, String> commonAnnotations;
 
         private Object ingress;
 
-        private List<String> secretNames;
+        private final List<String> imagePullSecrets;
 
         public Configuration() {
             chartConfig = new ChartConfig();
             rabbitMQManagementConfig = new RabbitMQManagementConfig();
             schemaSecrets = new SchemaSecrets();
             namespacePrefixes = new ArrayList<>();
-            secretNames = new ArrayList<>();
+            imagePullSecrets = new ArrayList<>();
             rabbitMQConfigMapName = DEFAULT_RABBITMQ_CONFIGMAP_NAME;
             k8sUrl = "";
             prometheusConfiguration = PrometheusConfiguration.createDefault("true");
@@ -212,8 +212,8 @@ public enum OperatorConfig {
             this.ingress = ingress;
         }
 
-        public List<String> getSecretNames() {
-            return Objects.requireNonNullElseGet(secretNames, ArrayList::new);
+        public List<String> getImagePullSecrets() {
+            return Objects.requireNonNullElseGet(imagePullSecrets, ArrayList::new);
         }
 
         public void setRabbitMQConfigMapName(String rabbitMQConfigMapName) {
@@ -246,7 +246,7 @@ public enum OperatorConfig {
                     && Objects.equals(getK8sUrl(), that.getK8sUrl())
                     && Objects.equals(getCommonAnnotations(), that.getCommonAnnotations())
                     && Objects.equals(getIngress(), that.getIngress())
-                    && Objects.equals(getSecretNames(), that.getSecretNames())
+                    && Objects.equals(getImagePullSecrets(), that.getImagePullSecrets())
                     && Objects.equals(getPrometheusConfiguration(), that.getPrometheusConfiguration());
         }
     }
