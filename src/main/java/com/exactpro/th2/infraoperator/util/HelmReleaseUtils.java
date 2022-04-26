@@ -231,22 +231,12 @@ public class HelmReleaseUtils {
 
     private static boolean isAlreadyFailed(HelmRelease oldHelmRelease) {
         InstantiableMap statusSection = oldHelmRelease.getStatus();
-        if (statusSection == null) {
-            logger.warn("Status section for HelmRelease \"{}\" was null. will be recreated",
-                    annotationFor(oldHelmRelease));
-            return true;
-        }
-        if (statusSection.get("phase") == null) {
-            logger.warn("PHASE value for HelmRelease \"{}\" was null. will be recreated",
-                    annotationFor(oldHelmRelease));
-            return true;
-        }
-        if (statusSection.get("releaseStatus") == null) {
-            logger.warn("releaseStatus value for HelmRelease \"{}\" was null. will be recreated",
-                    annotationFor(oldHelmRelease));
-            return true;
-        }
-        if (!statusSection.get("phase").equals("Succeeded") || !statusSection.get("releaseStatus").equals("deployed")) {
+        if (statusSection == null ||
+                statusSection.get("phase") == null ||
+                statusSection.get("releaseStatus") == null ||
+                !statusSection.get("phase").equals("Succeeded") ||
+                !statusSection.get("releaseStatus").equals("deployed")
+        ) {
             logger.warn("HelmRelease \"{}\" was failed. will be recreated",
                     annotationFor(oldHelmRelease));
             return true;
