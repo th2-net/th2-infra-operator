@@ -31,6 +31,8 @@ import org.slf4j.LoggerFactory;
 import java.util.ArrayList;
 import java.util.List;
 
+import static com.exactpro.th2.infraoperator.util.CustomResourceUtils.extractShortCommitHash;
+
 public class BindQueueLinkResolver {
 
     private static final Logger logger = LoggerFactory.getLogger(BindQueueLinkResolver.class);
@@ -40,6 +42,7 @@ public class BindQueueLinkResolver {
                                           Th2CustomResource affectedResource) {
 
         String affectedResourceName = affectedResource.getMetadata().getName();
+        String commitHash = extractShortCommitHash(affectedResource);
 
         for (var lRes : linkResources) {
             for (var pinCouple : lRes.getSpec().getBoxesRelation().getRouterMq()) {
@@ -51,7 +54,7 @@ public class BindQueueLinkResolver {
 
                 if (affectedResourceName.equals(pinCouple.getFrom().getBoxName())
                         || affectedResourceName.equals(pinCouple.getTo().getBoxName())) {
-                    bindQueues(queueBunch);
+                    bindQueues(queueBunch, commitHash);
                 }
             }
         }
@@ -61,15 +64,17 @@ public class BindQueueLinkResolver {
                                            Th2Link oldLinkRes,
                                            Th2Link newLinkRes) {
 
+        String commitHash = extractShortCommitHash(newLinkRes);
+
         for (var pinCouple : newLinkRes.getSpec().getBoxesRelation().getRouterMq()) {
             var queueBunch = new QueueDescription(
                     new QueueName(namespace, pinCouple.getTo()),
                     new RoutingKeyName(namespace, pinCouple.getFrom()),
                     namespace
             );
-            bindQueues(queueBunch);
+            bindQueues(queueBunch, commitHash);
         }
-        removeExtinctBindings(namespace, oldLinkRes, newLinkRes);
+        removeExtinctBindings(namespace, oldLinkRes, newLinkRes, commitHash);
     }
 
     private static List<EnqueuedLink> convert(List<PinCouplingMQ> links, String namespace, String exchange) {
@@ -85,7 +90,7 @@ public class BindQueueLinkResolver {
         return mqEnqueuedLinks;
     }
 
-    private static void bindQueues(QueueDescription queue) {
+    private static void bindQueues(QueueDescription queue, String commitHash) {
 
         try {
             Channel channel = RabbitMQContext.getChannel();
@@ -97,7 +102,8 @@ public class BindQueueLinkResolver {
                 return;
             }
             channel.queueBind(queue.getQueueName().toString(), queue.getExchange(), queue.getRoutingKey().toString());
-            logger.info("Queue '{}' successfully bound to '{}'", queueName, queue.getRoutingKey().toString());
+            logger.info("Queue '{}' successfully bound to '{}' (commit-{})",
+                    queueName, queue.getRoutingKey().toString(), commitHash);
         } catch (Exception e) {
             String message = "Exception while working with rabbitMq";
             logger.error(message, e);
@@ -107,15 +113,18 @@ public class BindQueueLinkResolver {
 
     private static void removeExtinctBindings(String namespace,
                                               Th2Link oldLinkRes,
-                                              Th2Link newLinkRes) {
+                                              Th2Link newLinkRes,
+                                              String commitHash) {
         removeExtinctBindings(namespace,
                 oldLinkRes.getSpec().getBoxesRelation().getRouterMq(),
-                newLinkRes.getSpec().getBoxesRelation().getRouterMq());
+                newLinkRes.getSpec().getBoxesRelation().getRouterMq(),
+                commitHash);
     }
 
     public static void removeExtinctBindings(String namespace,
                                              List<PinCouplingMQ> oldLinksCoupling,
-                                             List<PinCouplingMQ> newLinksCoupling) {
+                                             List<PinCouplingMQ> newLinksCoupling,
+                                             String commitHash) {
 
         List<EnqueuedLink> oldLinks = convert(oldLinksCoupling, namespace, namespace);
         List<EnqueuedLink> newLinks = convert(newLinksCoupling, namespace, namespace);
@@ -144,8 +153,8 @@ public class BindQueueLinkResolver {
                 channel.queueUnbind(queueName, queueBunch.getExchange(), routingKey);
 
                 String infoMsg = String.format(
-                        "Unbind queue '%1$s' -> '%2$s' because link {%5$s.%3$s -> %5$s.%4$s} is not active anymore",
-                        queueName, routingKey, fromBox, toBox, namespace
+                        "Unbind queue '%1$s' -> '%2$s'. link {%5$s.%3$s -> %5$s.%4$s} is not active (commit-%6$s)",
+                        queueName, routingKey, fromBox, toBox, namespace, commitHash
                 );
 
                 logger.info(infoMsg);
