@@ -27,7 +27,7 @@ import java.util.Set;
 public class EventStorageContext extends StorageContext {
 
     @Override
-    public boolean checkAttributes(Set<String> attributes) {
+    public boolean checkAttributes(Set<String> attributes, String pinAnnotation) {
         return attributes.contains(PinAttribute.event.name())
                 && attributes.contains(PinAttribute.publish.name())
                 && !attributes.contains(PinAttribute.subscribe.name());
