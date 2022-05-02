@@ -32,6 +32,8 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
 
+import static com.exactpro.th2.infraoperator.util.CustomResourceUtils.extractShortCommitHash;
+
 public abstract class StorageTh2LinksRefresher<CR extends Th2CustomResource> {
     private static final Logger logger = LoggerFactory.getLogger(StorageTh2LinksRefresher.class);
 
@@ -46,6 +48,8 @@ public abstract class StorageTh2LinksRefresher<CR extends Th2CustomResource> {
         String resName = ExtractUtils.extractName(resource);
 
         String resNamespace = ExtractUtils.extractNamespace(resource);
+
+        String commitHash = extractShortCommitHash(resource);
 
         OperatorState lSingleton = OperatorState.INSTANCE;
 
@@ -63,7 +67,7 @@ public abstract class StorageTh2LinksRefresher<CR extends Th2CustomResource> {
 
         OperatorState.INSTANCE.setLinkResources(resNamespace, linkResources);
 
-        BindQueueLinkResolver.removeExtinctBindings(resNamespace, oldHiddenLinks, updatedHiddenLinks);
+        BindQueueLinkResolver.removeExtinctBindings(resNamespace, oldHiddenLinks, updatedHiddenLinks, commitHash);
 
         logger.info("{} hidden links has been refreshed successfully with '{}.{}'", context.getBoxAlias(),
                 resNamespace, resName);
