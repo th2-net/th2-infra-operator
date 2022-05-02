@@ -33,6 +33,8 @@ import java.util.List;
 import java.util.Objects;
 
 import static com.exactpro.th2.infraoperator.util.CustomResourceUtils.extractShortCommitHash;
+import static com.exactpro.th2.infraoperator.util.ExtractUtils.extractName;
+import static com.exactpro.th2.infraoperator.util.ExtractUtils.extractNamespace;
 
 public abstract class StorageTh2LinksRefresher<CR extends Th2CustomResource> {
     private static final Logger logger = LoggerFactory.getLogger(StorageTh2LinksRefresher.class);
@@ -120,7 +122,10 @@ public abstract class StorageTh2LinksRefresher<CR extends Th2CustomResource> {
 
         for (var pin : resource.getSpec().getPins()) {
 
-            if (context.checkAttributes(pin.getAttributes())) {
+            String pinAnnotation = String.format("%s.%s.%s",
+                    extractNamespace(resource), extractName(resource), pin.getName());
+
+            if (context.checkAttributes(pin.getAttributes(), pinAnnotation)) {
 
                 var fromLink = new PinMQ(ExtractUtils.extractName(resource), pin.getName());
 
