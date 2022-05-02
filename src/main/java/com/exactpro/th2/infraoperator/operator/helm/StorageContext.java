@@ -33,6 +33,6 @@ public abstract class StorageContext {
 
     private String pinName;
 
-    public abstract boolean checkAttributes(Set<String> attributes);
+    public abstract boolean checkAttributes(Set<String> attributes, String pinAnnotation);
 
 }
