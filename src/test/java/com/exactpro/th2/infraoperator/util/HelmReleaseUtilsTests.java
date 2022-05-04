@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2021 Exactpro (Exactpro Systems Limited)
+ * Copyright 2020-2022 Exactpro (Exactpro Systems Limited)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package com.exactpro.th2.infraoperator.operator;
+package com.exactpro.th2.infraoperator.util;
 
 import com.exactpro.th2.infraoperator.spec.helmrelease.HelmRelease;
 import org.junit.jupiter.api.Test;
@@ -28,7 +28,7 @@ import java.util.Map;
 import static com.exactpro.th2.infraoperator.util.HelmReleaseUtils.convertField;
 import static org.junit.jupiter.api.Assertions.*;
 
-public class HelmReleaseUtilsTest {
+class HelmReleaseUtilsTests {
 
     public static final String ROOT_PROPERTIES_ALIAS = "component";
 
@@ -40,11 +40,13 @@ public class HelmReleaseUtilsTest {
 
     private static final String ENABLED_ALIAS = "enabled";
 
+    static final String HELM_RELEASE_FILE = "src/test/resources/helmRelease.yml";
+
     @Test
     void testNull() throws IOException {
         Map<String, Object> component = new HashMap<>();
         component.put(EXTENDED_SETTINGS_ALIAS, null);
-        HelmRelease hr = HelmRelease.of("src/test/resources/helmRelease.yml");
+        HelmRelease hr = HelmRelease.of(HELM_RELEASE_FILE);
         hr.mergeValue(ROOT_PROPERTIES_ALIAS, component);
         assertDoesNotThrow(() -> convertField(hr, Boolean::valueOf, ENABLED_ALIAS, ROOT_PROPERTIES_ALIAS,
                 EXTENDED_SETTINGS_ALIAS, SERVICE_ALIAS));
@@ -57,7 +59,7 @@ public class HelmReleaseUtilsTest {
     void testServiceEmptyMap() throws IOException {
         Map<String, Object> component = new HashMap<>();
         component.put(EXTENDED_SETTINGS_ALIAS, Collections.emptyMap());
-        HelmRelease hr = HelmRelease.of("src/test/resources/helmRelease.yml");
+        HelmRelease hr = HelmRelease.of(HELM_RELEASE_FILE);
         hr.mergeValue(ROOT_PROPERTIES_ALIAS, component);
         assertDoesNotThrow(() -> convertField(hr, Boolean::valueOf, ENABLED_ALIAS, ROOT_PROPERTIES_ALIAS,
                 EXTENDED_SETTINGS_ALIAS, SERVICE_ALIAS));
@@ -67,13 +69,12 @@ public class HelmReleaseUtilsTest {
 
     @Test
     void testNonMapElement() throws IOException {
-
         Map<String, Object> service = Collections.emptyMap();
         List<Object> notMap = Collections.singletonList(service);
         Map<String, Object> extendedSettings = Collections.singletonMap(SERVICE_ALIAS, notMap);
         Map<String, Object> component = new HashMap<>();
         component.put(EXTENDED_SETTINGS_ALIAS, extendedSettings);
-        HelmRelease hr = HelmRelease.of("src/test/resources/helmRelease.yml");
+        HelmRelease hr = HelmRelease.of(HELM_RELEASE_FILE);
         hr.mergeValue(ROOT_PROPERTIES_ALIAS, component);
         assertThrows(ClassCastException.class, () -> convertField(hr, Boolean::valueOf, ENABLED_ALIAS,
                 ROOT_PROPERTIES_ALIAS, EXTENDED_SETTINGS_ALIAS, SERVICE_ALIAS));
@@ -87,7 +88,7 @@ public class HelmReleaseUtilsTest {
         externalBox.put(ENABLED_ALIAS, "true");
         Map<String, Object> extendedSettings = Map.of(SERVICE_ALIAS, service, EXTERNAL_BOX_ALIAS, externalBox);
         Map<String, Object> component = Map.of(EXTENDED_SETTINGS_ALIAS, extendedSettings);
-        HelmRelease hr = HelmRelease.of("src/test/resources/helmRelease.yml");
+        HelmRelease hr = HelmRelease.of(HELM_RELEASE_FILE);
         hr.mergeValue(ROOT_PROPERTIES_ALIAS, component);
 
         assertDoesNotThrow(() -> convertField(hr, Boolean::valueOf, ENABLED_ALIAS, ROOT_PROPERTIES_ALIAS,
@@ -109,7 +110,7 @@ public class HelmReleaseUtilsTest {
         externalBox.put(ENABLED_ALIAS, "false");
         Map<String, Object> extendedSettings = Map.of(SERVICE_ALIAS, service, EXTERNAL_BOX_ALIAS, externalBox);
         Map<String, Object> component = Map.of(EXTENDED_SETTINGS_ALIAS, extendedSettings);
-        HelmRelease hr = HelmRelease.of("src/test/resources/helmRelease.yml");
+        HelmRelease hr = HelmRelease.of(HELM_RELEASE_FILE);
         hr.mergeValue(ROOT_PROPERTIES_ALIAS, component);
 
         assertDoesNotThrow(() -> convertField(hr, Boolean::valueOf, ENABLED_ALIAS, ROOT_PROPERTIES_ALIAS,

@@ -179,7 +179,7 @@ public class ConfigMapEventHandler implements Watcher<ConfigMap> {
             try {
                 lock.lock();
                 String oldChecksum = OperatorState.INSTANCE.getConfigChecksum(namespace, LOGGING_ALIAS);
-                String newChecksum = ExtractUtils.sourceHash(resource, false);
+                String newChecksum = ExtractUtils.fullSourceHash(resource);
                 if (!newChecksum.equals(oldChecksum)) {
                     Histogram.Timer processTimer = OperatorMetrics.getConfigMapEventTimer(resource);
                     OperatorState.INSTANCE.putConfigChecksum(namespace, LOGGING_ALIAS, newChecksum);
@@ -227,7 +227,7 @@ public class ConfigMapEventHandler implements Watcher<ConfigMap> {
             try {
                 lock.lock();
                 String oldChecksum = OperatorState.INSTANCE.getConfigChecksum(namespace, key);
-                String newChecksum = ExtractUtils.sourceHash(resource, false);
+                String newChecksum = ExtractUtils.fullSourceHash(resource);
                 if (!newChecksum.equals(oldChecksum)) {
                     Histogram.Timer processTimer = OperatorMetrics.getConfigMapEventTimer(resource);
                     OperatorState.INSTANCE.putConfigChecksum(namespace, key, newChecksum);

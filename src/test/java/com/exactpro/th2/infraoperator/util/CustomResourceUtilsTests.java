@@ -36,14 +36,14 @@ import io.fabric8.kubernetes.api.model.HasMetadata;
 import io.fabric8.kubernetes.api.model.ObjectMeta;
 import io.fabric8.kubernetes.api.model.OwnerReference;
 
-public class CustomResourceUtilsTests {
+class CustomResourceUtilsTests {
 
     private final String sourceNamespace = "namespace";
 
     private final String sourceName = "123456789_123456789_123456789";
 
     @Test
-    public void extractHashedNameTest() {
+    void extractHashedNameTest() {
         var currentName = sourceName.substring(0, NAME_LENGTH_LIMIT - 1);
         assertEquals(currentName, extractHashedName(createTh2CustomResource(currentName)));
 
@@ -55,7 +55,7 @@ public class CustomResourceUtilsTests {
     }
 
     @Test
-    public void searchTest() {
+    void searchTest() {
         List<HelmRelease> helmReleases = new ArrayList<>();
         helmReleases.add(createHelmRelease(sourceName.substring(0, NAME_LENGTH_LIMIT - 1)));
         helmReleases.add(createHelmRelease(digest(sourceName.substring(0, NAME_LENGTH_LIMIT))));
