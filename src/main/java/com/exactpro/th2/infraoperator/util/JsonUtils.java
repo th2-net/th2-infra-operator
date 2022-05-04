@@ -22,14 +22,13 @@ import com.fasterxml.jackson.dataformat.yaml.YAMLFactory;
 
 import java.util.*;
 
-public final class JsonUtils {
+public class JsonUtils {
 
     public static final ObjectMapper JSON_READER = new ObjectMapper(new JsonFactory());
 
     public static final ObjectMapper YAML_READER = new ObjectMapper(new YAMLFactory());
 
     private JsonUtils() {
-        throw new AssertionError();
     }
 
     @SuppressWarnings("unchecked")

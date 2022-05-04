@@ -17,20 +17,21 @@
 package com.exactpro.th2.infraoperator.operator;
 
 import com.exactpro.th2.infraoperator.spec.strategy.linkresolver.queue.QueueName;
-import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNull;
 
-public class QueueNameTests {
+class QueueNameTests {
 
     @Test
-    public void testFormat() {
-        Assertions.assertEquals("link[namespace:box:pin]", QueueName.format("namespace", "box", "pin"));
+    void testFormat() {
+        assertEquals("link[namespace:box:pin]",
+                QueueName.format("namespace", "box", "pin"));
     }
 
     @Test
-    public void invalidQueueNameTest() {
+    void invalidQueueNameTest() {
         String[] tests = new String[]{
                 "tes",
                 "link",
@@ -50,13 +51,12 @@ public class QueueNameTests {
         };
 
         for (String test : tests) {
-            assertEquals(null, QueueName.fromString(test));
+            assertNull(QueueName.fromString(test));
         }
     }
 
     @Test
-    public void validQueueNameTest() {
-
+    void validQueueNameTest() {
         String[] tests = new String[]{
                 "",
                 "link[abc:030:test]",

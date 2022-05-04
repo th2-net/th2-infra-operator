@@ -19,6 +19,9 @@ package com.exactpro.th2.infraoperator.util;
 import java.util.List;
 
 public class Strings {
+    private Strings() {
+    }
+
     public static boolean isNullOrEmpty(String s) {
         return (s == null || s.isEmpty());
     }
@@ -30,7 +33,7 @@ public class Strings {
                 && prefixes.stream().noneMatch(namespace::startsWith));
     }
 
-    public static String toUnderScoreUpperCase(String camelCase) {
+    public static String toUnderScoreUpperCase(String camelCase, int id) {
         StringBuilder result = new StringBuilder();
         for (int i = 0; i < camelCase.length(); i++) {
             char c = camelCase.charAt(i);
@@ -40,10 +43,6 @@ public class Strings {
                 result.append(Character.toUpperCase(c));
             }
         }
-        return result.toString();
-    }
-
-    public static String toUnderScoreUpperCaseWithId(String varName, int id) {
-        return String.format("%s_%d", varName, id);
+        return String.format("%s_%d", result, id);
     }
 }
