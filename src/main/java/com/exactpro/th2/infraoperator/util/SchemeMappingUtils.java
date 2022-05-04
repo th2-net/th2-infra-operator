@@ -24,10 +24,9 @@ import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
 
-public final class SchemeMappingUtils {
+public class SchemeMappingUtils {
 
     private SchemeMappingUtils() {
-        throw new AssertionError();
     }
 
     public static List<FilterConfiguration> specToConfigFieldFiltersNew(List<FieldFilter> fieldFilters) {

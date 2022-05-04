@@ -24,10 +24,10 @@ import java.util.Map;
 import static com.exactpro.th2.infraoperator.util.HelmReleaseUtils.generateSecretsConfig;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
-public class SecretConfigTest {
+class SecretConfigTests {
 
     @Test
-    public void singleLevelConfigTest() {
+    void singleLevelConfigTest() {
         Map<String, Object> customConfig = new HashMap<>();
         customConfig.put("pass1", "${secret_value:myFixPassword}");
         customConfig.put("pass2", "${secret_value:myOtherPassword}");
@@ -59,7 +59,7 @@ public class SecretConfigTest {
     }
 
     @Test
-    public void suffixedTextTest() {
+    void suffixedTextTest() {
         Map<String, Object> customConfig = new HashMap<>();
         customConfig.put("pass1", "${secret_value:myFixPassword}someText");
         customConfig.put("user1", "${secret_value:myFixUser}someOtherText");
@@ -82,7 +82,7 @@ public class SecretConfigTest {
     }
 
     @Test
-    public void multiLevelConfigTest() {
+    void multiLevelConfigTest() {
         Map<String, Object> customConfig = new HashMap<>();
         Map<String, Object> level1 = new HashMap<>();
         Map<String, Object> level2 = new HashMap<>();

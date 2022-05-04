@@ -318,7 +318,7 @@ public class HelmReleaseUtils {
     }
 
     static class CustomLookup implements StringLookup {
-        int id = 0;
+        private int id = 0;
 
         private Map<String, String> collector;
 
@@ -328,8 +328,7 @@ public class HelmReleaseUtils {
 
         @Override
         public String lookup(String key) {
-            String envVarName = Strings.toUnderScoreUpperCase(key);
-            String envVarWithId = Strings.toUnderScoreUpperCaseWithId(envVarName, id);
+            String envVarWithId = Strings.toUnderScoreUpperCase(key, id);
             id++;
             collector.put(envVarWithId, key);
             return String.format("${%s}", envVarWithId);

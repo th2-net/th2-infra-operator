@@ -52,7 +52,7 @@ public class DictionaryFactory {
                     HasMetadata res = OperatorState.INSTANCE
                             .getResourceFromCache(name, resource.getMetadata().getNamespace());
 
-                    String checksum = ExtractUtils.sourceHash(res, false);
+                    String checksum = ExtractUtils.fullSourceHash(res);
                     if (dictionaries.containsKey(type)) {
                         throw new Exception(
                                 String.format("multiple dictionaries linked with same type: %s", type)

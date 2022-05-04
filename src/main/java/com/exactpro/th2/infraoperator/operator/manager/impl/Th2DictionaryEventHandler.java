@@ -135,7 +135,7 @@ public class Th2DictionaryEventHandler implements Watcher<Th2Dictionary> {
     private void processAdded(Th2Dictionary dictionary) {
         String namespace = ExtractUtils.extractNamespace(dictionary);
         String resourceLabel = annotationFor(dictionary);
-        String newChecksum = ExtractUtils.sourceHash(dictionary, false);
+        String newChecksum = ExtractUtils.fullSourceHash(dictionary);
 
         //create or replace corresponding config map from Kubernetes
         logger.debug("Creating config map for: \"{}\"", resourceLabel);
@@ -148,7 +148,7 @@ public class Th2DictionaryEventHandler implements Watcher<Th2Dictionary> {
         String dictionaryName = ExtractUtils.extractName(dictionary);
         String namespace = ExtractUtils.extractNamespace(dictionary);
         String resourceLabel = annotationFor(dictionary);
-        String newChecksum = ExtractUtils.sourceHash(dictionary, false);
+        String newChecksum = ExtractUtils.fullSourceHash(dictionary);
         String oldChecksum = sourceHashes.get(resourceLabel);
 
         if (oldChecksum != null && oldChecksum.equals(newChecksum)) {

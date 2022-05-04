@@ -86,7 +86,7 @@ public class Th2LinkEventHandler implements Watcher<Th2Link> {
         String namespace = extractNamespace(th2Link);
         OperatorState operatorState = OperatorState.INSTANCE;
         String resourceLabel = annotationFor(th2Link);
-        String sourceHash = ExtractUtils.sourceHash(th2Link, false);
+        String sourceHash = ExtractUtils.fullSourceHash(th2Link);
         String prevHash = sourceHashes.get(resourceLabel);
 
         if (action == Action.MODIFIED && prevHash != null && prevHash.equals(sourceHash)) {
