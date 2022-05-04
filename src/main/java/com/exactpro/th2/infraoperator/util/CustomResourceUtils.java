@@ -37,7 +37,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 
-public final class CustomResourceUtils {
+public class CustomResourceUtils {
 
     private static final Logger logger = LoggerFactory.getLogger(CustomResourceUtils.class);
 
@@ -48,7 +48,6 @@ public final class CustomResourceUtils {
     private static final int SHORT_HASH_LENGTH = 8;
 
     private CustomResourceUtils() {
-        throw new AssertionError();
     }
 
     public static String annotationFor(String namespace, String kind, String resourceName) {

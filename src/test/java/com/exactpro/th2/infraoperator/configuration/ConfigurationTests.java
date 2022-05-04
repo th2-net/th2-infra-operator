@@ -16,24 +16,32 @@
 
 package com.exactpro.th2.infraoperator.configuration;
 
-import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 
 import java.util.Arrays;
 import java.util.Collections;
 
-public class ConfigurationTests {
+import static org.junit.jupiter.api.Assertions.*;
+import static com.exactpro.th2.infraoperator.configuration.OperatorConfig.*;
+
+class ConfigurationTests {
 
     private OperatorConfig.Configuration expected;
 
-    private void beforeEach(String path) {
+    static final String DIR = "src/test/resources/";
+
+    private void beforeEach(String fileName) {
         expected = new OperatorConfig.Configuration();
-        System.setProperty(OperatorConfig.CONFIG_FILE_SYSTEM_PROPERTY, path);
+        System.setProperty(OperatorConfig.CONFIG_FILE_SYSTEM_PROPERTY, DIR + fileName);
+    }
+
+    private Configuration loadConfiguration() {
+        return OperatorConfig.INSTANCE.loadConfiguration();
     }
 
     @Test
     void testFullConfig() {
-        beforeEach("src/test/resources/fullConfig.yml");
+        beforeEach("fullConfig.yml");
 
         expected.setChartConfig(ChartConfig.builder().withGit("git").withPath("path").withRef("ref").build());
         expected.setRabbitMQManagementConfig(
@@ -48,128 +56,128 @@ public class ConfigurationTests {
         expected.setNamespacePrefixes(Arrays.asList("string1", "string2"));
         expected.setRabbitMQConfigMapName("rabbit-mq-app");
 
-        Assertions.assertEquals(expected, OperatorConfig.INSTANCE.loadConfiguration());
+        assertEquals(expected, loadConfiguration());
     }
 
     @Test
     void testNsPrefixes() {
-        beforeEach("src/test/resources/nsPrefixesConfig.yml");
+        beforeEach("nsPrefixesConfig.yml");
 
         expected.setNamespacePrefixes(Arrays.asList("string1", "string2"));
 
-        Assertions.assertEquals(expected, OperatorConfig.INSTANCE.loadConfiguration());
+        assertEquals(expected, loadConfiguration());
     }
 
     @Test
     void testGitChartConfig() {
-        beforeEach("src/test/resources/gitChartConfig.yml");
+        beforeEach("gitChartConfig.yml");
 
         expected.setChartConfig(ChartConfig.builder().withGit("git").withPath("path").withRef("ref").build());
 
-        Assertions.assertEquals(expected, OperatorConfig.INSTANCE.loadConfiguration());
+        assertEquals(expected, loadConfiguration());
     }
 
     @Test
     void testHelmChartConfig() {
-        beforeEach("src/test/resources/helmChartConfig.yml");
+        beforeEach("helmChartConfig.yml");
 
         expected.setChartConfig(ChartConfig.builder().withRepository("helm").withName("name")
                 .withVersion("1.1.0").build());
 
-        Assertions.assertEquals(expected, OperatorConfig.INSTANCE.loadConfiguration());
+        assertEquals(expected, loadConfiguration());
     }
 
     @Test
     void testChartConfigValidity() {
-        Assertions.assertThrows(IllegalArgumentException.class,
+        assertThrows(IllegalArgumentException.class,
                 () -> new ChartConfig().overrideWith(ChartConfig.builder().withGit("git").build()));
 
-        Assertions.assertThrows(IllegalArgumentException.class,
+        assertThrows(IllegalArgumentException.class,
                 () -> new ChartConfig().overrideWith(ChartConfig.builder().withRepository("helm").build()));
 
-        Assertions.assertThrows(IllegalArgumentException.class,
+        assertThrows(IllegalArgumentException.class,
                 () -> new ChartConfig().overrideWith(ChartConfig.builder().withGit("git").withRef("ref").build()));
 
-        Assertions.assertThrows(IllegalArgumentException.class,
+        assertThrows(IllegalArgumentException.class,
                 () -> new ChartConfig().overrideWith(ChartConfig.builder().withGit("git").withRef("ref")
                         .withPath("").build()));
 
-        Assertions.assertThrows(IllegalArgumentException.class,
+        assertThrows(IllegalArgumentException.class,
                 () -> new ChartConfig().overrideWith(ChartConfig.builder().withRepository("helm").withName("")
                         .withVersion("1.1.0").build()));
 
-        Assertions.assertThrows(IllegalArgumentException.class,
+        assertThrows(IllegalArgumentException.class,
                 () -> new ChartConfig().overrideWith(ChartConfig.builder().withGit("git").withRef("ref")
                         .withPath("path").withRepository("helm").build()));
 
-        Assertions.assertThrows(IllegalArgumentException.class,
+        assertThrows(IllegalArgumentException.class,
                 () -> new ChartConfig().overrideWith(ChartConfig.builder().withGit("git").withRef("ref")
                         .withRepository("helm").withName("name").build()));
 
-        Assertions.assertThrows(IllegalArgumentException.class,
+        assertThrows(IllegalArgumentException.class,
                 () -> new ChartConfig().overrideWith(ChartConfig.builder().withRef("ref").withPath("path")
                         .withRepository("helm").withName("name").withVersion("1.1.0").build()));
 
-        Assertions.assertThrows(IllegalArgumentException.class,
+        assertThrows(IllegalArgumentException.class,
                 () -> new ChartConfig().overrideWith(ChartConfig.builder().withGit("git").withRef("ref")
                         .withPath("path").withRepository("helm").withName("name").withVersion("1.1.0").build()));
 
-        Assertions.assertThrows(IllegalArgumentException.class,
+        assertThrows(IllegalArgumentException.class,
                 () -> ChartConfig.builder().withRef("ref").withPath("path").build()
                         .overrideWith(ChartConfig.builder().withGit("git").withVersion("1.1.0").build()));
 
-        Assertions.assertDoesNotThrow(() -> new ChartConfig().overrideWith(
+        assertDoesNotThrow(() -> new ChartConfig().overrideWith(
                 ChartConfig.builder().withGit("git").withRef("ref").withPath("path").build()));
 
-        Assertions.assertDoesNotThrow(() -> new ChartConfig().overrideWith(
+        assertDoesNotThrow(() -> new ChartConfig().overrideWith(
                 ChartConfig.builder().withRepository("helm").withName("name").withVersion("1.1.0").build()));
 
-        Assertions.assertDoesNotThrow(() -> new ChartConfig().overrideWith(ChartConfig.builder().build()));
+        assertDoesNotThrow(() -> new ChartConfig().overrideWith(ChartConfig.builder().build()));
 
-        Assertions.assertDoesNotThrow(() -> new ChartConfig().overrideWith(
+        assertDoesNotThrow(() -> new ChartConfig().overrideWith(
                 ChartConfig.builder().withRepository("").withPath("").withName("").build()));
 
         ChartConfig config = ChartConfig.builder().withGit("git1").withRef("ref1").withPath("path1").build()
                 .overrideWith(ChartConfig.builder().withGit("git2").withRef("ref2").withPath("path2").build());
-        Assertions.assertEquals("git2", config.getGit());
-        Assertions.assertEquals("ref2", config.getRef());
-        Assertions.assertEquals("path2", config.getPath());
+        assertEquals("git2", config.getGit());
+        assertEquals("ref2", config.getRef());
+        assertEquals("path2", config.getPath());
 
         config = ChartConfig.builder().withRepository("helm1").withName("name1").withVersion("1.1.1").build()
                 .overrideWith(ChartConfig.builder().withRepository("helm2").withName("name2").withVersion("1.1.2")
                         .build());
-        Assertions.assertEquals("helm2", config.getRepository());
-        Assertions.assertEquals("name2", config.getName());
-        Assertions.assertEquals("1.1.2", config.getVersion());
+        assertEquals("helm2", config.getRepository());
+        assertEquals("name2", config.getName());
+        assertEquals("1.1.2", config.getVersion());
 
         config = ChartConfig.builder().withGit("git").withRef("ref").withPath("path").build().overrideWith(
                 ChartConfig.builder().withRepository("helm").withName("name").withVersion("1.1.0").build());
-        Assertions.assertNull(config.getGit());
-        Assertions.assertNull(config.getRef());
-        Assertions.assertNull(config.getPath());
-        Assertions.assertEquals("helm", config.getRepository());
-        Assertions.assertEquals("name", config.getName());
-        Assertions.assertEquals("1.1.0", config.getVersion());
+        assertNull(config.getGit());
+        assertNull(config.getRef());
+        assertNull(config.getPath());
+        assertEquals("helm", config.getRepository());
+        assertEquals("name", config.getName());
+        assertEquals("1.1.0", config.getVersion());
 
         config = ChartConfig.builder().withRepository("helm").withName("name").withVersion("1.1.0").build()
                 .overrideWith(ChartConfig.builder().build());
-        Assertions.assertNull(config.getGit());
-        Assertions.assertNull(config.getRef());
-        Assertions.assertNull(config.getPath());
-        Assertions.assertEquals("helm", config.getRepository());
-        Assertions.assertEquals("name", config.getName());
-        Assertions.assertEquals("1.1.0", config.getVersion());
+        assertNull(config.getGit());
+        assertNull(config.getRef());
+        assertNull(config.getPath());
+        assertEquals("helm", config.getRepository());
+        assertEquals("name", config.getName());
+        assertEquals("1.1.0", config.getVersion());
 
         config = ChartConfig.builder().withRef("ref").withPath("path").build()
                 .overrideWith(ChartConfig.builder().withGit("git").build());
-        Assertions.assertEquals("git", config.getGit());
-        Assertions.assertEquals("ref", config.getRef());
-        Assertions.assertEquals("path", config.getPath());
+        assertEquals("git", config.getGit());
+        assertEquals("ref", config.getRef());
+        assertEquals("path", config.getPath());
     }
 
     @Test
     void testRabbitMQManagementConfig() {
-        beforeEach("src/test/resources/rabbitMQManagementConfig.yml");
+        beforeEach("rabbitMQManagementConfig.yml");
 
         expected.setRabbitMQManagementConfig(
                 RabbitMQManagementConfig.builder().withHost("host").withManagementPort(8080).withApplicationPort(8080)
@@ -180,64 +188,66 @@ public class ConfigurationTests {
                         .build()
         );
 
-        Assertions.assertEquals(expected, OperatorConfig.INSTANCE.loadConfiguration());
+        assertEquals(expected, loadConfiguration());
     }
 
     @Test
     void testSchemaSecretsConfig() {
-        beforeEach("src/test/resources/schemaSecretsConfig.yml");
+        beforeEach("schemaSecretsConfig.yml");
 
-        expected.setSchemaSecrets(SchemaSecrets.builder().withRabbitMQ("rabbitMQ").withCassandra("cassandra").build());
+        expected.setSchemaSecrets(SchemaSecrets.builder().
+                withRabbitMQ("rabbitMQ").withCassandra("cassandra").build());
 
-        Assertions.assertEquals(expected, OperatorConfig.INSTANCE.loadConfiguration());
+        assertEquals(expected, loadConfiguration());
     }
 
     @Test
     void testEmptyConfig() {
-        beforeEach("src/test/resources/emptyConfig.yml");
+        beforeEach("emptyConfig.yml");
 
-        Assertions.assertEquals(expected, OperatorConfig.INSTANCE.loadConfiguration());
+        assertEquals(expected, loadConfiguration());
     }
 
     @Test
     void testDefaultConfig() {
-        beforeEach("src/test/resources/defaultConfig.yml");
+        beforeEach("defaultConfig.yml");
 
-        Assertions.assertEquals(Collections.emptyList(),
-                OperatorConfig.INSTANCE.loadConfiguration().getNamespacePrefixes());
+        Configuration config = loadConfiguration();
+        assertEquals(Collections.emptyList(),
+                config.getNamespacePrefixes());
 
-        Assertions.assertNull(OperatorConfig.INSTANCE.loadConfiguration().getChartConfig().getGit());
-        Assertions.assertNull(OperatorConfig.INSTANCE.loadConfiguration().getChartConfig().getRef());
-        Assertions.assertNull(OperatorConfig.INSTANCE.loadConfiguration().getChartConfig().getPath());
+        assertNull(config.getChartConfig().getGit());
+        assertNull(config.getChartConfig().getRef());
+        assertNull(config.getChartConfig().getPath());
 
-        Assertions.assertNull(OperatorConfig.INSTANCE.loadConfiguration().getRabbitMQManagementConfig().getHost());
-        Assertions.assertEquals(0,
-                OperatorConfig.INSTANCE.loadConfiguration().getRabbitMQManagementConfig().getManagementPort());
-        Assertions.assertNull(OperatorConfig.INSTANCE.loadConfiguration().getRabbitMQManagementConfig().getUsername());
-        Assertions.assertNull(OperatorConfig.INSTANCE.loadConfiguration().getRabbitMQManagementConfig().getPassword());
-        Assertions.assertFalse(OperatorConfig.INSTANCE.loadConfiguration().getRabbitMQManagementConfig()
+        assertNull(config.getRabbitMQManagementConfig().getHost());
+        assertEquals(0,
+                config.getRabbitMQManagementConfig().getManagementPort());
+        assertNull(config.getRabbitMQManagementConfig().getUsername());
+        assertNull(config.getRabbitMQManagementConfig().getPassword());
+        assertFalse(config.getRabbitMQManagementConfig()
                 .isPersistence());
-        Assertions.assertEquals(RabbitMQNamespacePermissions.DEFAULT_CONFIGURE_PERMISSION, OperatorConfig.INSTANCE
-                .loadConfiguration().getRabbitMQManagementConfig().getRabbitMQNamespacePermissions().getConfigure());
-        Assertions.assertEquals(RabbitMQNamespacePermissions.DEFAULT_READ_PERMISSION, OperatorConfig.INSTANCE
-                .loadConfiguration().getRabbitMQManagementConfig().getRabbitMQNamespacePermissions().getRead());
-        Assertions.assertEquals(RabbitMQNamespacePermissions.DEFAULT_WRITE_PERMISSION, OperatorConfig.INSTANCE
-                .loadConfiguration().getRabbitMQManagementConfig().getRabbitMQNamespacePermissions().getWrite());
+        assertEquals(RabbitMQNamespacePermissions.DEFAULT_CONFIGURE_PERMISSION,
+                config.getRabbitMQManagementConfig().getRabbitMQNamespacePermissions().getConfigure());
+        assertEquals(RabbitMQNamespacePermissions.DEFAULT_READ_PERMISSION,
+                config.getRabbitMQManagementConfig().getRabbitMQNamespacePermissions().getRead());
+        assertEquals(RabbitMQNamespacePermissions.DEFAULT_WRITE_PERMISSION,
+                config.getRabbitMQManagementConfig().getRabbitMQNamespacePermissions().getWrite());
 
-        Assertions.assertEquals(OperatorConfig.DEFAULT_RABBITMQ_CONFIGMAP_NAME,
-                OperatorConfig.INSTANCE.loadConfiguration().getRabbitMQConfigMapName());
+        assertEquals(OperatorConfig.DEFAULT_RABBITMQ_CONFIGMAP_NAME,
+                config.getRabbitMQConfigMapName());
 
-        Assertions.assertEquals(SchemaSecrets.DEFAULT_RABBITMQ_SECRET,
-                OperatorConfig.INSTANCE.loadConfiguration().getSchemaSecrets().getRabbitMQ());
-        Assertions.assertEquals(SchemaSecrets.DEFAULT_CASSANDRA_SECRET,
-                OperatorConfig.INSTANCE.loadConfiguration().getSchemaSecrets().getCassandra());
+        assertEquals(SchemaSecrets.DEFAULT_RABBITMQ_SECRET,
+                config.getSchemaSecrets().getRabbitMQ());
+        assertEquals(SchemaSecrets.DEFAULT_CASSANDRA_SECRET,
+                config.getSchemaSecrets().getCassandra());
     }
 
     @Test
     void testSchemaPermissionsDefaultConfig() {
-        beforeEach("src/test/resources/schemaPermissionsDefaultConfig.yml");
+        beforeEach("schemaPermissionsDefaultConfig.yml");
 
-        Assertions.assertEquals(new RabbitMQNamespacePermissions(), OperatorConfig.INSTANCE.loadConfiguration()
+        assertEquals(new RabbitMQNamespacePermissions(), loadConfiguration()
                 .getRabbitMQManagementConfig().getRabbitMQNamespacePermissions());
     }
 }

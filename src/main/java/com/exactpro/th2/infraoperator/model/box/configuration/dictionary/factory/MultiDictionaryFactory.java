@@ -56,7 +56,7 @@ public class MultiDictionaryFactory {
                         HasMetadata res = OperatorState.INSTANCE
                                 .getResourceFromCache(name, resource.getMetadata().getNamespace());
 
-                        String checksum = ExtractUtils.sourceHash(res, false);
+                        String checksum = ExtractUtils.fullSourceHash(res);
                         dictionaries.add(new MultiDictionaryEntity(name, checksum, alias));
                     }
                 }

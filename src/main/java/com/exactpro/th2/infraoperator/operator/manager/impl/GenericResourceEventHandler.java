@@ -55,7 +55,7 @@ public class GenericResourceEventHandler<T extends HasMetadata> implements Resou
         logger.debug("Received ADDED event ({}) for \"{}\" {}, refresh-token={}",
                 eventId,
                 resourceLabel,
-                ExtractUtils.sourceHash(obj, true),
+                ExtractUtils.shortSourceHash(obj),
                 ExtractUtils.refreshToken(obj));
 
         eventQueue.addEvent(EventQueue.generateEvent(
@@ -83,7 +83,7 @@ public class GenericResourceEventHandler<T extends HasMetadata> implements Resou
         logger.debug("Received MODIFIED event ({}) for \"{}\" {}, refresh-token={}",
                 eventId,
                 resourceLabel,
-                ExtractUtils.sourceHash(newObj, true),
+                ExtractUtils.shortSourceHash(newObj),
                 ExtractUtils.refreshToken(newObj));
 
         eventQueue.addEvent(EventQueue.generateEvent(
@@ -109,7 +109,7 @@ public class GenericResourceEventHandler<T extends HasMetadata> implements Resou
         logger.debug("Received DELETED event ({}) for \"{}\" {}, refresh-token={}",
                 eventId,
                 resourceLabel,
-                ExtractUtils.sourceHash(obj, true),
+                ExtractUtils.shortSourceHash(obj),
                 ExtractUtils.refreshToken(obj));
 
         eventQueue.addEvent(EventQueue.generateEvent(
@@ -128,7 +128,7 @@ public class GenericResourceEventHandler<T extends HasMetadata> implements Resou
 
             String resourceLabel = CustomResourceUtils.annotationFor(resource);
             logger.debug("Processing {} event for \"{}\" {}", action, resourceLabel,
-                    ExtractUtils.sourceHash(resource, true));
+                    ExtractUtils.shortSourceHash(resource));
 
             try {
                 // let handler process the message
