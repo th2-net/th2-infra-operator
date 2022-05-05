@@ -39,14 +39,14 @@ public class GrpcServiceConfiguration {
     private Map<String, GrpcEndpointConfiguration> endpoints;
 
     @JsonProperty(required = true)
-    private List<GrpcRouterFilterConfiguration> filters;
+    private List<Object> filters;
 
     protected GrpcServiceConfiguration() {
     }
 
     protected GrpcServiceConfiguration(RoutingStrategy strategy, String serviceClass,
                                        Map<String, GrpcEndpointConfiguration> endpoints,
-                                       List<GrpcRouterFilterConfiguration> filters) {
+                                       List<Object> filters) {
         this.strategy = strategy;
         this.serviceClass = serviceClass;
         this.endpoints = endpoints;

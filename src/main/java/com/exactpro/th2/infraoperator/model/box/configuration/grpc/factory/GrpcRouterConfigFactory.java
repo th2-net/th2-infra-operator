@@ -22,17 +22,14 @@ import com.exactpro.th2.infraoperator.model.box.configuration.grpc.*;
 import com.exactpro.th2.infraoperator.spec.Th2CustomResource;
 import com.exactpro.th2.infraoperator.spec.link.relation.pins.PinCouplingGRPC;
 import com.exactpro.th2.infraoperator.spec.link.relation.pins.PinGRPC;
-import com.exactpro.th2.infraoperator.spec.shared.FilterSpec;
 import com.exactpro.th2.infraoperator.spec.shared.PinSpec;
 import com.exactpro.th2.infraoperator.spec.shared.SchemaConnectionType;
-import com.exactpro.th2.infraoperator.util.SchemeMappingUtils;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.*;
-import java.util.stream.Collectors;
 
 import static com.exactpro.th2.infraoperator.model.box.configuration.grpc.StrategyType.FILTER;
 import static com.exactpro.th2.infraoperator.model.box.configuration.grpc.StrategyType.ROBIN;
@@ -151,7 +148,7 @@ public class GrpcRouterConfigFactory {
             config = GrpcServiceConfiguration.builder()
                     .serviceClass(serviceClass)
                     .endpoints(endpoints)
-                    .filters(schemeFiltersToGrpcFilters(currentPin.getFilters()))
+                    .filters(currentPin.getFilters())
                     .build();
 
             var strategy = currentPin.getStrategy();
@@ -176,7 +173,7 @@ public class GrpcRouterConfigFactory {
 
             config.getEndpoints().putAll(endpoints);
 
-            config.getFilters().addAll(schemeFiltersToGrpcFilters(currentPin.getFilters()));
+            config.getFilters().addAll(currentPin.getFilters());
 
             if (strategy.getType().equals(ROBIN)) {
                 var robinStrategy = (GrpcRobinStrategy) strategy;
@@ -193,15 +190,6 @@ public class GrpcRouterConfigFactory {
             return new NaturePinState(firstPinName, secondPinName);
         }
         return new NaturePinState(secondPinName, firstPinName);
-    }
-
-    private List<GrpcRouterFilterConfiguration> schemeFiltersToGrpcFilters(Set<FilterSpec> filterSpecs) {
-        return filterSpecs.stream()
-                .map(filterSpec ->
-                        new GrpcRouterFilterConfiguration(
-                                SchemeMappingUtils.specToConfigFieldFiltersNew(filterSpec.getPropertiesFilter())
-                        )
-                ).collect(Collectors.toList());
     }
 
     @Data
