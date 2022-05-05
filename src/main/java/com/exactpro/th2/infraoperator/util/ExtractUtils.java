@@ -90,7 +90,7 @@ public class ExtractUtils {
 
     public static String shortSourceHash(HasMetadata res) {
         String fullHash = fullSourceHash(res);
-        if (fullHash.isEmpty()) {
+        if (Strings.isNullOrEmpty(fullHash)) {
             return fullHash;
         }
         return "[" + fullHash.substring(0, 8) + "]";
