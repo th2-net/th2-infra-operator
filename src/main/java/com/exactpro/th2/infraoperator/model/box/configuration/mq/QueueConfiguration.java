@@ -22,6 +22,7 @@ import com.exactpro.th2.infraoperator.spec.strategy.linkresolver.queue.RoutingKe
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 
+import java.util.List;
 import java.util.Objects;
 import java.util.Set;
 
@@ -32,10 +33,9 @@ public final class QueueConfiguration {
 
     private Set<String> attributes;
 
-    //TODO change from Object to RouterFilterConfiguration
-    private Set<Object> filters;
+    private List<Object> filters;
 
-    public QueueConfiguration(QueueDescription queue, Set<String> attributes, Set<Object> filters) {
+    public QueueConfiguration(QueueDescription queue, Set<String> attributes, List<Object> filters) {
         this.queue = queue;
         this.attributes = attributes;
         this.filters = filters;
@@ -62,7 +62,7 @@ public final class QueueConfiguration {
     }
 
     @JsonProperty("filters")
-    public Set<Object> getFilters() {
+    public List<Object> getFilters() {
         return this.filters;
     }
 
@@ -94,7 +94,7 @@ public final class QueueConfiguration {
 
         private Set<String> attributes;
 
-        private Set<Object> filters;
+        private List<Object> filters;
 
         Builder() { }
 
@@ -123,7 +123,7 @@ public final class QueueConfiguration {
         }
 
         @JsonProperty("filters")
-        public Builder filters(Set<Object> filters) {
+        public Builder filters(List<Object> filters) {
             this.filters = filters;
             return this;
         }
