@@ -25,11 +25,9 @@ import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import io.fabric8.kubernetes.api.model.KubernetesResource;
-import lombok.Data;
 
 import java.util.*;
 
-@Data
 @JsonDeserialize
 @JsonInclude(JsonInclude.Include.NON_EMPTY)
 @JsonIgnoreProperties(ignoreUnknown = true)
@@ -37,23 +35,18 @@ public abstract class Th2Spec implements KubernetesResource {
 
     private static final String CHART_CFG_ALIAS = "chart-cfg";
 
-    @JsonProperty("image-name")
     protected String imageName;
 
-    @JsonProperty("image-version")
     protected String imageVersion;
 
     protected String type;
 
     protected String disabled = "false";
 
-    @JsonProperty("extended-settings")
     protected Map<String, Object> extendedSettings = new HashMap<>();
 
-    @JsonProperty("custom-config")
     protected Map<String, Object> customConfig = new HashMap<>();
 
-    @JsonProperty("prometheus")
     protected PrometheusConfiguration<String> prometheusConfiguration;
 
     protected Map<String, Object> mqRouter;
@@ -69,6 +62,9 @@ public abstract class Th2Spec implements KubernetesResource {
     protected List<ParamSpec> params = new ArrayList<>();
 
     protected List<PinSpec> pins = initializeWithEstorePin();
+
+    public Th2Spec() {
+    }
 
     public void setPins(List<PinSpec> pins) {
         this.pins = pins;
@@ -109,5 +105,134 @@ public abstract class Th2Spec implements KubernetesResource {
         pin.setAttributes(Set.of(PinAttribute.publish.name(), PinAttribute.event.name()));
         pins.add(pin);
         return pins;
+    }
+
+    public String getImageName() {
+        return this.imageName;
+    }
+
+    public String getImageVersion() {
+        return this.imageVersion;
+    }
+
+    @JsonProperty("image-name")
+    public void setImageName(String imageName) {
+        this.imageName = imageName;
+    }
+
+    @JsonProperty("image-version")
+    public void setImageVersion(String imageVersion) {
+        this.imageVersion = imageVersion;
+    }
+
+    public String getType() {
+        return this.type;
+    }
+
+    public String getDisabled() {
+        return this.disabled;
+    }
+
+    public Map<String, Object> getCustomConfig() {
+        return this.customConfig;
+    }
+
+    @JsonProperty("custom-config")
+    public void setCustomConfig(Map<String, Object> customConfig) {
+        this.customConfig = customConfig;
+    }
+
+    public PrometheusConfiguration<String> getPrometheusConfiguration() {
+        return this.prometheusConfiguration;
+    }
+
+    @JsonProperty("prometheus")
+    public void setPrometheusConfiguration(PrometheusConfiguration<String> prometheusConfiguration) {
+        this.prometheusConfiguration = prometheusConfiguration;
+    }
+
+    @JsonProperty("extended-settings")
+    public void setExtendedSettings(Map<String, Object> extendedSettings) {
+        this.extendedSettings = extendedSettings;
+    }
+
+    public Map<String, Object> getMqRouter() {
+        return this.mqRouter;
+    }
+
+    public Map<String, Object> getGrpcRouter() {
+        return this.grpcRouter;
+    }
+
+    public Map<String, Object> getCradleManager() {
+        return this.cradleManager;
+    }
+
+    public String getBookName() {
+        return this.bookName;
+    }
+
+    public String getLoggingConfig() {
+        return this.loggingConfig;
+    }
+
+    public List<PinSpec> getPins() {
+        return this.pins;
+    }
+
+    public void setType(String type) {
+        this.type = type;
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) {
+            return true;
+        }
+        if (!(o instanceof Th2Spec)) {
+            return false;
+        }
+        Th2Spec th2Spec = (Th2Spec) o;
+        return Objects.equals(imageName, th2Spec.imageName) &&
+                Objects.equals(imageVersion, th2Spec.imageVersion) &&
+                Objects.equals(type, th2Spec.type) &&
+                Objects.equals(disabled, th2Spec.disabled) &&
+                Objects.equals(extendedSettings, th2Spec.extendedSettings) &&
+                Objects.equals(customConfig, th2Spec.customConfig) &&
+                Objects.equals(prometheusConfiguration, th2Spec.prometheusConfiguration) &&
+                Objects.equals(mqRouter, th2Spec.mqRouter) &&
+                Objects.equals(grpcRouter, th2Spec.grpcRouter) &&
+                Objects.equals(cradleManager, th2Spec.cradleManager) &&
+                Objects.equals(bookName, th2Spec.bookName) &&
+                Objects.equals(loggingConfig, th2Spec.loggingConfig) &&
+                Objects.equals(params, th2Spec.params) &&
+                Objects.equals(pins, th2Spec.pins);
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(imageName, imageVersion, type, disabled, extendedSettings,
+                customConfig, prometheusConfiguration, mqRouter, grpcRouter,
+                cradleManager, bookName, loggingConfig, params, pins);
+    }
+
+    @Override
+    public String toString() {
+        return "Th2Spec{" +
+                "imageName='" + imageName + '\'' +
+                ", imageVersion='" + imageVersion + '\'' +
+                ", type='" + type + '\'' +
+                ", disabled='" + disabled + '\'' +
+                ", extendedSettings=" + extendedSettings +
+                ", customConfig=" + customConfig +
+                ", prometheusConfiguration=" + prometheusConfiguration +
+                ", mqRouter=" + mqRouter +
+                ", grpcRouter=" + grpcRouter +
+                ", cradleManager=" + cradleManager +
+                ", bookName='" + bookName + '\'' +
+                ", loggingConfig='" + loggingConfig + '\'' +
+                ", params=" + params +
+                ", pins=" + pins +
+                '}';
     }
 }

@@ -16,16 +16,17 @@
 
 package com.exactpro.th2.infraoperator.model.box.configuration.grpc;
 
-import lombok.Getter;
-
-@Getter
 public enum StrategyType {
     ROBIN("robin"),
     FILTER("filter");
 
-    private String actualName;
+    private final String actualName;
 
     StrategyType(String actualName) {
         this.actualName = actualName;
+    }
+
+    public String getActualName() {
+        return actualName;
     }
 }

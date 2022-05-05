@@ -16,15 +16,13 @@
 
 package com.exactpro.th2.infraoperator.model.http;
 
-import lombok.Getter;
 import org.jetbrains.annotations.Nullable;
 
 public enum HttpCode {
 
     SERVER_CONFLICT(409);
 
-    @Getter
-    private int code;
+    private final int code;
 
     HttpCode(int code) {
         this.code = code;
@@ -41,4 +39,7 @@ public enum HttpCode {
         return null;
     }
 
+    public int getCode() {
+        return this.code;
+    }
 }

@@ -18,11 +18,7 @@ package com.exactpro.th2.infraoperator.spec.box;
 
 import com.exactpro.th2.infraoperator.spec.Th2Spec;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
-import lombok.Data;
-import lombok.EqualsAndHashCode;
 
-@Data
 @JsonDeserialize
-@EqualsAndHashCode(callSuper = true)
 public class Th2BoxSpec extends Th2Spec {
 }

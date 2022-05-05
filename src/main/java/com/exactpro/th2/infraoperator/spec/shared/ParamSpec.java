@@ -17,9 +17,9 @@
 package com.exactpro.th2.infraoperator.spec.shared;
 
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
-import lombok.Data;
 
-@Data
+import java.util.Objects;
+
 @JsonDeserialize
 public class ParamSpec {
 
@@ -27,4 +27,43 @@ public class ParamSpec {
 
     private String value;
 
+    public ParamSpec() {
+    }
+
+    public String getName() {
+        return this.name;
+    }
+
+    public void setName(String name) {
+        this.name = name;
+    }
+
+    public String getValue() {
+        return this.value;
+    }
+
+    public void setValue(String value) {
+        this.value = value;
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) {
+            return true;
+        }
+        if (!(o instanceof ParamSpec)) {
+            return false;
+        }
+        ParamSpec paramSpec = (ParamSpec) o;
+        return Objects.equals(name, paramSpec.name) && Objects.equals(value, paramSpec.value);
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(name, value);
+    }
+
+    public String toString() {
+        return "ParamSpec(name=" + this.getName() + ", value=" + this.getValue() + ")";
+    }
 }

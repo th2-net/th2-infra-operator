@@ -16,13 +16,32 @@
 
 package com.exactpro.th2.infraoperator.model.box.configuration.grpc;
 
-import com.fasterxml.jackson.annotation.JsonIgnore;
+import java.util.Set;
 
-public interface RoutingStrategy {
+public class RoutingStrategy {
 
-    String getName();
+    private String name; //TODO may be enum type
 
-    @JsonIgnore
-    StrategyType getType();
+    private Set<String> endpoints;
+
+    public RoutingStrategy() { }
+
+    public RoutingStrategy(String name, Set<String> endpoints) {
+        this.name = name;
+        this.endpoints = endpoints;
+    }
+
+    //TODO may be removed if String name persists. else remove getName()
+    public StrategyType getType() {
+        return name.equals(StrategyType.ROBIN.getActualName()) ? StrategyType.ROBIN : StrategyType.FILTER;
+    }
+
+    public String getName() {
+        return name;
+    }
+
+    public Set<String> getEndpoints() {
+        return endpoints;
+    }
 
 }
