@@ -42,7 +42,7 @@ public class PinSpec {
 
     protected Set<String> attributes = new HashSet<>();
 
-    protected Set<FilterSpec> filters = new HashSet<>();
+    protected List<Object> filters = new ArrayList<>();
 
     @JsonProperty("service-classes")
     protected List<String> serviceClasses = new ArrayList<>();
