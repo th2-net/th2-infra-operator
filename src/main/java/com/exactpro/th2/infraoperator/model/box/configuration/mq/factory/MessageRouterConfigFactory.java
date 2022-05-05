@@ -19,27 +19,21 @@ package com.exactpro.th2.infraoperator.model.box.configuration.mq.factory;
 import com.exactpro.th2.infraoperator.configuration.OperatorConfig;
 import com.exactpro.th2.infraoperator.model.box.configuration.mq.MessageRouterConfiguration;
 import com.exactpro.th2.infraoperator.model.box.configuration.mq.QueueConfiguration;
-import com.exactpro.th2.infraoperator.model.box.configuration.mq.RouterFilterConfiguration;
-import com.exactpro.th2.infraoperator.model.box.configuration.mq.RouterFilterConfigurationOld;
 import com.exactpro.th2.infraoperator.model.box.schema.link.QueueDescription;
 import com.exactpro.th2.infraoperator.model.kubernetes.configmaps.ConfigMaps;
 import com.exactpro.th2.infraoperator.spec.Th2CustomResource;
 import com.exactpro.th2.infraoperator.spec.link.relation.pins.PinMQ;
-import com.exactpro.th2.infraoperator.spec.shared.FilterSpec;
 import com.exactpro.th2.infraoperator.spec.shared.PinAttribute;
 import com.exactpro.th2.infraoperator.spec.shared.PinSpec;
 import com.exactpro.th2.infraoperator.spec.strategy.linkresolver.queue.QueueName;
 import com.exactpro.th2.infraoperator.spec.strategy.linkresolver.queue.RoutingKeyName;
 import com.exactpro.th2.infraoperator.spec.strategy.redeploy.NonTerminalException;
 import com.exactpro.th2.infraoperator.util.ExtractUtils;
-import com.exactpro.th2.infraoperator.util.SchemeMappingUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.HashMap;
 import java.util.Map;
-import java.util.Set;
-import java.util.stream.Collectors;
 
 import static com.exactpro.th2.infraoperator.util.CustomResourceUtils.annotationFor;
 
@@ -80,34 +74,13 @@ public class MessageRouterConfigFactory {
                     new QueueConfiguration(
                             queueSpec,
                             pin.getAttributes(),
-                            specToConfigFilters(pin.getFilters(), resourceAnnotation, pinName)
+                            pin.getFilters()
                     )
             );
         }
 
         String exchange = OperatorConfig.INSTANCE.getRabbitMQManagementConfig().getExchangeName();
         return new MessageRouterConfiguration(queues, exchange);
-    }
-
-    private Set<Object> specToConfigFilters(Set<FilterSpec> filterSpecs, String annotation, String pinName) {
-        // TODO remove old format
-        try {
-            return filterSpecs.stream()
-                    .map(filterSpec ->
-                            new RouterFilterConfigurationOld(
-                                    SchemeMappingUtils.specToConfigFieldFiltersOld(filterSpec.getMetadataFilter()),
-                                    SchemeMappingUtils.specToConfigFieldFiltersOld(filterSpec.getMessageFilter()))
-                    ).collect(Collectors.toSet());
-        } catch (IllegalStateException e) {
-            logger.warn("Failed to generate filters for resource: " +
-                    "\"{}\" pin: {} with old format, generating with new format", annotation, pinName);
-            return filterSpecs.stream()
-                    .map(filterSpec ->
-                            new RouterFilterConfiguration(
-                                    SchemeMappingUtils.specToConfigFieldFiltersNew(filterSpec.getMetadataFilter()),
-                                    SchemeMappingUtils.specToConfigFieldFiltersNew(filterSpec.getMessageFilter()))
-                    ).collect(Collectors.toSet());
-        }
     }
 
     private QueueDescription createQueueBunch(String namespace, PinMQ to, PinMQ from) {
