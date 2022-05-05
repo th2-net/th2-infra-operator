@@ -22,7 +22,7 @@ import java.util.HashMap;
 import java.util.Map;
 
 import static com.exactpro.th2.infraoperator.util.HelmReleaseUtils.generateSecretsConfig;
-import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.*;
 
 class SecretConfigTests {
 
@@ -56,6 +56,16 @@ class SecretConfigTests {
         assertEquals(secretPathsConfig.size(), 2);
         assertEquals(secretPathsConfig.get("MY_SECRET_FILE_1"), "mySecretFile");
         assertEquals(secretPathsConfig.get("MY_SEC_RET_FILE_0"), "mySecRetFile");
+    }
+
+    @Test
+    void emptySecretValuesConfigTest() {
+        Map<String, Object> customConfig = new HashMap<>();
+        customConfig.put("noValue1", "${secret_value:}");
+        customConfig.put("noValue2", "${secret_value}");
+        Map<String, String> secretValuesConfig = new HashMap<>();
+        Map<String, String> secretPathsConfig = new HashMap<>();
+        assertDoesNotThrow(() -> generateSecretsConfig(customConfig, secretValuesConfig, secretPathsConfig));
     }
 
     @Test
