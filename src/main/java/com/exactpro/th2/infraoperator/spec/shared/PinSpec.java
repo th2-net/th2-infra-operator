@@ -20,14 +20,9 @@ import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
-import lombok.Data;
 
-import java.util.ArrayList;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Set;
+import java.util.*;
 
-@Data
 @JsonDeserialize
 @JsonInclude(JsonInclude.Include.NON_EMPTY)
 @JsonIgnoreProperties(ignoreUnknown = true)
@@ -35,7 +30,6 @@ public class PinSpec {
 
     protected String name;
 
-    @JsonProperty("connection-type")
     protected SchemaConnectionType connectionType;
 
     protected PinSettings settings =  null;
@@ -44,12 +38,106 @@ public class PinSpec {
 
     protected List<Object> filters = new ArrayList<>();
 
-    @JsonProperty("service-classes")
     protected List<String> serviceClasses = new ArrayList<>();
 
-    @JsonProperty("service-class")
     protected String serviceClass;
 
     protected String strategy;
 
+    public PinSpec() {
+    }
+
+    public String getName() {
+        return this.name;
+    }
+
+    public SchemaConnectionType getConnectionType() {
+        return this.connectionType;
+    }
+
+    public PinSettings getSettings() {
+        return this.settings;
+    }
+
+    public Set<String> getAttributes() {
+        return this.attributes;
+    }
+
+    public List<Object> getFilters() {
+        return this.filters;
+    }
+
+    public String getServiceClass() {
+        return this.serviceClass;
+    }
+
+    public String getStrategy() {
+        return this.strategy;
+    }
+
+    public void setName(String name) {
+        this.name = name;
+    }
+
+    @JsonProperty("connection-type")
+    public void setConnectionType(SchemaConnectionType connectionType) {
+        this.connectionType = connectionType;
+    }
+
+    public void setAttributes(Set<String> attributes) {
+        this.attributes = attributes;
+    }
+
+    @JsonProperty("service-classes")
+    public void setServiceClasses(List<String> serviceClasses) {
+        this.serviceClasses = serviceClasses;
+    }
+
+    @JsonProperty("service-class")
+    public void setServiceClass(String serviceClass) {
+        this.serviceClass = serviceClass;
+    }
+
+    public void setStrategy(String strategy) {
+        this.strategy = strategy;
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) {
+            return true;
+        }
+        if (!(o instanceof PinSpec)) {
+            return false;
+        }
+        PinSpec pinSpec = (PinSpec) o;
+        return Objects.equals(name, pinSpec.name) &&
+                connectionType == pinSpec.connectionType &&
+                Objects.equals(settings, pinSpec.settings) &&
+                Objects.equals(attributes, pinSpec.attributes) &&
+                Objects.equals(filters, pinSpec.filters) &&
+                Objects.equals(serviceClasses, pinSpec.serviceClasses) &&
+                Objects.equals(serviceClass, pinSpec.serviceClass) &&
+                Objects.equals(strategy, pinSpec.strategy);
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(name, connectionType, settings, attributes, filters,
+                serviceClasses, serviceClass, strategy);
+    }
+
+    @Override
+    public String toString() {
+        return "PinSpec{" +
+                "name='" + name + '\'' +
+                ", connectionType=" + connectionType +
+                ", settings=" + settings +
+                ", attributes=" + attributes +
+                ", filters=" + filters +
+                ", serviceClasses=" + serviceClasses +
+                ", serviceClass='" + serviceClass + '\'' +
+                ", strategy='" + strategy + '\'' +
+                '}';
+    }
 }

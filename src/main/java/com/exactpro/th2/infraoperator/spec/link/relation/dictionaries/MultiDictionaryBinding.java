@@ -19,7 +19,9 @@ package com.exactpro.th2.infraoperator.spec.link.relation.dictionaries;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 
-import java.util.*;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Objects;
 
 @JsonDeserialize(builder = MultiDictionaryBinding.Builder.class)
 public final class MultiDictionaryBinding extends AbstractDictionaryBinding {

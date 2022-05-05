@@ -16,11 +16,8 @@
 
 package com.exactpro.th2.infraoperator.spec.shared.status;
 
-import lombok.Builder;
-import lombok.Data;
+import java.util.Objects;
 
-@Data
-@Builder
 public class Condition {
 
     private String lastTransitionTime;
@@ -47,10 +44,96 @@ public class Condition {
         this.type = type;
     }
 
+    public static ConditionBuilder builder() {
+        return new ConditionBuilder();
+    }
+
+    public String getLastTransitionTime() {
+        return this.lastTransitionTime;
+    }
+
+    public String getLastUpdateTime() {
+        return this.lastUpdateTime;
+    }
+
+    public String getMessage() {
+        return this.message;
+    }
+
+    public String getReason() {
+        return this.reason;
+    }
+
+    public String getStatus() {
+        return this.status;
+    }
+
+    public String getType() {
+        return this.type;
+    }
+
+    public void setLastTransitionTime(String lastTransitionTime) {
+        this.lastTransitionTime = lastTransitionTime;
+    }
+
+    public void setLastUpdateTime(String lastUpdateTime) {
+        this.lastUpdateTime = lastUpdateTime;
+    }
+
+    public void setMessage(String message) {
+        this.message = message;
+    }
+
+    public void setReason(String reason) {
+        this.reason = reason;
+    }
+
+    public void setStatus(String status) {
+        this.status = status;
+    }
+
+    public void setType(String type) {
+        this.type = type;
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) {
+            return true;
+        }
+        if (!(o instanceof Condition)) {
+            return false;
+        }
+        Condition condition = (Condition) o;
+        return Objects.equals(lastTransitionTime, condition.lastTransitionTime) &&
+                Objects.equals(lastUpdateTime, condition.lastUpdateTime) &&
+                Objects.equals(message, condition.message) &&
+                Objects.equals(reason, condition.reason) &&
+                Objects.equals(status, condition.status) &&
+                Objects.equals(type, condition.type);
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(lastTransitionTime, lastUpdateTime, message, reason, status, type);
+    }
+
+    @Override
+    public String toString() {
+        return "Condition{" +
+                "lastTransitionTime='" + lastTransitionTime + '\'' +
+                ", lastUpdateTime='" + lastUpdateTime + '\'' +
+                ", message='" + message + '\'' +
+                ", reason='" + reason + '\'' +
+                ", status='" + status + '\'' +
+                ", type='" + type + '\'' +
+                '}';
+    }
+
     public enum Type {
         DEPLOYED("Deployed");
 
-        private String name;
+        private final String name;
 
         Type(String name) {
             this.name = name;
@@ -67,7 +150,7 @@ public class Condition {
         FALSE("False"),
         UNKNOWN("Unknown");
 
-        private String name;
+        private final String name;
 
         Status(String name) {
             this.name = name;
@@ -83,4 +166,54 @@ public class Condition {
         }
     }
 
+    public static class ConditionBuilder {
+        private String lastTransitionTime;
+
+        private String lastUpdateTime;
+
+        private String message;
+
+        private String reason;
+
+        private String status;
+
+        private String type;
+
+        ConditionBuilder() {
+        }
+
+        public ConditionBuilder lastTransitionTime(String lastTransitionTime) {
+            this.lastTransitionTime = lastTransitionTime;
+            return this;
+        }
+
+        public ConditionBuilder lastUpdateTime(String lastUpdateTime) {
+            this.lastUpdateTime = lastUpdateTime;
+            return this;
+        }
+
+        public ConditionBuilder message(String message) {
+            this.message = message;
+            return this;
+        }
+
+        public ConditionBuilder reason(String reason) {
+            this.reason = reason;
+            return this;
+        }
+
+        public ConditionBuilder status(String status) {
+            this.status = status;
+            return this;
+        }
+
+        public ConditionBuilder type(String type) {
+            this.type = type;
+            return this;
+        }
+
+        public Condition build() {
+            return new Condition(lastTransitionTime, lastUpdateTime, message, reason, status, type);
+        }
+    }
 }

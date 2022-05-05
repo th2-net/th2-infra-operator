@@ -21,11 +21,11 @@ import io.fabric8.kubernetes.client.CustomResource;
 import io.fabric8.kubernetes.client.KubernetesClient;
 import io.fabric8.kubernetes.client.dsl.MixedOperation;
 import io.fabric8.kubernetes.client.dsl.Resource;
-import lombok.Data;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-@Data
+import java.util.Objects;
+
 public abstract class DefaultResourceClient<CR extends CustomResource> implements ResourceClient<CR> {
 
     private static final Logger logger = LoggerFactory.getLogger(DefaultResourceClient.class);
@@ -53,6 +53,44 @@ public abstract class DefaultResourceClient<CR extends CustomResource> implement
     @Override
     public Class<CR> getResourceType() {
         return resourceType;
+    }
+
+    public KubernetesClient getClient() {
+        return this.client;
+    }
+
+    public MixedOperation<CR, ? extends KubernetesResourceList<CR>, ? extends Resource<CR>> getInstance() {
+        return this.instance;
+    }
+
+    public String getCrdName() {
+        return this.crdName;
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) {
+            return true;
+        }
+        if (!(o instanceof DefaultResourceClient)) {
+            return false;
+        }
+        DefaultResourceClient<?> that = (DefaultResourceClient<?>) o;
+        return Objects.equals(client, that.client) &&
+                Objects.equals(resourceType, that.resourceType) &&
+                Objects.equals(instance, that.instance) &&
+                Objects.equals(crdName, that.crdName);
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(client, resourceType, instance, crdName);
+    }
+
+    public String toString() {
+        return "DefaultResourceClient(client=" +
+                this.getClient() + ", resourceType=" + this.getResourceType() +
+                ", instance=" + this.getInstance() + ", crdName=" + this.getCrdName() + ")";
     }
 }
 
