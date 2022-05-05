@@ -31,7 +31,6 @@ import io.fabric8.kubernetes.client.DefaultKubernetesClient;
 import io.fabric8.kubernetes.client.KubernetesClient;
 import io.fabric8.kubernetes.client.Watcher;
 import io.fabric8.kubernetes.client.informers.SharedInformerFactory;
-import lombok.Getter;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -260,7 +259,6 @@ public class DefaultWatchManager {
         return instance;
     }
 
-    @Getter
     private static class Builder extends HelmOperatorContext.Builder<DefaultWatchManager, Builder> {
 
         public Builder(KubernetesClient client) {

@@ -21,9 +21,7 @@ import com.exactpro.th2.infraoperator.model.box.configuration.dictionary.factory
 import com.exactpro.th2.infraoperator.model.box.configuration.grpc.factory.GrpcRouterConfigFactory;
 import com.exactpro.th2.infraoperator.model.box.configuration.mq.factory.MessageRouterConfigFactory;
 import io.fabric8.kubernetes.client.KubernetesClient;
-import lombok.Getter;
 
-@Getter
 public class HelmOperatorContext {
 
     private final KubernetesClient client;
@@ -36,7 +34,10 @@ public class HelmOperatorContext {
         return new ContextBuilder(client);
     }
 
-    @Getter
+    public KubernetesClient getClient() {
+        return this.client;
+    }
+
     public abstract static class Builder<O, T extends Builder<O, T>> {
 
         protected final KubernetesClient client;
@@ -55,6 +56,25 @@ public class HelmOperatorContext {
 
         public abstract O build();
 
+        public KubernetesClient getClient() {
+            return this.client;
+        }
+
+        public MessageRouterConfigFactory getMqConfigFactory() {
+            return this.mqConfigFactory;
+        }
+
+        public GrpcRouterConfigFactory getGrpcConfigFactory() {
+            return this.grpcConfigFactory;
+        }
+
+        public DictionaryFactory getDictionaryFactory() {
+            return this.dictionaryFactory;
+        }
+
+        public MultiDictionaryFactory getMultiDictionaryFactory() {
+            return this.multiDictionaryFactory;
+        }
     }
 
     public static class ContextBuilder extends Builder<HelmOperatorContext, ContextBuilder> {

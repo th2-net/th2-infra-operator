@@ -24,19 +24,19 @@ import com.exactpro.th2.infraoperator.spec.link.relation.pins.PinCouplingGRPC;
 import com.exactpro.th2.infraoperator.spec.link.relation.pins.PinGRPC;
 import com.exactpro.th2.infraoperator.spec.shared.PinSpec;
 import com.exactpro.th2.infraoperator.spec.shared.SchemaConnectionType;
-import lombok.AllArgsConstructor;
-import lombok.Data;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.*;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 
 import static com.exactpro.th2.infraoperator.model.box.configuration.grpc.StrategyType.FILTER;
 import static com.exactpro.th2.infraoperator.model.box.configuration.grpc.StrategyType.ROBIN;
 import static com.exactpro.th2.infraoperator.util.CustomResourceUtils.annotationFor;
-import static com.exactpro.th2.infraoperator.util.HelmReleaseUtils.*;
 import static com.exactpro.th2.infraoperator.util.ExtractUtils.extractName;
 import static com.exactpro.th2.infraoperator.util.ExtractUtils.extractNamespace;
+import static com.exactpro.th2.infraoperator.util.HelmReleaseUtils.*;
 
 /**
  * A factory that creates a grpc configuration
@@ -136,52 +136,35 @@ public class GrpcRouterConfigFactory {
         var config = services.get(serviceName);
 
         Map<String, GrpcEndpointConfiguration> endpoints = new HashMap<>(Map.of(
-                targetBoxName + ENDPOINT_ALIAS_SUFFIX, GrpcEndpointConfiguration.builder()
-                        .host(targetBoxName)
-                        .port(targetPort)
-                        .attributes(currentPin.getAttributes())
-                        .build()
+                targetBoxName + ENDPOINT_ALIAS_SUFFIX,
+                new GrpcEndpointConfiguration(targetBoxName, targetPort, currentPin.getAttributes())
         ));
 
         if (config == null) {
+            String strategy = currentPin.getStrategy();
+            RoutingStrategy routingStrategy;
+            final String robinName = ROBIN.getActualName();
+            final String filterName = FILTER.getActualName();
 
-            config = GrpcServiceConfiguration.builder()
-                    .serviceClass(serviceClass)
-                    .endpoints(endpoints)
-                    .filters(currentPin.getFilters())
-                    .build();
-
-            var strategy = currentPin.getStrategy();
-
-            if (strategy.equals(ROBIN.getActualName())) {
-                config.setStrategy(GrpcRobinStrategy.builder()
-                        .endpoints(new ArrayList<>(endpoints.keySet()))
-                        .build());
-            } else if (strategy.equals(FILTER.getActualName())) {
-                config.setStrategy(GrpcFilterStrategy.builder()
-                        .endpoints(new ArrayList<>(endpoints.keySet()))
-                        .build());
+            if (strategy.equals(robinName)) {
+                routingStrategy = new RoutingStrategy(robinName, endpoints.keySet());
+            } else if (strategy.equals(filterName)) {
+                routingStrategy = new RoutingStrategy(filterName, endpoints.keySet());
             } else {
                 // should never happen if the existing list of strategies has not been expanded
                 throw new RuntimeException("Unknown routing strategy '" + strategy + "'");
             }
 
+            config = new GrpcServiceConfiguration(routingStrategy, serviceClass, endpoints, currentPin.getFilters());
+
             services.put(serviceName, config);
 
         } else {
-            var strategy = config.getStrategy();
-
             config.getEndpoints().putAll(endpoints);
 
             config.getFilters().addAll(currentPin.getFilters());
 
-            if (strategy.getType().equals(ROBIN)) {
-                var robinStrategy = (GrpcRobinStrategy) strategy;
-                robinStrategy.getEndpoints().addAll(endpoints.keySet());
-            } else if (strategy.getType().equals(FILTER)) {
-                var filterStrategy = (GrpcFilterStrategy) strategy;
-                filterStrategy.getEndpoints().addAll(endpoints.keySet());
-            }
+            config.getStrategy().getEndpoints().addAll(endpoints.keySet());
         }
     }
 
@@ -192,20 +175,33 @@ public class GrpcRouterConfigFactory {
         return new NaturePinState(secondPinName, firstPinName);
     }
 
-    @Data
-    @AllArgsConstructor
     private static class NaturePinState {
-        private String fromPinName;
+        private final String fromPinName;
 
-        private String toPinName;
+        private final String toPinName;
+
+        public NaturePinState(String fromPinName, String toPinName) {
+            this.fromPinName = fromPinName;
+            this.toPinName = toPinName;
+        }
+
+        public String getFromPinName() {
+            return this.fromPinName;
+        }
+
+        public String getToPinName() {
+            return this.toPinName;
+        }
+
+        public String toString() {
+            return "GrpcRouterConfigFactory.NaturePinState(fromPinName=" +
+                    this.getFromPinName() + ", toPinName=" + this.getToPinName() + ")";
+        }
     }
 
     //TODO add serviceClasses to server config
     private static GrpcServerConfiguration createServer() {
-        return GrpcServerConfiguration.builder()
-                .workers(DEFAULT_SERVER_WORKERS_COUNT)
-                .port(DEFAULT_PORT)
-                .build();
+        return new GrpcServerConfiguration(DEFAULT_SERVER_WORKERS_COUNT, DEFAULT_PORT);
     }
 
     private String getTargetBoxName(PinGRPC targetBox) {

@@ -16,33 +16,28 @@
 
 package com.exactpro.th2.infraoperator.model.box.configuration.grpc;
 
-import com.fasterxml.jackson.annotation.JsonProperty;
-import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
-import lombok.Data;
-import lombok.experimental.SuperBuilder;
-
 import java.util.Set;
 
-@Data
-@JsonDeserialize
-@SuperBuilder(toBuilder = true)
 public class GrpcEndpointConfiguration {
 
-    @JsonProperty(required = true)
-    private String host;
+    private final String host;
 
-    @JsonProperty(required = true)
-    private int port;
+    private final int port;
 
-    @JsonProperty(required = true)
-    private Set<String> attributes;
+    private final Set<String> attributes;
 
-    protected GrpcEndpointConfiguration() {
-    }
-
-    protected GrpcEndpointConfiguration(String host, int port, Set<String> attributes) {
+    public GrpcEndpointConfiguration(String host, int port, Set<String> attributes) {
         this.host = host;
         this.port = port;
         this.attributes = attributes;
+    }
+
+    @Override
+    public String toString() {
+        return "GrpcEndpointConfiguration{" +
+                "host='" + host + '\'' +
+                ", port=" + port +
+                ", attributes=" + attributes +
+                '}';
     }
 }

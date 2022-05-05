@@ -16,40 +16,41 @@
 
 package com.exactpro.th2.infraoperator.model.box.configuration.grpc;
 
-import com.fasterxml.jackson.annotation.JsonProperty;
-import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
-import lombok.Builder;
-import lombok.Data;
-
 import java.util.List;
 import java.util.Map;
 
-@Data
-@Builder
-@JsonDeserialize
 public class GrpcServiceConfiguration {
 
-    @JsonProperty(required = true)
-    private RoutingStrategy strategy;
+    private final RoutingStrategy strategy;
 
-    @JsonProperty(value = "service-class", required = true)
-    private String serviceClass;
+    private final String serviceClass;
 
-    @JsonProperty(required = true)
-    private Map<String, GrpcEndpointConfiguration> endpoints;
+    private final Map<String, GrpcEndpointConfiguration> endpoints;
 
-    @JsonProperty(required = true)
-    private List<Object> filters;
+    private final List<Object> filters;
 
-    protected GrpcServiceConfiguration() {
-    }
-
-    protected GrpcServiceConfiguration(RoutingStrategy strategy, String serviceClass,
+    public GrpcServiceConfiguration(RoutingStrategy strategy, String serviceClass,
                                        Map<String, GrpcEndpointConfiguration> endpoints,
                                        List<Object> filters) {
         this.strategy = strategy;
         this.serviceClass = serviceClass;
         this.endpoints = endpoints;
         this.filters = filters;
+    }
+
+    public RoutingStrategy getStrategy() {
+        return strategy;
+    }
+
+    public String getServiceClass() {
+        return serviceClass;
+    }
+
+    public Map<String, GrpcEndpointConfiguration> getEndpoints() {
+        return endpoints;
+    }
+
+    public List<Object> getFilters() {
+        return filters;
     }
 }
