@@ -16,8 +16,8 @@
 
 package com.exactpro.th2.infraoperator.util;
 
+import com.exactpro.th2.infraoperator.spec.Th2Spec;
 import com.exactpro.th2.infraoperator.spec.box.Th2Box;
-import com.exactpro.th2.infraoperator.spec.box.Th2BoxSpec;
 import com.exactpro.th2.infraoperator.spec.corebox.Th2CoreBox;
 import com.exactpro.th2.infraoperator.spec.mstore.Th2Mstore;
 import com.exactpro.th2.infraoperator.spec.shared.PinSpec;
@@ -58,7 +58,7 @@ class ExtractUtilsTests {
     @Test
     void extractMqPinsTest() {
         Th2Box res = new Th2Box();
-        Th2BoxSpec spec = new Th2BoxSpec();
+        Th2Spec spec = new Th2Spec();
         List<PinSpec> pins = new ArrayList<>();
         spec.setPins(pins);
         res.setSpec(spec);

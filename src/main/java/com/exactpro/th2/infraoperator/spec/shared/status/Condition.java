@@ -34,18 +34,8 @@ public class Condition {
 
     protected Condition() { }
 
-    protected Condition(String lastTransitionTime, String lastUpdateTime, String message, String reason,
-                        String status, String type) {
-        this.lastTransitionTime = lastTransitionTime;
-        this.lastUpdateTime = lastUpdateTime;
-        this.message = message;
-        this.reason = reason;
-        this.status = status;
+    protected Condition(String type) {
         this.type = type;
-    }
-
-    public static ConditionBuilder builder() {
-        return new ConditionBuilder();
     }
 
     public String getLastTransitionTime() {
@@ -163,57 +153,6 @@ public class Condition {
         @Override
         public String toString() {
             return name;
-        }
-    }
-
-    public static class ConditionBuilder {
-        private String lastTransitionTime;
-
-        private String lastUpdateTime;
-
-        private String message;
-
-        private String reason;
-
-        private String status;
-
-        private String type;
-
-        ConditionBuilder() {
-        }
-
-        public ConditionBuilder lastTransitionTime(String lastTransitionTime) {
-            this.lastTransitionTime = lastTransitionTime;
-            return this;
-        }
-
-        public ConditionBuilder lastUpdateTime(String lastUpdateTime) {
-            this.lastUpdateTime = lastUpdateTime;
-            return this;
-        }
-
-        public ConditionBuilder message(String message) {
-            this.message = message;
-            return this;
-        }
-
-        public ConditionBuilder reason(String reason) {
-            this.reason = reason;
-            return this;
-        }
-
-        public ConditionBuilder status(String status) {
-            this.status = status;
-            return this;
-        }
-
-        public ConditionBuilder type(String type) {
-            this.type = type;
-            return this;
-        }
-
-        public Condition build() {
-            return new Condition(lastTransitionTime, lastUpdateTime, message, reason, status, type);
         }
     }
 }
