@@ -94,7 +94,7 @@ public class StatusSpec {
 
         Condition condition;
         if (conditions.isEmpty()) {
-            condition = Condition.builder().type(type.toString()).build();
+            condition = new Condition(type.toString());
             this.conditions.add(condition);
         } else {
             condition = conditions.get(0);

@@ -31,8 +31,6 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-import static com.exactpro.th2.infraoperator.model.box.configuration.grpc.StrategyType.FILTER;
-import static com.exactpro.th2.infraoperator.model.box.configuration.grpc.StrategyType.ROBIN;
 import static com.exactpro.th2.infraoperator.util.CustomResourceUtils.annotationFor;
 import static com.exactpro.th2.infraoperator.util.ExtractUtils.extractName;
 import static com.exactpro.th2.infraoperator.util.ExtractUtils.extractNamespace;
@@ -141,24 +139,9 @@ public class GrpcRouterConfigFactory {
         ));
 
         if (config == null) {
-            String strategy = currentPin.getStrategy();
-            RoutingStrategy routingStrategy;
-            final String robinName = ROBIN.getActualName();
-            final String filterName = FILTER.getActualName();
-
-            if (strategy.equals(robinName)) {
-                routingStrategy = new RoutingStrategy(robinName, endpoints.keySet());
-            } else if (strategy.equals(filterName)) {
-                routingStrategy = new RoutingStrategy(filterName, endpoints.keySet());
-            } else {
-                // should never happen if the existing list of strategies has not been expanded
-                throw new RuntimeException("Unknown routing strategy '" + strategy + "'");
-            }
-
+            RoutingStrategy routingStrategy = new RoutingStrategy(currentPin.getStrategy(), endpoints.keySet());
             config = new GrpcServiceConfiguration(routingStrategy, serviceClass, endpoints, currentPin.getFilters());
-
             services.put(serviceName, config);
-
         } else {
             config.getEndpoints().putAll(endpoints);
 

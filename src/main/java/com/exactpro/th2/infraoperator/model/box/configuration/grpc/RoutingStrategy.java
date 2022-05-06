@@ -31,11 +31,6 @@ public class RoutingStrategy {
         this.endpoints = endpoints;
     }
 
-    //TODO may be removed if String name persists. else remove getName()
-    public StrategyType getType() {
-        return name.equals(StrategyType.ROBIN.getActualName()) ? StrategyType.ROBIN : StrategyType.FILTER;
-    }
-
     public String getName() {
         return name;
     }
