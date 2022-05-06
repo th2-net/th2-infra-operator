@@ -28,21 +28,21 @@ import java.util.*;
 @JsonIgnoreProperties(ignoreUnknown = true)
 public class PinSpec {
 
-    protected String name;
+    private String name;
 
-    protected SchemaConnectionType connectionType;
+    private SchemaConnectionType connectionType;
 
-    protected PinSettings settings =  null;
+    private PinSettings settings =  null;
 
-    protected Set<String> attributes = new HashSet<>();
+    private Set<String> attributes = new HashSet<>();
 
-    protected List<Object> filters = new ArrayList<>();
+    private List<Object> filters = new ArrayList<>();
 
-    protected List<String> serviceClasses = new ArrayList<>();
+    private List<String> serviceClasses = new ArrayList<>();
 
-    protected String serviceClass;
+    private String serviceClass;
 
-    protected String strategy;
+    private String strategy;
 
     public PinSpec() {
     }
@@ -102,29 +102,22 @@ public class PinSpec {
         this.strategy = strategy;
     }
 
+    public void setSettings(PinSettings settings) {
+        this.settings = settings;
+    }
+
+    public void setFilters(List<Object> filters) {
+        this.filters = filters;
+    }
+
     @Override
     public boolean equals(Object o) {
-        if (this == o) {
-            return true;
-        }
-        if (!(o instanceof PinSpec)) {
-            return false;
-        }
-        PinSpec pinSpec = (PinSpec) o;
-        return Objects.equals(name, pinSpec.name) &&
-                connectionType == pinSpec.connectionType &&
-                Objects.equals(settings, pinSpec.settings) &&
-                Objects.equals(attributes, pinSpec.attributes) &&
-                Objects.equals(filters, pinSpec.filters) &&
-                Objects.equals(serviceClasses, pinSpec.serviceClasses) &&
-                Objects.equals(serviceClass, pinSpec.serviceClass) &&
-                Objects.equals(strategy, pinSpec.strategy);
+        throw new AssertionError("method not defined");
     }
 
     @Override
     public int hashCode() {
-        return Objects.hash(name, connectionType, settings, attributes, filters,
-                serviceClasses, serviceClass, strategy);
+        throw new AssertionError("method not defined");
     }
 
     @Override
