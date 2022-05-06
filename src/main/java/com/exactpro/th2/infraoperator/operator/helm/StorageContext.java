@@ -16,23 +16,42 @@
 
 package com.exactpro.th2.infraoperator.operator.helm;
 
-import lombok.Getter;
-import lombok.experimental.SuperBuilder;
-
 import java.util.Set;
 
-@Getter
-@SuperBuilder
 public abstract class StorageContext {
 
-    private String linkResourceName;
+    private final String linkResourceName;
 
-    private String linkNameSuffix;
+    private final String linkNameSuffix;
 
-    private String boxAlias;
+    private final String boxAlias;
 
-    private String pinName;
+    private final String pinName;
+
+    protected StorageContext(String linkResourceName, String linkNameSuffix,
+                             String boxAlias, String pinName) {
+        this.linkResourceName = linkResourceName;
+        this.linkNameSuffix = linkNameSuffix;
+        this.boxAlias = boxAlias;
+        this.pinName = pinName;
+    }
 
     public abstract boolean checkAttributes(Set<String> attributes, String pinAnnotation);
+
+    public String getLinkResourceName() {
+        return this.linkResourceName;
+    }
+
+    public String getLinkNameSuffix() {
+        return this.linkNameSuffix;
+    }
+
+    public String getBoxAlias() {
+        return this.boxAlias;
+    }
+
+    public String getPinName() {
+        return this.pinName;
+    }
 
 }

@@ -17,14 +17,15 @@
 package com.exactpro.th2.infraoperator.operator.helm;
 
 import com.exactpro.th2.infraoperator.spec.shared.PinAttribute;
-import lombok.Getter;
-import lombok.experimental.SuperBuilder;
 
 import java.util.Set;
 
-@Getter
-@SuperBuilder
 public class EventStorageContext extends StorageContext {
+
+    public EventStorageContext(String linkResourceName, String linkNameSuffix,
+                                  String boxAlias, String pinName) {
+        super(linkResourceName, linkNameSuffix, boxAlias, pinName);
+    }
 
     @Override
     public boolean checkAttributes(Set<String> attributes, String pinAnnotation) {
@@ -32,5 +33,4 @@ public class EventStorageContext extends StorageContext {
                 && attributes.contains(PinAttribute.publish.name())
                 && !attributes.contains(PinAttribute.subscribe.name());
     }
-
 }
