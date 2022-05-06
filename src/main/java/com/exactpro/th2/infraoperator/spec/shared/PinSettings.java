@@ -20,8 +20,6 @@ import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 
-import java.util.Objects;
-
 @JsonDeserialize
 @JsonInclude(JsonInclude.Include.NON_EMPTY)
 @JsonIgnoreProperties(ignoreUnknown = true)
@@ -59,21 +57,12 @@ public class PinSettings {
 
     @Override
     public boolean equals(Object o) {
-        if (this == o) {
-            return true;
-        }
-        if (!(o instanceof PinSettings)) {
-            return false;
-        }
-        PinSettings that = (PinSettings) o;
-        return Objects.equals(storageOnDemand, that.storageOnDemand) &&
-                Objects.equals(queueLength, that.queueLength) &&
-                Objects.equals(overloadStrategy, that.overloadStrategy);
+        throw new AssertionError("method not defined");
     }
 
     @Override
     public int hashCode() {
-        return Objects.hash(storageOnDemand, queueLength, overloadStrategy);
+        throw new AssertionError("method not defined");
     }
 
     @Override
