@@ -165,19 +165,19 @@ public abstract class HelmReleaseTh2Op<CR extends Th2CustomResource> extends Abs
 
         helmReleaseClient = kubClient.resources(HelmRelease.class);
 
-        var msgStContext = MsgStorageContext.builder()
-                .linkResourceName(StoreHelmTh2Op.MSG_ST_LINK_RESOURCE_NAME)
-                .linkNameSuffix(StoreHelmTh2Op.MESSAGE_STORAGE_LINK_NAME_SUFFIX)
-                .boxAlias(StoreHelmTh2Op.MESSAGE_STORAGE_BOX_ALIAS)
-                .pinName(StoreHelmTh2Op.MESSAGE_STORAGE_PIN_ALIAS)
-                .build();
+        var msgStContext = new MsgStorageContext(
+                StoreHelmTh2Op.MSG_ST_LINK_RESOURCE_NAME,
+                StoreHelmTh2Op.MESSAGE_STORAGE_LINK_NAME_SUFFIX,
+                StoreHelmTh2Op.MESSAGE_STORAGE_BOX_ALIAS,
+                StoreHelmTh2Op.MESSAGE_STORAGE_PIN_ALIAS
+        );
 
-        var eventStContext = EventStorageContext.builder()
-                .linkResourceName(StoreHelmTh2Op.EVENT_ST_LINK_RESOURCE_NAME)
-                .linkNameSuffix(StoreHelmTh2Op.EVENT_STORAGE_LINK_NAME_SUFFIX)
-                .boxAlias(StoreHelmTh2Op.EVENT_STORAGE_BOX_ALIAS)
-                .pinName(StoreHelmTh2Op.EVENT_STORAGE_PIN_ALIAS)
-                .build();
+        var eventStContext = new EventStorageContext(
+                StoreHelmTh2Op.EVENT_ST_LINK_RESOURCE_NAME,
+                StoreHelmTh2Op.EVENT_STORAGE_LINK_NAME_SUFFIX,
+                StoreHelmTh2Op.EVENT_STORAGE_BOX_ALIAS,
+                StoreHelmTh2Op.EVENT_STORAGE_PIN_ALIAS
+        );
 
         this.msgStLinkUpdaterOnDelete = new StorageTh2LinksCleaner(msgStContext);
         this.msgStLinkUpdaterOnAdd = new StorageTh2LinksUpdater(msgStContext);
