@@ -35,18 +35,23 @@ public class Th2Spec implements KubernetesResource {
 
     private static final String CHART_CFG_ALIAS = "chart-cfg";
 
+    @JsonProperty("image-name")
     protected String imageName;
 
+    @JsonProperty("image-version")
     protected String imageVersion;
 
     protected String type;
 
     protected String disabled = "false";
 
+    @JsonProperty("extended-settings")
     protected Map<String, Object> extendedSettings = new HashMap<>();
 
+    @JsonProperty("custom-config")
     protected Map<String, Object> customConfig = new HashMap<>();
 
+    @JsonProperty("prometheus")
     protected PrometheusConfiguration<String> prometheusConfiguration;
 
     protected Map<String, Object> mqRouter;
@@ -115,16 +120,6 @@ public class Th2Spec implements KubernetesResource {
         return this.imageVersion;
     }
 
-    @JsonProperty("image-name")
-    public void setImageName(String imageName) {
-        this.imageName = imageName;
-    }
-
-    @JsonProperty("image-version")
-    public void setImageVersion(String imageVersion) {
-        this.imageVersion = imageVersion;
-    }
-
     public String getType() {
         return this.type;
     }
@@ -137,23 +132,8 @@ public class Th2Spec implements KubernetesResource {
         return this.customConfig;
     }
 
-    @JsonProperty("custom-config")
-    public void setCustomConfig(Map<String, Object> customConfig) {
-        this.customConfig = customConfig;
-    }
-
     public PrometheusConfiguration<String> getPrometheusConfiguration() {
         return this.prometheusConfiguration;
-    }
-
-    @JsonProperty("prometheus")
-    public void setPrometheusConfiguration(PrometheusConfiguration<String> prometheusConfiguration) {
-        this.prometheusConfiguration = prometheusConfiguration;
-    }
-
-    @JsonProperty("extended-settings")
-    public void setExtendedSettings(Map<String, Object> extendedSettings) {
-        this.extendedSettings = extendedSettings;
     }
 
     public Map<String, Object> getMqRouter() {
@@ -186,34 +166,12 @@ public class Th2Spec implements KubernetesResource {
 
     @Override
     public boolean equals(Object o) {
-        if (this == o) {
-            return true;
-        }
-        if (!(o instanceof Th2Spec)) {
-            return false;
-        }
-        Th2Spec th2Spec = (Th2Spec) o;
-        return Objects.equals(imageName, th2Spec.imageName) &&
-                Objects.equals(imageVersion, th2Spec.imageVersion) &&
-                Objects.equals(type, th2Spec.type) &&
-                Objects.equals(disabled, th2Spec.disabled) &&
-                Objects.equals(extendedSettings, th2Spec.extendedSettings) &&
-                Objects.equals(customConfig, th2Spec.customConfig) &&
-                Objects.equals(prometheusConfiguration, th2Spec.prometheusConfiguration) &&
-                Objects.equals(mqRouter, th2Spec.mqRouter) &&
-                Objects.equals(grpcRouter, th2Spec.grpcRouter) &&
-                Objects.equals(cradleManager, th2Spec.cradleManager) &&
-                Objects.equals(bookName, th2Spec.bookName) &&
-                Objects.equals(loggingConfig, th2Spec.loggingConfig) &&
-                Objects.equals(params, th2Spec.params) &&
-                Objects.equals(pins, th2Spec.pins);
+        throw new AssertionError("method not defined");
     }
 
     @Override
     public int hashCode() {
-        return Objects.hash(imageName, imageVersion, type, disabled, extendedSettings,
-                customConfig, prometheusConfiguration, mqRouter, grpcRouter,
-                cradleManager, bookName, loggingConfig, params, pins);
+        throw new AssertionError("method not defined");
     }
 
     @Override
