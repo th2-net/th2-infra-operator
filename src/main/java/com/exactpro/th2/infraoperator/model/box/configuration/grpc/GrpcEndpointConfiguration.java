@@ -32,6 +32,18 @@ public class GrpcEndpointConfiguration {
         this.attributes = attributes;
     }
 
+    public String getHost() {
+        return host;
+    }
+
+    public int getPort() {
+        return port;
+    }
+
+    public Set<String> getAttributes() {
+        return attributes;
+    }
+
     @Override
     public String toString() {
         return "GrpcEndpointConfiguration{" +

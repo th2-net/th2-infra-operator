@@ -31,7 +31,7 @@ import java.util.*;
 @JsonDeserialize
 @JsonInclude(JsonInclude.Include.NON_EMPTY)
 @JsonIgnoreProperties(ignoreUnknown = true)
-public abstract class Th2Spec implements KubernetesResource {
+public class Th2Spec implements KubernetesResource {
 
     private static final String CHART_CFG_ALIAS = "chart-cfg";
 
