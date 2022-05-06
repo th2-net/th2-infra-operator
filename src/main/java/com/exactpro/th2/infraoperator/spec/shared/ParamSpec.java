@@ -18,8 +18,6 @@ package com.exactpro.th2.infraoperator.spec.shared;
 
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 
-import java.util.Objects;
-
 @JsonDeserialize
 public class ParamSpec {
 
@@ -48,19 +46,12 @@ public class ParamSpec {
 
     @Override
     public boolean equals(Object o) {
-        if (this == o) {
-            return true;
-        }
-        if (!(o instanceof ParamSpec)) {
-            return false;
-        }
-        ParamSpec paramSpec = (ParamSpec) o;
-        return Objects.equals(name, paramSpec.name) && Objects.equals(value, paramSpec.value);
+        throw new AssertionError("method not defined");
     }
 
     @Override
     public int hashCode() {
-        return Objects.hash(name, value);
+        throw new AssertionError("method not defined");
     }
 
     public String toString() {

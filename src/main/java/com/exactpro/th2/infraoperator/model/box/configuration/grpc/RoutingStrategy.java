@@ -20,11 +20,9 @@ import java.util.Set;
 
 public class RoutingStrategy {
 
-    private String name; //TODO may be enum type
+    private final String name;
 
-    private Set<String> endpoints;
-
-    public RoutingStrategy() { }
+    private final Set<String> endpoints;
 
     public RoutingStrategy(String name, Set<String> endpoints) {
         this.name = name;
@@ -39,4 +37,11 @@ public class RoutingStrategy {
         return endpoints;
     }
 
+    @Override
+    public String toString() {
+        return "RoutingStrategy{" +
+                "name='" + name + '\'' +
+                ", endpoints=" + endpoints +
+                '}';
+    }
 }
