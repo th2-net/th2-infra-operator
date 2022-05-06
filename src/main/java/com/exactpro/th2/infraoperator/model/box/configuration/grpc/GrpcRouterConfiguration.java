@@ -16,29 +16,46 @@
 
 package com.exactpro.th2.infraoperator.model.box.configuration.grpc;
 
-import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
-import lombok.Builder;
-import lombok.Data;
 
 import java.util.Map;
 
-@Data
-@Builder
 @JsonDeserialize
 public class GrpcRouterConfiguration {
 
-    @JsonProperty
     private Map<String, GrpcServiceConfiguration> services;
 
-    @JsonProperty(value = "server")
-    private GrpcServerConfiguration serverConfiguration;
+    private GrpcServerConfiguration server;
 
-    protected GrpcRouterConfiguration() { }
-
-    protected GrpcRouterConfiguration(Map<String, GrpcServiceConfiguration> services,
-                                      GrpcServerConfiguration serverConfiguration) {
+    public GrpcRouterConfiguration(Map<String, GrpcServiceConfiguration> services,
+                                      GrpcServerConfiguration server) {
         this.services = services;
-        this.serverConfiguration = serverConfiguration;
+        this.server = server;
+    }
+
+    public Map<String, GrpcServiceConfiguration> getServices() {
+        return this.services;
+    }
+
+    public GrpcServerConfiguration getServer() {
+        return this.server;
+    }
+
+    public void setServices(Map<String, GrpcServiceConfiguration> services) {
+        this.services = services;
+    }
+
+    public void setServer(GrpcServerConfiguration server) {
+        this.server = server;
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        throw new AssertionError("method not defined");
+    }
+
+    @Override
+    public int hashCode() {
+        throw new AssertionError("method not defined");
     }
 }

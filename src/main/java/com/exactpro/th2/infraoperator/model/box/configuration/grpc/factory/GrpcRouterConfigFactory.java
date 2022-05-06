@@ -87,10 +87,7 @@ public class GrpcRouterConfigFactory {
             }
         }
 
-        return GrpcRouterConfiguration.builder()
-                .serverConfiguration(server)
-                .services(services)
-                .build();
+        return new GrpcRouterConfiguration(services, server);
     }
 
     private void createService(PinSpec currentPin, String oppositePinName, String namespace,

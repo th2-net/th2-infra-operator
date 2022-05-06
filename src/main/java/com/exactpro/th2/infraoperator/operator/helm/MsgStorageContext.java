@@ -17,17 +17,18 @@
 package com.exactpro.th2.infraoperator.operator.helm;
 
 import com.exactpro.th2.infraoperator.spec.shared.PinAttribute;
-import lombok.Getter;
-import lombok.experimental.SuperBuilder;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.Set;
 
-@Getter
-@SuperBuilder
 public class MsgStorageContext extends StorageContext {
     private static final Logger logger = LoggerFactory.getLogger(MsgStorageContext.class);
+
+    public MsgStorageContext(String linkResourceName, String linkNameSuffix,
+                                String boxAlias, String pinName) {
+        super(linkResourceName, linkNameSuffix, boxAlias, pinName);
+    }
 
     @Override
     public boolean checkAttributes(Set<String> attributes, String pinAnnotation) {
@@ -43,5 +44,4 @@ public class MsgStorageContext extends StorageContext {
         }
         return false;
     }
-
 }
