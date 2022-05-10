@@ -26,6 +26,9 @@ public class Th2DictionarySpec implements KubernetesResource {
 
     private boolean compressed;
 
+    public Th2DictionarySpec() {
+    }
+
     public Th2DictionarySpec(String data) {
         this.data = data;
     }
