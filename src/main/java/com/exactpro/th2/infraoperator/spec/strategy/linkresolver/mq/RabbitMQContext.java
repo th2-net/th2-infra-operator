@@ -33,6 +33,7 @@ import com.rabbitmq.client.Connection;
 import com.rabbitmq.client.ConnectionFactory;
 import com.rabbitmq.http.client.Client;
 import com.rabbitmq.http.client.ClientParameters;
+import com.rabbitmq.http.client.domain.ExchangeInfo;
 import com.rabbitmq.http.client.domain.QueueInfo;
 import com.rabbitmq.http.client.domain.UserPermissions;
 import org.slf4j.Logger;
@@ -43,6 +44,7 @@ import java.net.MalformedURLException;
 import java.net.URISyntaxException;
 import java.util.*;
 
+import static com.exactpro.th2.infraoperator.spec.strategy.linkresolver.queue.QueueName.QUEUE_NAME_REGEXP;
 import static java.lang.String.format;
 
 public final class RabbitMQContext {
@@ -172,6 +174,44 @@ public final class RabbitMQContext {
         }
     }
 
+    public static void cleanUpRabbitBeforeStart() {
+        try {
+            Channel channel = getChannel();
+            List<String> namespacePrefixes = OperatorConfig.INSTANCE.getNamespacePrefixes();
+
+            List<QueueInfo> queueInfoList = getQueues();
+            queueInfoList.forEach(q -> {
+                String queueName = q.getName();
+                if (queueName != null && queueName.matches(QUEUE_NAME_REGEXP)) {
+                    try {
+                        channel.queueDelete(queueName);
+                        logger.info("Deleted queue: [{}]", queueName);
+                    } catch (IOException e) {
+                        logger.error("Exception deleting queue: [{}]", queueName, e);
+                    }
+                }
+            });
+
+            List<ExchangeInfo> exchangeInfoList = getExchanges();
+            exchangeInfoList.forEach(e -> {
+                String exchangeName = e.getName();
+                for (String namespacePrefix : namespacePrefixes) {
+                    if (exchangeName.startsWith(namespacePrefix)) {
+                        try {
+                            channel.exchangeDelete(exchangeName);
+                            break;
+                        } catch (IOException ex) {
+                            logger.error("Exception deleting exchange: [{}]", exchangeName, ex);
+                            break;
+                        }
+                    }
+                }
+            });
+        } catch (Exception e) {
+            logger.error("Exception cleaning up rabbit", e);
+        }
+    }
+
     public static Channel getChannel() {
         Channel channel = getChannelContext().channel;
         if (!channel.isOpen()) {
@@ -207,6 +247,18 @@ public final class RabbitMQContext {
             return rmqClient.getQueues(vHostName);
         } catch (Exception e) {
             String message = "Exception while fetching queues";
+            logger.error(message, e);
+            throw new NonTerminalException(message, e);
+        }
+    }
+
+    public static List<ExchangeInfo> getExchanges() {
+
+        try {
+            Client rmqClient = getClient();
+            return rmqClient.getExchanges();
+        } catch (Exception e) {
+            String message = "Exception while fetching exchanges";
             logger.error(message, e);
             throw new NonTerminalException(message, e);
         }
