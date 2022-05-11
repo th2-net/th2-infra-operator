@@ -28,7 +28,7 @@ public class QueueName extends AbstractName {
 
     private static final String QUEUE_NAME_PREFIX = "link";
 
-    private static final String QUEUE_NAME_REGEXP =
+    public static final String QUEUE_NAME_REGEXP =
             QUEUE_NAME_PREFIX + "\\[" + NAMESPACE_REGEXP + ":" + BOX_NAME_REGEXP + ":" + PIN_NAME_REGEXP + "\\]";
 
     public QueueName(String namespace, PinMQ mqPin) {
