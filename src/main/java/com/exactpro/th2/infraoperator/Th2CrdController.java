@@ -36,12 +36,14 @@ public class Th2CrdController {
         var watchManager = DefaultWatchManager.getInstance();
         PrometheusServer.start();
         try {
+            RabbitMQContext.declareTopicExchange();
+            RabbitMQContext.cleanUpRabbitBeforeStart();
+
             watchManager.addTarget(MstoreHelmTh2Op::new);
             watchManager.addTarget(EstoreHelmTh2Op::new);
             watchManager.addTarget(BoxHelmTh2Op::new);
             watchManager.addTarget(CoreBoxHelmTh2Op::new);
 
-            RabbitMQContext.declareTopicExchange();
 
             watchManager.startInformers();
 
