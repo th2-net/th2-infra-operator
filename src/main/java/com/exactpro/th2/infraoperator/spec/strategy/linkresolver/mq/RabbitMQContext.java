@@ -29,7 +29,6 @@ import com.rabbitmq.client.Connection;
 import com.rabbitmq.client.ConnectionFactory;
 import com.rabbitmq.http.client.Client;
 import com.rabbitmq.http.client.ClientParameters;
-import com.rabbitmq.http.client.OkHttpRestTemplateConfigurator;
 import com.rabbitmq.http.client.domain.QueueInfo;
 import com.rabbitmq.http.client.domain.UserPermissions;
 import org.slf4j.Logger;
@@ -122,7 +121,6 @@ public final class RabbitMQContext {
                 .url(apiUrl)
                 .username(username)
                 .password(password)
-                .restTemplateConfigurator(new OkHttpRestTemplateConfigurator())
         );
     }
 
