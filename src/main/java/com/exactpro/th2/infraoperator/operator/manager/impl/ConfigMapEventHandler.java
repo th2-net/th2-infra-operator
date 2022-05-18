@@ -32,6 +32,7 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.ObjectReader;
+import com.fasterxml.jackson.module.kotlin.KotlinModule;
 import io.fabric8.kubernetes.api.model.ConfigMap;
 import io.fabric8.kubernetes.api.model.KubernetesResourceList;
 import io.fabric8.kubernetes.api.model.Secret;
@@ -349,7 +350,8 @@ public class ConfigMapEventHandler implements Watcher<ConfigMap> {
 
     public static Map<String, Object> mergeConfigs(String initialDataStr,
                                                    Map<String, Object> newData) throws JsonProcessingException {
-        ObjectMapper objectMapper = new ObjectMapper();
+        ObjectMapper objectMapper = new ObjectMapper()
+                .registerModule(new KotlinModule.Builder().build());
         Map<String, Object> defaults = objectMapper.readValue(initialDataStr, new TypeReference<>() {
         });
         ObjectReader updater = objectMapper.readerForUpdating(defaults);

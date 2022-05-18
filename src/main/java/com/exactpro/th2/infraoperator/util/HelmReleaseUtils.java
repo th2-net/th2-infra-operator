@@ -28,13 +28,13 @@ import com.exactpro.th2.infraoperator.spec.helmrelease.InstantiableMap;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.module.kotlin.KotlinModule;
 import org.apache.commons.text.StringSubstitutor;
 import org.apache.commons.text.lookup.StringLookup;
 import org.apache.commons.text.lookup.StringLookupFactory;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import javax.swing.*;
 import java.util.Collection;
 import java.util.List;
 import java.util.Map;
@@ -68,7 +68,8 @@ public class HelmReleaseUtils {
 
     private static final String HOST_NETWORK = "hostNetwork";
 
-    private static final ObjectMapper mapper = new ObjectMapper();
+    private static final ObjectMapper mapper = new ObjectMapper()
+            .registerModule(new KotlinModule.Builder().build());
 
     private HelmReleaseUtils() {
     }

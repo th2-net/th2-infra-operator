@@ -14,27 +14,10 @@
  * limitations under the License.
  */
 
-package com.exactpro.th2.infraoperator.model.box.configuration.grpc;
+package com.exactpro.th2.infraoperator.model.box.configuration.grpc
 
-public class GrpcExternalEndpointMapping {
-    private String name;
-
-    private String targetPort;
-
-    public String getName() {
-        return name;
-    }
-
-    public String getTargetPort() {
-        return targetPort;
-    }
-
-    public void setName(String name) {
-        this.name = name;
-    }
-
-    public void setTargetPort(String targetPort) {
-        this.targetPort = targetPort;
-    }
-
-}
+data class GrpcEndpointConfiguration(
+    val host: String,
+    val port: Int,
+    val attributes: Set<String>
+)

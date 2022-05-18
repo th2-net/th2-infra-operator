@@ -254,7 +254,7 @@ public class Th2DictionaryEventHandler implements Watcher<Th2Dictionary> {
             if (dictionaryConfig != null) {
                 for (var entity : dictionaryConfig) {
                     if (entity.getName().equals(dictionaryName)) {
-                        entity.updateChecksum(checksum);
+                        entity.setChecksum(checksum);
                     }
                 }
                 hr.mergeValue(PROPERTIES_MERGE_DEPTH, ROOT_PROPERTIES_ALIAS,
@@ -265,7 +265,7 @@ public class Th2DictionaryEventHandler implements Watcher<Th2Dictionary> {
             if (multiDictionaryConfig != null) {
                 for (var entity : multiDictionaryConfig) {
                     if (entity.getName().equals(dictionaryName)) {
-                        entity.updateChecksum(checksum);
+                        entity.setChecksum(checksum);
                     }
                 }
                 hr.mergeValue(PROPERTIES_MERGE_DEPTH, ROOT_PROPERTIES_ALIAS,

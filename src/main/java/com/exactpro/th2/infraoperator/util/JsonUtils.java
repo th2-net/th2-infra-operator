@@ -19,14 +19,17 @@ package com.exactpro.th2.infraoperator.util;
 import com.fasterxml.jackson.core.JsonFactory;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.dataformat.yaml.YAMLFactory;
+import com.fasterxml.jackson.module.kotlin.KotlinModule;
 
 import java.util.*;
 
 public class JsonUtils {
 
-    public static final ObjectMapper JSON_READER = new ObjectMapper(new JsonFactory());
+    public static final ObjectMapper JSON_READER = new ObjectMapper(new JsonFactory())
+            .registerModule(new KotlinModule.Builder().build());
 
-    public static final ObjectMapper YAML_READER = new ObjectMapper(new YAMLFactory());
+    public static final ObjectMapper YAML_READER = new ObjectMapper(new YAMLFactory())
+            .registerModule(new KotlinModule.Builder().build());
 
     private JsonUtils() {
     }
