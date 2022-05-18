@@ -22,11 +22,11 @@ import java.util.Objects;
 
 public final class PinCouplingGRPC implements PinCoupling {
 
-    private String name;
+    private final String name;
 
-    private PinGRPC from;
+    private final PinGRPC from;
 
-    private PinGRPC to;
+    private final PinGRPC to;
 
     public PinCouplingGRPC(@JsonProperty("name") String name,
                            @JsonProperty("from") PinGRPC from,

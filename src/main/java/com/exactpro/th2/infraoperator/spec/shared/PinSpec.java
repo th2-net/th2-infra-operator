@@ -26,6 +26,7 @@ import java.util.*;
 @JsonDeserialize
 @JsonInclude(JsonInclude.Include.NON_EMPTY)
 @JsonIgnoreProperties(ignoreUnknown = true)
+
 public class PinSpec {
 
     private String name;

@@ -21,6 +21,7 @@ import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.dataformat.yaml.YAMLFactory;
+import com.fasterxml.jackson.module.kotlin.KotlinModule;
 import org.apache.commons.text.StringSubstitutor;
 import org.apache.commons.text.lookup.StringLookupFactory;
 
@@ -99,7 +100,9 @@ public enum OperatorConfig {
             StringSubstitutor stringSubstitutor =
                     new StringSubstitutor(StringLookupFactory.INSTANCE.environmentVariableStringLookup());
             String content = stringSubstitutor.replace(new String(in.readAllBytes()));
-            return new ObjectMapper(new YAMLFactory()).readValue(content, Configuration.class);
+            return new ObjectMapper(new YAMLFactory())
+                    .registerModule(new KotlinModule.Builder().build())
+                    .readValue(content, Configuration.class);
         } catch (IOException e) {
             throw new IllegalStateException(
                     "Exception reading configuration " + Configuration.class.getSimpleName(), e);

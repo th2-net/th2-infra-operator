@@ -22,11 +22,11 @@ import java.util.Objects;
 
 public final class PinCouplingMQ implements PinCoupling {
 
-    private String name;
+    private final String name;
 
-    private PinMQ from;
+    private final PinMQ from;
 
-    private PinMQ to;
+    private final PinMQ to;
 
     public PinCouplingMQ(@JsonProperty("name") String name,
                          @JsonProperty("from") PinMQ from,

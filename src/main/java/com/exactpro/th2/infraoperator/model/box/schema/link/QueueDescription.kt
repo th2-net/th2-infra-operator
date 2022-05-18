@@ -14,26 +14,13 @@
  * limitations under the License.
  */
 
-package com.exactpro.th2.infraoperator.spec.helmrelease;
+package com.exactpro.th2.infraoperator.model.box.schema.link
 
-import com.exactpro.th2.infraoperator.configuration.SchemaSecrets;
+import com.exactpro.th2.infraoperator.spec.strategy.linkresolver.queue.QueueName
+import com.exactpro.th2.infraoperator.spec.strategy.linkresolver.queue.RoutingKeyName
 
-public class HelmReleaseSecrets {
-
-    private final String rabbitMQ;
-
-    private final String cassandra;
-
-    public HelmReleaseSecrets(SchemaSecrets schemaSecrets) {
-        this.rabbitMQ = schemaSecrets.getRabbitMQ();
-        this.cassandra = schemaSecrets.getCassandra();
-    }
-
-    public String getRabbitMQ() {
-        return rabbitMQ;
-    }
-
-    public String getCassandra() {
-        return cassandra;
-    }
-}
+data class QueueDescription(
+    val queueName: QueueName,
+    val routingKey: RoutingKeyName,
+    val exchange: String
+)

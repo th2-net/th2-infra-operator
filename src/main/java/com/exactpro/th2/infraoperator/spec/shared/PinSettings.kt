@@ -14,26 +14,13 @@
  * limitations under the License.
  */
 
-package com.exactpro.th2.infraoperator.spec.helmrelease;
+package com.exactpro.th2.infraoperator.spec.shared
 
-import com.exactpro.th2.infraoperator.configuration.SchemaSecrets;
+import com.fasterxml.jackson.databind.annotation.JsonDeserialize
 
-public class HelmReleaseSecrets {
-
-    private final String rabbitMQ;
-
-    private final String cassandra;
-
-    public HelmReleaseSecrets(SchemaSecrets schemaSecrets) {
-        this.rabbitMQ = schemaSecrets.getRabbitMQ();
-        this.cassandra = schemaSecrets.getCassandra();
-    }
-
-    public String getRabbitMQ() {
-        return rabbitMQ;
-    }
-
-    public String getCassandra() {
-        return cassandra;
-    }
-}
+@JsonDeserialize
+data class PinSettings(
+    val storageOnDemand: String,
+    val queueLength: String,
+    val overloadStrategy: String
+)
