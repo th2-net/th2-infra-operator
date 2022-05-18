@@ -14,19 +14,10 @@
  * limitations under the License.
  */
 
-package com.exactpro.th2.infraoperator.model.box.configuration.mq.factory;
+package com.exactpro.th2.infraoperator.model.box.configuration.grpc
 
-public class GlobalNotification {
-    String exchange;
-
-    public GlobalNotification() {
-    }
-
-    public GlobalNotification(String exchange) {
-        this.exchange = exchange;
-    }
-
-    public String getExchange() {
-        return exchange;
-    }
-}
+data class GrpcEndpointMapping(
+    val name: String,
+    val targetPort: String,
+    val nodePort: String?
+)

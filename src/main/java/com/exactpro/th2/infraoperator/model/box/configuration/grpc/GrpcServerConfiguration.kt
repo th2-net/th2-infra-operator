@@ -14,26 +14,12 @@
  * limitations under the License.
  */
 
-package com.exactpro.th2.infraoperator.spec.helmrelease;
+package com.exactpro.th2.infraoperator.model.box.configuration.grpc
 
-import com.exactpro.th2.infraoperator.configuration.SchemaSecrets;
-
-public class HelmReleaseSecrets {
-
-    private final String rabbitMQ;
-
-    private final String cassandra;
-
-    public HelmReleaseSecrets(SchemaSecrets schemaSecrets) {
-        this.rabbitMQ = schemaSecrets.getRabbitMQ();
-        this.cassandra = schemaSecrets.getCassandra();
-    }
-
-    public String getRabbitMQ() {
-        return rabbitMQ;
-    }
-
-    public String getCassandra() {
-        return cassandra;
-    }
-}
+// TODO check if it really needs host and attributes fields
+data class GrpcServerConfiguration(
+    val workers: Int,
+    val port: Int,
+    val host: String? = null,
+    val attributes: Set<String>? = null
+)

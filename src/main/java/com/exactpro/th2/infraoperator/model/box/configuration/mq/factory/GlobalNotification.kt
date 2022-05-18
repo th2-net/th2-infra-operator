@@ -14,26 +14,8 @@
  * limitations under the License.
  */
 
-package com.exactpro.th2.infraoperator.spec.helmrelease;
+package com.exactpro.th2.infraoperator.model.box.configuration.mq.factory
 
-import com.exactpro.th2.infraoperator.configuration.SchemaSecrets;
-
-public class HelmReleaseSecrets {
-
-    private final String rabbitMQ;
-
-    private final String cassandra;
-
-    public HelmReleaseSecrets(SchemaSecrets schemaSecrets) {
-        this.rabbitMQ = schemaSecrets.getRabbitMQ();
-        this.cassandra = schemaSecrets.getCassandra();
-    }
-
-    public String getRabbitMQ() {
-        return rabbitMQ;
-    }
-
-    public String getCassandra() {
-        return cassandra;
-    }
-}
+data class GlobalNotification(
+    val exchange: String
+)
