@@ -14,26 +14,11 @@
  * limitations under the License.
  */
 
-package com.exactpro.th2.infraoperator.spec.helmrelease;
+package com.exactpro.th2.infraoperator.model.box.configuration.grpc
 
-import com.exactpro.th2.infraoperator.configuration.SchemaSecrets;
-
-public class HelmReleaseSecrets {
-
-    private final String rabbitMQ;
-
-    private final String cassandra;
-
-    public HelmReleaseSecrets(SchemaSecrets schemaSecrets) {
-        this.rabbitMQ = schemaSecrets.getRabbitMQ();
-        this.cassandra = schemaSecrets.getCassandra();
-    }
-
-    public String getRabbitMQ() {
-        return rabbitMQ;
-    }
-
-    public String getCassandra() {
-        return cassandra;
-    }
-}
+data class GrpcServiceConfiguration(
+    val strategy: RoutingStrategy,
+    val serviceClass: String,
+    val endpoints: Map<String, GrpcEndpointConfiguration>,
+    val filters: List<Any>
+)

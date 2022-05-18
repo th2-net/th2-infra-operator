@@ -14,9 +14,12 @@
  * limitations under the License.
  */
 
-package com.exactpro.th2.infraoperator.spec.shared;
+package com.exactpro.th2.infraoperator.model.box.configuration.grpc
 
-public enum BoxDirection {
-    from,
-    to
-}
+import com.fasterxml.jackson.databind.annotation.JsonDeserialize
+
+@JsonDeserialize
+data class GrpcRouterConfiguration(
+    val services: Map<String, GrpcServiceConfiguration>,
+    val server: GrpcServerConfiguration
+)
