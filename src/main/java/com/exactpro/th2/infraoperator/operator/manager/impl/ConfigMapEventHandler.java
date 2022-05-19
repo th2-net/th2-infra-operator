@@ -75,6 +75,24 @@ public class ConfigMapEventHandler implements Watcher<ConfigMap> {
 
     private static final String DEFAULT_BOOK = "defaultBook";
 
+    private static final Map<String, ConfigMapMeta> cmMapping = Map.of(
+            LOGGING_CM_NAME, new ConfigMapMeta(LOGGING_ALIAS, ""),
+            MQ_ROUTER_CM_NAME, new ConfigMapMeta(MQ_ROUTER_ALIAS, MQ_ROUTER_FILE_NAME),
+            GRPC_ROUTER_CM_NAME, new ConfigMapMeta(GRPC_ROUTER_ALIAS, GRPC_ROUTER_FILE_NAME),
+            CRADLE_MANAGER_CM_NAME, new ConfigMapMeta(CRADLE_MGR_ALIAS, CRADLE_MANAGER_FILE_NAME)
+    );
+
+    private static final class ConfigMapMeta {
+        private final String alias;
+
+        private final String dataFileName;
+
+        private ConfigMapMeta(String alias, String dataFileName) {
+            this.alias = alias;
+            this.dataFileName = dataFileName;
+        }
+    }
+
     private static final Logger logger = LoggerFactory.getLogger(ConfigMapEventHandler.class);
 
     private KubernetesClient client;
@@ -151,91 +169,42 @@ public class ConfigMapEventHandler implements Watcher<ConfigMap> {
             } catch (Exception e) {
                 logger.error("Exception processing {} event for \"{}\"", action, resourceLabel, e);
             }
-        } else if (configMapName.equals(LOGGING_CM_NAME)) {
-            updateLoggingConfigMap(action, namespace, resource, resourceLabel);
-        } else if (configMapName.equals(MQ_ROUTER_CM_NAME)) {
-            updateConfigMap(action, namespace, resource, MQ_ROUTER_ALIAS, MQ_ROUTER_FILE_NAME, resourceLabel);
-        } else if (configMapName.equals(GRPC_ROUTER_CM_NAME)) {
-            updateConfigMap(action, namespace, resource, GRPC_ROUTER_ALIAS, GRPC_ROUTER_FILE_NAME, resourceLabel);
-        } else if (configMapName.equals(CRADLE_MANAGER_CM_NAME)) {
-            updateConfigMap(action, namespace, resource, CRADLE_MGR_ALIAS, CRADLE_MANAGER_FILE_NAME, resourceLabel);
-        } else if (configMapName.equals(BOOK_CONFIG_CM_NAME)) {
+        }  else if (configMapName.equals(BOOK_CONFIG_CM_NAME)) {
             updateDefaultBookName(action, namespace, resource, resourceLabel);
+
+        } else if (cmMapping.containsKey(configMapName)) {
+            updateConfigMap(action, namespace, resource, configMapName, resourceLabel);
         }
 
     }
 
-    private void updateLoggingConfigMap(Action action, String namespace, ConfigMap resource, String resourceLabel) {
-        try {
-            logger.info("Processing {} event for \"{}\"", action, resourceLabel);
-            if (action == Action.DELETED) {
-                logger.error("DELETED action is not supported for \"{}\". ", resourceLabel);
-                return;
-            }
-            if (action == Action.ERROR) {
-                logger.error("Received ERROR action for \"{}\" Canceling update", resourceLabel);
-                return;
-            }
-            var lock = OperatorState.INSTANCE.getLock(namespace);
-            try {
-                lock.lock();
-                String oldChecksum = OperatorState.INSTANCE.getConfigChecksum(namespace, LOGGING_ALIAS);
-                String newChecksum = ExtractUtils.fullSourceHash(resource);
-                if (!newChecksum.equals(oldChecksum)) {
-                    Histogram.Timer processTimer = OperatorMetrics.getConfigMapEventTimer(resource);
-                    OperatorState.INSTANCE.putConfigChecksum(namespace, LOGGING_ALIAS, newChecksum);
-                    logger.info("\"{}\" has been updated. Updating all boxes", resourceLabel);
-                    int refreshedBoxesCount = updateResourceChecksums(namespace, newChecksum, LOGGING_ALIAS);
-                    logger.info("{} HelmRelease(s) have been updated", refreshedBoxesCount);
-                    processTimer.observeDuration();
-                }
-            } finally {
-                lock.unlock();
-            }
-        } catch (Exception e) {
-            logger.error("Exception processing {} event for \"{}\"", action, resourceLabel, e);
-        }
-    }
-
-    private int updateResourceChecksums(String namespace, String checksum, String key) {
-        Collection<HelmRelease> helmReleases = OperatorState.INSTANCE.getAllHelmReleases(namespace);
-        for (var hr : helmReleases) {
-            Map<String, Object> config = HelmReleaseUtils.extractConfigSection(hr, key);
-            config.put(CHECKSUM_ALIAS, checksum);
-            hr.mergeValue(PROPERTIES_MERGE_DEPTH, ROOT_PROPERTIES_ALIAS,
-                    Map.of(key, config));
-
-            logger.debug("Updating \"{}\" resource", CustomResourceUtils.annotationFor(hr));
-            createKubObj(namespace, hr);
-            logger.debug("\"{}\" Updated", CustomResourceUtils.annotationFor(hr));
-        }
-        return helmReleases.size();
-    }
-
-    private void updateConfigMap(Action action, String namespace, ConfigMap resource, String key, String dataFileName,
+    private void updateConfigMap(Action action, String namespace, ConfigMap resource, final String cmName,
                                  String resourceLabel) {
         try {
             logger.info("Processing {} event for \"{}\"", action, resourceLabel);
-            if (action == Action.DELETED) {
-                logger.error("DELETED action is not supported for \"{}\". ", resourceLabel);
+            if (isActionInvalid(action, resourceLabel)) {
                 return;
             }
-            if (action == Action.ERROR) {
-                logger.error("Received ERROR action for \"{}\" Canceling update", resourceLabel);
-                return;
-            }
+
+            ConfigMapMeta titles = cmMapping.get(cmName);
+            String alias = titles.alias;
+            String dataFileName = titles.dataFileName;
+
             var lock = OperatorState.INSTANCE.getLock(namespace);
             try {
                 lock.lock();
-                String oldChecksum = OperatorState.INSTANCE.getConfigChecksum(namespace, key);
+                String oldChecksum = OperatorState.INSTANCE.getConfigChecksum(namespace, alias);
                 String newChecksum = ExtractUtils.fullSourceHash(resource);
                 if (!newChecksum.equals(oldChecksum)) {
                     Histogram.Timer processTimer = OperatorMetrics.getConfigMapEventTimer(resource);
-                    OperatorState.INSTANCE.putConfigChecksum(namespace, key, newChecksum);
-                    String cmData = resource.getData().get(dataFileName);
-                    OperatorState.INSTANCE.putConfigData(namespace, key, cmData);
+                    OperatorState.INSTANCE.putConfigChecksum(namespace, alias, newChecksum);
+                    String cmData = null;
+                    if (!dataFileName.isEmpty()) {
+                        cmData = resource.getData().get(dataFileName);
+                        OperatorState.INSTANCE.putConfigData(namespace, alias, cmData);
+                    }
                     logger.info("\"{}\" has been updated. Updating all boxes", resourceLabel);
-                    int refreshedBoxesCount = updateResourceChecksumAndData(namespace, newChecksum, cmData, key);
+                    int refreshedBoxesCount = updateResourceChecksumAndData(namespace, newChecksum, cmData, alias);
                     logger.info("{} HelmRelease(s) have been updated", refreshedBoxesCount);
                     processTimer.observeDuration();
                 }
@@ -245,19 +214,28 @@ public class ConfigMapEventHandler implements Watcher<ConfigMap> {
         } catch (Exception e) {
             logger.error("Exception processing {} event for \"{}\"", action, resourceLabel, e);
         }
+    }
+
+    private boolean isActionInvalid(Action action, String resourceLabel) {
+        boolean isInvalid = false;
+        if (action == Action.DELETED) {
+            logger.error("DELETED action is not supported for \"{}\". ", resourceLabel);
+            isInvalid = true;
+
+        } else if (action == Action.ERROR) {
+            logger.error("Received ERROR action for \"{}\" Canceling update", resourceLabel);
+            isInvalid = true;
+        }
+        return isInvalid;
     }
 
     private void updateDefaultBookName(Action action, String namespace, ConfigMap resource, String resourceLabel) {
         try {
             logger.info("Processing {} event for \"{}\"", action, resourceLabel);
-            if (action == Action.DELETED) {
-                logger.error("DELETED action is not supported for \"{}\". ", resourceLabel);
+            if (isActionInvalid(action, resourceLabel)) {
                 return;
             }
-            if (action == Action.ERROR) {
-                logger.error("Received ERROR action for \"{}\" Canceling update", resourceLabel);
-                return;
-            }
+
             var lock = OperatorState.INSTANCE.getLock(namespace);
             try {
                 lock.lock();
@@ -284,13 +262,15 @@ public class ConfigMapEventHandler implements Watcher<ConfigMap> {
         Collection<HelmRelease> helmReleases = OperatorState.INSTANCE.getAllHelmReleases(namespace);
         for (var hr : helmReleases) {
             Map<String, Object> config = HelmReleaseUtils.extractConfigSection(hr, key);
-            CustomResource cr = (CustomResource) OperatorState.INSTANCE.getResourceFromCache(
-                    HelmReleaseUtils.extractComponentName(hr),
-                    namespace
-            );
-            Map<String, Object> configInCR = getConfigFromCR(cr, key);
-            if (configInCR != null) {
-                config.put(CONFIG_ALIAS, mergeConfigs(cmData, configInCR));
+            if (cmData != null) {
+                CustomResource cr = (CustomResource) OperatorState.INSTANCE.getResourceFromCache(
+                        HelmReleaseUtils.extractComponentName(hr),
+                        namespace
+                );
+                Map<String, Object> configInCR = getConfigFromCR(cr, key);
+                if (configInCR != null) {
+                    config.put(CONFIG_ALIAS, mergeConfigs(cmData, configInCR));
+                }
             }
             config.put(CHECKSUM_ALIAS, checksum);
             hr.mergeValue(PROPERTIES_MERGE_DEPTH, ROOT_PROPERTIES_ALIAS,
