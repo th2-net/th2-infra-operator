@@ -16,27 +16,33 @@
 
 package com.exactpro.th2.infraoperator.spec.link.relation.dictionaries;
 
-import com.fasterxml.jackson.annotation.JsonProperty;
+import com.exactpro.th2.infraoperator.spec.shared.Identifiable;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 
 import java.util.Objects;
 
-@JsonDeserialize(builder = DictionaryBinding.Builder.class)
-public final class DictionaryBinding extends AbstractDictionaryBinding {
+@JsonDeserialize
+public final class DictionaryBinding implements Identifiable {
 
-    private final DictionaryDescription dictionary;
+    private String name;
 
-    private DictionaryBinding(String name, String box, DictionaryDescription dictionary) {
-        super(name, box);
-        this.dictionary = dictionary;
-    }
+    private String box;
 
-    public static Builder builder() {
-        return new Builder();
-    }
+    private DictionaryDescription dictionary;
+
+    public DictionaryBinding() {}
 
     public DictionaryDescription getDictionary() {
-        return this.dictionary;
+        return dictionary;
+    }
+
+    @Override
+    public String getName() {
+        return name;
+    }
+
+    public String getBox() {
+        return box;
     }
 
     @Override
@@ -68,39 +74,5 @@ public final class DictionaryBinding extends AbstractDictionaryBinding {
     public String toString() {
         return String.format("name: %s box: %s dictionary: %s (%s)", name, box,
                 dictionary.getName(), dictionary.getType());
-    }
-
-    public static class Builder {
-
-        private String name;
-
-        private String box;
-
-        private DictionaryDescription dictionary;
-
-        Builder() {
-        }
-
-        @JsonProperty("name")
-        public Builder name(String name) {
-            this.name = name;
-            return this;
-        }
-
-        @JsonProperty("box")
-        public Builder box(String box) {
-            this.box = box;
-            return this;
-        }
-
-        @JsonProperty("dictionary")
-        public Builder dictionary(DictionaryDescription dictionary) {
-            this.dictionary = dictionary;
-            return this;
-        }
-
-        private DictionaryBinding build() {
-            return new DictionaryBinding(name, box, dictionary);
-        }
     }
 }

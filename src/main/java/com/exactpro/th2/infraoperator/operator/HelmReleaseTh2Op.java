@@ -284,11 +284,13 @@ public abstract class HelmReleaseTh2Op<CR extends Th2CustomResource> extends Abs
         if (prometheusConfig == null) {
             prometheusConfig = PrometheusConfiguration.createDefault(DEFAULT_VALUE_ENABLED);
         }
-        PrometheusConfiguration<Boolean> prometheusConfigForRelease = PrometheusConfiguration.<Boolean>builder()
-                .port(prometheusConfig.getPort())
-                .host(prometheusConfig.getHost())
-                .enabled(Boolean.valueOf(prometheusConfig.getEnabled()))
-                .build();
+
+        PrometheusConfiguration<Boolean> prometheusConfigForRelease = new PrometheusConfiguration<>(
+                prometheusConfig.getHost(),
+                prometheusConfig.getPort(),
+                Boolean.valueOf(prometheusConfig.getEnabled())
+        );
+
         helmRelease.mergeValue(PROPERTIES_MERGE_DEPTH, ROOT_PROPERTIES_ALIAS,
                 Map.of(PROMETHEUS_CONFIG_ALIAS, prometheusConfigForRelease));
 

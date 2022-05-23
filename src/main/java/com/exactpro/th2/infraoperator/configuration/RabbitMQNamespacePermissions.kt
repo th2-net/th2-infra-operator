@@ -14,94 +14,20 @@
  * limitations under the License.
  */
 
-package com.exactpro.th2.infraoperator.configuration;
+package com.exactpro.th2.infraoperator.configuration
 
-import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
-import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
+import com.fasterxml.jackson.databind.annotation.JsonDeserialize
 
-import java.util.Objects;
+@JsonDeserialize
+data class RabbitMQNamespacePermissions(
+    val configure: String = DEFAULT_CONFIGURE_PERMISSION,
+    val read: String = DEFAULT_READ_PERMISSION,
+    val write: String = DEFAULT_WRITE_PERMISSION
+) {
 
-@JsonDeserialize(builder = RabbitMQNamespacePermissions.RabbitMQNamespacePermissionsBuilder.class)
-@JsonIgnoreProperties(ignoreUnknown = true)
-public class RabbitMQNamespacePermissions {
-
-    static final String DEFAULT_CONFIGURE_PERMISSION = "";
-
-    static final String DEFAULT_READ_PERMISSION = ".*";
-
-    static final String DEFAULT_WRITE_PERMISSION = ".*";
-
-    private String configure = DEFAULT_CONFIGURE_PERMISSION;
-
-    private String read = DEFAULT_READ_PERMISSION;
-
-    private String write = DEFAULT_WRITE_PERMISSION;
-
-    public RabbitMQNamespacePermissions() { }
-
-    public RabbitMQNamespacePermissions(String configure, String read, String write) {
-        this.configure = configure != null ? configure : DEFAULT_CONFIGURE_PERMISSION;
-        this.read = read != null ? read : DEFAULT_READ_PERMISSION;
-        this.write = write != null ? write : DEFAULT_WRITE_PERMISSION;
-    }
-
-    public String getConfigure() {
-        return configure;
-    }
-
-    public String getRead() {
-        return read;
-    }
-
-    public String getWrite() {
-        return write;
-    }
-
-    public static RabbitMQNamespacePermissionsBuilder builder() {
-        return new RabbitMQNamespacePermissionsBuilder();
-    }
-
-    @Override
-    public boolean equals(Object o) {
-        if (this == o) {
-            return true;
-        }
-        if (!(o instanceof RabbitMQNamespacePermissions)) {
-            return false;
-        }
-        RabbitMQNamespacePermissions that = (RabbitMQNamespacePermissions) o;
-        return Objects.equals(getConfigure(), that.getConfigure())
-                && Objects.equals(getRead(), that.getRead())
-                && Objects.equals(getWrite(), that.getWrite());
-    }
-
-    public static class RabbitMQNamespacePermissionsBuilder {
-
-        private String configure;
-
-        private String read;
-
-        private String write;
-
-        RabbitMQNamespacePermissionsBuilder() { }
-
-        public RabbitMQNamespacePermissionsBuilder withConfigure(String configure) {
-            this.configure = configure;
-            return this;
-        }
-
-        public RabbitMQNamespacePermissionsBuilder withRead(String read) {
-            this.read = read;
-            return this;
-        }
-
-        public RabbitMQNamespacePermissionsBuilder withWrite(String write) {
-            this.write = write;
-            return this;
-        }
-
-        public RabbitMQNamespacePermissions build() {
-            return new RabbitMQNamespacePermissions(configure, read, write);
-        }
+    companion object {
+        const val DEFAULT_CONFIGURE_PERMISSION = ""
+        const val DEFAULT_READ_PERMISSION = ".*"
+        const val DEFAULT_WRITE_PERMISSION = ".*"
     }
 }

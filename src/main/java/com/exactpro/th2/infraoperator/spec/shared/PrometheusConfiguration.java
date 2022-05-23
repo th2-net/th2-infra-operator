@@ -16,16 +16,11 @@
 
 package com.exactpro.th2.infraoperator.spec.shared;
 
-import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
-import com.fasterxml.jackson.annotation.JsonInclude;
-import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 
 import java.util.Objects;
 
-@JsonIgnoreProperties(ignoreUnknown = true)
-@JsonInclude(JsonInclude.Include.NON_NULL)
-@JsonDeserialize(builder = PrometheusConfiguration.Builder.class)
+@JsonDeserialize
 public final class PrometheusConfiguration<E> {
 
     private String host;
@@ -34,7 +29,9 @@ public final class PrometheusConfiguration<E> {
 
     private E enabled;
 
-    private PrometheusConfiguration(String host, String port, E enabled) {
+    public PrometheusConfiguration() {}
+
+    public PrometheusConfiguration(String host, String port, E enabled) {
         this.host = host;
         this.port = port;
         this.enabled = enabled;
@@ -58,10 +55,6 @@ public final class PrometheusConfiguration<E> {
                 Objects.equals(enabled, that.enabled);
     }
 
-    public static <E> Builder<E> builder() {
-        return new Builder<>();
-    }
-
     public String getHost() {
         return this.host;
     }
@@ -72,36 +65,5 @@ public final class PrometheusConfiguration<E> {
 
     public E getEnabled() {
         return this.enabled;
-    }
-
-    public static class Builder<E> {
-
-        private String host;
-
-        private String port;
-
-        private E enabled;
-
-        @JsonProperty("host")
-        public Builder<E> host(String host) {
-            this.host = host;
-            return this;
-        }
-
-        @JsonProperty("port")
-        public Builder<E> port(String port) {
-            this.port = port;
-            return this;
-        }
-
-        @JsonProperty("enabled")
-        public Builder<E> enabled(E enabled) {
-            this.enabled = enabled;
-            return this;
-        }
-
-        public PrometheusConfiguration<E> build() {
-            return new PrometheusConfiguration<>(host, port, enabled);
-        }
     }
 }

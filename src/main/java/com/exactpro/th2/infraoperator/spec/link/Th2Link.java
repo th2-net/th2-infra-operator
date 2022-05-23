@@ -44,9 +44,8 @@ public class Th2Link extends CustomResource {
     }
 
     public static Th2Link newInstance() {
-
         Th2Link th2Link = new Th2Link();
-        th2Link.setSpec(Th2LinkSpec.builder().build());
+        th2Link.setSpec(new Th2LinkSpec());
         return th2Link;
     }
 

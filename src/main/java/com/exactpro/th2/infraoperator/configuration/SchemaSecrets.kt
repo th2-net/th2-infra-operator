@@ -14,79 +14,18 @@
  * limitations under the License.
  */
 
-package com.exactpro.th2.infraoperator.configuration;
+package com.exactpro.th2.infraoperator.configuration
 
-import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
-import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
+import com.fasterxml.jackson.databind.annotation.JsonDeserialize
 
-import java.util.Objects;
+@JsonDeserialize
+data class SchemaSecrets(
+    val rabbitMQ: String = DEFAULT_RABBITMQ_SECRET,
+    val cassandra: String = DEFAULT_CASSANDRA_SECRET,
+) {
 
-@JsonDeserialize(builder = SchemaSecrets.SchemaSecretsBuilder.class)
-@JsonIgnoreProperties(ignoreUnknown = true)
-public class SchemaSecrets {
-
-    public static final String DEFAULT_RABBITMQ_SECRET = "rabbitmq";
-
-    public static final String DEFAULT_CASSANDRA_SECRET = "cassandra";
-
-    private String rabbitMQ;
-
-    private String cassandra;
-
-    public SchemaSecrets() {
-        this(null, null);
-    }
-
-    public SchemaSecrets(String rabbitMQ, String cassandra) {
-        this.rabbitMQ = rabbitMQ != null ? rabbitMQ : DEFAULT_RABBITMQ_SECRET;
-        this.cassandra = cassandra != null ? cassandra : DEFAULT_CASSANDRA_SECRET;
-    }
-
-    public String getRabbitMQ() {
-        return rabbitMQ;
-    }
-
-    public String getCassandra() {
-        return cassandra;
-    }
-
-    public static SchemaSecretsBuilder builder() {
-        return new SchemaSecretsBuilder();
-    }
-
-    @Override
-    public boolean equals(Object o) {
-        if (this == o) {
-            return true;
-        }
-        if (!(o instanceof SchemaSecrets)) {
-            return false;
-        }
-        SchemaSecrets that = (SchemaSecrets) o;
-        return Objects.equals(getRabbitMQ(), that.getRabbitMQ())
-                && Objects.equals(getCassandra(), that.getCassandra());
-    }
-
-    public static class SchemaSecretsBuilder {
-
-        private String rabbitMQ;
-
-        private String cassandra;
-
-        SchemaSecretsBuilder() { }
-
-        public SchemaSecretsBuilder withRabbitMQ(String rabbitMQ) {
-            this.rabbitMQ = rabbitMQ;
-            return this;
-        }
-
-        public SchemaSecretsBuilder withCassandra(String cassandra) {
-            this.cassandra = cassandra;
-            return this;
-        }
-
-        public SchemaSecrets build() {
-            return new SchemaSecrets(rabbitMQ, cassandra);
-        }
+    companion object {
+        const val DEFAULT_RABBITMQ_SECRET = "rabbitMQ"
+        const val DEFAULT_CASSANDRA_SECRET = "cassandra"
     }
 }
