@@ -16,36 +16,34 @@
 
 package com.exactpro.th2.infraoperator.configuration;
 
-import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 
 import java.util.Objects;
 
 @JsonDeserialize(builder = RabbitMQManagementConfig.RabbitMQManagementConfigBuilder.class)
-@JsonIgnoreProperties(ignoreUnknown = true)
 public class RabbitMQManagementConfig {
 
-    private String username;
-
-    private String password;
+    private String host;
 
     private int managementPort;
 
     private int applicationPort;
 
-    private String host;
-
-    private boolean persistence;
-
     private String vhostName;
 
     private String exchangeName;
 
-    private RabbitMQNamespacePermissions rabbitMQNamespacePermissions;
+    private String username;
+
+    private String password;
+
+    private boolean persistence;
+
+    private final RabbitMQNamespacePermissions rabbitMQNamespacePermissions;
 
     protected RabbitMQManagementConfig() {
-        rabbitMQNamespacePermissions = new RabbitMQNamespacePermissions();
+        this.rabbitMQNamespacePermissions = new RabbitMQNamespacePermissions();
     }
 
     protected RabbitMQManagementConfig(String username,

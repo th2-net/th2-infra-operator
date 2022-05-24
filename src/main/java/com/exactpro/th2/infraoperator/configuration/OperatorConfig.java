@@ -264,5 +264,21 @@ public enum OperatorConfig {
                     && Objects.equals(getPrometheusConfiguration(), that.getPrometheusConfiguration())
                     && Objects.equals(getOpenshift(), that.getOpenshift());
         }
+
+        @Override
+        public String toString() {
+            return "Configuration{" +
+                    "chartConfig=" + chartConfig +
+                    ", rabbitMQManagementConfig=" + rabbitMQManagementConfig +
+                    ", schemaSecrets=" + schemaSecrets +
+                    ", namespacePrefixes=" + namespacePrefixes + "\n" +
+                    ", rabbitMQConfigMapName='" + rabbitMQConfigMapName + '\'' +
+                    ", k8sUrl='" + k8sUrl + '\'' +
+                    ", prometheusConfiguration=" + prometheusConfiguration +
+                    ", commonAnnotations=" + commonAnnotations +
+                    ", ingress=" + ingress +
+                    ", imagePullSecrets=" + imagePullSecrets +
+                    '}';
+        }
     }
 }

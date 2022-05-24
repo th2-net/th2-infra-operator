@@ -16,25 +16,27 @@
 
 package com.exactpro.th2.infraoperator.spec.link.relation.dictionaries;
 
-import com.fasterxml.jackson.annotation.JsonProperty;
+import com.exactpro.th2.infraoperator.spec.shared.Identifiable;
+import com.fasterxml.jackson.annotation.JsonSetter;
+import com.fasterxml.jackson.annotation.Nulls;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
 
-@JsonDeserialize(builder = MultiDictionaryBinding.Builder.class)
-public final class MultiDictionaryBinding extends AbstractDictionaryBinding {
+@JsonDeserialize
+public final class MultiDictionaryBinding implements Identifiable {
 
-    private final List<MultiDictionaryDescription> dictionaries;
+    private String name;
 
-    private MultiDictionaryBinding(String name, String box, List<MultiDictionaryDescription> dictionaries) {
-        super(name, box);
-        this.dictionaries = dictionaries != null ? dictionaries : new ArrayList<>();
-    }
+    private String box;
 
-    public static Builder builder() {
-        return new Builder();
+    @JsonSetter(nulls = Nulls.SKIP)
+    private List<MultiDictionaryDescription> dictionaries;
+
+    public MultiDictionaryBinding() {
+        this.dictionaries = new ArrayList<>();
     }
 
     public List<MultiDictionaryDescription> getDictionaries() {
@@ -54,16 +56,25 @@ public final class MultiDictionaryBinding extends AbstractDictionaryBinding {
     }
 
     @Override
-    public int hashCode() {
-        throw new AssertionError("method not defined");
-    }
-
-    @Override
     public String getId() {
         return String.format("%s[%s:%s]",
                 this.getClass().getSimpleName(),
                 this.box,
                 this.dictionaries == null ? "null" : asString());
+    }
+
+    @Override
+    public String getName() {
+        return name;
+    }
+
+    public String getBox() {
+        return box;
+    }
+
+    @Override
+    public int hashCode() {
+        throw new AssertionError("method not defined");
     }
 
     @Override
@@ -79,39 +90,5 @@ public final class MultiDictionaryBinding extends AbstractDictionaryBinding {
                     .append(dictionaryDescription.getAlias());
         }
         return dictionaryNames.toString();
-    }
-
-    public static class Builder {
-
-        private String name;
-
-        private String box;
-
-        private List<MultiDictionaryDescription> dictionaries;
-
-        Builder() {
-        }
-
-        @JsonProperty("name")
-        public Builder name(String name) {
-            this.name = name;
-            return this;
-        }
-
-        @JsonProperty("box")
-        public Builder box(String box) {
-            this.box = box;
-            return this;
-        }
-
-        @JsonProperty("dictionaries")
-        public Builder dictionaries(List<MultiDictionaryDescription> dictionaries) {
-            this.dictionaries = dictionaries;
-            return this;
-        }
-
-        private MultiDictionaryBinding build() {
-            return new MultiDictionaryBinding(name, box, dictionaries);
-        }
     }
 }
