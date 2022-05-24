@@ -64,8 +64,6 @@ public class Th2Spec implements KubernetesResource {
 
     protected String loggingConfig;
 
-    protected List<ParamSpec> params = new ArrayList<>();
-
     protected List<PinSpec> pins = initializeWithEstorePin();
 
     public Th2Spec() {
@@ -189,7 +187,6 @@ public class Th2Spec implements KubernetesResource {
                 ", cradleManager=" + cradleManager +
                 ", bookName='" + bookName + '\'' +
                 ", loggingConfig='" + loggingConfig + '\'' +
-                ", params=" + params +
                 ", pins=" + pins +
                 '}';
     }
