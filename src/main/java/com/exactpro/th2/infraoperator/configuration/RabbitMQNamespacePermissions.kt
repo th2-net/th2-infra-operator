@@ -14,28 +14,20 @@
  * limitations under the License.
  */
 
-package com.exactpro.th2.infraoperator.spec.link.relation.dictionaries;
+package com.exactpro.th2.infraoperator.configuration
 
-import com.exactpro.th2.infraoperator.spec.shared.Identifiable;
+import com.fasterxml.jackson.databind.annotation.JsonDeserialize
 
-public abstract class AbstractDictionaryBinding implements Identifiable {
+@JsonDeserialize
+data class RabbitMQNamespacePermissions(
+    val configure: String = DEFAULT_CONFIGURE_PERMISSION,
+    val read: String = DEFAULT_READ_PERMISSION,
+    val write: String = DEFAULT_WRITE_PERMISSION
+) {
 
-    protected final String name;
-
-    protected final String box;
-
-    protected AbstractDictionaryBinding(String name, String box) {
-        this.name = name;
-        this.box = box;
+    companion object {
+        const val DEFAULT_CONFIGURE_PERMISSION = ""
+        const val DEFAULT_READ_PERMISSION = ".*"
+        const val DEFAULT_WRITE_PERMISSION = ".*"
     }
-
-    @Override
-    public String getName() {
-        return this.name;
-    }
-
-    public String getBox() {
-        return this.box;
-    }
-
 }
