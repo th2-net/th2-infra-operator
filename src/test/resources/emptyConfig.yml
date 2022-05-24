@@ -16,11 +16,11 @@ rabbitMQManagement:
   password:
   persistence:
   schemaPermissions:
-    configure:
-    read:
-    write:
+#    configure:
+#    read:
+#    write:
 configMaps:
   rabbitMQ:
 schemaSecrets:
-  rabbitMQ:
-  cassandra:
+#  rabbitMQ:
+#  cassandra:

@@ -48,11 +48,12 @@ class ConfigurationTests {
                 RabbitMQManagementConfig.builder().withHost("host").withManagementPort(8080).withApplicationPort(8080)
                         .withVHostName("th2").withExchangeName("exchange")
                         .withUsername("username").withPassword("password").withPersistence(true)
-                        .withRabbitMQNamespacePermissions(RabbitMQNamespacePermissions.builder()
-                                .withConfigure("configure").withRead("read").withWrite("write").build())
+                        .withRabbitMQNamespacePermissions(new RabbitMQNamespacePermissions(
+                                "configure", "read", "write"
+                        ))
                         .build()
         );
-        expected.setSchemaSecrets(SchemaSecrets.builder().withRabbitMQ("rabbitMQ").withCassandra("cassandra").build());
+        expected.setSchemaSecrets(new SchemaSecrets("rabbitMQ", "cassandra"));
         expected.setNamespacePrefixes(Arrays.asList("string1", "string2"));
         expected.setRabbitMQConfigMapName("rabbit-mq-app");
 
@@ -183,8 +184,9 @@ class ConfigurationTests {
                 RabbitMQManagementConfig.builder().withHost("host").withManagementPort(8080).withApplicationPort(8080)
                         .withVHostName("th2").withExchangeName("exchange")
                         .withUsername("username").withPassword("password").withPersistence(true)
-                        .withRabbitMQNamespacePermissions(RabbitMQNamespacePermissions.builder()
-                                .withConfigure("configure").withRead("read").withWrite("write").build())
+                        .withRabbitMQNamespacePermissions(new RabbitMQNamespacePermissions(
+                                "configure", "read", "write"
+                        ))
                         .build()
         );
 
@@ -195,8 +197,7 @@ class ConfigurationTests {
     void testSchemaSecretsConfig() {
         beforeEach("schemaSecretsConfig.yml");
 
-        expected.setSchemaSecrets(SchemaSecrets.builder().
-                withRabbitMQ("rabbitMQ").withCassandra("cassandra").build());
+        expected.setSchemaSecrets(new SchemaSecrets("rabbitMQ", "cassandra"));
 
         assertEquals(expected, loadConfiguration());
     }

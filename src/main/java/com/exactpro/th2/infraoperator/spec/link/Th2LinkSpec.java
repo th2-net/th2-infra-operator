@@ -26,24 +26,22 @@ import io.fabric8.kubernetes.api.model.KubernetesResource;
 import java.util.ArrayList;
 import java.util.List;
 
-@JsonDeserialize(builder = Th2LinkSpec.Builder.class)
+@JsonDeserialize
 public final class Th2LinkSpec implements KubernetesResource {
 
-    private BoxesRelation boxesRelation;
+    @JsonProperty("boxes-relation")
+    private final BoxesRelation boxesRelation;
 
-    private List<DictionaryBinding> dictionariesRelation;
+    @JsonProperty("dictionaries-relation")
+    private final List<DictionaryBinding> dictionariesRelation;
 
-    private List<MultiDictionaryBinding> multiDictionariesRelation;
+    @JsonProperty("multi-dictionaries-relation")
+    private final List<MultiDictionaryBinding> multiDictionariesRelation;
 
-    private Th2LinkSpec(BoxesRelation boxesRelation,
-                        List<DictionaryBinding> dictionariesRelation,
-                        List<MultiDictionaryBinding> multiDictionariesRelation) {
-
-        this.boxesRelation = (boxesRelation == null) ? BoxesRelation.newEmptyRelation() : boxesRelation;
-        this.dictionariesRelation = (dictionariesRelation == null) ? new ArrayList<>() : dictionariesRelation;
-        this.multiDictionariesRelation = (multiDictionariesRelation == null)
-                ? new ArrayList<>() : multiDictionariesRelation;
-
+    public Th2LinkSpec() {
+        this.boxesRelation = BoxesRelation.newEmptyRelation();
+        this.dictionariesRelation = new ArrayList<>();
+        this.multiDictionariesRelation = new ArrayList<>();
     }
 
     public BoxesRelation getBoxesRelation() {
@@ -68,41 +66,4 @@ public final class Th2LinkSpec implements KubernetesResource {
         throw new AssertionError("method not defined");
     }
 
-    public static Builder builder() {
-        return new Builder();
-    }
-
-    public static final class Builder {
-
-        private BoxesRelation boxesRelation;
-
-        private List<DictionaryBinding> dictionariesRelation;
-
-        private List<MultiDictionaryBinding> multiDictionariesRelation;
-
-        private Builder() {
-        }
-
-        @JsonProperty("boxes-relation")
-        public Builder boxesRelation(BoxesRelation boxesRelation) {
-            this.boxesRelation = boxesRelation;
-            return this;
-        }
-
-        @JsonProperty("dictionaries-relation")
-        public Builder dictionariesRelation(List<DictionaryBinding> dictionariesRelation) {
-            this.dictionariesRelation = dictionariesRelation;
-            return this;
-        }
-
-        @JsonProperty("multi-dictionaries-relation")
-        public Builder multiDictionariesRelation(List<MultiDictionaryBinding> multiDictionariesRelation) {
-            this.multiDictionariesRelation = multiDictionariesRelation;
-            return this;
-        }
-
-        public Th2LinkSpec build() {
-            return new Th2LinkSpec(boxesRelation, dictionariesRelation, multiDictionariesRelation);
-        }
-    }
 }
