@@ -27,8 +27,6 @@ import com.exactpro.th2.infraoperator.spec.helmrelease.HelmRelease;
 import com.exactpro.th2.infraoperator.spec.helmrelease.InstantiableMap;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.module.kotlin.KotlinModule;
 import org.apache.commons.text.StringSubstitutor;
 import org.apache.commons.text.lookup.StringLookup;
 import org.apache.commons.text.lookup.StringLookupFactory;
@@ -45,6 +43,7 @@ import java.util.stream.Collectors;
 import static com.exactpro.th2.infraoperator.operator.HelmReleaseTh2Op.*;
 import static com.exactpro.th2.infraoperator.util.CustomResourceUtils.annotationFor;
 import static com.exactpro.th2.infraoperator.util.JsonUtils.JSON_READER;
+import static com.exactpro.th2.infraoperator.util.JsonUtils.YAML_READER;
 
 public class HelmReleaseUtils {
 
@@ -67,9 +66,6 @@ public class HelmReleaseUtils {
     private static final String K8S_PROBES = "k8sProbes";
 
     private static final String HOST_NETWORK = "hostNetwork";
-
-    private static final ObjectMapper mapper = new ObjectMapper()
-            .registerModule(new KotlinModule.Builder().build());
 
     private HelmReleaseUtils() {
     }
@@ -264,8 +260,8 @@ public class HelmReleaseUtils {
             return true;
         }
         try {
-            String newServiceSectionStr = mapper.writeValueAsString(newServiceSection);
-            String oldServiceSectionStr = mapper.writeValueAsString(oldServiceSection);
+            String newServiceSectionStr = YAML_READER.writeValueAsString(newServiceSection);
+            String oldServiceSectionStr = YAML_READER.writeValueAsString(oldServiceSection);
             return !newServiceSectionStr.equals(oldServiceSectionStr);
         } catch (Exception e) {
             return true;
@@ -311,7 +307,7 @@ public class HelmReleaseUtils {
 
     public static Set<String> extractQueues(Map<String, Object> values) {
         var mqConfigObj = getFieldAsNode(values, ROOT_PROPERTIES_ALIAS, MQ_QUEUE_CONFIG_ALIAS);
-        MessageRouterConfiguration mqConfig = mapper.convertValue(mqConfigObj, MessageRouterConfiguration.class);
+        MessageRouterConfiguration mqConfig = JSON_READER.convertValue(mqConfigObj, MessageRouterConfiguration.class);
         return mqConfig.getQueues().values()
                 .stream()
                 .filter(queueConfiguration -> !(queueConfiguration.getQueueName().isEmpty()))
