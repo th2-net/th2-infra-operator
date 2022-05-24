@@ -20,7 +20,7 @@ import com.exactpro.th2.infraoperator.spec.strategy.linkresolver.queue.QueueName
 import com.exactpro.th2.infraoperator.spec.strategy.linkresolver.queue.RoutingKeyName
 
 data class QueueDescription(
-    val queueName: QueueName,
-    val routingKey: RoutingKeyName,
+    val queueName: QueueName?,
+    val routingKey: RoutingKeyName?,
     val exchange: String
 )
