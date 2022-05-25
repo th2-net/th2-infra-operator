@@ -17,8 +17,8 @@
 plugins {
     id 'java'
     id 'checkstyle'
-    id "io.gitlab.arturbosch.detekt" version "1.20.0"
-    id "org.jetbrains.kotlin.jvm" version "1.6.21"
+    id "io.gitlab.arturbosch.detekt" version "${detekt_version}"
+    id "org.jetbrains.kotlin.jvm" version "${kotlin_version}"
 }
 
 group = 'com.exactpro.th2'
@@ -38,36 +38,55 @@ detekt {
     config = files("$rootDir/config/detekt/detekt.yml")
 }
 
+ext {
+    jackson_databind_version = '2.13.3'
+    jackson_dataformat_version = '2.13.3'
+    jackson_kotlin_version = '2.13.2'
+    uuid_generator_version = '4.0.1'
+    okhttp_version = '3.14.9'
+    commons_text_version = '1.9'
+    fabric8_version = '5.9.0'
+    rabbit_amqp_version = '5.14.2'
+    rabbit_http_version = '4.1.2'
+    springweb_version = '5.3.0'
+    slf4j_api_version = '1.7.32'
+    log4j_slf4j_impl_version = '2.17.1'
+    jetbrains_annotations_version = '15.0'
+    prometheus_version = '0.5.0'
+    mockito_version = '3.11.2'
+    jupiter_version = '5.6.2'
+}
+
 dependencies {
-    implementation 'com.fasterxml.jackson.core:jackson-databind:2.13.3'
-    implementation 'com.fasterxml.jackson.dataformat:jackson-dataformat-yaml:2.13.3'
-    implementation "com.fasterxml.uuid:java-uuid-generator:4.0.1"
+    implementation "com.fasterxml.jackson.core:jackson-databind:${jackson_databind_version}"
+    implementation "com.fasterxml.jackson.dataformat:jackson-dataformat-yaml:${jackson_dataformat_version}"
+    implementation group: 'com.fasterxml.jackson.module', name: 'jackson-module-kotlin', version: "${jackson_kotlin_version}"
+    implementation "com.fasterxml.uuid:java-uuid-generator:${uuid_generator_version}"
 
-    implementation "com.squareup.okhttp3:okhttp:3.14.9"
+    implementation "com.squareup.okhttp3:okhttp:${okhttp_version}"
 
-    implementation "org.apache.commons:commons-text:1.9"
+    implementation "org.apache.commons:commons-text:${commons_text_version}"
 
-    implementation "io.fabric8:kubernetes-client:5.9.0"
-    implementation "com.rabbitmq:amqp-client:5.14.2"
-    implementation "com.rabbitmq:http-client:4.1.2"
-    implementation "org.springframework:spring-web:5.3.0"
+    implementation "io.fabric8:kubernetes-client:${fabric8_version}"
+    implementation "com.rabbitmq:amqp-client:${rabbit_amqp_version}"
+    implementation "com.rabbitmq:http-client:${rabbit_http_version}"
+    implementation "org.springframework:spring-web:${springweb_version}"
 
-    implementation 'org.slf4j:slf4j-api:1.7.32'
-    implementation 'org.apache.logging.log4j:log4j-slf4j-impl:2.17.1'
+    implementation "org.slf4j:slf4j-api:${slf4j_api_version}"
+    implementation "org.apache.logging.log4j:log4j-slf4j-impl:${log4j_slf4j_impl_version}"
 
-    implementation "org.jetbrains:annotations:15.0"
+    implementation "org.jetbrains:annotations:${jetbrains_annotations_version}"
 
-    implementation 'io.prometheus:simpleclient:0.5.0'
-    implementation 'io.prometheus:simpleclient_httpserver:0.5.0'
-    implementation 'io.prometheus:simpleclient_hotspot:0.5.0'
+    implementation "io.prometheus:simpleclient:${prometheus_version}"
+    implementation "io.prometheus:simpleclient_httpserver:${prometheus_version}"
+    implementation "io.prometheus:simpleclient_hotspot:${prometheus_version}"
 
-    testImplementation group: 'org.mockito', name: 'mockito-core', version: '3.11.2'
+    testImplementation group: 'org.mockito', name: 'mockito-core', version: "${mockito_version}"
 
-    testImplementation "org.junit.jupiter:junit-jupiter-api:5.6.1"
-    testRuntimeOnly "org.junit.jupiter:junit-jupiter-engine:5.6.1"
+    testImplementation "org.junit.jupiter:junit-jupiter-api:${jupiter_version}"
+    testRuntimeOnly "org.junit.jupiter:junit-jupiter-engine:${jupiter_version}"
 
-    implementation group: 'com.fasterxml.jackson.module', name: 'jackson-module-kotlin', version: '2.13.2'
-    detektPlugins("io.gitlab.arturbosch.detekt:detekt-formatting:1.20.0")
+    detektPlugins("io.gitlab.arturbosch.detekt:detekt-formatting:${detekt_version}")
 }
 
 jar {
@@ -92,4 +111,16 @@ jar {
 
 test {
     useJUnitPlatform()
+}
+
+compileKotlin {
+    kotlinOptions {
+        jvmTarget = "11"
+    }
+}
+
+compileTestKotlin {
+    kotlinOptions {
+        jvmTarget = "11"
+    }
 }
