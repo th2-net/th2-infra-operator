@@ -211,9 +211,9 @@ public class GrpcRouterConfigFactory {
                     annotationFor(fromBox), annotationFor(toBox));
             GrpcExternalEndpointMapping grpcExternalEndpointMapping = getGrpcExternalMapping(toBoxSettings);
             if (grpcExternalEndpointMapping != null) {
-                String targetPort = grpcExternalEndpointMapping.getTargetPort();
+                Integer targetPort = grpcExternalEndpointMapping.getTargetPort();
                 if (targetPort != null) {
-                    targetBox.setPort(Integer.parseInt(targetPort));
+                    targetBox.setPort(targetPort);
                     targetBox.setExternalHost(getExternalHost(toBoxSettings));
                     targetBox.setExternalBox(true);
                 } else {
@@ -229,9 +229,9 @@ public class GrpcRouterConfigFactory {
                     annotationFor(fromBox), annotationFor(toBox));
             GrpcEndpointMapping grpcMapping = getGrpcMapping(toBoxSettings);
             if (grpcMapping != null) {
-                String nodePort = grpcMapping.getNodePort();
+                Integer nodePort = grpcMapping.getNodePort();
                 if (nodePort != null) {
-                    targetBox.setPort(Integer.parseInt(nodePort));
+                    targetBox.setPort(nodePort);
                     targetBox.setHostNetwork(true);
                 } else {
                     logger.warn("nodePort for resource \"{}\" was null", annotationFor(toBox));

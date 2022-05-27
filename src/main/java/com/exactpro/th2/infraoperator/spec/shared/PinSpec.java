@@ -18,7 +18,6 @@ package com.exactpro.th2.infraoperator.spec.shared;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonInclude;
-import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 
 import java.util.*;
@@ -80,7 +79,6 @@ public class PinSpec {
         this.name = name;
     }
 
-    @JsonProperty("connection-type")
     public void setConnectionType(SchemaConnectionType connectionType) {
         this.connectionType = connectionType;
     }
@@ -89,12 +87,10 @@ public class PinSpec {
         this.attributes = attributes;
     }
 
-    @JsonProperty("service-classes")
     public void setServiceClasses(List<String> serviceClasses) {
         this.serviceClasses = serviceClasses;
     }
 
-    @JsonProperty("service-class")
     public void setServiceClass(String serviceClass) {
         this.serviceClass = serviceClass;
     }

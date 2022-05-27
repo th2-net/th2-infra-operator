@@ -18,6 +18,6 @@ package com.exactpro.th2.infraoperator.model.box.configuration.grpc
 
 data class GrpcEndpointMapping(
     val name: String,
-    val targetPort: String,
-    val nodePort: String?
+    val targetPort: Int,
+    val nodePort: Int?
 )

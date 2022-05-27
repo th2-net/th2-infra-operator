@@ -33,22 +33,18 @@ import java.util.*;
 @JsonIgnoreProperties(ignoreUnknown = true)
 public class Th2Spec implements KubernetesResource {
 
-    private static final String CHART_CFG_ALIAS = "chart-cfg";
+    private static final String CHART_CFG_ALIAS = "chartCfg";
 
-    @JsonProperty("image-name")
     protected String imageName;
 
-    @JsonProperty("image-version")
     protected String imageVersion;
 
     protected String type;
 
-    protected String disabled = "false";
+    protected boolean disabled = false;
 
-    @JsonProperty("extended-settings")
     protected Map<String, Object> extendedSettings = new HashMap<>();
 
-    @JsonProperty("custom-config")
     protected Map<String, Object> customConfig = new HashMap<>();
 
     @JsonProperty("prometheus")
@@ -122,7 +118,7 @@ public class Th2Spec implements KubernetesResource {
         return this.type;
     }
 
-    public String getDisabled() {
+    public boolean getDisabled() {
         return this.disabled;
     }
 
