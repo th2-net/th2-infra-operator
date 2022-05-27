@@ -227,11 +227,11 @@ public final class RabbitMQContext {
         if (pinSettings == null) {
             return Collections.emptyMap();
         }
-        if (pinSettings.getStorageOnDemand().equals("true")) {
+        if (pinSettings.getStorageOnDemand()) {
             return Collections.emptyMap();
         } else {
             Map<String, Object> args = new HashMap<>();
-            int queueLength = Integer.parseInt(pinSettings.getQueueLength());
+            int queueLength = pinSettings.getQueueLength();
             args.put("x-max-length", queueLength);
             args.put("x-overflow", pinSettings.getOverloadStrategy());
             return args;

@@ -161,7 +161,7 @@ public abstract class AbstractTh2Operator<CR extends Th2CustomResource, KO exten
         String resourceLabel = CustomResourceUtils.annotationFor(resource);
         logger.debug("Processing event {} for \"{}\"", action, resourceLabel);
 
-        if (resource.getSpec().getDisabled().equals("true")) {
+        if (resource.getSpec().getDisabled()) {
             try {
                 logger.info("Resource \"{}\" has been disabled, executing DELETE action", resourceLabel);
                 deletedEvent(resource);

@@ -19,7 +19,6 @@ package com.exactpro.th2.infraoperator.spec.link;
 import com.exactpro.th2.infraoperator.spec.link.relation.BoxesRelation;
 import com.exactpro.th2.infraoperator.spec.link.relation.dictionaries.DictionaryBinding;
 import com.exactpro.th2.infraoperator.spec.link.relation.dictionaries.MultiDictionaryBinding;
-import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import io.fabric8.kubernetes.api.model.KubernetesResource;
 
@@ -29,13 +28,10 @@ import java.util.List;
 @JsonDeserialize
 public final class Th2LinkSpec implements KubernetesResource {
 
-    @JsonProperty("boxes-relation")
     private final BoxesRelation boxesRelation;
 
-    @JsonProperty("dictionaries-relation")
     private final List<DictionaryBinding> dictionariesRelation;
 
-    @JsonProperty("multi-dictionaries-relation")
     private final List<MultiDictionaryBinding> multiDictionariesRelation;
 
     public Th2LinkSpec() {
