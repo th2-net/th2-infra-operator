@@ -38,8 +38,8 @@ public final class BoxesRelation {
     }
 
     @JsonCreator
-    public static BoxesRelation newRelation(@JsonProperty("router-mq") List<PinCouplingMQ> mqLinks,
-                                            @JsonProperty("router-grpc") List<PinCouplingGRPC> grpcLinks) {
+    public static BoxesRelation newRelation(@JsonProperty("routerMq") List<PinCouplingMQ> mqLinks,
+                                            @JsonProperty("routerGrpc") List<PinCouplingGRPC> grpcLinks) {
 
         return new BoxesRelation(mqLinks == null ? new ArrayList<>() : mqLinks,
                 grpcLinks == null ? new ArrayList<>() : grpcLinks);

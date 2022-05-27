@@ -25,17 +25,17 @@ import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 @JsonIgnoreProperties(ignoreUnknown = true)
 public class PinSettings {
 
-    private String storageOnDemand;
+    private boolean storageOnDemand;
 
-    private String queueLength;
+    private int queueLength;
 
     private String overloadStrategy;
 
-    public String getStorageOnDemand() {
+    public boolean getStorageOnDemand() {
         return this.storageOnDemand;
     }
 
-    public String getQueueLength() {
+    public int getQueueLength() {
         return this.queueLength;
     }
 
@@ -43,11 +43,11 @@ public class PinSettings {
         return this.overloadStrategy;
     }
 
-    public void setStorageOnDemand(String storageOnDemand) {
+    public void setStorageOnDemand(boolean storageOnDemand) {
         this.storageOnDemand = storageOnDemand;
     }
 
-    public void setQueueLength(String queueLength) {
+    public void setQueueLength(int queueLength) {
         this.queueLength = queueLength;
     }
 
