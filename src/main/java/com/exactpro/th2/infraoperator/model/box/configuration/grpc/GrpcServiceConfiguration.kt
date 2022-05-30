@@ -16,9 +16,11 @@
 
 package com.exactpro.th2.infraoperator.model.box.configuration.grpc
 
+import com.fasterxml.jackson.annotation.JsonProperty
+
 data class GrpcServiceConfiguration(
     val strategy: RoutingStrategy,
-    val serviceClass: String,
+    @JsonProperty("service-class") val serviceClass: String,
     val endpoints: Map<String, GrpcEndpointConfiguration>,
     val filters: List<Any>
 )
