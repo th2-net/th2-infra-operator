@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2021 Exactpro (Exactpro Systems Limited)
+ * Copyright 2022 Exactpro (Exactpro Systems Limited)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,13 +14,22 @@
  * limitations under the License.
  */
 
-package com.exactpro.th2.infraoperator.model.box.configuration.grpc
+package com.exactpro.th2.infraoperator.spec.shared.pin;
 
-import com.fasterxml.jackson.annotation.JsonProperty
+import java.util.HashSet;
+import java.util.Set;
 
-data class GrpcServiceConfiguration(
-    val strategy: RoutingStrategy,
-    @JsonProperty("service-class") val serviceClass: String,
-    val endpoints: MutableMap<String, GrpcEndpointConfiguration>,
-    val filters: MutableList<Any>
-)
+public class GrpcServerPin implements Th2Pin {
+    private String name;
+
+    private Set<String> serviceClasses = new HashSet<>();
+
+    @Override
+    public String getName() {
+        return name;
+    }
+
+    public Set<String> getServiceClasses() {
+        return serviceClasses;
+    }
+}

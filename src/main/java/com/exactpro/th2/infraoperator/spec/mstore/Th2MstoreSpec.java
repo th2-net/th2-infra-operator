@@ -19,30 +19,24 @@ package com.exactpro.th2.infraoperator.spec.mstore;
 import com.exactpro.th2.infraoperator.operator.StoreHelmTh2Op;
 import com.exactpro.th2.infraoperator.spec.Th2Spec;
 import com.exactpro.th2.infraoperator.spec.shared.PinAttribute;
-import com.exactpro.th2.infraoperator.spec.shared.PinSpec;
-import com.exactpro.th2.infraoperator.spec.shared.SchemaConnectionType;
+import com.exactpro.th2.infraoperator.spec.shared.pin.MqPin;
+import com.exactpro.th2.infraoperator.spec.shared.pin.PinSpec;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 
-import java.util.ArrayList;
-import java.util.List;
 import java.util.Set;
 
 @JsonDeserialize
 public class Th2MstoreSpec extends Th2Spec {
 
     public Th2MstoreSpec() {
-        List<PinSpec> autoPins = new ArrayList<>();
-        autoPins.add(createPin(PinAttribute.parsed));
-        autoPins.add(createPin(PinAttribute.raw));
+        PinSpec autoPins = new PinSpec();
+        autoPins.getMq().add(createPin(PinAttribute.parsed));
+        autoPins.getMq().add(createPin(PinAttribute.raw));
         setPins(autoPins);
     }
 
-    private PinSpec createPin(PinAttribute type) {
-        PinSpec pin = new PinSpec();
-        pin.setName(pinName(type));
-        pin.setConnectionType(SchemaConnectionType.mq);
-        pin.setAttributes(Set.of(PinAttribute.subscribe.name(), type.name()));
-        return pin;
+    private MqPin createPin(PinAttribute type) {
+        return new MqPin(pinName(type), Set.of(PinAttribute.subscribe.name(), type.name()));
     }
 
     private static String pinName(PinAttribute type) {

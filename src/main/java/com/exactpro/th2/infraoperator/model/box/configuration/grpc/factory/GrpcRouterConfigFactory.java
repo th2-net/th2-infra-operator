@@ -22,12 +22,13 @@ import com.exactpro.th2.infraoperator.model.box.configuration.grpc.*;
 import com.exactpro.th2.infraoperator.spec.Th2CustomResource;
 import com.exactpro.th2.infraoperator.spec.link.relation.pins.PinCouplingGRPC;
 import com.exactpro.th2.infraoperator.spec.link.relation.pins.PinGRPC;
-import com.exactpro.th2.infraoperator.spec.shared.PinSpec;
-import com.exactpro.th2.infraoperator.spec.shared.SchemaConnectionType;
+import com.exactpro.th2.infraoperator.spec.shared.pin.GrpcClientPin;
+import com.exactpro.th2.infraoperator.spec.shared.pin.PinSpec;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 
@@ -53,7 +54,7 @@ public class GrpcRouterConfigFactory {
     /**
      * Creates a grpc configuration based on the th2 resource and a list of active links.
      *
-     * @param resource        th2 resource containing a list of {@link PinSpec}s
+     * @param resource        th2 resource containing a pins {@link PinSpec}s
      * @param grpcActiveLinks active links
      * @return ready grpc configuration based on active {@code links} and specified links in {@code resource}
      */
@@ -65,35 +66,23 @@ public class GrpcRouterConfigFactory {
         GrpcServerConfiguration server = createServer();
         Map<String, GrpcServiceConfiguration> services = new HashMap<>();
 
-        for (var pin : resource.getSpec().getPins()) {
-            if (pin.getConnectionType().equals(SchemaConnectionType.grpc_server)) {
-                server = createServer();
-            } else if (pin.getConnectionType().equals(SchemaConnectionType.grpc_client)) {
-                for (var link : grpcActiveLinks) {
-                    var fromLink = link.getFrom();
-                    var fromBoxName = fromLink.getBoxName();
-                    var fromPinName = fromLink.getPinName();
+        if (!resource.getSpec().getPins().getGrpc().getServer().isEmpty()) {
+            server = createServer();
+        }
+        for (var pin : resource.getSpec().getPins().getGrpc().getClient()) {
+            for (var link : grpcActiveLinks) {
+                var toLink = link.getTo();
+                var toPinName = toLink.getPinName();
 
-                    var toLink = link.getTo();
-                    var toBoxName = toLink.getBoxName();
-                    var toPinName = toLink.getPinName();
-
-                    if (fromBoxName.equals(boxName) && fromPinName.equals(pin.getName())) {
-                        createService(pin, toPinName, boxNamespace, link, services);
-                    } else if (toBoxName.equals(boxName) && toPinName.equals(pin.getName())) {
-                        createService(pin, fromPinName, boxNamespace, link, services);
-                    }
-                }
+                createService(pin, toPinName, boxNamespace, link, services);
             }
         }
 
         return new GrpcRouterConfiguration(services, server);
     }
 
-    private void createService(PinSpec currentPin, String oppositePinName, String namespace,
+    private void createService(GrpcClientPin currentPin, String oppositePinName, String namespace,
                                PinCouplingGRPC link, Map<String, GrpcServiceConfiguration> services) {
-        var naturePinState = getNaturePinState(currentPin.getName(), oppositePinName, link);
-
         PinGRPC fromBoxSpec = link.getFrom();
         String fromBoxName = fromBoxSpec.getBoxName();
 
@@ -105,24 +94,13 @@ public class GrpcRouterConfigFactory {
         Th2CustomResource toBoxResource = (Th2CustomResource) OperatorState.INSTANCE
                 .getResourceFromCache(toBoxName, namespace);
 
-        PinSpec oppositePin;
-        if (fromBoxSpec.getPinName().equals(currentPin.getName())) {
-            oppositePin = toBoxResource.getSpec().getPin(oppositePinName);
-        } else {
-            oppositePin = fromBoxResource.getSpec().getPin(oppositePinName);
-        }
-
         checkForExternal(fromBoxResource, toBoxResource, toBoxSpec);
 
-        if (naturePinState.getFromPinName().equals(oppositePin.getName())) {
-            resourceToServiceConfig(currentPin, fromBoxSpec, services);
-        } else {
-            resourceToServiceConfig(currentPin, toBoxSpec, services);
-        }
+        resourceToServiceConfig(currentPin, toBoxSpec, services);
 
     }
 
-    private void resourceToServiceConfig(PinSpec currentPin, PinGRPC targetBoxSpec,
+    private void resourceToServiceConfig(GrpcClientPin currentPin, PinGRPC targetBoxSpec,
                                          Map<String, GrpcServiceConfiguration> services) {
         var targetBoxName = getTargetBoxName(targetBoxSpec);
         var serviceClass = currentPin.getServiceClass();
@@ -136,7 +114,10 @@ public class GrpcRouterConfigFactory {
         ));
 
         if (config == null) {
-            RoutingStrategy routingStrategy = new RoutingStrategy(currentPin.getStrategy(), endpoints.keySet());
+            RoutingStrategy routingStrategy = new RoutingStrategy(
+                    currentPin.getStrategy(),
+                    new HashSet<>(endpoints.keySet())
+            );
             config = new GrpcServiceConfiguration(routingStrategy, serviceClass, endpoints, currentPin.getFilters());
             services.put(serviceName, config);
         } else {
@@ -144,38 +125,7 @@ public class GrpcRouterConfigFactory {
 
             config.getFilters().addAll(currentPin.getFilters());
 
-            config.getStrategy().getEndpoints().addAll(endpoints.keySet());
-        }
-    }
-
-    private NaturePinState getNaturePinState(String firstPinName, String secondPinName, PinCouplingGRPC link) {
-        if (link.getFrom().getPinName().equals(firstPinName)) {
-            return new NaturePinState(firstPinName, secondPinName);
-        }
-        return new NaturePinState(secondPinName, firstPinName);
-    }
-
-    private static class NaturePinState {
-        private final String fromPinName;
-
-        private final String toPinName;
-
-        public NaturePinState(String fromPinName, String toPinName) {
-            this.fromPinName = fromPinName;
-            this.toPinName = toPinName;
-        }
-
-        public String getFromPinName() {
-            return this.fromPinName;
-        }
-
-        public String getToPinName() {
-            return this.toPinName;
-        }
-
-        public String toString() {
-            return "GrpcRouterConfigFactory.NaturePinState(fromPinName=" +
-                    this.getFromPinName() + ", toPinName=" + this.getToPinName() + ")";
+            config.getStrategy().getEndpoints().addAll(new HashSet<>(endpoints.keySet()));
         }
     }
 

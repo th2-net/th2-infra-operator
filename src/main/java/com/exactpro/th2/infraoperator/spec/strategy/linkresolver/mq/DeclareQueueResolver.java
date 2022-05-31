@@ -23,7 +23,7 @@ import com.exactpro.th2.infraoperator.spec.Th2CustomResource;
 import com.exactpro.th2.infraoperator.spec.helmrelease.HelmRelease;
 import com.exactpro.th2.infraoperator.spec.link.relation.pins.PinMQ;
 import com.exactpro.th2.infraoperator.spec.shared.PinAttribute;
-import com.exactpro.th2.infraoperator.spec.shared.PinSpec;
+import com.exactpro.th2.infraoperator.spec.shared.pin.MqPin;
 import com.exactpro.th2.infraoperator.spec.strategy.linkresolver.queue.QueueName;
 import com.exactpro.th2.infraoperator.spec.strategy.redeploy.NonTerminalException;
 import com.exactpro.th2.infraoperator.util.CustomResourceUtils;
@@ -87,7 +87,7 @@ public class DeclareQueueResolver {
         //get queues that are associated with current box and are not linked through Th2Link resources
         Set<String> boxQueues = getBoxPreviousQueues(namespace, extractName(resource));
 
-        for (var pin : ExtractUtils.extractMqPins(resource)) {
+        for (var pin : resource.getSpec().getPins().getMq()) {
             var attrs = pin.getAttributes();
             String boxName = extractName(resource);
             PinMQ mqPin = new PinMQ(boxName, pin.getName());
@@ -140,7 +140,7 @@ public class DeclareQueueResolver {
     private Set<String> generateBoxQueues(String namespace, Th2CustomResource resource) {
         Set<String> queueNames = new HashSet<>();
         String boxName = ExtractUtils.extractName(resource);
-        for (PinSpec mqPin : ExtractUtils.extractMqPins(resource)) {
+        for (MqPin mqPin : resource.getSpec().getPins().getMq()) {
             if (!mqPin.getAttributes().contains(PinAttribute.publish.name())) {
                 queueNames.add(new QueueName(namespace, new PinMQ(boxName, mqPin.getName())).toString());
             }

@@ -19,6 +19,7 @@ package com.exactpro.th2.infraoperator.spec;
 import com.exactpro.th2.infraoperator.configuration.ChartConfig;
 import com.exactpro.th2.infraoperator.operator.StoreHelmTh2Op;
 import com.exactpro.th2.infraoperator.spec.shared.*;
+import com.exactpro.th2.infraoperator.spec.shared.pin.*;
 import com.exactpro.th2.infraoperator.util.JsonUtils;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonInclude;
@@ -60,22 +61,18 @@ public class Th2Spec implements KubernetesResource {
 
     protected String loggingConfig;
 
-    protected List<PinSpec> pins = initializeWithEstorePin();
+    protected PinSpec pins = initializeWithEstorePin();
 
     public Th2Spec() {
     }
 
-    public void setPins(List<PinSpec> pins) {
+    public void setPins(PinSpec pins) {
         this.pins = pins;
 
-        if (Objects.isNull(getPin(StoreHelmTh2Op.EVENT_STORAGE_PIN_ALIAS))) {
-            var pin = new PinSpec();
-
-            pin.setName(StoreHelmTh2Op.EVENT_STORAGE_PIN_ALIAS);
-            pin.setConnectionType(SchemaConnectionType.mq);
-            pin.setAttributes(Set.of(PinAttribute.publish.name(), PinAttribute.event.name()));
-
-            getPins().add(pin);
+        if (Objects.isNull(getPins().getMqPin(StoreHelmTh2Op.EVENT_STORAGE_PIN_ALIAS))) {
+            MqPin pin = new MqPin(StoreHelmTh2Op.EVENT_STORAGE_PIN_ALIAS,
+                    Set.of(PinAttribute.publish.name(), PinAttribute.event.name()));
+            getPins().getMq().add(pin);
         }
     }
 
@@ -89,20 +86,12 @@ public class Th2Spec implements KubernetesResource {
         return JsonUtils.JSON_READER.convertValue(extendedSettings.get(CHART_CFG_ALIAS), ChartConfig.class);
     }
 
-    public PinSpec getPin(String name) {
-        return getPins().stream()
-                .filter(p -> p.getName().equals(name))
-                .findFirst()
-                .orElse(null);
-    }
-
-    private List<PinSpec> initializeWithEstorePin() {
-        List<PinSpec> pins = new ArrayList<>();
-        PinSpec pin = new PinSpec();
-        pin.setName(StoreHelmTh2Op.EVENT_STORAGE_PIN_ALIAS);
-        pin.setConnectionType(SchemaConnectionType.mq);
-        pin.setAttributes(Set.of(PinAttribute.publish.name(), PinAttribute.event.name()));
-        pins.add(pin);
+    private PinSpec initializeWithEstorePin() {
+        PinSpec pins = new PinSpec();
+        MqPin pin = new MqPin(StoreHelmTh2Op.EVENT_STORAGE_PIN_ALIAS,
+                Set.of(PinAttribute.publish.name(), PinAttribute.event.name())
+        );
+        pins.getMq().add(pin);
         return pins;
     }
 
@@ -150,7 +139,7 @@ public class Th2Spec implements KubernetesResource {
         return this.loggingConfig;
     }
 
-    public List<PinSpec> getPins() {
+    public PinSpec getPins() {
         return this.pins;
     }
 
