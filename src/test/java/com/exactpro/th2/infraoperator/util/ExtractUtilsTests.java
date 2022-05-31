@@ -16,12 +16,9 @@
 
 package com.exactpro.th2.infraoperator.util;
 
-import com.exactpro.th2.infraoperator.spec.Th2Spec;
 import com.exactpro.th2.infraoperator.spec.box.Th2Box;
 import com.exactpro.th2.infraoperator.spec.corebox.Th2CoreBox;
 import com.exactpro.th2.infraoperator.spec.mstore.Th2Mstore;
-import com.exactpro.th2.infraoperator.spec.shared.PinSpec;
-import com.exactpro.th2.infraoperator.spec.shared.SchemaConnectionType;
 import io.fabric8.kubernetes.api.model.ObjectMeta;
 import org.junit.jupiter.api.Test;
 
@@ -53,27 +50,6 @@ class ExtractUtilsTests {
         );
         assertEquals(expectedAnnotations, ExtractUtils.extractNeededAnnotations(res,
                 ANTECEDENT_LABEL_KEY_ALIAS, COMMIT_HASH_LABEL_KEY_ALIAS));
-    }
-
-    @Test
-    void extractMqPinsTest() {
-        Th2Box res = new Th2Box();
-        Th2Spec spec = new Th2Spec();
-        List<PinSpec> pins = new ArrayList<>();
-        spec.setPins(pins);
-        res.setSpec(spec);
-        assertEquals(pins, extractMqPins(res));
-        final int n = 3;
-        for (int i = 0; i < n; i++) {
-            PinSpec pin = new PinSpec();
-            pin.setName("pin" + i);
-            pin.setAttributes(Set.of("attr" + i));
-            pin.setConnectionType(SchemaConnectionType.mq);
-            pins.add(pin);
-        }
-        assertEquals(pins, extractMqPins(res));
-        pins.forEach(pin -> pin.setConnectionType(SchemaConnectionType.grpc_client));
-        assertEquals(Collections.emptyList(), extractMqPins(res));
     }
 
     @Test

@@ -16,14 +16,8 @@
 
 package com.exactpro.th2.infraoperator.util;
 
-import java.util.ArrayList;
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
-
-import com.exactpro.th2.infraoperator.spec.Th2CustomResource;
-import com.exactpro.th2.infraoperator.spec.shared.PinSpec;
-import com.exactpro.th2.infraoperator.spec.shared.SchemaConnectionType;
 
 import io.fabric8.kubernetes.api.model.HasMetadata;
 
@@ -54,17 +48,6 @@ public class ExtractUtils {
         neededAnnotations.put(antecedent, resourceAnnotations.get(antecedent));
         neededAnnotations.put(commitHash, resourceAnnotations.get(commitHash));
         return neededAnnotations;
-    }
-
-    public static List<PinSpec> extractMqPins(Th2CustomResource resource) {
-        List<PinSpec> mqPins = new ArrayList<>();
-
-        for (var pin : resource.getSpec().getPins()) {
-            if (pin.getConnectionType().equals(SchemaConnectionType.mq)) {
-                mqPins.add(pin);
-            }
-        }
-        return mqPins;
     }
 
     public static String extractType(Object object) {

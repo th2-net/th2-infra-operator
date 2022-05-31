@@ -22,7 +22,7 @@ import static com.exactpro.th2.infraoperator.util.ExtractUtils.extractType;
 
 import com.exactpro.th2.infraoperator.spec.Th2CustomResource;
 import com.exactpro.th2.infraoperator.spec.helmrelease.HelmRelease;
-import com.exactpro.th2.infraoperator.spec.shared.PinSpec;
+import com.exactpro.th2.infraoperator.spec.shared.pin.*;
 import io.fabric8.kubernetes.api.model.HasMetadata;
 
 import org.jetbrains.annotations.Nullable;
@@ -68,15 +68,23 @@ public class CustomResourceUtils {
     }
 
     public static void removeDuplicatedPins(Th2CustomResource resource) {
-        List<PinSpec> pins = resource.getSpec().getPins();
-        Map<String, PinSpec> uniquePins = new HashMap<>();
-        for (PinSpec pin : pins) {
+        String annotation = annotationFor(resource);
+        PinSpec pins = resource.getSpec().getPins();
+
+        pins.setMq(removeDuplicates(pins.getMq(), annotation));
+        pins.setGrpcClient(removeDuplicates(pins.getGrpc().getClient(), annotation));
+        pins.setGrpcServer(removeDuplicates(pins.getGrpc().getServer(), annotation));
+    }
+
+    private static <T extends Th2Pin> List<T> removeDuplicates(List<T> pins, String annotation) {
+        Map<String, T> uniquePins = new HashMap<>();
+        for (T pin : pins) {
             if (uniquePins.put(pin.getName(), pin) != null) {
                 logger.warn("Detected duplicated pin: \"{}\" in \"{}\". will be substituted by the last ocurrence",
-                        pin.getName(), annotationFor(resource));
+                        pin.getName(), annotation);
             }
         }
-        resource.getSpec().setPins(new ArrayList<>(uniquePins.values()));
+        return new ArrayList<>(uniquePins.values());
     }
 
     @Nullable
