@@ -28,7 +28,7 @@ import static com.exactpro.th2.infraoperator.util.ExtractUtils.extractName;
 import static com.exactpro.th2.infraoperator.util.ExtractUtils.extractNamespace;
 
 @Group("th2.exactpro.com")
-@Version("v1")
+@Version("v2")
 @Kind("Th2Dictionary")
 public class Th2Dictionary extends CustomResource {
 

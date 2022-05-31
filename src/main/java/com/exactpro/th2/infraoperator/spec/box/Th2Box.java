@@ -26,7 +26,7 @@ import io.fabric8.kubernetes.model.annotation.Version;
 import java.util.Objects;
 
 @Group("th2.exactpro.com")
-@Version("v1")
+@Version("v2")
 @Kind("Th2Box")
 public class Th2Box extends Th2CustomResource {
 

@@ -18,5 +18,5 @@ package com.exactpro.th2.infraoperator.model.box.configuration.grpc
 
 data class RoutingStrategy(
     val name: String,
-    val endpoints: Set<String>
+    val endpoints: MutableSet<String>
 )

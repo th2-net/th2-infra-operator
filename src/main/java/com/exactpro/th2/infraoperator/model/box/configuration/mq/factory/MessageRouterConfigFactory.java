@@ -24,7 +24,7 @@ import com.exactpro.th2.infraoperator.model.kubernetes.configmaps.ConfigMaps;
 import com.exactpro.th2.infraoperator.spec.Th2CustomResource;
 import com.exactpro.th2.infraoperator.spec.link.relation.pins.PinMQ;
 import com.exactpro.th2.infraoperator.spec.shared.PinAttribute;
-import com.exactpro.th2.infraoperator.spec.shared.PinSpec;
+import com.exactpro.th2.infraoperator.spec.shared.pin.PinSpec;
 import com.exactpro.th2.infraoperator.spec.strategy.linkresolver.queue.QueueName;
 import com.exactpro.th2.infraoperator.spec.strategy.linkresolver.queue.RoutingKeyName;
 import com.exactpro.th2.infraoperator.spec.strategy.redeploy.NonTerminalException;
@@ -56,7 +56,7 @@ public class MessageRouterConfigFactory {
         String resourceAnnotation = annotationFor(resource);
         Map<String, QueueConfiguration> queues = new HashMap<>();
 
-        for (var pin : ExtractUtils.extractMqPins(resource)) {
+        for (var pin : resource.getSpec().getPins().getMq()) {
 
             var attrs = pin.getAttributes();
             String boxName = ExtractUtils.extractName(resource);

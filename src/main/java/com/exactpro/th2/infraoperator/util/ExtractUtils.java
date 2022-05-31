@@ -16,12 +16,8 @@
 
 package com.exactpro.th2.infraoperator.util;
 
-import java.util.ArrayList;
-import java.util.List;
-
-import com.exactpro.th2.infraoperator.spec.Th2CustomResource;
-import com.exactpro.th2.infraoperator.spec.shared.PinSpec;
-import com.exactpro.th2.infraoperator.spec.shared.SchemaConnectionType;
+import java.util.HashMap;
+import java.util.Map;
 
 import io.fabric8.kubernetes.api.model.HasMetadata;
 
@@ -42,15 +38,16 @@ public class ExtractUtils {
         return obj.getMetadata().getNamespace();
     }
 
-    public static List<PinSpec> extractMqPins(Th2CustomResource resource) {
-        List<PinSpec> mqPins = new ArrayList<>();
+    public static Map<String, String> extractAnnotations(HasMetadata obj) {
+        return obj.getMetadata().getAnnotations();
+    }
 
-        for (var pin : resource.getSpec().getPins()) {
-            if (pin.getConnectionType().equals(SchemaConnectionType.mq)) {
-                mqPins.add(pin);
-            }
-        }
-        return mqPins;
+    public static Map<String, String> extractNeededAnnotations(HasMetadata obj, String antecedent, String commitHash) {
+        Map<String, String> neededAnnotations = new HashMap<>();
+        var resourceAnnotations = obj.getMetadata().getAnnotations();
+        neededAnnotations.put(antecedent, resourceAnnotations.get(antecedent));
+        neededAnnotations.put(commitHash, resourceAnnotations.get(commitHash));
+        return neededAnnotations;
     }
 
     public static String extractType(Object object) {

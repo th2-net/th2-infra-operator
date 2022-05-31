@@ -22,7 +22,7 @@ import com.exactpro.th2.infraoperator.spec.link.Th2Link;
 import com.exactpro.th2.infraoperator.spec.link.relation.pins.PinCouplingMQ;
 import com.exactpro.th2.infraoperator.spec.link.relation.pins.PinMQ;
 import com.exactpro.th2.infraoperator.spec.shared.PinAttribute;
-import com.exactpro.th2.infraoperator.spec.shared.PinSpec;
+import com.exactpro.th2.infraoperator.spec.shared.pin.MqPin;
 import com.exactpro.th2.infraoperator.spec.strategy.linkresolver.mq.BindQueueLinkResolver;
 import com.exactpro.th2.infraoperator.util.ExtractUtils;
 import org.slf4j.Logger;
@@ -99,7 +99,7 @@ public abstract class StorageTh2LinksRefresher<CR extends Th2CustomResource> {
         return hiddenLinksRes;
     }
 
-    protected PinMQ createToBoxOfHiddenLink(PinSpec pin) {
+    protected PinMQ createToBoxOfHiddenLink(MqPin pin) {
         var hyphen = "-";
         var targetAttr = "";
 
@@ -120,7 +120,7 @@ public abstract class StorageTh2LinksRefresher<CR extends Th2CustomResource> {
 
         List<PinCouplingMQ> links = new ArrayList<>();
 
-        for (var pin : resource.getSpec().getPins()) {
+        for (var pin : resource.getSpec().getPins().getMq()) {
 
             String pinAnnotation = String.format("%s.%s.%s",
                     extractNamespace(resource), extractName(resource), pin.getName());
