@@ -180,8 +180,6 @@ public class DefaultWatchManager {
             context.addHandler(handler);
         }
 
-        // needs to be converted to Watcher
-        CRDEventHandler.newInstance(sharedInformerFactory);
         return context;
     }
 
