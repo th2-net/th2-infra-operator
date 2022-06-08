@@ -179,14 +179,8 @@ public class GrpcRouterConfigFactory {
                     annotationFor(fromBox), annotationFor(toBox));
             GrpcEndpointMapping grpcMapping = getGrpcMapping(toBoxSettings);
             if (grpcMapping != null) {
-                Integer nodePort = grpcMapping.getNodePort();
-                if (nodePort != null) {
-                    targetBox.setPort(nodePort);
-                    targetBox.setHostNetwork(true);
-                } else {
-                    logger.warn("nodePort for resource \"{}\" was null", annotationFor(toBox));
-                    hostNetworkEndpointNotFound(toBox);
-                }
+                targetBox.setPort(grpcMapping.getExposedPort());
+                targetBox.setHostNetwork(true);
             } else {
                 logger.warn("grpcMapping for resource \"{}\" was null", annotationFor(toBox));
                 hostNetworkEndpointNotFound(toBox);

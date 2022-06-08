@@ -336,7 +336,6 @@ public abstract class HelmReleaseTh2Op<CR extends Th2CustomResource> extends Abs
         helmRelease.mergeValue(PROPERTIES_MERGE_DEPTH, ROOT_PROPERTIES_ALIAS,
                 Map.of(PULL_SECRETS_ALIAS, OperatorConfig.INSTANCE.getImagePullSecrets()));
 
-        convertBooleanFields(helmRelease);
     }
 
     @Override

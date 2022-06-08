@@ -37,7 +37,6 @@ import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-import java.util.function.Function;
 import java.util.stream.Collectors;
 
 import static com.exactpro.th2.infraoperator.operator.HelmReleaseTh2Op.*;
@@ -51,6 +50,8 @@ public class HelmReleaseUtils {
 
     private static final String HOST_NETWORK_ALIAS = "hostNetwork";
 
+    private static final String NODE_PORT_ALIAS = "nodePort";
+
     private static final String ENDPOINTS_ALIAS = "endpoints";
 
     private static final String ADDRESS_ALIAS = "address";
@@ -60,10 +61,6 @@ public class HelmReleaseUtils {
     private static final String SECRET_VALUE_PREFIX = "secret_value";
 
     private static final String SECRET_PATH_PREFIX = "secret_path";
-
-    private static final String SHARED_MEMORY_ALIAS = "sharedMemory";
-
-    private static final String K8S_PROBES = "k8sProbes";
 
     private static final String HOST_NETWORK = "hostNetwork";
 
@@ -82,7 +79,7 @@ public class HelmReleaseUtils {
         if (boxSettings == null) {
             return null;
         }
-        JsonNode endpointsNode = getFieldAsNode(boxSettings, SERVICE_ALIAS, ENDPOINTS_ALIAS);
+        JsonNode endpointsNode = getFieldAsNode(boxSettings, SERVICE_ALIAS, NODE_PORT_ALIAS);
         if (endpointsNode != null) {
             List<GrpcEndpointMapping> grpcEndpointMappings = JSON_READER.convertValue(endpointsNode,
                     new TypeReference<>() {
@@ -173,30 +170,6 @@ public class HelmReleaseUtils {
             }
         }
         return currentSection;
-    }
-
-    public static <R> void convertField(HelmRelease helmRelease, Function<String, R> converter, String fieldName,
-                                        String... fields) {
-        Map<String, Object> section = getSectionReference(helmRelease.getValuesSection(), fields);
-        if (section != null) {
-            var currentValue = section.get(fieldName);
-            if (currentValue != null) {
-                section.put(fieldName, converter.apply(currentValue.toString()));
-            }
-        }
-    }
-
-    public static void convertBooleanFields(HelmRelease helmRelease) {
-        convertField(helmRelease, Boolean::valueOf, ENABLED_ALIAS, ROOT_PROPERTIES_ALIAS,
-                EXTENDED_SETTINGS_ALIAS, SERVICE_ALIAS);
-        convertField(helmRelease, Boolean::valueOf, ENABLED_ALIAS, ROOT_PROPERTIES_ALIAS,
-                EXTENDED_SETTINGS_ALIAS, EXTERNAL_BOX_ALIAS);
-        convertField(helmRelease, Boolean::valueOf, ENABLED_ALIAS, ROOT_PROPERTIES_ALIAS,
-                EXTENDED_SETTINGS_ALIAS, SHARED_MEMORY_ALIAS);
-        convertField(helmRelease, Boolean::valueOf, K8S_PROBES, ROOT_PROPERTIES_ALIAS,
-                EXTENDED_SETTINGS_ALIAS);
-        convertField(helmRelease, Boolean::valueOf, HOST_NETWORK, ROOT_PROPERTIES_ALIAS,
-                EXTENDED_SETTINGS_ALIAS);
     }
 
     public static Map<String, Object> extractConfigSection(HelmRelease helmRelease, String key) {
