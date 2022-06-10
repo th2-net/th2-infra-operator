@@ -69,6 +69,8 @@ public abstract class HelmReleaseTh2Op<CR extends Th2CustomResource> extends Abs
     //spec section
     private static final String CHART_PROPERTIES_ALIAS = "chart";
 
+    private static final String OPENSHIFT_ALIAS = "openshift";
+
     public static final String RELEASE_NAME_ALIAS = "releaseName";
 
     //values section
@@ -312,8 +314,10 @@ public abstract class HelmReleaseTh2Op<CR extends Th2CustomResource> extends Abs
 
         var annotations = OperatorConfig.INSTANCE.getCommonAnnotations();
         annotations.putAll(extractNeededAnnotations(resource, ANTECEDENT_LABEL_KEY_ALIAS, COMMIT_HASH_LABEL_KEY_ALIAS));
-        helmRelease.mergeValue(Map.of(ANNOTATIONS_ALIAS,
-                annotations));
+        helmRelease.mergeValue(Map.of(
+                ANNOTATIONS_ALIAS, annotations,
+                OPENSHIFT_ALIAS, OperatorConfig.INSTANCE.getOpenshift()
+        ));
 
         helmRelease.mergeValue(PROPERTIES_MERGE_DEPTH, ROOT_PROPERTIES_ALIAS,
                 Map.of(PULL_SECRETS_ALIAS, OperatorConfig.INSTANCE.getImagePullSecrets()));

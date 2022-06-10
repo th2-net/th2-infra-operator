@@ -83,6 +83,10 @@ public enum OperatorConfig {
         return getConfig().getImagePullSecrets();
     }
 
+    public EnvironmentConfig getOpenshift() {
+        return getConfig().getOpenshift();
+    }
+
     private synchronized Configuration getConfig() {
         if (configuration == null) {
             configuration = loadConfiguration();
@@ -127,6 +131,8 @@ public enum OperatorConfig {
 
         private final List<String> imagePullSecrets;
 
+        private final EnvironmentConfig openshift;
+
         public Configuration() {
             chartConfig = new ChartConfig();
             rabbitMQManagementConfig = new RabbitMQManagementConfig();
@@ -138,6 +144,7 @@ public enum OperatorConfig {
             prometheusConfiguration = PrometheusConfiguration.createDefault("true");
             commonAnnotations = new HashMap<>();
             ingress = null;
+            openshift = new EnvironmentConfig();
         }
 
         public ChartConfig getChartConfig() {
@@ -229,6 +236,10 @@ public enum OperatorConfig {
             }
         }
 
+        public EnvironmentConfig getOpenshift() {
+            return openshift;
+        }
+
         @Override
         public boolean equals(Object o) {
             if (this == o) {
@@ -247,7 +258,8 @@ public enum OperatorConfig {
                     && Objects.equals(getCommonAnnotations(), that.getCommonAnnotations())
                     && Objects.equals(getIngress(), that.getIngress())
                     && Objects.equals(getImagePullSecrets(), that.getImagePullSecrets())
-                    && Objects.equals(getPrometheusConfiguration(), that.getPrometheusConfiguration());
+                    && Objects.equals(getPrometheusConfiguration(), that.getPrometheusConfiguration())
+                    && Objects.equals(getOpenshift(), that.getOpenshift());
         }
     }
 }
