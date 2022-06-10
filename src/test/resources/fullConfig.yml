@@ -20,3 +20,5 @@ configMaps:
 schemaSecrets:
   rabbitMQ: rabbitMQ
   cassandra: cassandra
+openshift:
+  enabled: false
