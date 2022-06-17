@@ -109,9 +109,28 @@ schemaSecrets:
 
   cassandra: cassandra
   # secret name to connect to cassandra database
-  
-ingressHost: hostName
-# host name that will be used inside ingress rules
+imagePullSecrets:
+  # this section contains list of secrets to be used for pulling images
+  - name-for-secret
+  - name-for-another-secret
+ingress:
+  # this section can include custom configurations for ingress.
+  # section is of an object type, meaning it can contain any structure and any fields 
+  # section will be passed to final config exactly ass described here
+  # example configuration can include: 
+  annotations:
+    default:
+      key: value
+    extra:
+      key: value
+  host: ingress-host-name
+  # host name that will be used inside ingress rules
+  ingressClass: ingress-class-type
+  # ingress class  will indicate what kind of ingress to use
+openshift:
+  # this section indicates whether application is run in openshift environment or not
+  enabled: true/false
+  #if not indicated default values is false
 
 
 ```
