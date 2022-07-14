@@ -154,7 +154,7 @@ public class ConfigMapEventHandler implements Watcher<ConfigMap> {
                     if (!Objects.equals(rabbitMQConfig, newRabbitMQConfig)) {
                         Histogram.Timer processTimer = OperatorMetrics.getConfigMapEventTimer(resource);
                         configMaps.setRabbitMQConfig4Namespace(namespace, newRabbitMQConfig);
-                        RabbitMQContext.createUser(namespace);
+                        RabbitMQContext.setUpRabbitMqForNamespace(namespace);
                         logger.info("RabbitMQ ConfigMap has been updated in namespace \"{}\". Updating all boxes",
                                 namespace);
                         DefaultWatchManager.getInstance().refreshBoxes(namespace);

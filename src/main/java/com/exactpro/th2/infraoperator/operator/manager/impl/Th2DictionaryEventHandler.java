@@ -187,6 +187,7 @@ public class Th2DictionaryEventHandler implements Watcher<Th2Dictionary> {
         logger.debug("Deleted config map for: \"{}\"", resourceLabel);
     }
 
+    //TODO implement logic for getting linked resources
     private Set<String> getLinkedResources(Th2Dictionary dictionary) {
 
         Set<String> resources = new HashSet<>();
@@ -195,16 +196,6 @@ public class Th2DictionaryEventHandler implements Watcher<Th2Dictionary> {
         OperatorState operatorState = OperatorState.INSTANCE;
 
         String dictionaryName = extractName(dictionary);
-        for (var dictionaryBinding : operatorState.getDictionaryLinks(namespace)) {
-            if (dictionaryBinding.getDictionary().getName().equals(dictionaryName)) {
-                resources.add(dictionaryBinding.getBox());
-            }
-        }
-        for (var dictionaryBinding : operatorState.getMultiDictionaryLinks(namespace)) {
-            if (dictionaryBinding.getDictionaries().stream().anyMatch(dict -> dict.getName().equals(dictionaryName))) {
-                resources.add(dictionaryBinding.getBox());
-            }
-        }
 
         return resources;
     }

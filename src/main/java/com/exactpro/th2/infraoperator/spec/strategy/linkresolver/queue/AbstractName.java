@@ -16,8 +16,6 @@
 
 package com.exactpro.th2.infraoperator.spec.strategy.linkresolver.queue;
 
-import com.exactpro.th2.infraoperator.spec.link.relation.pins.PinMQ;
-
 abstract class AbstractName {
     protected static final String NAMESPACE_REGEXP = "[a-z0-9]([-a-z0-9]*[a-z0-9])?";
 
@@ -30,12 +28,6 @@ abstract class AbstractName {
     protected final String pinName;
 
     protected final String namespace;
-
-    protected AbstractName(String namespace, PinMQ mqPin) {
-        this.boxName = mqPin.getBoxName();
-        this.pinName = mqPin.getPinName();
-        this.namespace = namespace;
-    }
 
     protected AbstractName(String namespace, String boxName, String pinName) {
         this.boxName = boxName;

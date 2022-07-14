@@ -21,22 +21,22 @@ import com.exactpro.th2.infraoperator.spec.strategy.redeploy.RetryableTaskQueue;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-public class RetryMqUserTask implements RetryableTaskQueue.Task {
+public class RetryRabbitSetup implements RetryableTaskQueue.Task {
 
-    private static final Logger logger = LoggerFactory.getLogger(RetryMqUserTask.class);
+    private static final Logger logger = LoggerFactory.getLogger(RetryRabbitSetup.class);
 
     private final long retryDelay;
 
     private final String namespace;
 
-    public RetryMqUserTask(String namespace, long retryDelay) {
+    public RetryRabbitSetup(String namespace, long retryDelay) {
         this.retryDelay = retryDelay;
         this.namespace = namespace;
     }
 
     @Override
     public String getName() {
-        return String.format("%s:%s", RetryMqUserTask.class.getName(), namespace);
+        return String.format("%s:%s", RetryRabbitSetup.class.getName(), namespace);
     }
 
     @Override
@@ -47,6 +47,6 @@ public class RetryMqUserTask implements RetryableTaskQueue.Task {
     @Override
     public void run() {
         logger.info("Executing task: \"{}\"", getName());
-        RabbitMQContext.createUser(namespace);
+        RabbitMQContext.setUpRabbitMqForNamespace(namespace);
     }
 }

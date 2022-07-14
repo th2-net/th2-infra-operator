@@ -16,8 +16,6 @@
 
 package com.exactpro.th2.infraoperator.spec.strategy.linkresolver.queue;
 
-import com.exactpro.th2.infraoperator.spec.link.relation.pins.PinMQ;
-
 import java.util.Objects;
 
 public class RoutingKeyName extends AbstractName {
@@ -28,12 +26,8 @@ public class RoutingKeyName extends AbstractName {
 
     private static final String ROUTING_KEY_PREFIX = "key";
 
-    private static final String ROUTING_KEY_REGEXP =
+    public static final String ROUTING_KEY_REGEXP =
             ROUTING_KEY_PREFIX + "\\[" + NAMESPACE_REGEXP + ":" + BOX_NAME_REGEXP + ":" + PIN_NAME_REGEXP + "\\]";
-
-    public RoutingKeyName(String namespace, PinMQ mqPin) {
-        super(namespace, mqPin);
-    }
 
     public RoutingKeyName(String namespace, String boxName, String pinName) {
         super(namespace, boxName, pinName);

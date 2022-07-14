@@ -131,7 +131,7 @@ complexity:
     ignoreArgumentsMatchingNames: false
   NestedBlockDepth:
     active: true
-    threshold: 4
+    threshold: 6
   ReplaceSafeCallChainWithRun:
     active: false
   StringLiteralDuplication:
@@ -263,7 +263,6 @@ exceptions:
     exceptionNames:
       - 'ArrayIndexOutOfBoundsException'
       - 'Error'
-      - 'Exception'
       - 'IllegalMonitorStateException'
       - 'IndexOutOfBoundsException'
       - 'NullPointerException'

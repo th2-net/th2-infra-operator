@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2021 Exactpro (Exactpro Systems Limited)
+ * Copyright 2020-2022 Exactpro (Exactpro Systems Limited)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,13 +14,9 @@
  * limitations under the License.
  */
 
-package com.exactpro.th2.infraoperator.model.box.schema.link
+package com.exactpro.th2.infraoperator.spec.shared.pin
 
-import com.exactpro.th2.infraoperator.spec.strategy.linkresolver.queue.QueueName
-import com.exactpro.th2.infraoperator.spec.strategy.linkresolver.queue.RoutingKeyName
-
-data class QueueDescription(
-    val queueName: QueueName?,
-    val routingKey: RoutingKeyName?,
-    val exchange: String
+data class Link(
+    val box: String? = null,
+    val pin: String? = null
 )
