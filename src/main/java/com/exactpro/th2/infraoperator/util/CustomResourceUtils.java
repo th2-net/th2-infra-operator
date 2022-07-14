@@ -31,10 +31,7 @@ import org.slf4j.LoggerFactory;
 
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
-import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 import java.util.Objects;
 
 public class CustomResourceUtils {
@@ -65,26 +62,6 @@ public class CustomResourceUtils {
                 resource.getMetadata().getName(),
                 extractShortCommitHash(resource)
         );
-    }
-
-    public static void removeDuplicatedPins(Th2CustomResource resource) {
-        String annotation = annotationFor(resource);
-        PinSpec pins = resource.getSpec().getPins();
-
-        pins.setMq(removeDuplicates(pins.getMq(), annotation));
-        pins.setGrpcClient(removeDuplicates(pins.getGrpc().getClient(), annotation));
-        pins.setGrpcServer(removeDuplicates(pins.getGrpc().getServer(), annotation));
-    }
-
-    private static <T extends Th2Pin> List<T> removeDuplicates(List<T> pins, String annotation) {
-        Map<String, T> uniquePins = new HashMap<>();
-        for (T pin : pins) {
-            if (uniquePins.put(pin.getName(), pin) != null) {
-                logger.warn("Detected duplicated pin: \"{}\" in \"{}\". will be substituted by the last ocurrence",
-                        pin.getName(), annotation);
-            }
-        }
-        return new ArrayList<>(uniquePins.values());
     }
 
     @Nullable

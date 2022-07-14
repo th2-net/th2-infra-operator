@@ -17,10 +17,6 @@
 package com.exactpro.th2.infraoperator;
 
 import com.exactpro.th2.infraoperator.spec.helmrelease.HelmRelease;
-import com.exactpro.th2.infraoperator.spec.link.Th2Link;
-import com.exactpro.th2.infraoperator.spec.link.relation.dictionaries.DictionaryBinding;
-import com.exactpro.th2.infraoperator.spec.link.relation.dictionaries.MultiDictionaryBinding;
-import com.exactpro.th2.infraoperator.spec.link.relation.pins.PinCouplingGRPC;
 import io.fabric8.kubernetes.api.model.HasMetadata;
 
 import java.util.*;
@@ -30,30 +26,6 @@ public enum OperatorState {
     INSTANCE;
 
     private final Map<String, NamespaceState> namespaceStates = new ConcurrentHashMap<>();
-
-    public void setLinkResources(String namespace, List<Th2Link> linkResources) {
-        computeIfAbsent(namespace).setLinkResources(new ArrayList<>(linkResources));
-    }
-
-    public List<Th2Link> getLinkResources(String namespace) {
-        var links = namespaceStates.get(namespace);
-        return Objects.nonNull(links) ? Collections.unmodifiableList(links.getLinkResources()) : List.of();
-    }
-
-    public List<PinCouplingGRPC> getGrpLinks(String namespace) {
-        var links = namespaceStates.get(namespace);
-        return Objects.nonNull(links) ? Collections.unmodifiableList(links.getGrpcLinks()) : List.of();
-    }
-
-    public List<DictionaryBinding> getDictionaryLinks(String namespace) {
-        var links = namespaceStates.get(namespace);
-        return Objects.nonNull(links) ? Collections.unmodifiableList(links.getDictionaryLinks()) : List.of();
-    }
-
-    public List<MultiDictionaryBinding> getMultiDictionaryLinks(String namespace) {
-        var links = namespaceStates.get(namespace);
-        return Objects.nonNull(links) ? Collections.unmodifiableList(links.getMultiDictionaryLinks()) : List.of();
-    }
 
     public String getConfigChecksum(String namespace, String key) {
         String checksum = namespaceStates.get(namespace).getConfigMapDataContainer(key).getChecksum();

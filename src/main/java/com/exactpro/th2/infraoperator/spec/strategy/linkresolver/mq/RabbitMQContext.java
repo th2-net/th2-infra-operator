@@ -25,7 +25,7 @@ import com.exactpro.th2.infraoperator.spec.shared.PinSettings;
 import com.exactpro.th2.infraoperator.spec.strategy.linkresolver.queue.QueueName;
 import com.exactpro.th2.infraoperator.spec.strategy.redeploy.NonTerminalException;
 import com.exactpro.th2.infraoperator.spec.strategy.redeploy.RetryableTaskQueue;
-import com.exactpro.th2.infraoperator.spec.strategy.redeploy.tasks.RetryMqUserTask;
+import com.exactpro.th2.infraoperator.spec.strategy.redeploy.tasks.RetryRabbitSetup;
 import com.exactpro.th2.infraoperator.spec.strategy.redeploy.tasks.RetryTopicExchangeTask;
 import com.exactpro.th2.infraoperator.util.Strings;
 import com.rabbitmq.client.Channel;
@@ -33,6 +33,7 @@ import com.rabbitmq.client.Connection;
 import com.rabbitmq.client.ConnectionFactory;
 import com.rabbitmq.http.client.Client;
 import com.rabbitmq.http.client.ClientParameters;
+import com.rabbitmq.http.client.domain.BindingInfo;
 import com.rabbitmq.http.client.domain.ExchangeInfo;
 import com.rabbitmq.http.client.domain.QueueInfo;
 import com.rabbitmq.http.client.domain.UserPermissions;
@@ -44,6 +45,7 @@ import java.net.MalformedURLException;
 import java.net.URISyntaxException;
 import java.util.*;
 
+import static com.exactpro.th2.infraoperator.operator.StoreHelmTh2Op.*;
 import static com.exactpro.th2.infraoperator.spec.strategy.linkresolver.queue.QueueName.QUEUE_NAME_REGEXP;
 import static java.lang.String.format;
 
@@ -78,7 +80,21 @@ public final class RabbitMQContext {
         }
     }
 
-    public static void createUser(String namespace) {
+    public static void setUpRabbitMqForNamespace(String namespace) {
+        try {
+            createUser(namespace);
+            declareExchange(namespace);
+            createStoreQueues(namespace);
+        } catch (Exception e) {
+            logger.error("Exception setting up rabbitMq for namespace: \"{}\"", namespace, e);
+            RetryRabbitSetup retryRabbitSetup = new RetryRabbitSetup(namespace, RETRY_DELAY);
+            retryableTaskQueue.add(retryRabbitSetup, true);
+            logger.info("Task \"{}\" added to scheduler, with delay \"{}\" seconds",
+                    retryRabbitSetup.getName(), RETRY_DELAY);
+        }
+    }
+
+    private static void createUser(String namespace) throws Exception {
 
         RabbitMQManagementConfig rabbitMQManagementConfig = getManagementConfig();
         RabbitMQConfig rabbitMQConfig = getRabbitMQConfig(namespace);
@@ -113,11 +129,39 @@ public final class RabbitMQContext {
             logger.info("User \"{}\" permissions set in RabbitMQ", namespace);
         } catch (Exception e) {
             logger.error("Exception setting up user: \"{}\" for vHost: \"{}\"", namespace, vHostName, e);
-            RetryMqUserTask retryMqUserTask = new RetryMqUserTask(namespace, RETRY_DELAY);
-            retryableTaskQueue.add(retryMqUserTask, true);
-            logger.info("Task \"{}\" added to scheduler, with delay \"{}\" seconds",
-                    retryMqUserTask.getName(), RETRY_DELAY);
+            throw e;
         }
+    }
+
+    private static void declareExchange(String exchangeName) throws Exception {
+        RabbitMQManagementConfig rabbitMQManagementConfig = getManagementConfig();
+        try {
+            getChannel().exchangeDeclare(exchangeName, "direct", rabbitMQManagementConfig.isPersistence());
+        } catch (Exception e) {
+            logger.error("Exception setting up exchange: \"{}\"", exchangeName, e);
+            throw e;
+        }
+    }
+
+    private static void createStoreQueues(String namespace) throws Exception {
+        var channel = getChannel();
+        RabbitMQManagementConfig rabbitMQManagementConfig = getManagementConfig();
+        var declareResult = channel.queueDeclare(
+                new QueueName(namespace, EVENT_STORAGE_BOX_ALIAS, EVENT_STORAGE_PIN_ALIAS).toString(),
+                rabbitMQManagementConfig.isPersistence(),
+                false,
+                false,
+                null
+        );
+        logger.info("Queue \"{}\" was successfully declared", declareResult.getQueue());
+        declareResult = channel.queueDeclare(
+                new QueueName(namespace, MESSAGE_STORAGE_BOX_ALIAS, MESSAGE_STORAGE_PIN_ALIAS).toString(),
+                rabbitMQManagementConfig.isPersistence(),
+                false,
+                false,
+                null
+        );
+        logger.info("Queue \"{}\" was successfully declared", declareResult.getQueue());
     }
 
     public static void cleanupRabbit(String namespace) throws Exception {
@@ -247,6 +291,18 @@ public final class RabbitMQContext {
             return rmqClient.getQueues(vHostName);
         } catch (Exception e) {
             String message = "Exception while fetching queues";
+            logger.error(message, e);
+            throw new NonTerminalException(message, e);
+        }
+    }
+
+    public static List<BindingInfo> getQueueBindings(String queue) {
+        String vHostName = getManagementConfig().getVHostName();
+        try {
+            Client rmqClient = getClient();
+            return rmqClient.getQueueBindings(vHostName, queue);
+        } catch (Exception e) {
+            String message = "Exception while fetching bindings";
             logger.error(message, e);
             throw new NonTerminalException(message, e);
         }

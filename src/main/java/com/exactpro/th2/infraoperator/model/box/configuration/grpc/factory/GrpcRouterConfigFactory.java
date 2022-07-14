@@ -20,8 +20,6 @@ import com.exactpro.th2.infraoperator.OperatorState;
 import com.exactpro.th2.infraoperator.configuration.OperatorConfig;
 import com.exactpro.th2.infraoperator.model.box.configuration.grpc.*;
 import com.exactpro.th2.infraoperator.spec.Th2CustomResource;
-import com.exactpro.th2.infraoperator.spec.link.relation.pins.PinCouplingGRPC;
-import com.exactpro.th2.infraoperator.spec.link.relation.pins.PinGRPC;
 import com.exactpro.th2.infraoperator.spec.shared.pin.GrpcClientPin;
 import com.exactpro.th2.infraoperator.spec.shared.pin.PinSpec;
 import org.slf4j.Logger;
@@ -29,7 +27,6 @@ import org.slf4j.LoggerFactory;
 
 import java.util.HashMap;
 import java.util.HashSet;
-import java.util.List;
 import java.util.Map;
 
 import static com.exactpro.th2.infraoperator.util.CustomResourceUtils.annotationFor;
@@ -45,7 +42,7 @@ public class GrpcRouterConfigFactory {
 
     private static final Logger logger = LoggerFactory.getLogger(GrpcRouterConfigFactory.class);
 
-    private static final int DEFAULT_PORT = 8080;
+    public static final int DEFAULT_PORT = 8080;
 
     private static final int DEFAULT_SERVER_WORKERS_COUNT = 5;
 
@@ -54,11 +51,10 @@ public class GrpcRouterConfigFactory {
     /**
      * Creates a grpc configuration based on the th2 resource and a list of active links.
      *
-     * @param resource        th2 resource containing a pins {@link PinSpec}s
-     * @param grpcActiveLinks active links
+     * @param resource th2 resource containing a pins {@link PinSpec}s
      * @return ready grpc configuration based on active {@code links} and specified links in {@code resource}
      */
-    public GrpcRouterConfiguration createConfig(Th2CustomResource resource, List<PinCouplingGRPC> grpcActiveLinks) {
+    public GrpcRouterConfiguration createConfig(Th2CustomResource resource) {
 
         var boxName = extractName(resource);
         var boxNamespace = extractNamespace(resource);
@@ -70,42 +66,37 @@ public class GrpcRouterConfigFactory {
             server = createServer();
         }
         for (var pin : resource.getSpec().getPins().getGrpc().getClient()) {
-            for (var link : grpcActiveLinks) {
-                var toLink = link.getTo();
-                var toPinName = toLink.getPinName();
-
-                createService(pin, toPinName, boxNamespace, link, services);
+            for (var link : pin.getLinkTo()) {
+                createService(pin, boxName, link.getBox(), boxNamespace, services);
             }
         }
 
         return new GrpcRouterConfiguration(services, server);
     }
 
-    private void createService(GrpcClientPin currentPin, String oppositePinName, String namespace,
-                               PinCouplingGRPC link, Map<String, GrpcServiceConfiguration> services) {
-        PinGRPC fromBoxSpec = link.getFrom();
-        String fromBoxName = fromBoxSpec.getBoxName();
-
-        PinGRPC toBoxSpec = link.getTo();
-        String toBoxName = toBoxSpec.getBoxName();
+    private void createService(GrpcClientPin currentPin,
+                               String currentBoxName,
+                               String linkedBoxName,
+                               String namespace,
+                               Map<String, GrpcServiceConfiguration> services) {
 
         Th2CustomResource fromBoxResource = (Th2CustomResource) OperatorState.INSTANCE
-                .getResourceFromCache(fromBoxName, namespace);
+                .getResourceFromCache(currentBoxName, namespace);
         Th2CustomResource toBoxResource = (Th2CustomResource) OperatorState.INSTANCE
-                .getResourceFromCache(toBoxName, namespace);
+                .getResourceFromCache(linkedBoxName, namespace);
 
-        checkForExternal(fromBoxResource, toBoxResource, toBoxSpec);
+        TargetBoxSpec targetBoxSpec = checkForExternal(fromBoxResource, toBoxResource);
 
-        resourceToServiceConfig(currentPin, toBoxSpec, services);
+        resourceToServiceConfig(currentPin, targetBoxSpec, services);
 
     }
 
-    private void resourceToServiceConfig(GrpcClientPin currentPin, PinGRPC targetBoxSpec,
+    private void resourceToServiceConfig(GrpcClientPin currentPin, TargetBoxSpec targetBoxSpec,
                                          Map<String, GrpcServiceConfiguration> services) {
         var targetBoxName = getTargetBoxName(targetBoxSpec);
         var serviceClass = currentPin.getServiceClass();
         var serviceName = currentPin.getName();
-        var targetPort = getTargetBoxPort(targetBoxSpec);
+        var targetPort = targetBoxSpec.getPort();
         var config = services.get(serviceName);
 
         Map<String, GrpcEndpointConfiguration> endpoints = new HashMap<>(Map.of(
@@ -135,23 +126,17 @@ public class GrpcRouterConfigFactory {
                 DEFAULT_SERVER_WORKERS_COUNT, DEFAULT_PORT, null, null);
     }
 
-    private String getTargetBoxName(PinGRPC targetBox) {
-        if (targetBox.isHostNetwork()) {
+    private String getTargetBoxName(TargetBoxSpec targetBox) {
+        if (targetBox.getHostNetwork()) {
             return OperatorConfig.INSTANCE.getK8sUrl();
-        } else if (targetBox.isExternalBox()) {
+        } else if (targetBox.getExternalBox()) {
             return targetBox.getExternalHost();
         }
-        return targetBox.getBoxName();
+        return targetBox.getName();
     }
 
-    private int getTargetBoxPort(PinGRPC targetBox) {
-        if (targetBox.isHostNetwork() || targetBox.isExternalBox()) {
-            return targetBox.getPort();
-        }
-        return DEFAULT_PORT;
-    }
-
-    private void checkForExternal(Th2CustomResource fromBox, Th2CustomResource toBox, PinGRPC targetBox) {
+    private TargetBoxSpec checkForExternal(Th2CustomResource fromBox, Th2CustomResource toBox) {
+        TargetBoxSpec targetBoxSpec = new TargetBoxSpec(toBox.getMetadata().getName());
         Map<String, Object> fromBoxSettings = fromBox.getSpec().getExtendedSettings();
         Map<String, Object> toBoxSettings = toBox.getSpec().getExtendedSettings();
         logger.debug("checking externalBox or hostNetwork flags for a link [from \"{}\" to \"{}\"]",
@@ -163,9 +148,9 @@ public class GrpcRouterConfigFactory {
             if (grpcExternalEndpointMapping != null) {
                 Integer targetPort = grpcExternalEndpointMapping.getTargetPort();
                 if (targetPort != null) {
-                    targetBox.setPort(targetPort);
-                    targetBox.setExternalHost(getExternalHost(toBoxSettings));
-                    targetBox.setExternalBox(true);
+                    targetBoxSpec.setPort(targetPort);
+                    targetBoxSpec.setExternalHost(getExternalHost(toBoxSettings));
+                    targetBoxSpec.setExternalBox(true);
                 } else {
                     logger.warn("targetPort for resource \"{}\" was null", annotationFor(toBox));
                     externalBoxEndpointNotFound(toBox);
@@ -179,17 +164,18 @@ public class GrpcRouterConfigFactory {
                     annotationFor(fromBox), annotationFor(toBox));
             GrpcEndpointMapping grpcMapping = getGrpcMapping(toBoxSettings);
             if (grpcMapping != null) {
-                targetBox.setPort(grpcMapping.getExposedPort());
-                targetBox.setHostNetwork(true);
+                targetBoxSpec.setPort(grpcMapping.getExposedPort());
+                targetBoxSpec.setHostNetwork(true);
             } else {
                 logger.warn("grpcMapping for resource \"{}\" was null", annotationFor(toBox));
                 hostNetworkEndpointNotFound(toBox);
             }
         } else {
-            targetBox.setHostNetwork(false);
-            targetBox.setExternalBox(false);
+            targetBoxSpec.setHostNetwork(false);
+            targetBoxSpec.setExternalBox(false);
             logger.debug("link [from \"{}\" to \"{}\"] does NOT need external gRPC mapping",
                     annotationFor(fromBox), annotationFor(toBox));
         }
+        return targetBoxSpec;
     }
 }

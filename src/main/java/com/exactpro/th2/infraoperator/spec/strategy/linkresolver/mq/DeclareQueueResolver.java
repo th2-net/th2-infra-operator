@@ -18,12 +18,9 @@ package com.exactpro.th2.infraoperator.spec.strategy.linkresolver.mq;
 
 import com.exactpro.th2.infraoperator.OperatorState;
 import com.exactpro.th2.infraoperator.configuration.OperatorConfig;
-import com.exactpro.th2.infraoperator.configuration.RabbitMQManagementConfig;
 import com.exactpro.th2.infraoperator.spec.Th2CustomResource;
 import com.exactpro.th2.infraoperator.spec.helmrelease.HelmRelease;
-import com.exactpro.th2.infraoperator.spec.link.relation.pins.PinMQ;
-import com.exactpro.th2.infraoperator.spec.shared.PinAttribute;
-import com.exactpro.th2.infraoperator.spec.shared.pin.MqPin;
+import com.exactpro.th2.infraoperator.spec.shared.pin.MqSubscriberPin;
 import com.exactpro.th2.infraoperator.spec.strategy.linkresolver.queue.QueueName;
 import com.exactpro.th2.infraoperator.spec.strategy.redeploy.NonTerminalException;
 import com.exactpro.th2.infraoperator.util.CustomResourceUtils;
@@ -39,6 +36,8 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 
+import static com.exactpro.th2.infraoperator.operator.StoreHelmTh2Op.EVENT_STORAGE_BOX_ALIAS;
+import static com.exactpro.th2.infraoperator.operator.StoreHelmTh2Op.MESSAGE_STORAGE_BOX_ALIAS;
 import static com.exactpro.th2.infraoperator.spec.strategy.linkresolver.mq.RabbitMQContext.getChannel;
 import static com.exactpro.th2.infraoperator.util.ExtractUtils.extractName;
 
@@ -46,14 +45,12 @@ public class DeclareQueueResolver {
 
     private static final Logger logger = LoggerFactory.getLogger(DeclareQueueResolver.class);
 
-    private final RabbitMQManagementConfig rabbitMQManagementConfig;
-
-    public DeclareQueueResolver() {
-        this.rabbitMQManagementConfig = OperatorConfig.INSTANCE.getRabbitMQManagementConfig();
-    }
-
-    public void resolveAdd(Th2CustomResource resource) {
-
+    public static void resolveAdd(Th2CustomResource resource) {
+        String resName = resource.getMetadata().getName();
+        if (resName.equals(EVENT_STORAGE_BOX_ALIAS) ||
+                resName.equals(MESSAGE_STORAGE_BOX_ALIAS)) {
+            return;
+        }
         String namespace = ExtractUtils.extractNamespace(resource);
         try {
             declareQueueBunch(namespace, resource);
@@ -64,8 +61,12 @@ public class DeclareQueueResolver {
         }
     }
 
-    public void resolveDelete(Th2CustomResource resource) {
-
+    public static void resolveDelete(Th2CustomResource resource) {
+        String resName = resource.getMetadata().getName();
+        if (resName.equals(EVENT_STORAGE_BOX_ALIAS) ||
+                resName.equals(MESSAGE_STORAGE_BOX_ALIAS)) {
+            return;
+        }
         String namespace = ExtractUtils.extractNamespace(resource);
         try {
             Channel channel = getChannel();
@@ -79,43 +80,39 @@ public class DeclareQueueResolver {
         }
     }
 
-    private void declareQueueBunch(String namespace, Th2CustomResource resource) throws IOException {
+    private static void declareQueueBunch(String namespace, Th2CustomResource resource) throws IOException {
 
         Channel channel = getChannel();
 
-        channel.exchangeDeclare(namespace, "direct", rabbitMQManagementConfig.isPersistence());
+        boolean persistence = OperatorConfig.INSTANCE.getRabbitMQManagementConfig().isPersistence();
         //get queues that are associated with current box and are not linked through Th2Link resources
         Set<String> boxQueues = getBoxPreviousQueues(namespace, extractName(resource));
 
-        for (var pin : resource.getSpec().getPins().getMq()) {
-            var attrs = pin.getAttributes();
+        for (var pin : resource.getSpec().getPins().getMq().getSubscribers()) {
             String boxName = extractName(resource);
-            PinMQ mqPin = new PinMQ(boxName, pin.getName());
 
-            if (!attrs.contains(PinAttribute.publish.name())) {
-                String queueName = new QueueName(namespace, mqPin).toString();
-                //remove from set if pin for queue still exists.
-                boxQueues.remove(queueName);
-                var newQueueArguments = RabbitMQContext.generateQueueArguments(pin.getSettings());
-                var currentQueue = RabbitMQContext.getQueue(queueName);
-                if (currentQueue != null && !currentQueue.getArguments().equals(newQueueArguments)) {
-                    logger.warn("Arguments for queue '{}' were modified. Recreating with new arguments", queueName);
-                    channel.queueDelete(queueName);
-                }
-                var declareResult = channel.queueDeclare(queueName
-                        , rabbitMQManagementConfig.isPersistence()
-                        , false
-                        , false
-                        , newQueueArguments);
-                logger.info("Queue '{}' of resource {} was successfully declared",
-                        declareResult.getQueue(), extractName(resource));
+            String queueName = new QueueName(namespace, boxName, pin.getName()).toString();
+            //remove from set if pin for queue still exists.
+            boxQueues.remove(queueName);
+            var newQueueArguments = RabbitMQContext.generateQueueArguments(pin.getSettings());
+            var currentQueue = RabbitMQContext.getQueue(queueName);
+            if (currentQueue != null && !currentQueue.getArguments().equals(newQueueArguments)) {
+                logger.warn("Arguments for queue '{}' were modified. Recreating with new arguments", queueName);
+                channel.queueDelete(queueName);
             }
+            var declareResult = channel.queueDeclare(queueName
+                    , persistence
+                    , false
+                    , false
+                    , newQueueArguments);
+            logger.info("Queue '{}' of resource {} was successfully declared",
+                    declareResult.getQueue(), extractName(resource));
         }
         //remove from rabbit queues that are left i.e. inactive
         removeExtinctQueues(channel, boxQueues, CustomResourceUtils.annotationFor(resource));
     }
 
-    private Set<String> getBoxPreviousQueues(String namespace, String boxName) {
+    private static Set<String> getBoxPreviousQueues(String namespace, String boxName) {
         HelmRelease hr = OperatorState.INSTANCE.getHelmReleaseFromCache(boxName, namespace);
         if (hr == null) {
             return getBoxQueuesFromRabbit(namespace, boxName);
@@ -123,7 +120,7 @@ public class DeclareQueueResolver {
         return HelmReleaseUtils.extractQueues(hr.getValuesSection());
     }
 
-    private Set<String> getBoxQueuesFromRabbit(String namespace, String boxName) {
+    private static Set<String> getBoxQueuesFromRabbit(String namespace, String boxName) {
 
         List<QueueInfo> queueInfoList = RabbitMQContext.getQueues();
 
@@ -137,18 +134,16 @@ public class DeclareQueueResolver {
         return queueNames;
     }
 
-    private Set<String> generateBoxQueues(String namespace, Th2CustomResource resource) {
+    private static Set<String> generateBoxQueues(String namespace, Th2CustomResource resource) {
         Set<String> queueNames = new HashSet<>();
         String boxName = ExtractUtils.extractName(resource);
-        for (MqPin mqPin : resource.getSpec().getPins().getMq()) {
-            if (!mqPin.getAttributes().contains(PinAttribute.publish.name())) {
-                queueNames.add(new QueueName(namespace, new PinMQ(boxName, mqPin.getName())).toString());
-            }
+        for (MqSubscriberPin mqPin : resource.getSpec().getPins().getMq().getSubscribers()) {
+            queueNames.add(new QueueName(namespace, boxName, mqPin.getName()).toString());
         }
         return queueNames;
     }
 
-    private void removeExtinctQueues(Channel channel, Set<String> extinctQueueNames, String resourceLabel) {
+    private static void removeExtinctQueues(Channel channel, Set<String> extinctQueueNames, String resourceLabel) {
         if (!extinctQueueNames.isEmpty()) {
             logger.info("Trying to delete queues associated with \"{}\"", resourceLabel);
             extinctQueueNames.forEach(queueName -> {

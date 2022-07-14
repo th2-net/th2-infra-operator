@@ -17,6 +17,7 @@
 package com.exactpro.th2.infraoperator.spec.estore;
 
 import com.exactpro.th2.infraoperator.spec.Th2CustomResource;
+import com.exactpro.th2.infraoperator.spec.Th2Spec;
 import com.fasterxml.jackson.annotation.JsonSetter;
 import io.fabric8.kubernetes.model.annotation.Group;
 import io.fabric8.kubernetes.model.annotation.Kind;
@@ -29,16 +30,16 @@ import java.util.Objects;
 @Kind("Th2Estore")
 public class Th2Estore extends Th2CustomResource {
 
-    private Th2EstoreSpec spec;
+    private Th2Spec spec;
 
     public Th2Estore() { }
 
-    public Th2EstoreSpec getSpec() {
+    public Th2Spec getSpec() {
         return this.spec;
     }
 
     @JsonSetter
-    public void setSpec(Th2EstoreSpec spec) {
+    public void setSpec(Th2Spec spec) {
         this.spec = spec;
     }
 

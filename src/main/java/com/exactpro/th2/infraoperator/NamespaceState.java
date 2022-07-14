@@ -17,10 +17,6 @@
 package com.exactpro.th2.infraoperator;
 
 import com.exactpro.th2.infraoperator.spec.helmrelease.HelmRelease;
-import com.exactpro.th2.infraoperator.spec.link.Th2Link;
-import com.exactpro.th2.infraoperator.spec.link.relation.dictionaries.DictionaryBinding;
-import com.exactpro.th2.infraoperator.spec.link.relation.dictionaries.MultiDictionaryBinding;
-import com.exactpro.th2.infraoperator.spec.link.relation.pins.PinCouplingGRPC;
 import io.fabric8.kubernetes.api.model.HasMetadata;
 
 import java.util.*;
@@ -28,8 +24,6 @@ import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
 
 public class NamespaceState implements OperatorState.NamespaceLock {
-    private List<Th2Link> linkResources = new ArrayList<>();
-
     private final Map<String, ConfigMapDataContainer> configMapDataContainerMap = new HashMap<>();
 
     private final Map<String, HasMetadata> resources = new HashMap<>();
@@ -50,34 +44,6 @@ public class NamespaceState implements OperatorState.NamespaceLock {
         lock.unlock();
     }
 
-    public List<Th2Link> getLinkResources() {
-        return this.linkResources;
-    }
-
-    public List<PinCouplingGRPC> getGrpcLinks() {
-        List<PinCouplingGRPC> grpcLinks = new ArrayList<>();
-        for (var linkRes : linkResources) {
-            grpcLinks.addAll(linkRes.getSpec().getBoxesRelation().getRouterGrpc());
-        }
-        return grpcLinks;
-    }
-
-    public List<DictionaryBinding> getDictionaryLinks() {
-        List<DictionaryBinding> dictionaryBindings = new ArrayList<>();
-        for (var linkRes : linkResources) {
-            dictionaryBindings.addAll(linkRes.getSpec().getDictionariesRelation());
-        }
-        return dictionaryBindings;
-    }
-
-    public List<MultiDictionaryBinding> getMultiDictionaryLinks() {
-        List<MultiDictionaryBinding> multiDictionaryBindings = new ArrayList<>();
-        for (var linkRes : linkResources) {
-            multiDictionaryBindings.addAll(linkRes.getSpec().getMultiDictionariesRelation());
-        }
-        return multiDictionaryBindings;
-    }
-
     public ConfigMapDataContainer getConfigMapDataContainer(String key) {
         return configMapDataContainerMap.computeIfAbsent(key, k -> new ConfigMapDataContainer());
     }
@@ -88,10 +54,6 @@ public class NamespaceState implements OperatorState.NamespaceLock {
 
     public void setBookName(String bookName) {
         this.bookName = bookName;
-    }
-
-    public void setLinkResources(List<Th2Link> linkResources) {
-        this.linkResources = linkResources;
     }
 
     public HasMetadata getResource(String resName) {

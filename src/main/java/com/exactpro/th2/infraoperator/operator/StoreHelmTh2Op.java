@@ -32,17 +32,9 @@ public abstract class StoreHelmTh2Op<CR extends Th2CustomResource> extends HelmR
 
     public static final String EVENT_STORAGE_PIN_ALIAS = "estore-pin";
 
-    public static final String EVENT_STORAGE_LINK_NAME_SUFFIX = "-to-estore_hidden-link";
-
-    public static final String EVENT_ST_LINK_RESOURCE_NAME = "estore-hidden-links";
-
     public static final String EVENT_STORAGE_BOX_ALIAS = "estore";
 
     public static final String MESSAGE_STORAGE_PIN_ALIAS = "mstore-pin";
-
-    public static final String MESSAGE_STORAGE_LINK_NAME_SUFFIX = "-to-mstore_hidden-link";
-
-    public static final String MSG_ST_LINK_RESOURCE_NAME = "mstore-hidden-links";
 
     public static final String MESSAGE_STORAGE_BOX_ALIAS = "mstore";
 
@@ -85,26 +77,6 @@ public abstract class StoreHelmTh2Op<CR extends Th2CustomResource> extends HelmR
     @Override
     protected void modifiedEvent(CR resource) throws IOException {
         nameCheck(resource);
-    }
-
-    @Override
-    protected void updateEventStorageLinksBeforeAdd(CR resource) {
-        // nothing
-    }
-
-    @Override
-    protected void updateMsgStorageLinksBeforeAdd(CR resource) {
-        // nothing
-    }
-
-    @Override
-    protected void updateEventStorageLinksAfterDelete(CR resource) {
-        // nothing
-    }
-
-    @Override
-    protected void updateMsgStorageLinksAfterDelete(CR resource) {
-        // nothing
     }
 
     protected abstract String getStorageName();

@@ -18,7 +18,6 @@ package com.exactpro.th2.infraoperator.operator.manager.impl;
 
 import com.exactpro.th2.infraoperator.metrics.OperatorMetrics;
 import com.exactpro.th2.infraoperator.spec.dictionary.Th2Dictionary;
-import com.exactpro.th2.infraoperator.spec.link.Th2Link;
 import io.fabric8.kubernetes.api.model.ConfigMap;
 import io.fabric8.kubernetes.api.model.HasMetadata;
 import io.fabric8.kubernetes.api.model.Namespace;
@@ -169,7 +168,6 @@ public class EventQueue {
             Watcher callback) {
 
         if (resource instanceof ConfigMap
-                || resource instanceof Th2Link
                 || resource instanceof Th2Dictionary
                 || resource instanceof Namespace) {
             return new PriorityEvent(eventId, annotation, action, namespace, resource, callback);

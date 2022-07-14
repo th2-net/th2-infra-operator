@@ -21,7 +21,6 @@ import com.exactpro.th2.infraoperator.model.kubernetes.client.ResourceClient;
 import com.exactpro.th2.infraoperator.operator.HelmReleaseTh2Op;
 import com.exactpro.th2.infraoperator.operator.context.HelmOperatorContext;
 import com.exactpro.th2.infraoperator.spec.Th2CustomResource;
-import com.exactpro.th2.infraoperator.spec.link.Th2Link;
 import com.exactpro.th2.infraoperator.util.CustomResourceUtils;
 import com.exactpro.th2.infraoperator.util.Strings;
 import com.fasterxml.uuid.Generators;
@@ -99,19 +98,6 @@ public class DefaultWatchManager {
 
     private void loadResources(EventHandlerContext context) {
         loadConfigMaps(context);
-        loadLinks(context);
-    }
-
-    private void loadLinks(EventHandlerContext context) {
-
-        var th2LinkEventHandler = (Th2LinkEventHandler) context.getHandler(Th2LinkEventHandler.class);
-        var linkClient = th2LinkEventHandler.getLinkClient();
-        List<Th2Link> th2Links = linkClient.getInstance().inAnyNamespace().list().getItems();
-        th2Links = filterByNamespace(th2Links);
-        for (var th2Link : th2Links) {
-            logger.info("Loading \"{}\"", annotationFor(th2Link));
-            th2LinkEventHandler.eventReceived(Watcher.Action.ADDED, th2Link);
-        }
     }
 
     private void loadConfigMaps(EventHandlerContext context) {
@@ -151,8 +137,6 @@ public class DefaultWatchManager {
         KubernetesClient client = operatorBuilder.getClient();
 
         context.addHandler(NamespaceEventHandler.newInstance(sharedInformerFactory, eventDispatcher.getEventQueue()));
-        context.addHandler(Th2LinkEventHandler.newInstance(sharedInformerFactory, client,
-                eventDispatcher.getEventQueue()));
         context.addHandler(Th2DictionaryEventHandler.newInstance(sharedInformerFactory, client,
                 eventDispatcher.getEventQueue()));
         context.addHandler(ConfigMapEventHandler.newInstance(sharedInformerFactory, client,
@@ -200,7 +184,7 @@ public class DefaultWatchManager {
     }
 
     void refreshBoxes(String namespace) {
-         refreshBoxes(namespace, null, true);
+        refreshBoxes(namespace, null, true);
     }
 
     void refreshBoxes(String namespace, Set<String> boxes) {

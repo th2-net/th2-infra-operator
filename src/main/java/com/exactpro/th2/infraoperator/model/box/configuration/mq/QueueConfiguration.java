@@ -16,7 +16,7 @@
 
 package com.exactpro.th2.infraoperator.model.box.configuration.mq;
 
-import com.exactpro.th2.infraoperator.model.box.schema.link.QueueDescription;
+import com.exactpro.th2.infraoperator.model.LinkDescription;
 import com.exactpro.th2.infraoperator.spec.strategy.linkresolver.queue.QueueName;
 import com.exactpro.th2.infraoperator.spec.strategy.linkresolver.queue.RoutingKeyName;
 import com.fasterxml.jackson.annotation.JsonProperty;
@@ -29,13 +29,13 @@ import java.util.Set;
 @JsonDeserialize(builder = QueueConfiguration.Builder.class)
 public final class QueueConfiguration {
 
-    private QueueDescription queue;
+    private LinkDescription queue;
 
     private Set<String> attributes;
 
     private List<Object> filters;
 
-    public QueueConfiguration(QueueDescription queue, Set<String> attributes, List<Object> filters) {
+    public QueueConfiguration(LinkDescription queue, Set<String> attributes, List<Object> filters) {
         this.queue = queue;
         this.attributes = attributes;
         this.filters = filters;
@@ -130,7 +130,7 @@ public final class QueueConfiguration {
 
         public QueueConfiguration build() {
             return new QueueConfiguration(
-                    new QueueDescription(
+                    new LinkDescription(
                             QueueName.fromString(queueName),
                             RoutingKeyName.fromString(routingkey),
                             exchange

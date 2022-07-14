@@ -17,13 +17,11 @@
 package com.exactpro.th2.infraoperator.spec;
 
 import com.exactpro.th2.infraoperator.configuration.ChartConfig;
-import com.exactpro.th2.infraoperator.operator.StoreHelmTh2Op;
 import com.exactpro.th2.infraoperator.spec.shared.*;
 import com.exactpro.th2.infraoperator.spec.shared.pin.*;
 import com.exactpro.th2.infraoperator.util.JsonUtils;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonInclude;
-import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import io.fabric8.kubernetes.api.model.KubernetesResource;
 
@@ -33,7 +31,6 @@ import java.util.*;
 @JsonInclude(JsonInclude.Include.NON_EMPTY)
 @JsonIgnoreProperties(ignoreUnknown = true)
 public class Th2Spec implements KubernetesResource {
-
     private static final String CHART_CFG_ALIAS = "chartCfg";
 
     protected String imageName;
@@ -42,14 +39,13 @@ public class Th2Spec implements KubernetesResource {
 
     protected String type;
 
-    protected boolean disabled = false;
+    protected boolean disabled;
 
     protected Map<String, Object> extendedSettings = new HashMap<>();
 
     protected Map<String, Object> customConfig = new HashMap<>();
 
-    @JsonProperty("prometheus")
-    protected PrometheusConfiguration<String> prometheusConfiguration;
+    protected PrometheusConfiguration<String> prometheus;
 
     protected Map<String, Object> mqRouter;
 
@@ -61,19 +57,9 @@ public class Th2Spec implements KubernetesResource {
 
     protected String loggingConfig;
 
-    protected PinSpec pins = initializeWithEstorePin();
+    protected PinSpec pins = new PinSpec();
 
     public Th2Spec() {
-    }
-
-    public void setPins(PinSpec pins) {
-        this.pins = pins;
-
-        if (Objects.isNull(getPins().getMqPin(StoreHelmTh2Op.EVENT_STORAGE_PIN_ALIAS))) {
-            MqPin pin = new MqPin(StoreHelmTh2Op.EVENT_STORAGE_PIN_ALIAS,
-                    Set.of(PinAttribute.publish.name(), PinAttribute.event.name()));
-            getPins().getMq().add(pin);
-        }
     }
 
     public Map<String, Object> getExtendedSettings() {
@@ -86,25 +72,12 @@ public class Th2Spec implements KubernetesResource {
         return JsonUtils.JSON_READER.convertValue(extendedSettings.get(CHART_CFG_ALIAS), ChartConfig.class);
     }
 
-    private PinSpec initializeWithEstorePin() {
-        PinSpec pins = new PinSpec();
-        MqPin pin = new MqPin(StoreHelmTh2Op.EVENT_STORAGE_PIN_ALIAS,
-                Set.of(PinAttribute.publish.name(), PinAttribute.event.name())
-        );
-        pins.getMq().add(pin);
-        return pins;
-    }
-
     public String getImageName() {
         return this.imageName;
     }
 
     public String getImageVersion() {
         return this.imageVersion;
-    }
-
-    public String getType() {
-        return this.type;
     }
 
     public boolean getDisabled() {
@@ -115,8 +88,8 @@ public class Th2Spec implements KubernetesResource {
         return this.customConfig;
     }
 
-    public PrometheusConfiguration<String> getPrometheusConfiguration() {
-        return this.prometheusConfiguration;
+    public PrometheusConfiguration<String> getPrometheus() {
+        return this.prometheus;
     }
 
     public Map<String, Object> getMqRouter() {
@@ -143,20 +116,6 @@ public class Th2Spec implements KubernetesResource {
         return this.pins;
     }
 
-    public void setType(String type) {
-        this.type = type;
-    }
-
-    @Override
-    public boolean equals(Object o) {
-        throw new AssertionError("method not defined");
-    }
-
-    @Override
-    public int hashCode() {
-        throw new AssertionError("method not defined");
-    }
-
     @Override
     public String toString() {
         return "Th2Spec{" +
@@ -166,7 +125,7 @@ public class Th2Spec implements KubernetesResource {
                 ", disabled='" + disabled + '\'' +
                 ", extendedSettings=" + extendedSettings +
                 ", customConfig=" + customConfig +
-                ", prometheusConfiguration=" + prometheusConfiguration +
+                ", prometheusConfiguration=" + prometheus +
                 ", mqRouter=" + mqRouter +
                 ", grpcRouter=" + grpcRouter +
                 ", cradleManager=" + cradleManager +

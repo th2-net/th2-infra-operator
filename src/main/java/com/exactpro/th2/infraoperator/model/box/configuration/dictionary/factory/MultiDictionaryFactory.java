@@ -16,14 +16,9 @@
 
 package com.exactpro.th2.infraoperator.model.box.configuration.dictionary.factory;
 
-import com.exactpro.th2.infraoperator.OperatorState;
 import com.exactpro.th2.infraoperator.model.box.configuration.dictionary.DictionaryEntity;
 import com.exactpro.th2.infraoperator.model.box.configuration.dictionary.MultiDictionaryEntity;
 import com.exactpro.th2.infraoperator.spec.Th2CustomResource;
-import com.exactpro.th2.infraoperator.spec.link.relation.dictionaries.MultiDictionaryBinding;
-import com.exactpro.th2.infraoperator.spec.link.relation.dictionaries.MultiDictionaryDescription;
-import com.exactpro.th2.infraoperator.util.ExtractUtils;
-import io.fabric8.kubernetes.api.model.HasMetadata;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -38,32 +33,30 @@ public class MultiDictionaryFactory {
      * Creates a list of {@link DictionaryEntity} based on the th2 resource and a list of active links.
      *
      * @param resource         th2 resource
-     * @param activeMultiLinks active links
      * @return list of {@link DictionaryEntity} based on provided active {@code activeLinks} and {@code resource}
      */
-    public List<MultiDictionaryEntity> create(Th2CustomResource resource,
-                                              List<MultiDictionaryBinding> activeMultiLinks) {
+    public List<MultiDictionaryEntity> create(Th2CustomResource resource) {
 
         List<MultiDictionaryEntity> dictionaries = new ArrayList<>();
 
-        activeMultiLinks.forEach(link -> {
-            try {
-                if (link.getBox().equals(resource.getMetadata().getName())) {
-                    List<MultiDictionaryDescription> dictList = link.getDictionaries();
-                    for (var dict : dictList) {
-                        String alias = dict.getAlias();
-                        String name = dict.getName();
-                        HasMetadata res = OperatorState.INSTANCE
-                                .getResourceFromCache(name, resource.getMetadata().getNamespace());
-
-                        String checksum = ExtractUtils.fullSourceHash(res);
-                        dictionaries.add(new MultiDictionaryEntity(name, checksum, alias));
-                    }
-                }
-            } catch (Exception e) {
-                throw new RuntimeException(e);
-            }
-        });
+//        activeMultiLinks.forEach(link -> {
+//            try {
+//                if (link.getBox().equals(resource.getMetadata().getName())) {
+//                    List<MultiDictionaryDescription> dictList = link.getDictionaries();
+//                    for (var dict : dictList) {
+//                        String alias = dict.getAlias();
+//                        String name = dict.getName();
+//                        HasMetadata res = OperatorState.INSTANCE
+//                                .getResourceFromCache(name, resource.getMetadata().getNamespace());
+//
+//                        String checksum = ExtractUtils.fullSourceHash(res);
+//                        dictionaries.add(new MultiDictionaryEntity(name, checksum, alias));
+//                    }
+//                }
+//            } catch (Exception e) {
+//                throw new RuntimeException(e);
+//            }
+//        });
 
         return dictionaries;
     }

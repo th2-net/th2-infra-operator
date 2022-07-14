@@ -16,13 +16,8 @@
 
 package com.exactpro.th2.infraoperator.model.box.configuration.dictionary.factory;
 
-import com.exactpro.th2.infraoperator.OperatorState;
 import com.exactpro.th2.infraoperator.model.box.configuration.dictionary.DictionaryEntity;
 import com.exactpro.th2.infraoperator.spec.Th2CustomResource;
-import com.exactpro.th2.infraoperator.spec.link.relation.dictionaries.DictionaryBinding;
-import com.exactpro.th2.infraoperator.spec.link.relation.dictionaries.DictionaryDescription;
-import com.exactpro.th2.infraoperator.util.ExtractUtils;
-import io.fabric8.kubernetes.api.model.HasMetadata;
 
 import java.util.*;
 
@@ -36,34 +31,33 @@ public class DictionaryFactory {
      * Creates a list of {@link DictionaryEntity} based on the th2 resource and a list of active links.
      *
      * @param resource    th2 resource
-     * @param activeLinks active links
      * @return list of {@link DictionaryEntity} based on provided active {@code activeLinks} and {@code resource}
      */
-    public Collection<DictionaryEntity> create(Th2CustomResource resource, List<DictionaryBinding> activeLinks) {
+    public Collection<DictionaryEntity> create(Th2CustomResource resource) {
 
         Map<String, DictionaryEntity> dictionaries = new HashMap<>();
 
-        activeLinks.forEach(link -> {
-            try {
-                if (link.getBox().equals(resource.getMetadata().getName())) {
-                    DictionaryDescription dict = link.getDictionary();
-                    String name = dict.getName();
-                    String type = dict.getType();
-                    HasMetadata res = OperatorState.INSTANCE
-                            .getResourceFromCache(name, resource.getMetadata().getNamespace());
-
-                    String checksum = ExtractUtils.fullSourceHash(res);
-                    if (dictionaries.containsKey(type)) {
-                        throw new Exception(
-                                String.format("multiple dictionaries linked with same type: %s", type)
-                        );
-                    }
-                    dictionaries.put(type, new DictionaryEntity(name, type, checksum));
-                }
-            } catch (Exception e) {
-                throw new RuntimeException(e);
-            }
-        });
+//        activeLinks.forEach(link -> {
+//            try {
+//                if (link.getBox().equals(resource.getMetadata().getName())) {
+//                    DictionaryDescription dict = link.getDictionary();
+//                    String name = dict.getName();
+//                    String type = dict.getType();
+//                    HasMetadata res = OperatorState.INSTANCE
+//                            .getResourceFromCache(name, resource.getMetadata().getNamespace());
+//
+//                    String checksum = ExtractUtils.fullSourceHash(res);
+//                    if (dictionaries.containsKey(type)) {
+//                        throw new Exception(
+//                                String.format("multiple dictionaries linked with same type: %s", type)
+//                        );
+//                    }
+//                    dictionaries.put(type, new DictionaryEntity(name, type, checksum));
+//                }
+//            } catch (Exception e) {
+//                throw new RuntimeException(e);
+//            }
+//        });
 
         return dictionaries.values();
     }
