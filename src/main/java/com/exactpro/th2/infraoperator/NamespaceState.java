@@ -30,6 +30,8 @@ public class NamespaceState implements OperatorState.NamespaceLock {
 
     private final Map<String, HelmRelease> helmReleaseMap = new HashMap<>();
 
+    private final Map<String, Set<String>> dictionariesMap = new HashMap<>();
+
     private String bookName;
 
     private final Lock lock = new ReentrantLock(true);
@@ -84,6 +86,14 @@ public class NamespaceState implements OperatorState.NamespaceLock {
 
     public Collection<HelmRelease> getAllHelmReleases() {
         return helmReleaseMap.values();
+    }
+
+    public void linkResourceToDictionary(String dictionary, String resourceName) {
+        dictionariesMap.computeIfAbsent(dictionary, key -> new HashSet<>()).add(resourceName);
+    }
+
+    public Set<String> getLinkedResourcesForDictionary(String dictionary) {
+        return dictionariesMap.get(dictionary);
     }
 
     @Override

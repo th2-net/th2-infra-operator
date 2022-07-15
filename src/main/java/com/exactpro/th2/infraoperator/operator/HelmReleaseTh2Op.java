@@ -18,14 +18,11 @@ package com.exactpro.th2.infraoperator.operator;
 
 import com.exactpro.th2.infraoperator.OperatorState;
 import com.exactpro.th2.infraoperator.configuration.OperatorConfig;
-import com.exactpro.th2.infraoperator.model.box.configuration.dictionary.DictionaryEntity;
-import com.exactpro.th2.infraoperator.model.box.configuration.dictionary.MultiDictionaryEntity;
-import com.exactpro.th2.infraoperator.model.box.configuration.dictionary.factory.DictionaryFactory;
-import com.exactpro.th2.infraoperator.model.box.configuration.dictionary.factory.MultiDictionaryFactory;
-import com.exactpro.th2.infraoperator.model.box.configuration.grpc.GrpcRouterConfiguration;
-import com.exactpro.th2.infraoperator.model.box.configuration.grpc.factory.GrpcRouterConfigFactory;
-import com.exactpro.th2.infraoperator.model.box.configuration.mq.MessageRouterConfiguration;
-import com.exactpro.th2.infraoperator.model.box.configuration.mq.factory.MessageRouterConfigFactory;
+import com.exactpro.th2.infraoperator.model.box.dictionary.DictionaryEntity;
+import com.exactpro.th2.infraoperator.model.box.grpc.GrpcRouterConfiguration;
+import com.exactpro.th2.infraoperator.model.box.grpc.factory.GrpcRouterConfigFactory;
+import com.exactpro.th2.infraoperator.model.box.mq.MessageRouterConfiguration;
+import com.exactpro.th2.infraoperator.model.box.mq.factory.MessageRouterConfigFactory;
 import com.exactpro.th2.infraoperator.operator.context.HelmOperatorContext;
 import com.exactpro.th2.infraoperator.spec.Th2CustomResource;
 import com.exactpro.th2.infraoperator.spec.Th2Spec;
@@ -90,9 +87,7 @@ public abstract class HelmReleaseTh2Op<CR extends Th2CustomResource> extends Abs
 
     private static final String PROMETHEUS_CONFIG_ALIAS = "prometheus";
 
-    public static final String DICTIONARIES_ALIAS = "oldDictionaries";
-
-    public static final String MULTI_DICTIONARIES_ALIAS = "dictionaries";
+    public static final String DICTIONARIES_ALIAS = "dictionaries";
 
     public static final String MQ_QUEUE_CONFIG_ALIAS = "mq";
 
@@ -136,10 +131,6 @@ public abstract class HelmReleaseTh2Op<CR extends Th2CustomResource> extends Abs
 
     protected final GrpcRouterConfigFactory grpcConfigFactory;
 
-    protected final DictionaryFactory dictionaryFactory;
-
-    protected final MultiDictionaryFactory multiDictionaryFactory;
-
     protected final MixedOperation<HelmRelease, KubernetesResourceList<HelmRelease>, Resource<HelmRelease>>
             helmReleaseClient;
 
@@ -149,8 +140,6 @@ public abstract class HelmReleaseTh2Op<CR extends Th2CustomResource> extends Abs
 
         this.mqConfigFactory = builder.getMqConfigFactory();
         this.grpcConfigFactory = builder.getGrpcConfigFactory();
-        this.dictionaryFactory = builder.getDictionaryFactory();
-        this.multiDictionaryFactory = builder.getMultiDictionaryFactory();
 
         helmReleaseClient = kubClient.resources(HelmRelease.class);
     }
@@ -161,32 +150,58 @@ public abstract class HelmReleaseTh2Op<CR extends Th2CustomResource> extends Abs
     protected void mapProperties(CR resource, HelmRelease helmRelease) {
         super.mapProperties(resource, helmRelease);
 
-        String resNamespace = extractNamespace(resource);
         Th2Spec resSpec = resource.getSpec();
-        OperatorState operatorState = OperatorState.INSTANCE;
+        helmRelease.putSpecProp(RELEASE_NAME_ALIAS, extractNamespace(helmRelease) + "-" + extractName(helmRelease));
 
+        mapRouterConfigs(resource, helmRelease);
+        mapBoxConfigurations(resource, helmRelease);
+        mapBookConfigurations(resource, helmRelease);
+        mapCustomSecrets(resource, helmRelease);
+        mapDictionaries(resource, helmRelease);
+        mapPrometheus(resource, helmRelease);
+        mapExtendedSettings(resource, helmRelease);
+        mapIngress(helmRelease);
+        mapChartConfig(resource, helmRelease);
+        mapAnnotations(resource, helmRelease);
+
+        helmRelease.mergeValue(PROPERTIES_MERGE_DEPTH, ROOT_PROPERTIES_ALIAS, Map.of(
+                DOCKER_IMAGE_ALIAS, resSpec.getImageName() + ":" + resSpec.getImageVersion(),
+                COMPONENT_NAME_ALIAS, resource.getMetadata().getName(),
+                SCHEMA_SECRETS_ALIAS, new HelmReleaseSecrets(OperatorConfig.INSTANCE.getSchemaSecrets()),
+                PULL_SECRETS_ALIAS, OperatorConfig.INSTANCE.getImagePullSecrets(),
+                CUSTOM_CONFIG_ALIAS, resource.getSpec().getCustomConfig()
+        ));
+    }
+
+    private void mapRouterConfigs(CR resource, HelmRelease helmRelease) {
         MessageRouterConfiguration mqConfig = mqConfigFactory.createConfig(resource);
         GrpcRouterConfiguration grpcConfig = grpcConfigFactory.createConfig(resource);
-        Collection<DictionaryEntity> dictionaries = dictionaryFactory.create(resource);
-        List<MultiDictionaryEntity> multiDict = multiDictionaryFactory.create(resource);
+        helmRelease.mergeValue(PROPERTIES_MERGE_DEPTH, ROOT_PROPERTIES_ALIAS, Map.of(
+                MQ_QUEUE_CONFIG_ALIAS, JsonUtils.writeValueAsDeepMap(mqConfig),
+                GRPC_P2P_CONFIG_ALIAS, JsonUtils.writeValueAsDeepMap(grpcConfig)
+        ));
+    }
+
+    private void mapBoxConfigurations(CR resource, HelmRelease helmRelease) {
+        OperatorState operatorState = OperatorState.INSTANCE;
+        String resNamespace = extractNamespace(resource);
+        var resSpec = resource.getSpec();
 
         String loggingConfigChecksum = operatorState.getConfigChecksum(resNamespace, LOGGING_ALIAS);
         String mqRouterChecksum = operatorState.getConfigChecksum(resNamespace, MQ_ROUTER_ALIAS);
         String grpcRouterChecksum = operatorState.getConfigChecksum(resNamespace, GRPC_ROUTER_ALIAS);
         String cradleManagerChecksum = operatorState.getConfigChecksum(resNamespace, CRADLE_MGR_ALIAS);
-        String defaultBookName = operatorState.getBookName(resNamespace);
 
-
-        helmRelease.putSpecProp(RELEASE_NAME_ALIAS, extractNamespace(helmRelease) + "-" + extractName(helmRelease));
-
-        String logFile = resSpec.getLoggingConfig();
         Map<String, Object> logFileSection = new HashMap<>();
-        logFileSection.put(CONFIG_ALIAS, logFile);
-        logFileSection.put(CHECKSUM_ALIAS, loggingConfigChecksum);
-
         Map<String, Object> mqRouterSection = new HashMap<>();
         Map<String, Object> grpcRouterSection = new HashMap<>();
         Map<String, Object> cradleManagerSection = new HashMap<>();
+
+
+        String logFile = resSpec.getLoggingConfig();
+        logFileSection.put(CONFIG_ALIAS, logFile);
+        logFileSection.put(CHECKSUM_ALIAS, loggingConfigChecksum);
+
 
         try {
             Map<String, Object> mqRouterConfig = resSpec.getMqRouter();
@@ -219,35 +234,54 @@ public abstract class HelmReleaseTh2Op<CR extends Th2CustomResource> extends Abs
             throw new RuntimeException(e);
         }
 
-        String crBookName = resSpec.getBookName();
-        Map<String, String> bookConfigSection = new HashMap<>();
-        bookConfigSection.put(BOOK_NAME_ALIAS, crBookName != null ? crBookName : defaultBookName);
-
-        HelmReleaseSecrets secrets = new HelmReleaseSecrets(OperatorConfig.INSTANCE.getSchemaSecrets());
-
         helmRelease.mergeValue(PROPERTIES_MERGE_DEPTH, ROOT_PROPERTIES_ALIAS, Map.of(
-                DOCKER_IMAGE_ALIAS, resSpec.getImageName() + ":" + resSpec.getImageVersion(),
-                COMPONENT_NAME_ALIAS, resource.getMetadata().getName(),
-                MQ_QUEUE_CONFIG_ALIAS, JsonUtils.writeValueAsDeepMap(mqConfig),
-                GRPC_P2P_CONFIG_ALIAS, JsonUtils.writeValueAsDeepMap(grpcConfig),
-                LOGGING_ALIAS, logFileSection,
                 MQ_ROUTER_ALIAS, mqRouterSection,
                 GRPC_ROUTER_ALIAS, grpcRouterSection,
                 CRADLE_MGR_ALIAS, cradleManagerSection,
-                BOOK_CONFIG_ALIAS, bookConfigSection,
-                SCHEMA_SECRETS_ALIAS, secrets
+                LOGGING_ALIAS, logFileSection
         ));
+    }
 
+    private void mapBookConfigurations(CR resource, HelmRelease helmRelease) {
+        OperatorState operatorState = OperatorState.INSTANCE;
+
+        String defaultBookName = operatorState.getBookName(resource.getMetadata().getNamespace());
+        String crBookName = resource.getSpec().getBookName();
+        Map<String, String> bookConfigSection = new HashMap<>();
+        bookConfigSection.put(BOOK_NAME_ALIAS, crBookName != null ? crBookName : defaultBookName);
+
+        helmRelease.mergeValue(PROPERTIES_MERGE_DEPTH, ROOT_PROPERTIES_ALIAS, Map.of(
+                BOOK_CONFIG_ALIAS, bookConfigSection
+        ));
+    }
+
+    private void mapCustomSecrets(CR resource, HelmRelease helmRelease) {
         Map<String, String> secretValuesConfig = new HashMap<>();
         Map<String, String> secretPathsConfig = new HashMap<>();
-        generateSecretsConfig(resSpec.getCustomConfig(), secretValuesConfig, secretPathsConfig);
+        generateSecretsConfig(resource.getSpec().getCustomConfig(), secretValuesConfig, secretPathsConfig);
+
         helmRelease.mergeValue(PROPERTIES_MERGE_DEPTH, ROOT_PROPERTIES_ALIAS, Map.of(
-                CUSTOM_CONFIG_ALIAS, resSpec.getCustomConfig(),
                 SECRET_VALUES_CONFIG_ALIAS, secretValuesConfig,
                 SECRET_PATHS_CONFIG_ALIAS, secretPathsConfig
         ));
+    }
 
-        PrometheusConfiguration<String> prometheusConfig = resSpec.getPrometheus();
+    private void mapDictionaries(CR resource, HelmRelease helmRelease) {
+        OperatorState operatorState = OperatorState.INSTANCE;
+        String resName = resource.getMetadata().getName();
+        String resNamespace = resource.getMetadata().getNamespace();
+        Set<DictionaryEntity> dictionariesConfig = new HashSet<>();
+        generateDictionariesConfig(resource.getSpec().getCustomConfig(), dictionariesConfig);
+        helmRelease.mergeValue(PROPERTIES_MERGE_DEPTH, ROOT_PROPERTIES_ALIAS, Map.of(
+                DICTIONARIES_ALIAS, dictionariesConfig
+        ));
+        dictionariesConfig.forEach(
+                dictionary -> operatorState.linkResourceToDictionary(resNamespace, dictionary.getName(), resName)
+        );
+    }
+
+    private void mapPrometheus(CR resource, HelmRelease helmRelease) {
+        PrometheusConfiguration<String> prometheusConfig = resource.getSpec().getPrometheus();
         if (prometheusConfig == null) {
             prometheusConfig = PrometheusConfiguration.createDefault(DEFAULT_VALUE_ENABLED);
         }
@@ -260,47 +294,41 @@ public abstract class HelmReleaseTh2Op<CR extends Th2CustomResource> extends Abs
 
         helmRelease.mergeValue(PROPERTIES_MERGE_DEPTH, ROOT_PROPERTIES_ALIAS,
                 Map.of(PROMETHEUS_CONFIG_ALIAS, prometheusConfigForRelease));
+    }
 
-        if (!dictionaries.isEmpty()) {
-            helmRelease.mergeValue(PROPERTIES_MERGE_DEPTH, ROOT_PROPERTIES_ALIAS,
-                    Map.of(DICTIONARIES_ALIAS, dictionaries));
-        }
-
-        if (!multiDict.isEmpty()) {
-            helmRelease.mergeValue(PROPERTIES_MERGE_DEPTH, ROOT_PROPERTIES_ALIAS,
-                    Map.of(MULTI_DICTIONARIES_ALIAS, multiDict));
-        }
-
-        Map<String, Object> extendedSettings = resSpec.getExtendedSettings();
+    private void mapExtendedSettings(CR resource, HelmRelease helmRelease) {
+        Map<String, Object> extendedSettings = resource.getSpec().getExtendedSettings();
         if (extendedSettings != null) {
             helmRelease.mergeValue(PROPERTIES_MERGE_DEPTH, ROOT_PROPERTIES_ALIAS,
                     Map.of(EXTENDED_SETTINGS_ALIAS, extendedSettings));
         }
 
+    }
+
+    private void mapIngress(HelmRelease helmRelease) {
         Object ingress = OperatorConfig.INSTANCE.getIngress();
         if (ingress != null) {
             helmRelease.mergeValue(PROPERTIES_MERGE_DEPTH, ROOT_PROPERTIES_ALIAS,
                     Map.of(INGRESS_ALIAS, ingress));
         }
+    }
 
+    private void mapChartConfig(CR resource, HelmRelease helmRelease) {
         var defaultChartConfig = OperatorConfig.INSTANCE.getComponentChartConfig();
-        var chartConfig = resSpec.getChartConfig();
+        var chartConfig = resource.getSpec().getChartConfig();
         if (chartConfig != null) {
             defaultChartConfig = defaultChartConfig.overrideWith(chartConfig);
         }
-
         helmRelease.mergeSpecProp(CHART_PROPERTIES_ALIAS, defaultChartConfig.toMap());
+    }
 
-        var annotations = new HashMap<>(OperatorConfig.INSTANCE.getCommonAnnotations());
+    private void mapAnnotations(CR resource, HelmRelease helmRelease) {
+        var annotations = OperatorConfig.INSTANCE.getCommonAnnotations();
         annotations.putAll(resource.getMetadata().getAnnotations());
         helmRelease.mergeValue(Map.of(
                 ANNOTATIONS_ALIAS, annotations,
                 OPENSHIFT_ALIAS, OperatorConfig.INSTANCE.getOpenshift()
         ));
-
-        helmRelease.mergeValue(PROPERTIES_MERGE_DEPTH, ROOT_PROPERTIES_ALIAS,
-                Map.of(PULL_SECRETS_ALIAS, OperatorConfig.INSTANCE.getImagePullSecrets()));
-
     }
 
     @Override

@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package com.exactpro.th2.infraoperator.model.box.configuration.mq.factory
+package com.exactpro.th2.infraoperator.model.box.mq.factory
 
 data class GlobalNotification(
     val exchange: String

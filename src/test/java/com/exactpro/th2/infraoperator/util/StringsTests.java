@@ -49,10 +49,10 @@ class StringsTests {
         int id = 0;
         String camelCase = "camelCaseVeryVeryLongExample";
         String expected = String.format("%s_%d", "CAMEL_CASE_VERY_VERY_LONG_EXAMPLE", id);
-        assertEquals(expected, Strings.toUnderScoreUpperCase(camelCase, id));
+        assertEquals(expected, Strings.toUnderScoreUpperCaseWithId(camelCase, id));
         camelCase = "simplerCamel";
         id = Integer.MAX_VALUE;
         expected = String.format("%s_%d", "SIMPLER_CAMEL", id);
-        assertEquals(expected, Strings.toUnderScoreUpperCase(camelCase, id));
+        assertEquals(expected, Strings.toUnderScoreUpperCaseWithId(camelCase, id));
     }
 }

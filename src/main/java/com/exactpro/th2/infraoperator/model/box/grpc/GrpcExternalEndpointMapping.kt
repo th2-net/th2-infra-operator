@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package com.exactpro.th2.infraoperator.model.box.configuration.grpc
+package com.exactpro.th2.infraoperator.model.box.grpc
 
 data class GrpcExternalEndpointMapping(
     val name: String,

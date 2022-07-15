@@ -14,10 +14,9 @@
  * limitations under the License.
  */
 
-package com.exactpro.th2.infraoperator.model.box.configuration.grpc
+package com.exactpro.th2.infraoperator.model.box.dictionary
 
-data class GrpcEndpointMapping(
+data class DictionaryEntity(
     val name: String,
-    val containerPort: Int?,
-    val exposedPort: Int
+    var checksum: String?
 )
