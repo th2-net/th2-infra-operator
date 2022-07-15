@@ -28,42 +28,46 @@ public enum OperatorState {
     private final Map<String, NamespaceState> namespaceStates = new ConcurrentHashMap<>();
 
     public String getConfigChecksum(String namespace, String key) {
-        String checksum = namespaceStates.get(namespace).getConfigMapDataContainer(key).getChecksum();
+        String checksum = computeIfAbsent(namespace).getConfigMapDataContainer(key).getChecksum();
         return checksum != null ? checksum : "";
     }
 
     public String getBookName(String namespace) {
-        String bookName = namespaceStates.get(namespace).getBookName();
+        String bookName = computeIfAbsent(namespace).getBookName();
         return bookName != null ? bookName : "";
     }
 
     public void setBookName(String namespace, String bookName) {
-        namespaceStates.get(namespace).setBookName(bookName);
+        computeIfAbsent(namespace).setBookName(bookName);
     }
 
     public void putConfigChecksum(String namespace, String key, String checkSum) {
-        namespaceStates.get(namespace).getConfigMapDataContainer(key).setChecksum(checkSum);
+        computeIfAbsent(namespace).getConfigMapDataContainer(key).setChecksum(checkSum);
     }
 
     public String getConfigData(String namespace, String key) {
-        String checksum = namespaceStates.get(namespace).getConfigMapDataContainer(key).getData();
+        String checksum = computeIfAbsent(namespace).getConfigMapDataContainer(key).getData();
         return checksum != null ? checksum : "";
     }
 
     public void putConfigData(String namespace, String key, String data) {
-        namespaceStates.get(namespace).getConfigMapDataContainer(key).setData(data);
+        computeIfAbsent(namespace).getConfigMapDataContainer(key).setData(data);
+    }
+
+    public void linkResourceToDictionary(String namespace, String dictionary, String resourceName) {
+        computeIfAbsent(namespace).linkResourceToDictionary(dictionary, resourceName);
+    }
+
+    public Set<String> getLinkedResourcesForDictionary(String namespace, String dictionary) {
+        return computeIfAbsent(namespace).getLinkedResourcesForDictionary(dictionary);
     }
 
     public NamespaceLock getLock(String namespace) {
         return computeIfAbsent(namespace);
     }
 
-    private NamespaceState computeIfAbsent(String namespace) {
-        return namespaceStates.computeIfAbsent(namespace, s -> new NamespaceState());
-    }
-
     public HasMetadata getResourceFromCache(String name, String namespace) {
-        HasMetadata resource = namespaceStates.computeIfAbsent(namespace, s -> new NamespaceState()).getResource(name);
+        HasMetadata resource = computeIfAbsent(namespace).getResource(name);
         if (resource == null) {
             throw new RuntimeException(String.format("Resource \"%s:%s\" not found in cache", namespace, name));
         }
@@ -71,27 +75,31 @@ public enum OperatorState {
     }
 
     public void putResourceInCache(HasMetadata resource, String namespace) {
-        namespaceStates.computeIfAbsent(namespace, s -> new NamespaceState()).putResource(resource);
+        computeIfAbsent(namespace).putResource(resource);
     }
 
     public void removeResourceFromCache(String name, String namespace) {
-        namespaceStates.computeIfAbsent(namespace, s -> new NamespaceState()).removeResource(name);
+        computeIfAbsent(namespace).removeResource(name);
     }
 
     public HelmRelease getHelmReleaseFromCache(String name, String namespace) {
-        return namespaceStates.computeIfAbsent(namespace, s -> new NamespaceState()).getHelmRelease(name);
+        return computeIfAbsent(namespace).getHelmRelease(name);
     }
 
     public void putHelmReleaseInCache(HelmRelease resource, String namespace) {
-        namespaceStates.computeIfAbsent(namespace, s -> new NamespaceState()).putHelmRelease(resource);
+        computeIfAbsent(namespace).putHelmRelease(resource);
     }
 
     public void removeHelmReleaseFromCache(String name, String namespace) {
-        namespaceStates.computeIfAbsent(namespace, s -> new NamespaceState()).removeHelmRelease(name);
+        computeIfAbsent(namespace).removeHelmRelease(name);
     }
 
     public Collection<HelmRelease> getAllHelmReleases(String namespace) {
-        return namespaceStates.computeIfAbsent(namespace, s -> new NamespaceState()).getAllHelmReleases();
+        return computeIfAbsent(namespace).getAllHelmReleases();
+    }
+
+    private NamespaceState computeIfAbsent(String namespace) {
+        return namespaceStates.computeIfAbsent(namespace, s -> new NamespaceState());
     }
 
     public interface NamespaceLock {

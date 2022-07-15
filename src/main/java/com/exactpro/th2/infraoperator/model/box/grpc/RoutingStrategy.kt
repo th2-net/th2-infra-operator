@@ -14,10 +14,9 @@
  * limitations under the License.
  */
 
-package com.exactpro.th2.infraoperator.model.box.configuration.grpc
+package com.exactpro.th2.infraoperator.model.box.grpc
 
-data class GrpcEndpointConfiguration(
-    val host: String,
-    val port: Int,
-    val attributes: Set<String>
+data class RoutingStrategy(
+    val name: String,
+    val endpoints: MutableSet<String>
 )

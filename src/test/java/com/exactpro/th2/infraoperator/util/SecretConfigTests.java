@@ -40,22 +40,22 @@ class SecretConfigTests {
         generateSecretsConfig(customConfig, secretValuesConfig, secretPathsConfig);
 
         // check custom config
-        assertEquals(customConfig.get("pass1"), "${MY_FIX_PASSWORD_1}");
-        assertEquals(customConfig.get("pass2"), "${MY_OTHER_PASSWORD_2}");
-        assertEquals(customConfig.get("user1"), "${MY_FIX_USER_0}");
-        assertEquals(customConfig.get("file1"), "${MY_SECRET_FILE_1}");
-        assertEquals(customConfig.get("file2"), "${MY_SEC_RET_FILE_0}");
+        assertEquals("${MY_FIX_PASSWORD_1}", customConfig.get("pass1"));
+        assertEquals("${MY_OTHER_PASSWORD_2}", customConfig.get("pass2"));
+        assertEquals("${MY_FIX_USER_0}", customConfig.get("user1"));
+        assertEquals("${MY_SECRET_FILE_1}", customConfig.get("file1"));
+        assertEquals("${MY_SEC_RET_FILE_0}", customConfig.get("file2"));
 
         //check secret values config
-        assertEquals(secretValuesConfig.size(), 3);
-        assertEquals(secretValuesConfig.get("MY_FIX_PASSWORD_1"), "myFixPassword");
-        assertEquals(secretValuesConfig.get("MY_OTHER_PASSWORD_2"), "myOtherPassword");
-        assertEquals(secretValuesConfig.get("MY_FIX_USER_0"), "myFixUser");
+        assertEquals(3, secretValuesConfig.size());
+        assertEquals("myFixPassword", secretValuesConfig.get("MY_FIX_PASSWORD_1"));
+        assertEquals("myOtherPassword", secretValuesConfig.get("MY_OTHER_PASSWORD_2"));
+        assertEquals("myFixUser", secretValuesConfig.get("MY_FIX_USER_0"));
 
         //check secret paths config
-        assertEquals(secretPathsConfig.size(), 2);
-        assertEquals(secretPathsConfig.get("MY_SECRET_FILE_1"), "mySecretFile");
-        assertEquals(secretPathsConfig.get("MY_SEC_RET_FILE_0"), "mySecRetFile");
+        assertEquals(2, secretPathsConfig.size());
+        assertEquals("mySecretFile", secretPathsConfig.get("MY_SECRET_FILE_1"));
+        assertEquals("mySecRetFile", secretPathsConfig.get("MY_SEC_RET_FILE_0"));
     }
 
     @Test
@@ -79,16 +79,16 @@ class SecretConfigTests {
         generateSecretsConfig(customConfig, secretValuesConfig, secretPathsConfig);
 
         // check custom config
-        assertEquals(customConfig.get("pass1"), "${MY_FIX_PASSWORD_1}someText");
-        assertEquals(customConfig.get("user1"), "${MY_FIX_USER_0}someOtherText");
+        assertEquals("${MY_FIX_PASSWORD_1}someText", customConfig.get("pass1"));
+        assertEquals("${MY_FIX_USER_0}someOtherText", customConfig.get("user1"));
 
         //check secret values config
-        assertEquals(secretValuesConfig.size(), 2);
-        assertEquals(secretValuesConfig.get("MY_FIX_PASSWORD_1"), "myFixPassword");
-        assertEquals(secretValuesConfig.get("MY_FIX_USER_0"), "myFixUser");
+        assertEquals(2, secretValuesConfig.size());
+        assertEquals("myFixPassword", secretValuesConfig.get("MY_FIX_PASSWORD_1"));
+        assertEquals("myFixUser", secretValuesConfig.get("MY_FIX_USER_0"));
 
         //check secret paths config
-        assertEquals(secretPathsConfig.size(), 0);
+        assertEquals(0, secretPathsConfig.size());
     }
 
     @Test
@@ -114,28 +114,28 @@ class SecretConfigTests {
 
 
         //check custom config
-        assertEquals(customConfig.size(), 2);
-        assertEquals(customConfig.get("file1"), "${MYSECRETFILE_0}");
+        assertEquals(2, customConfig.size());
+        assertEquals("${MYSECRETFILE_0}", customConfig.get("file1"));
 
 
         //check level1
-        assertEquals(level1.get("pass1"), "${MY_FIX_PASSWORD_1}");
-        assertEquals(level1.get("user1"), "${MY_FIX_USER_0}");
+        assertEquals("${MY_FIX_PASSWORD_1}", level1.get("pass1"));
+        assertEquals("${MY_FIX_USER_0}", level1.get("user1"));
 
         ///check level2
-        assertEquals(level2.get("pass2"), "${MY_OTHER_PASSWORD_0}");
-        assertEquals(level2.get("file"), "${MY_SECRET_FILE_0}");
+        assertEquals("${MY_OTHER_PASSWORD_2}", level2.get("pass2"));
+        assertEquals("${MY_SECRET_FILE_1}", level2.get("file"));
 
         //check secret values config
-        assertEquals(secretValuesConfig.size(), 3);
-        assertEquals(secretValuesConfig.get("MY_FIX_PASSWORD_1"), "myFixPassword");
-        assertEquals(secretValuesConfig.get("MY_FIX_USER_0"), "myFixUser");
-        assertEquals(secretValuesConfig.get("MY_OTHER_PASSWORD_0"), "myOtherPassword");
+        assertEquals(3, secretValuesConfig.size());
+        assertEquals("myFixPassword", secretValuesConfig.get("MY_FIX_PASSWORD_1"));
+        assertEquals("myFixUser", secretValuesConfig.get("MY_FIX_USER_0"));
+        assertEquals("myOtherPassword", secretValuesConfig.get("MY_OTHER_PASSWORD_2"));
 
         //check secret paths config
-        assertEquals(secretPathsConfig.size(), 2);
-        assertEquals(secretPathsConfig.get("MYSECRETFILE_0"), "mysecretfile");
-        assertEquals(secretPathsConfig.get("MY_SECRET_FILE_0"), "mySecretFile");
+        assertEquals(2, secretPathsConfig.size());
+        assertEquals("mysecretfile", secretPathsConfig.get("MYSECRETFILE_0"));
+        assertEquals("mySecretFile", secretPathsConfig.get("MY_SECRET_FILE_1"));
 
     }
 }

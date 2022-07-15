@@ -16,10 +16,8 @@
 
 package com.exactpro.th2.infraoperator.operator.context;
 
-import com.exactpro.th2.infraoperator.model.box.configuration.dictionary.factory.DictionaryFactory;
-import com.exactpro.th2.infraoperator.model.box.configuration.dictionary.factory.MultiDictionaryFactory;
-import com.exactpro.th2.infraoperator.model.box.configuration.grpc.factory.GrpcRouterConfigFactory;
-import com.exactpro.th2.infraoperator.model.box.configuration.mq.factory.MessageRouterConfigFactory;
+import com.exactpro.th2.infraoperator.model.box.grpc.factory.GrpcRouterConfigFactory;
+import com.exactpro.th2.infraoperator.model.box.mq.factory.MessageRouterConfigFactory;
 import io.fabric8.kubernetes.client.KubernetesClient;
 
 public class HelmOperatorContext {
@@ -46,10 +44,6 @@ public class HelmOperatorContext {
 
         protected GrpcRouterConfigFactory grpcConfigFactory = new GrpcRouterConfigFactory();
 
-        protected DictionaryFactory dictionaryFactory = new DictionaryFactory();
-
-        protected MultiDictionaryFactory multiDictionaryFactory = new MultiDictionaryFactory();
-
         public Builder(KubernetesClient client) {
             this.client = client;
         }
@@ -67,14 +61,6 @@ public class HelmOperatorContext {
         public GrpcRouterConfigFactory getGrpcConfigFactory() {
             return this.grpcConfigFactory;
         }
-
-        public DictionaryFactory getDictionaryFactory() {
-            return this.dictionaryFactory;
-        }
-
-        public MultiDictionaryFactory getMultiDictionaryFactory() {
-            return this.multiDictionaryFactory;
-        }
     }
 
     public static class ContextBuilder extends Builder<HelmOperatorContext, ContextBuilder> {
@@ -87,7 +73,5 @@ public class HelmOperatorContext {
         public HelmOperatorContext build() {
             return new HelmOperatorContext(this);
         }
-
     }
-
 }

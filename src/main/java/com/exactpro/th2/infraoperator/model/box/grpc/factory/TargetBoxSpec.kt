@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2021 Exactpro (Exactpro Systems Limited)
+ * Copyright 2020-2022 Exactpro (Exactpro Systems Limited)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,10 +14,16 @@
  * limitations under the License.
  */
 
-package com.exactpro.th2.infraoperator.model.box.configuration.dictionary
+package com.exactpro.th2.infraoperator.model.box.grpc.factory
 
-data class MultiDictionaryEntity(
+import com.exactpro.th2.infraoperator.model.box.grpc.factory.GrpcRouterConfigFactory.DEFAULT_PORT
+
+data class TargetBoxSpec(
     val name: String,
-    var checksum: String,
-    val alias: String
-)
+    var hostNetwork: Boolean,
+    var externalBox: Boolean,
+    var externalHost: String,
+    var port: Int
+) {
+    constructor(name: String) : this(name, false, false, "", DEFAULT_PORT)
+}

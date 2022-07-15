@@ -14,12 +14,12 @@
  * limitations under the License.
  */
 
-package com.exactpro.th2.infraoperator.model.box.configuration.grpc
+package com.exactpro.th2.infraoperator.model.box.grpc
 
-import com.fasterxml.jackson.databind.annotation.JsonDeserialize
-
-@JsonDeserialize
-data class GrpcRouterConfiguration(
-    val services: Map<String, GrpcServiceConfiguration>,
-    val server: GrpcServerConfiguration
+// TODO check if it really needs host and attributes fields
+data class GrpcServerConfiguration(
+    val workers: Int,
+    val port: Int,
+    val host: String? = null,
+    val attributes: Set<String>? = null
 )

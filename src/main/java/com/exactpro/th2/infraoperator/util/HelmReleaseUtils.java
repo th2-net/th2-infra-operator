@@ -16,19 +16,17 @@
 
 package com.exactpro.th2.infraoperator.util;
 
-import com.exactpro.th2.infraoperator.model.box.configuration.dictionary.DictionaryEntity;
-import com.exactpro.th2.infraoperator.model.box.configuration.dictionary.MultiDictionaryEntity;
-import com.exactpro.th2.infraoperator.model.box.configuration.grpc.GrpcEndpointMapping;
-import com.exactpro.th2.infraoperator.model.box.configuration.grpc.GrpcExternalEndpointMapping;
-import com.exactpro.th2.infraoperator.model.box.configuration.mq.MessageRouterConfiguration;
-import com.exactpro.th2.infraoperator.model.box.configuration.mq.QueueConfiguration;
+import com.exactpro.th2.infraoperator.model.box.dictionary.DictionaryEntity;
+import com.exactpro.th2.infraoperator.model.box.grpc.GrpcEndpointMapping;
+import com.exactpro.th2.infraoperator.model.box.grpc.GrpcExternalEndpointMapping;
+import com.exactpro.th2.infraoperator.model.box.mq.MessageRouterConfiguration;
+import com.exactpro.th2.infraoperator.model.box.mq.QueueConfiguration;
 import com.exactpro.th2.infraoperator.spec.Th2CustomResource;
 import com.exactpro.th2.infraoperator.spec.helmrelease.HelmRelease;
 import com.exactpro.th2.infraoperator.spec.helmrelease.InstantiableMap;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.JsonNode;
 import org.apache.commons.text.StringSubstitutor;
-import org.apache.commons.text.lookup.StringLookup;
 import org.apache.commons.text.lookup.StringLookupFactory;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -61,6 +59,8 @@ public class HelmReleaseUtils {
     private static final String SECRET_VALUE_PREFIX = "secret_value";
 
     private static final String SECRET_PATH_PREFIX = "secret_path";
+
+    private static final String DICTIONARY_LINK_PREFIX = "dictionary_link";
 
     private static final String HOST_NETWORK = "hostNetwork";
 
@@ -184,16 +184,10 @@ public class HelmReleaseUtils {
         return (String) componentConfigs.get("name");
     }
 
-    public static Collection<DictionaryEntity> extractOldDictionariesConfig(HelmRelease helmRelease) {
+    public static Collection<DictionaryEntity> extractDictionariesConfig(HelmRelease helmRelease) {
         var values = (Map<String, Object>) helmRelease.getValuesSection();
         var componentConfigs = (Map<String, Object>) values.get(ROOT_PROPERTIES_ALIAS);
         return (Collection<DictionaryEntity>) componentConfigs.get(DICTIONARIES_ALIAS);
-    }
-
-    public static List<MultiDictionaryEntity> extractMultiDictionariesConfig(HelmRelease helmRelease) {
-        var values = (Map<String, Object>) helmRelease.getValuesSection();
-        var componentConfigs = (Map<String, Object>) values.get(ROOT_PROPERTIES_ALIAS);
-        return (List<MultiDictionaryEntity>) componentConfigs.get(MULTI_DICTIONARIES_ALIAS);
     }
 
     public static boolean needsToBeDeleted(HelmRelease newHelmRelease, HelmRelease oldHelmRelease) {
@@ -262,10 +256,25 @@ public class HelmReleaseUtils {
                                              Map<String, String> pathsCollector) {
         StringSubstitutor stringSubstitutor = new StringSubstitutor(
                 StringLookupFactory.INSTANCE.interpolatorStringLookup(
-                        Map.of(SECRET_VALUE_PREFIX, new CustomLookupValues(valuesCollector),
-                                SECRET_PATH_PREFIX, new CustomLookupPaths(pathsCollector)
+                        Map.of(SECRET_VALUE_PREFIX, new Strings.CustomLookupForSecrets(valuesCollector),
+                                SECRET_PATH_PREFIX, new Strings.CustomLookupForSecrets(pathsCollector)
                         ), null, false
                 ));
+        substituteAndCollect(customConfig, stringSubstitutor);
+    }
+
+    public static void generateDictionariesConfig(Map<String, Object> customConfig,
+                                                  Set<DictionaryEntity> dictionariesCollector) {
+        StringSubstitutor stringSubstitutor = new StringSubstitutor(
+                StringLookupFactory.INSTANCE.interpolatorStringLookup(
+                        Map.of(DICTIONARY_LINK_PREFIX, new Strings.CustomLookupForDictionaries(dictionariesCollector)
+                        ), null, false
+                ));
+        substituteAndCollect(customConfig, stringSubstitutor);
+    }
+
+    private static void substituteAndCollect(Map<String, Object> customConfig,
+                                             StringSubstitutor stringSubstitutor) {
         for (var entry : customConfig.entrySet()) {
             var value = entry.getValue();
             if (value instanceof String) {
@@ -273,7 +282,7 @@ public class HelmReleaseUtils {
                 String substituted = stringSubstitutor.replace(valueStr);
                 customConfig.put(entry.getKey(), substituted);
             } else if (value instanceof Map) {
-                generateSecretsConfig((Map<String, Object>) value, valuesCollector, pathsCollector);
+                substituteAndCollect((Map<String, Object>) value, stringSubstitutor);
             }
         }
     }
@@ -285,35 +294,5 @@ public class HelmReleaseUtils {
                 .stream()
                 .filter(queueConfiguration -> !(queueConfiguration.getQueueName().isEmpty()))
                 .map(QueueConfiguration::getQueueName).collect(Collectors.toSet());
-    }
-
-    static class CustomLookup implements StringLookup {
-        private int id = 0;
-
-        private Map<String, String> collector;
-
-        public CustomLookup(Map<String, String> collector) {
-            this.collector = collector;
-        }
-
-        @Override
-        public String lookup(String key) {
-            String envVarWithId = Strings.toUnderScoreUpperCase(key, id);
-            id++;
-            collector.put(envVarWithId, key);
-            return String.format("${%s}", envVarWithId);
-        }
-    }
-
-    static final class CustomLookupPaths extends CustomLookup {
-        public CustomLookupPaths(Map<String, String> collector) {
-            super(collector);
-        }
-    }
-
-    static final class CustomLookupValues extends CustomLookup {
-        public CustomLookupValues(Map<String, String> collector) {
-            super(collector);
-        }
     }
 }
