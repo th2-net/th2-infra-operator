@@ -16,7 +16,6 @@
 
 package com.exactpro.th2.infraoperator.operator.manager.impl;
 
-import com.exactpro.th2.infraoperator.OperatorState;
 import com.exactpro.th2.infraoperator.configuration.OperatorConfig;
 import com.exactpro.th2.infraoperator.operator.context.EventCounter;
 import com.exactpro.th2.infraoperator.util.CustomResourceUtils;
@@ -49,7 +48,6 @@ public class GenericResourceEventHandler<T extends HasMetadata> implements Resou
         }
 
         String namespace = obj.getMetadata().getNamespace();
-        OperatorState.INSTANCE.putResourceInCache(obj, namespace);
         String resourceLabel = CustomResourceUtils.annotationFor(obj);
         String eventId = EventCounter.newEvent();
         logger.debug("Received ADDED event ({}) for \"{}\" {}, refresh-token={}",
@@ -77,7 +75,6 @@ public class GenericResourceEventHandler<T extends HasMetadata> implements Resou
         }
 
         String namespace = newObj.getMetadata().getNamespace();
-        OperatorState.INSTANCE.putResourceInCache(newObj, namespace);
         String resourceLabel = CustomResourceUtils.annotationFor(oldObj);
         String eventId = EventCounter.newEvent();
         logger.debug("Received MODIFIED event ({}) for \"{}\" {}, refresh-token={}",
@@ -103,7 +100,6 @@ public class GenericResourceEventHandler<T extends HasMetadata> implements Resou
         }
 
         String namespace = obj.getMetadata().getNamespace();
-        OperatorState.INSTANCE.removeResourceFromCache(obj.getMetadata().getName(), namespace);
         String resourceLabel = CustomResourceUtils.annotationFor(obj);
         String eventId = EventCounter.newEvent();
         logger.debug("Received DELETED event ({}) for \"{}\" {}, refresh-token={}",

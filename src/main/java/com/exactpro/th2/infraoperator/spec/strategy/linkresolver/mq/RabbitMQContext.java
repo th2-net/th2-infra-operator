@@ -16,6 +16,7 @@
 
 package com.exactpro.th2.infraoperator.spec.strategy.linkresolver.mq;
 
+import com.exactpro.th2.infraoperator.OperatorState;
 import com.exactpro.th2.infraoperator.configuration.OperatorConfig;
 import com.exactpro.th2.infraoperator.configuration.RabbitMQConfig;
 import com.exactpro.th2.infraoperator.configuration.RabbitMQManagementConfig;
@@ -25,12 +26,15 @@ import com.exactpro.th2.infraoperator.spec.shared.PinSettings;
 import com.exactpro.th2.infraoperator.spec.strategy.linkresolver.queue.QueueName;
 import com.exactpro.th2.infraoperator.spec.strategy.redeploy.NonTerminalException;
 import com.exactpro.th2.infraoperator.spec.strategy.redeploy.RetryableTaskQueue;
+import com.exactpro.th2.infraoperator.spec.strategy.redeploy.tasks.RecreateQueuesAndBindings;
 import com.exactpro.th2.infraoperator.spec.strategy.redeploy.tasks.RetryRabbitSetup;
 import com.exactpro.th2.infraoperator.spec.strategy.redeploy.tasks.RetryTopicExchangeTask;
 import com.exactpro.th2.infraoperator.util.Strings;
 import com.rabbitmq.client.Channel;
 import com.rabbitmq.client.Connection;
 import com.rabbitmq.client.ConnectionFactory;
+import com.rabbitmq.client.ShutdownListener;
+import com.rabbitmq.client.ShutdownSignalException;
 import com.rabbitmq.http.client.Client;
 import com.rabbitmq.http.client.ClientParameters;
 import com.rabbitmq.http.client.domain.BindingInfo;
@@ -388,6 +392,7 @@ public final class RabbitMQContext {
             connectionFactory.setPassword(rabbitMQManagementConfig.getPassword());
             try {
                 this.connection = connectionFactory.newConnection();
+                this.connection.addShutdownListener(new RmqClientShutdownEventListener());
                 this.channel = connection.createChannel();
             } catch (Exception e) {
                 close();
@@ -415,6 +420,21 @@ public final class RabbitMQContext {
             channel = null;
             connection = null;
             channelContext = null;
+        }
+    }
+
+    private static class RmqClientShutdownEventListener implements ShutdownListener {
+
+        @Override
+        public void shutdownCompleted(ShutdownSignalException cause) {
+            logger.error("Detected Rabbit mq connection lose", cause);
+                    RecreateQueuesAndBindings recreateQueuesAndBindingsTask = new RecreateQueuesAndBindings(
+                    OperatorState.INSTANCE.getAllBoxResources(),
+                    RETRY_DELAY
+            );
+            retryableTaskQueue.add(recreateQueuesAndBindingsTask, true);
+            logger.info("Task \"{}\" added to scheduler, with delay \"{}\" seconds",
+                    recreateQueuesAndBindingsTask.getName(), RETRY_DELAY);
         }
     }
 }

@@ -157,7 +157,7 @@ public class DefaultWatchManager {
         for (var hwSup : helmWatchersCommands) {
             HelmReleaseTh2Op<Th2CustomResource> helmReleaseTh2Op = hwSup.get();
 
-            var handler = new GenericResourceEventHandler<>(
+            var handler = new BoxResourceEventHandler<>(
                     helmReleaseTh2Op,
                     eventDispatcher.getEventQueue());
             helmReleaseTh2Op.generateInformerFromFactory(getInformerFactory()).addEventHandler(handler);

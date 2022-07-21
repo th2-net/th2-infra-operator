@@ -16,8 +16,8 @@
 
 package com.exactpro.th2.infraoperator;
 
+import com.exactpro.th2.infraoperator.spec.Th2CustomResource;
 import com.exactpro.th2.infraoperator.spec.helmrelease.HelmRelease;
-import io.fabric8.kubernetes.api.model.HasMetadata;
 
 import java.util.*;
 import java.util.concurrent.locks.Lock;
@@ -26,7 +26,7 @@ import java.util.concurrent.locks.ReentrantLock;
 public class NamespaceState implements OperatorState.NamespaceLock {
     private final Map<String, ConfigMapDataContainer> configMapDataContainerMap = new HashMap<>();
 
-    private final Map<String, HasMetadata> resources = new HashMap<>();
+    private final Map<String, Th2CustomResource> resources = new HashMap<>();
 
     private final Map<String, HelmRelease> helmReleaseMap = new HashMap<>();
 
@@ -58,11 +58,11 @@ public class NamespaceState implements OperatorState.NamespaceLock {
         this.bookName = bookName;
     }
 
-    public HasMetadata getResource(String resName) {
+    public Th2CustomResource getResource(String resName) {
         return resources.get(resName);
     }
 
-    public void putResource(HasMetadata resource) {
+    public void putResource(Th2CustomResource resource) {
         String resName = resource.getMetadata().getName();
         resources.put(resName, resource);
     }
@@ -86,6 +86,10 @@ public class NamespaceState implements OperatorState.NamespaceLock {
 
     public Collection<HelmRelease> getAllHelmReleases() {
         return helmReleaseMap.values();
+    }
+
+    public Collection<Th2CustomResource> getAllBoxes() {
+        return resources.values();
     }
 
     public void linkResourceToDictionary(String dictionary, String resourceName) {

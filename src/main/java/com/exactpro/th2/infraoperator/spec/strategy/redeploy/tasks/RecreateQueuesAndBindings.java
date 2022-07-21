@@ -16,23 +16,27 @@
 
 package com.exactpro.th2.infraoperator.spec.strategy.redeploy.tasks;
 
+import com.exactpro.th2.infraoperator.spec.Th2CustomResource;
+import com.exactpro.th2.infraoperator.spec.strategy.linkresolver.mq.BindQueueLinkResolver;
+import com.exactpro.th2.infraoperator.spec.strategy.linkresolver.mq.DeclareQueueResolver;
 import com.exactpro.th2.infraoperator.spec.strategy.linkresolver.mq.RabbitMQContext;
 import com.exactpro.th2.infraoperator.spec.strategy.redeploy.RetryableTaskQueue;
 
-public class RetryRabbitSetup implements RetryableTaskQueue.Task {
+import java.util.Collection;
 
+public class RecreateQueuesAndBindings implements RetryableTaskQueue.Task {
     private final long retryDelay;
 
-    private final String namespace;
+    private final Collection<Th2CustomResource> resources;
 
-    public RetryRabbitSetup(String namespace, long retryDelay) {
+    public RecreateQueuesAndBindings(Collection<Th2CustomResource> resources, long retryDelay) {
+        this.resources = resources;
         this.retryDelay = retryDelay;
-        this.namespace = namespace;
     }
 
     @Override
     public String getName() {
-        return String.format("%s:%s", RetryRabbitSetup.class.getName(), namespace);
+        return RecreateQueuesAndBindings.class.getName();
     }
 
     @Override
@@ -42,6 +46,11 @@ public class RetryRabbitSetup implements RetryableTaskQueue.Task {
 
     @Override
     public void run() {
-        RabbitMQContext.setUpRabbitMqForNamespace(namespace);
+        RabbitMQContext.getChannel();
+        resources.forEach(resource -> {
+            DeclareQueueResolver.resolveAdd(resource);
+            BindQueueLinkResolver.resolveDeclaredLinks(resource);
+            BindQueueLinkResolver.resolveHiddenLinks(resource);
+        });
     }
 }

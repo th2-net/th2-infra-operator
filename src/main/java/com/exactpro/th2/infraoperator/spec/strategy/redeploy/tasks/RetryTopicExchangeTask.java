@@ -18,12 +18,8 @@ package com.exactpro.th2.infraoperator.spec.strategy.redeploy.tasks;
 
 import com.exactpro.th2.infraoperator.spec.strategy.linkresolver.mq.RabbitMQContext;
 import com.exactpro.th2.infraoperator.spec.strategy.redeploy.RetryableTaskQueue;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 public class RetryTopicExchangeTask implements RetryableTaskQueue.Task {
-
-    private static final Logger logger = LoggerFactory.getLogger(RetryTopicExchangeTask.class);
 
     private final long retryDelay;
 
@@ -46,7 +42,6 @@ public class RetryTopicExchangeTask implements RetryableTaskQueue.Task {
 
     @Override
     public void run() {
-        logger.info("Executing task: \"{}\"", getName());
         RabbitMQContext.declareTopicExchange();
     }
 }

@@ -107,8 +107,14 @@ public abstract class AbstractTh2Operator<CR extends Th2CustomResource, KO exten
                 updateStatus(resource);
 
                 //create and schedule task to redeploy failed component
-                TriggerRedeployTask triggerRedeployTask = new TriggerRedeployTask(this,
-                        getResourceClient(), kubClient, resource, action, REDEPLOY_DELAY);
+                TriggerRedeployTask triggerRedeployTask = new TriggerRedeployTask(
+                        this,
+                        getResourceClient(),
+                        kubClient,
+                        resource,
+                        action,
+                        REDEPLOY_DELAY
+                );
                 retryableTaskQueue.add(triggerRedeployTask, true);
 
                 logger.info("Task \"{}\" added to scheduler, with delay \"{}\" seconds",

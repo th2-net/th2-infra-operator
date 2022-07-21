@@ -16,6 +16,9 @@
 
 package com.exactpro.th2.infraoperator.spec.strategy.redeploy;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.ScheduledExecutorService;
@@ -23,6 +26,7 @@ import java.util.concurrent.ScheduledThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
 
 public class RetryableTaskQueue {
+    private static final Logger logger = LoggerFactory.getLogger(RetryableTaskQueue.class);
 
     private static final int THREAD_POOL_SIZE = 3;
 
@@ -42,7 +46,9 @@ public class RetryableTaskQueue {
         @Override
         public void run() {
             try {
+                logger.info("Executing task: \"{}\"", task.getName());
                 task.run();
+                logger.info("Task: \"{}\" completed successfully", task.getName());
                 completeTask(task);
             } catch (Exception e) {
                 RetryableTaskQueue.this.addTask(this, true);
@@ -50,9 +56,9 @@ public class RetryableTaskQueue {
         }
     }
 
-    private Map<String, RetryableTask> taskMap;
+    private final Map<String, RetryableTask> taskMap;
 
-    private ScheduledExecutorService taskScheduler;
+    private final ScheduledExecutorService taskScheduler;
 
     public RetryableTaskQueue() {
         taskMap = new HashMap<>();

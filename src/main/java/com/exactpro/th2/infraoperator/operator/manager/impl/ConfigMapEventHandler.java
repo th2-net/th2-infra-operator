@@ -21,6 +21,7 @@ import com.exactpro.th2.infraoperator.configuration.OperatorConfig;
 import com.exactpro.th2.infraoperator.configuration.RabbitMQConfig;
 import com.exactpro.th2.infraoperator.metrics.OperatorMetrics;
 import com.exactpro.th2.infraoperator.model.kubernetes.configmaps.ConfigMaps;
+import com.exactpro.th2.infraoperator.spec.Th2CustomResource;
 import com.exactpro.th2.infraoperator.spec.Th2Spec;
 import com.exactpro.th2.infraoperator.spec.helmrelease.HelmRelease;
 import com.exactpro.th2.infraoperator.spec.strategy.linkresolver.mq.RabbitMQContext;
@@ -169,7 +170,7 @@ public class ConfigMapEventHandler implements Watcher<ConfigMap> {
             } catch (Exception e) {
                 logger.error("Exception processing {} event for \"{}\"", action, resourceLabel, e);
             }
-        }  else if (configMapName.equals(BOOK_CONFIG_CM_NAME)) {
+        } else if (configMapName.equals(BOOK_CONFIG_CM_NAME)) {
             updateDefaultBookName(action, namespace, resource, resourceLabel);
 
         } else if (cmMapping.containsKey(configMapName)) {
@@ -263,7 +264,7 @@ public class ConfigMapEventHandler implements Watcher<ConfigMap> {
         for (var hr : helmReleases) {
             Map<String, Object> config = HelmReleaseUtils.extractConfigSection(hr, key);
             if (cmData != null) {
-                CustomResource cr = (CustomResource) OperatorState.INSTANCE.getResourceFromCache(
+                Th2CustomResource cr = OperatorState.INSTANCE.getResourceFromCache(
                         HelmReleaseUtils.extractComponentName(hr),
                         namespace
                 );

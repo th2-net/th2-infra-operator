@@ -19,11 +19,7 @@ package com.exactpro.th2.infraoperator.operator.manager.impl;
 import com.exactpro.th2.infraoperator.OperatorState;
 import com.exactpro.th2.infraoperator.metrics.OperatorMetrics;
 import com.exactpro.th2.infraoperator.model.box.dictionary.DictionaryEntity;
-import com.exactpro.th2.infraoperator.model.kubernetes.client.impl.DictionaryClient;
 import com.exactpro.th2.infraoperator.spec.dictionary.Th2Dictionary;
-import com.exactpro.th2.infraoperator.spec.strategy.redeploy.NonTerminalException;
-import com.exactpro.th2.infraoperator.spec.strategy.redeploy.RetryableTaskQueue;
-import com.exactpro.th2.infraoperator.spec.strategy.redeploy.tasks.TriggerRedeployTask;
 import com.exactpro.th2.infraoperator.spec.helmrelease.HelmRelease;
 import com.exactpro.th2.infraoperator.util.CustomResourceUtils;
 import com.exactpro.th2.infraoperator.util.ExtractUtils;
@@ -55,10 +51,6 @@ import static com.exactpro.th2.infraoperator.util.HelmReleaseUtils.extractDictio
 public class Th2DictionaryEventHandler implements Watcher<Th2Dictionary> {
 
     private static final Logger logger = LoggerFactory.getLogger(Th2DictionaryEventHandler.class);
-
-    private static final int REDEPLOY_DELAY = 120;
-
-    private final RetryableTaskQueue retryableTaskQueue = new RetryableTaskQueue();
 
     private KubernetesClient kubClient;
 
@@ -101,27 +93,6 @@ public class Th2DictionaryEventHandler implements Watcher<Th2Dictionary> {
                     processDeleted(dictionary);
                     break;
             }
-        } catch (NonTerminalException e) {
-            String resourceLabel = annotationFor(dictionary);
-            String namespace = ExtractUtils.extractNamespace(dictionary);
-
-            logger.error("Non-terminal Exception processing {} event for \"{}\". Will try to redeploy.",
-                    action, resourceLabel, e);
-
-
-            Namespace namespaceObj = kubClient.namespaces().withName(namespace).get();
-            if (namespaceObj == null || !namespaceObj.getStatus().getPhase().equals("Active")) {
-                logger.info("Namespace \"{}\" deleted or not active, cancelling", namespace);
-                return;
-            }
-
-            //create and schedule task to redeploy failed component
-            TriggerRedeployTask triggerRedeployTask = new TriggerRedeployTask(this,
-                    new DictionaryClient(kubClient), kubClient, dictionary, action, REDEPLOY_DELAY);
-            retryableTaskQueue.add(triggerRedeployTask, true);
-
-            logger.info("Task \"{}\" added to scheduler, with delay \"{}\" seconds",
-                    triggerRedeployTask.getName(), REDEPLOY_DELAY);
         } catch (Exception e) {
             String resourceLabel = annotationFor(dictionary);
             logger.error("Terminal Exception processing {} event for {}. Will not try to redeploy",

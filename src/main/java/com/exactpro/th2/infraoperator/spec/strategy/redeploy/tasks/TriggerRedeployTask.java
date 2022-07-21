@@ -84,7 +84,6 @@ public class TriggerRedeployTask implements RetryableTaskQueue.Task {
 
     @Override
     public void run() {
-        logger.info("Executing task: \"{}\"", getName());
         redeploy();
     }
 

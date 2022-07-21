@@ -35,7 +35,6 @@ import com.exactpro.th2.infraoperator.util.CustomResourceUtils;
 import com.exactpro.th2.infraoperator.util.JsonUtils;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
-import io.fabric8.kubernetes.api.model.HasMetadata;
 import io.fabric8.kubernetes.api.model.KubernetesResourceList;
 import io.fabric8.kubernetes.client.dsl.MixedOperation;
 import io.fabric8.kubernetes.client.dsl.Resource;
@@ -426,8 +425,9 @@ public abstract class HelmReleaseTh2Op<CR extends Th2CustomResource> extends Abs
 
                 var hrRawGrpcConfig = extractHelmReleaseRawGrpcConfig(hr);
 
-                HasMetadata linkedResource = OperatorState.INSTANCE.getResourceFromCache(linkedResourceName, namespace);
-                var newResGrpcConfig = grpcConfigFactory.createConfig((Th2CustomResource) linkedResource);
+                var newResGrpcConfig = grpcConfigFactory.createConfig(
+                        OperatorState.INSTANCE.getResourceFromCache(linkedResourceName, namespace)
+                );
 
                 var newResRawGrpcConfig = JsonUtils.writeValueAsDeepMap(newResGrpcConfig);
 

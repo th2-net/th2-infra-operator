@@ -16,8 +16,8 @@
 
 package com.exactpro.th2.infraoperator;
 
+import com.exactpro.th2.infraoperator.spec.Th2CustomResource;
 import com.exactpro.th2.infraoperator.spec.helmrelease.HelmRelease;
-import io.fabric8.kubernetes.api.model.HasMetadata;
 
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
@@ -66,15 +66,15 @@ public enum OperatorState {
         return computeIfAbsent(namespace);
     }
 
-    public HasMetadata getResourceFromCache(String name, String namespace) {
-        HasMetadata resource = computeIfAbsent(namespace).getResource(name);
+    public Th2CustomResource getResourceFromCache(String name, String namespace) {
+        Th2CustomResource resource = computeIfAbsent(namespace).getResource(name);
         if (resource == null) {
             throw new RuntimeException(String.format("Resource \"%s:%s\" not found in cache", namespace, name));
         }
         return resource;
     }
 
-    public void putResourceInCache(HasMetadata resource, String namespace) {
+    public void putResourceInCache(Th2CustomResource resource, String namespace) {
         computeIfAbsent(namespace).putResource(resource);
     }
 
@@ -96,6 +96,12 @@ public enum OperatorState {
 
     public Collection<HelmRelease> getAllHelmReleases(String namespace) {
         return computeIfAbsent(namespace).getAllHelmReleases();
+    }
+
+    public Collection<Th2CustomResource> getAllBoxResources() {
+        Collection<Th2CustomResource> resources = new ArrayList<>();
+        namespaceStates.values().forEach(namespaceState -> resources.addAll(namespaceState.getAllBoxes()));
+        return resources;
     }
 
     private NamespaceState computeIfAbsent(String namespace) {

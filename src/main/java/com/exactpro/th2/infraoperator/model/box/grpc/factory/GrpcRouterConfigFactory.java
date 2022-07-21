@@ -80,10 +80,8 @@ public class GrpcRouterConfigFactory {
                                String namespace,
                                Map<String, GrpcServiceConfiguration> services) {
 
-        Th2CustomResource fromBoxResource = (Th2CustomResource) OperatorState.INSTANCE
-                .getResourceFromCache(currentBoxName, namespace);
-        Th2CustomResource toBoxResource = (Th2CustomResource) OperatorState.INSTANCE
-                .getResourceFromCache(linkedBoxName, namespace);
+        Th2CustomResource fromBoxResource = OperatorState.INSTANCE.getResourceFromCache(currentBoxName, namespace);
+        Th2CustomResource toBoxResource = OperatorState.INSTANCE.getResourceFromCache(linkedBoxName, namespace);
 
         TargetBoxSpec targetBoxSpec = checkForExternal(fromBoxResource, toBoxResource);
 
