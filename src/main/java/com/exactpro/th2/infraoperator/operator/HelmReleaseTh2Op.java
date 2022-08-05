@@ -313,7 +313,7 @@ public abstract class HelmReleaseTh2Op<CR extends Th2CustomResource> extends Abs
         helmRelease.mergeSpecProp(CHART_PROPERTIES_ALIAS, defaultChartConfig.toMap());
 
         var annotations = OperatorConfig.INSTANCE.getCommonAnnotations();
-        annotations.putAll(extractNeededAnnotations(resource, ANTECEDENT_LABEL_KEY_ALIAS, COMMIT_HASH_LABEL_KEY_ALIAS));
+        annotations.putAll(resource.getMetadata().getAnnotations());
         helmRelease.mergeValue(Map.of(
                 ANNOTATIONS_ALIAS, annotations,
                 OPENSHIFT_ALIAS, OperatorConfig.INSTANCE.getOpenshift()
