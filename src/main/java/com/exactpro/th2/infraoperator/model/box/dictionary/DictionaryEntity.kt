@@ -18,5 +18,6 @@ package com.exactpro.th2.infraoperator.model.box.dictionary
 
 data class DictionaryEntity(
     val name: String,
+    val envVariable: String,
     var checksum: String?
 )
