@@ -16,10 +16,11 @@
 
 package com.exactpro.th2.infraoperator.operator.impl;
 
+import com.exactpro.th2.infraoperator.model.box.mq.factory.MessageRouterConfigFactory;
+import com.exactpro.th2.infraoperator.model.box.mq.factory.MessageRouterConfigFactoryMstore;
 import com.exactpro.th2.infraoperator.model.kubernetes.client.ResourceClient;
 import com.exactpro.th2.infraoperator.model.kubernetes.client.impl.MstoreClient;
 import com.exactpro.th2.infraoperator.operator.StoreHelmTh2Op;
-import com.exactpro.th2.infraoperator.operator.context.HelmOperatorContext;
 import com.exactpro.th2.infraoperator.spec.mstore.Th2Mstore;
 import com.exactpro.th2.infraoperator.util.CustomResourceUtils;
 import io.fabric8.kubernetes.client.KubernetesClient;
@@ -30,9 +31,9 @@ public class MstoreHelmTh2Op extends StoreHelmTh2Op<Th2Mstore> {
 
     private final MstoreClient mstoreClient;
 
-    public MstoreHelmTh2Op(HelmOperatorContext.Builder<?, ?> builder) {
-        super(builder);
-        this.mstoreClient = new MstoreClient(builder.getClient());
+    public MstoreHelmTh2Op(KubernetesClient client) {
+        super(client);
+        this.mstoreClient = new MstoreClient(client);
     }
 
     @Override
@@ -53,24 +54,13 @@ public class MstoreHelmTh2Op extends StoreHelmTh2Op<Th2Mstore> {
     }
 
     @Override
+    protected MessageRouterConfigFactory getMqConfigFactory() {
+        return new MessageRouterConfigFactoryMstore();
+    }
+
+    @Override
     protected String getStorageName() {
         return MESSAGE_STORAGE_BOX_ALIAS;
     }
 
-    public static Builder builder(KubernetesClient client) {
-        return new Builder(client);
-    }
-
-    public static class Builder extends HelmOperatorContext.Builder<MstoreHelmTh2Op, Builder> {
-
-        public Builder(KubernetesClient client) {
-            super(client);
-        }
-
-        @Override
-        public MstoreHelmTh2Op build() {
-            return new MstoreHelmTh2Op(this);
-        }
-
-    }
 }

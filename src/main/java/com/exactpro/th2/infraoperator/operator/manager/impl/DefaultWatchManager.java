@@ -19,7 +19,6 @@ package com.exactpro.th2.infraoperator.operator.manager.impl;
 import com.exactpro.th2.infraoperator.configuration.OperatorConfig;
 import com.exactpro.th2.infraoperator.model.kubernetes.client.ResourceClient;
 import com.exactpro.th2.infraoperator.operator.HelmReleaseTh2Op;
-import com.exactpro.th2.infraoperator.operator.context.HelmOperatorContext;
 import com.exactpro.th2.infraoperator.spec.Th2CustomResource;
 import com.exactpro.th2.infraoperator.util.CustomResourceUtils;
 import com.exactpro.th2.infraoperator.util.Strings;
@@ -49,8 +48,6 @@ public class DefaultWatchManager {
 
     private boolean isWatching = false;
 
-    private final Builder operatorBuilder;
-
     private final List<ResourceClient<Th2CustomResource>> resourceClients = new ArrayList<>();
 
     private final List<Supplier<HelmReleaseTh2Op<Th2CustomResource>>> helmWatchersCommands = new ArrayList<>();
@@ -61,14 +58,16 @@ public class DefaultWatchManager {
 
     private final EventDispatcher eventDispatcher;
 
+    private final KubernetesClient client;
+
     private synchronized SharedInformerFactory getInformerFactory() {
         return sharedInformerFactory;
     }
 
-    private DefaultWatchManager(Builder builder) {
-        this.operatorBuilder = builder;
-        this.sharedInformerFactory = builder.getClient().informers();
+    private DefaultWatchManager(KubernetesClient client) {
+        this.sharedInformerFactory = client.informers();
         this.eventDispatcher = new EventDispatcher();
+        this.client = client;
 
         sharedInformerFactory.addSharedInformerEventListener(exception -> {
             logger.error("Exception in InformerFactory : {}", exception.getMessage());
@@ -103,7 +102,6 @@ public class DefaultWatchManager {
     private void loadConfigMaps(EventHandlerContext context) {
 
         var configMapEventHandler = (ConfigMapEventHandler) context.getHandler(ConfigMapEventHandler.class);
-        KubernetesClient client = operatorBuilder.getClient();
         List<ConfigMap> configMaps = client.configMaps().inAnyNamespace().list().getItems();
         configMaps = filterByNamespace(configMaps);
         for (var configMap : configMaps) {
@@ -134,7 +132,6 @@ public class DefaultWatchManager {
     private EventHandlerContext registerInformers(SharedInformerFactory sharedInformerFactory) {
 
         EventHandlerContext context = new EventHandlerContext();
-        KubernetesClient client = operatorBuilder.getClient();
 
         context.addHandler(NamespaceEventHandler.newInstance(sharedInformerFactory, eventDispatcher.getEventQueue()));
         context.addHandler(Th2DictionaryEventHandler.newInstance(sharedInformerFactory, client,
@@ -172,12 +169,12 @@ public class DefaultWatchManager {
     }
 
     public <T extends Th2CustomResource> void addTarget(
-            Function<HelmOperatorContext.Builder<?, ?>, HelmReleaseTh2Op<T>> operator) {
+            Function<KubernetesClient, HelmReleaseTh2Op<T>> operator) {
 
         helmWatchersCommands.add(() -> {
             // T extends Th2CustomResource -> T is a Th2CustomResource
             @SuppressWarnings("unchecked")
-            var th2ResOp = (HelmReleaseTh2Op<Th2CustomResource>) operator.apply(operatorBuilder);
+            var th2ResOp = (HelmReleaseTh2Op<Th2CustomResource>) operator.apply(client);
 
             return th2ResOp;
         });
@@ -229,32 +226,16 @@ public class DefaultWatchManager {
                 CustomResourceUtils.annotationFor(resource), refreshToken);
     }
 
-    public static Builder builder(KubernetesClient client) {
-        return new Builder(client);
-    }
-
     public static synchronized DefaultWatchManager getInstance() {
         if (instance == null) {
-            instance = DefaultWatchManager.builder(new DefaultKubernetesClient()).build();
+            instance = new DefaultWatchManager(new DefaultKubernetesClient());
         }
 
         return instance;
     }
 
-    private static class Builder extends HelmOperatorContext.Builder<DefaultWatchManager, Builder> {
-
-        public Builder(KubernetesClient client) {
-            super(client);
-        }
-
-        @Override
-        public DefaultWatchManager build() {
-            return new DefaultWatchManager(this);
-        }
-    }
-
     public void close() {
         eventDispatcher.interrupt();
-        operatorBuilder.getClient().close();
+        client.close();
     }
 }

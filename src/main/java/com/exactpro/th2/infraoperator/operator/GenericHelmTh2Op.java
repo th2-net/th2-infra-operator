@@ -16,13 +16,13 @@
 
 package com.exactpro.th2.infraoperator.operator;
 
-import com.exactpro.th2.infraoperator.operator.context.HelmOperatorContext;
 import com.exactpro.th2.infraoperator.spec.Th2CustomResource;
+import io.fabric8.kubernetes.client.KubernetesClient;
 
 public abstract class GenericHelmTh2Op<CR extends Th2CustomResource> extends HelmReleaseTh2Op<CR> {
 
-    public GenericHelmTh2Op(HelmOperatorContext.Builder<?, ?> builder) {
-        super(builder);
+    public GenericHelmTh2Op(KubernetesClient client) {
+        super(client);
     }
 
 }

@@ -17,8 +17,8 @@
 package com.exactpro.th2.infraoperator.operator;
 
 import com.exactpro.th2.infraoperator.OperatorState;
-import com.exactpro.th2.infraoperator.operator.context.HelmOperatorContext;
 import com.exactpro.th2.infraoperator.spec.Th2CustomResource;
+import io.fabric8.kubernetes.client.KubernetesClient;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -38,8 +38,8 @@ public abstract class StoreHelmTh2Op<CR extends Th2CustomResource> extends HelmR
 
     public static final String MESSAGE_STORAGE_BOX_ALIAS = "mstore";
 
-    public StoreHelmTh2Op(HelmOperatorContext.Builder<?, ?> builder) {
-        super(builder);
+    public StoreHelmTh2Op(KubernetesClient client) {
+        super(client);
     }
 
     private void nameCheck(CR resource) throws IOException {

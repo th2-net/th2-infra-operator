@@ -22,8 +22,6 @@ import com.exactpro.th2.infraoperator.model.box.dictionary.DictionaryEntity;
 import com.exactpro.th2.infraoperator.model.box.grpc.GrpcRouterConfiguration;
 import com.exactpro.th2.infraoperator.model.box.grpc.factory.GrpcRouterConfigFactory;
 import com.exactpro.th2.infraoperator.model.box.mq.MessageRouterConfiguration;
-import com.exactpro.th2.infraoperator.model.box.mq.factory.MessageRouterConfigFactory;
-import com.exactpro.th2.infraoperator.operator.context.HelmOperatorContext;
 import com.exactpro.th2.infraoperator.spec.Th2CustomResource;
 import com.exactpro.th2.infraoperator.spec.Th2Spec;
 import com.exactpro.th2.infraoperator.spec.helmrelease.HelmRelease;
@@ -36,6 +34,7 @@ import com.exactpro.th2.infraoperator.util.JsonUtils;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import io.fabric8.kubernetes.api.model.KubernetesResourceList;
+import io.fabric8.kubernetes.client.KubernetesClient;
 import io.fabric8.kubernetes.client.dsl.MixedOperation;
 import io.fabric8.kubernetes.client.dsl.Resource;
 import io.fabric8.kubernetes.client.informers.SharedInformer;
@@ -126,19 +125,16 @@ public abstract class HelmReleaseTh2Op<CR extends Th2CustomResource> extends Abs
 
     private static final String DEFAULT_VALUE_ENABLED = Boolean.TRUE.toString();
 
-    protected final MessageRouterConfigFactory mqConfigFactory;
-
     protected final GrpcRouterConfigFactory grpcConfigFactory;
 
     protected final MixedOperation<HelmRelease, KubernetesResourceList<HelmRelease>, Resource<HelmRelease>>
             helmReleaseClient;
 
-    public HelmReleaseTh2Op(HelmOperatorContext.Builder<?, ?> builder) {
+    public HelmReleaseTh2Op(KubernetesClient client) {
 
-        super(builder.getClient());
+        super(client);
 
-        this.mqConfigFactory = builder.getMqConfigFactory();
-        this.grpcConfigFactory = builder.getGrpcConfigFactory();
+        this.grpcConfigFactory = new GrpcRouterConfigFactory();
 
         helmReleaseClient = kubClient.resources(HelmRelease.class);
     }
@@ -173,7 +169,7 @@ public abstract class HelmReleaseTh2Op<CR extends Th2CustomResource> extends Abs
     }
 
     private void mapRouterConfigs(CR resource, HelmRelease helmRelease) {
-        MessageRouterConfiguration mqConfig = mqConfigFactory.createConfig(resource);
+        MessageRouterConfiguration mqConfig = getMqConfigFactory().createConfig(resource);
         GrpcRouterConfiguration grpcConfig = grpcConfigFactory.createConfig(resource);
         helmRelease.mergeValue(PROPERTIES_MERGE_DEPTH, ROOT_PROPERTIES_ALIAS, Map.of(
                 MQ_QUEUE_CONFIG_ALIAS, JsonUtils.writeValueAsDeepMap(mqConfig),

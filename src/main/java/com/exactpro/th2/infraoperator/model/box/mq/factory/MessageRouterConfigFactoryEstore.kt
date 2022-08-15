@@ -16,35 +16,46 @@
 
 package com.exactpro.th2.infraoperator.model.box.mq.factory
 
+import com.exactpro.th2.infraoperator.configuration.OperatorConfig
 import com.exactpro.th2.infraoperator.model.LinkDescription
 import com.exactpro.th2.infraoperator.model.box.mq.MessageRouterConfiguration
 import com.exactpro.th2.infraoperator.model.box.mq.QueueConfiguration
-import com.exactpro.th2.infraoperator.operator.StoreHelmTh2Op
+import com.exactpro.th2.infraoperator.operator.StoreHelmTh2Op.EVENT_STORAGE_PIN_ALIAS
 import com.exactpro.th2.infraoperator.spec.Th2CustomResource
 import com.exactpro.th2.infraoperator.spec.shared.PinAttribute
 import com.exactpro.th2.infraoperator.spec.strategy.linkresolver.queue.QueueName
 import com.exactpro.th2.infraoperator.spec.strategy.linkresolver.queue.RoutingKeyName
+import com.exactpro.th2.infraoperator.util.ExtractUtils
 
 /**
  * A factory that creates a mq configuration
  * based on the th2 resource and a list of active links.
  */
-abstract class MessageRouterConfigFactory {
+class MessageRouterConfigFactoryEstore : MessageRouterConfigFactory() {
     /**
      * Creates a mq configuration based on the th2 resource and a list of active links.
      *
      * @param resource th2 resource containing a list of [PinSpec]s
      * @return ready mq configuration based on active `links` and specified links in `resource`
      */
-    abstract fun createConfig(resource: Th2CustomResource): MessageRouterConfiguration
+    @Override
+    override fun createConfig(resource: Th2CustomResource): MessageRouterConfiguration {
+        val queues: MutableMap<String, QueueConfiguration> = HashMap()
+        val boxName = ExtractUtils.extractName(resource)
+        val namespace = ExtractUtils.extractNamespace(resource)
 
-    fun generatePublishToEstorePin(namespace: String, boxName: String) = QueueConfiguration(
-        LinkDescription(
-            QueueName.EMPTY,
-            RoutingKeyName(namespace, boxName, StoreHelmTh2Op.EVENT_STORAGE_PIN_ALIAS),
-            namespace
-        ),
-        setOf(PinAttribute.publish.name, PinAttribute.event.name),
-        emptyList()
-    )
+        // add event storage pin config for each resource
+        queues[EVENT_STORAGE_PIN_ALIAS] = QueueConfiguration(
+            LinkDescription(
+                QueueName(namespace, boxName, EVENT_STORAGE_PIN_ALIAS),
+                RoutingKeyName.EMPTY,
+                namespace
+            ),
+            setOf(PinAttribute.subscribe.name, PinAttribute.event.name),
+            emptyList()
+        )
+
+        val globalExchange = OperatorConfig.INSTANCE.rabbitMQManagementConfig.exchangeName
+        return MessageRouterConfiguration(queues, globalExchange)
+    }
 }

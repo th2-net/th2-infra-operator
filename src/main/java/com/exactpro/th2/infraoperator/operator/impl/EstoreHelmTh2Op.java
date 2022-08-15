@@ -16,10 +16,11 @@
 
 package com.exactpro.th2.infraoperator.operator.impl;
 
+import com.exactpro.th2.infraoperator.model.box.mq.factory.MessageRouterConfigFactory;
+import com.exactpro.th2.infraoperator.model.box.mq.factory.MessageRouterConfigFactoryEstore;
 import com.exactpro.th2.infraoperator.model.kubernetes.client.ResourceClient;
 import com.exactpro.th2.infraoperator.model.kubernetes.client.impl.EstoreClient;
 import com.exactpro.th2.infraoperator.operator.StoreHelmTh2Op;
-import com.exactpro.th2.infraoperator.operator.context.HelmOperatorContext;
 import com.exactpro.th2.infraoperator.spec.estore.Th2Estore;
 import com.exactpro.th2.infraoperator.util.CustomResourceUtils;
 import io.fabric8.kubernetes.client.KubernetesClient;
@@ -30,9 +31,9 @@ public class EstoreHelmTh2Op extends StoreHelmTh2Op<Th2Estore> {
 
     private final EstoreClient estoreClient;
 
-    public EstoreHelmTh2Op(HelmOperatorContext.Builder<?, ?> builder) {
-        super(builder);
-        this.estoreClient = new EstoreClient(builder.getClient());
+    public EstoreHelmTh2Op(KubernetesClient client) {
+        super(client);
+        this.estoreClient = new EstoreClient(client);
     }
 
     @Override
@@ -53,24 +54,12 @@ public class EstoreHelmTh2Op extends StoreHelmTh2Op<Th2Estore> {
     }
 
     @Override
+    protected MessageRouterConfigFactory getMqConfigFactory() {
+        return new MessageRouterConfigFactoryEstore();
+    }
+
+    @Override
     protected String getStorageName() {
         return EVENT_STORAGE_BOX_ALIAS;
-    }
-
-    public static Builder builder(KubernetesClient client) {
-        return new Builder(client);
-    }
-
-    public static class Builder extends HelmOperatorContext.Builder<EstoreHelmTh2Op, Builder> {
-
-        public Builder(KubernetesClient client) {
-            super(client);
-        }
-
-        @Override
-        public EstoreHelmTh2Op build() {
-            return new EstoreHelmTh2Op(this);
-        }
-
     }
 }

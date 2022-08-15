@@ -16,10 +16,11 @@
 
 package com.exactpro.th2.infraoperator.operator.impl;
 
+import com.exactpro.th2.infraoperator.model.box.mq.factory.MessageRouterConfigFactory;
+import com.exactpro.th2.infraoperator.model.box.mq.factory.MessageRouterConfigFactoryBox;
 import com.exactpro.th2.infraoperator.model.kubernetes.client.ResourceClient;
 import com.exactpro.th2.infraoperator.model.kubernetes.client.impl.CoreBoxClient;
 import com.exactpro.th2.infraoperator.operator.GenericHelmTh2Op;
-import com.exactpro.th2.infraoperator.operator.context.HelmOperatorContext;
 import com.exactpro.th2.infraoperator.spec.corebox.Th2CoreBox;
 import com.exactpro.th2.infraoperator.util.CustomResourceUtils;
 import io.fabric8.kubernetes.client.KubernetesClient;
@@ -30,9 +31,9 @@ public class CoreBoxHelmTh2Op extends GenericHelmTh2Op<Th2CoreBox> {
 
     private final CoreBoxClient coreBoxClient;
 
-    public CoreBoxHelmTh2Op(HelmOperatorContext.Builder<?, ?> builder) {
-        super(builder);
-        this.coreBoxClient = new CoreBoxClient(builder.getClient());
+    public CoreBoxHelmTh2Op(KubernetesClient client) {
+        super(client);
+        this.coreBoxClient = new CoreBoxClient(client);
     }
 
     @Override
@@ -52,20 +53,8 @@ public class CoreBoxHelmTh2Op extends GenericHelmTh2Op<Th2CoreBox> {
         return "/Th2CoreBox-HelmRelease.yml";
     }
 
-    public static CoreBoxHelmTh2Op.Builder builder(KubernetesClient client) {
-        return new CoreBoxHelmTh2Op.Builder(client);
+    @Override
+    protected MessageRouterConfigFactory getMqConfigFactory() {
+        return new MessageRouterConfigFactoryBox();
     }
-
-    public static class Builder extends HelmOperatorContext.Builder<CoreBoxHelmTh2Op, CoreBoxHelmTh2Op.Builder> {
-
-        public Builder(KubernetesClient client) {
-            super(client);
-        }
-
-        @Override
-        public CoreBoxHelmTh2Op build() {
-            return new CoreBoxHelmTh2Op(this);
-        }
-    }
-
 }

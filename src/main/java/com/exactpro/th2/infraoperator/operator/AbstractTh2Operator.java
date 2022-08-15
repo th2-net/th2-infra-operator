@@ -19,6 +19,7 @@ package com.exactpro.th2.infraoperator.operator;
 import com.exactpro.th2.infraoperator.OperatorState;
 import com.exactpro.th2.infraoperator.Th2CrdController;
 import com.exactpro.th2.infraoperator.metrics.OperatorMetrics;
+import com.exactpro.th2.infraoperator.model.box.mq.factory.MessageRouterConfigFactory;
 import com.exactpro.th2.infraoperator.model.http.HttpCode;
 import com.exactpro.th2.infraoperator.model.kubernetes.client.ResourceClient;
 import com.exactpro.th2.infraoperator.spec.Th2CustomResource;
@@ -339,6 +340,8 @@ public abstract class AbstractTh2Operator<CR extends Th2CustomResource, KO exten
     protected abstract String getKubObjDefPath(CR resource);
 
     protected abstract void createKubObj(String namespace, KO kubObj);
+
+    protected abstract MessageRouterConfigFactory getMqConfigFactory();
 
     @Override
     public void onClose(WatcherException cause) {
