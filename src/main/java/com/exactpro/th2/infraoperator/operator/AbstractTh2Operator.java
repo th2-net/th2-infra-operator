@@ -240,7 +240,7 @@ public abstract class AbstractTh2Operator<CR extends Th2CustomResource, KO exten
         var resClient = getResourceClient().getInstance();
 
         try {
-            return resClient.inNamespace(ExtractUtils.extractNamespace(resource)).replaceStatus(resource);
+            return resClient.inNamespace(ExtractUtils.extractNamespace(resource)).resource(resource).replaceStatus();
         } catch (KubernetesClientException e) {
 
             if (HttpCode.ofCode(e.getCode()) == HttpCode.SERVER_CONFLICT) {

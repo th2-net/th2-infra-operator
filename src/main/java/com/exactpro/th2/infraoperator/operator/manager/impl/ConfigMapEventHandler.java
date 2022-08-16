@@ -285,7 +285,7 @@ public class ConfigMapEventHandler implements Watcher<ConfigMap> {
     }
 
     protected void createKubObj(String namespace, HelmRelease helmRelease) {
-        helmReleaseClient.inNamespace(namespace).createOrReplace(helmRelease);
+        helmReleaseClient.inNamespace(namespace).resource(helmRelease).createOrReplace();
         OperatorState.INSTANCE.putHelmReleaseInCache(helmRelease, namespace);
     }
 

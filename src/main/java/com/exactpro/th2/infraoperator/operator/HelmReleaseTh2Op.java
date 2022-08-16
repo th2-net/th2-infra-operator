@@ -37,7 +37,7 @@ import io.fabric8.kubernetes.api.model.KubernetesResourceList;
 import io.fabric8.kubernetes.client.KubernetesClient;
 import io.fabric8.kubernetes.client.dsl.MixedOperation;
 import io.fabric8.kubernetes.client.dsl.Resource;
-import io.fabric8.kubernetes.client.informers.SharedInformer;
+import io.fabric8.kubernetes.client.informers.SharedIndexInformer;
 import io.fabric8.kubernetes.client.informers.SharedInformerFactory;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -139,7 +139,7 @@ public abstract class HelmReleaseTh2Op<CR extends Th2CustomResource> extends Abs
         helmReleaseClient = kubClient.resources(HelmRelease.class);
     }
 
-    public abstract SharedInformer<CR> generateInformerFromFactory(SharedInformerFactory factory);
+    public abstract SharedIndexInformer<CR> generateInformerFromFactory(SharedInformerFactory factory);
 
     @Override
     protected void mapProperties(CR resource, HelmRelease helmRelease) {
@@ -388,7 +388,7 @@ public abstract class HelmReleaseTh2Op<CR extends Th2CustomResource> extends Abs
         if (needsToBeDeleted(helmRelease, existingRelease)) {
             helmReleaseClient.inNamespace(namespace).withName(hrName).delete();
         }
-        helmReleaseClient.inNamespace(namespace).createOrReplace(helmRelease);
+        helmReleaseClient.inNamespace(namespace).resource(helmRelease).createOrReplace();
         OperatorState.INSTANCE.putHelmReleaseInCache(helmRelease, namespace);
     }
 

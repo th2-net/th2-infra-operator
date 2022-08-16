@@ -25,8 +25,8 @@ import com.exactpro.th2.infraoperator.util.Strings;
 import com.fasterxml.uuid.Generators;
 import io.fabric8.kubernetes.api.model.ConfigMap;
 import io.fabric8.kubernetes.api.model.HasMetadata;
-import io.fabric8.kubernetes.client.DefaultKubernetesClient;
 import io.fabric8.kubernetes.client.KubernetesClient;
+import io.fabric8.kubernetes.client.KubernetesClientBuilder;
 import io.fabric8.kubernetes.client.Watcher;
 import io.fabric8.kubernetes.client.informers.SharedInformerFactory;
 import org.slf4j.Logger;
@@ -221,14 +221,14 @@ public class DefaultWatchManager {
         resMeta.setResourceVersion(null);
         resMeta.setAnnotations(Objects.nonNull(resMeta.getAnnotations()) ? resMeta.getAnnotations() : new HashMap<>());
         resMeta.getAnnotations().put(REFRESH_TOKEN_ALIAS, refreshToken);
-        resClient.getInstance().inNamespace(linkNamespace).createOrReplace(resource);
+        resClient.getInstance().inNamespace(linkNamespace).resource(resource).createOrReplace();
         logger.debug("refreshed \"{}\" with refresh-token={}",
                 CustomResourceUtils.annotationFor(resource), refreshToken);
     }
 
     public static synchronized DefaultWatchManager getInstance() {
         if (instance == null) {
-            instance = new DefaultWatchManager(new DefaultKubernetesClient());
+            instance = new DefaultWatchManager(new KubernetesClientBuilder().build());
         }
 
         return instance;

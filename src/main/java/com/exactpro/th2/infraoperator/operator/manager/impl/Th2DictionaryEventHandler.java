@@ -110,7 +110,7 @@ public class Th2DictionaryEventHandler implements Watcher<Th2Dictionary> {
 
         //create or replace corresponding config map from Kubernetes
         logger.debug("Creating config map for: \"{}\"", resourceLabel);
-        kubClient.configMaps().inNamespace(namespace).createOrReplace(toConfigMap(dictionary));
+        kubClient.resource(toConfigMap(dictionary)).inNamespace(namespace).createOrReplace();
         logger.debug("Created config map for: \"{}\"", resourceLabel);
         sourceHashes.put(resourceLabel, newChecksum);
     }
@@ -129,7 +129,7 @@ public class Th2DictionaryEventHandler implements Watcher<Th2Dictionary> {
 
         //update corresponding config map from Kubernetes
         logger.debug("Updating config map for: \"{}\"", resourceLabel);
-        kubClient.configMaps().inNamespace(namespace).createOrReplace(toConfigMap(dictionary));
+        kubClient.resource(toConfigMap(dictionary)).inNamespace(namespace).createOrReplace();
         logger.debug("Updated config map for: \"{}\"", resourceLabel);
         sourceHashes.put(resourceLabel, newChecksum);
 
@@ -227,7 +227,7 @@ public class Th2DictionaryEventHandler implements Watcher<Th2Dictionary> {
     }
 
     protected void createKubObj(String namespace, HelmRelease helmRelease) {
-        helmReleaseClient.inNamespace(namespace).createOrReplace(helmRelease);
+        helmReleaseClient.inNamespace(namespace).resource(helmRelease).createOrReplace();
         OperatorState.INSTANCE.putHelmReleaseInCache(helmRelease, namespace);
     }
 
