@@ -312,7 +312,7 @@ public abstract class HelmReleaseTh2Op<CR extends Th2CustomResource> extends Abs
 
         helmRelease.mergeSpecProp(CHART_PROPERTIES_ALIAS, defaultChartConfig.toMap());
 
-        var annotations = OperatorConfig.INSTANCE.getCommonAnnotations();
+        var annotations = new HashMap<>(OperatorConfig.INSTANCE.getCommonAnnotations());
         annotations.putAll(resource.getMetadata().getAnnotations());
         helmRelease.mergeValue(Map.of(
                 ANNOTATIONS_ALIAS, annotations,
