@@ -46,9 +46,9 @@ class DictionariesConfigTests {
                 "dictRes2Resource-dictionary",
                 "dict3-dictionary"),
                 collected.stream().map(DictionaryEntity::getName).collect(Collectors.toSet()));
-        assertEquals("${DICT_RES1}", customConfig.get("dict1"));
-        assertEquals("${DICT_RES2_RESOURCE}", customConfig.get("dict2"));
-        assertEquals("${DICT3}", customConfig.get("dict3"));
+        assertEquals("dictRes1-dictionary", customConfig.get("dict1"));
+        assertEquals("dictRes2Resource-dictionary", customConfig.get("dict2"));
+        assertEquals("dict3-dictionary", customConfig.get("dict3"));
     }
 
     @Test
@@ -70,7 +70,7 @@ class DictionariesConfigTests {
                 collected.stream().map(DictionaryEntity::getName).collect(Collectors.toSet()));
         assertTrue(collected.stream().allMatch(entity -> entity.getChecksum() != null));
         assertTrue(collected.stream().allMatch(entity -> entity.getChecksum().equals(INITIAL_CHECKSUM)));
-        assertEquals("${DICT1}", subLevel1.get("dict1"));
-        assertEquals("${A_DICT2_B}", level2.get("dict2"));
+        assertEquals("dict1-dictionary", subLevel1.get("dict1"));
+        assertEquals("aDict2B-dictionary", level2.get("dict2"));
     }
 }

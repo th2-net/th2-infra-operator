@@ -318,7 +318,7 @@ public abstract class HelmReleaseTh2Op<CR extends Th2CustomResource> extends Abs
     }
 
     private void mapAnnotations(CR resource, HelmRelease helmRelease) {
-        var annotations = OperatorConfig.INSTANCE.getCommonAnnotations();
+        var annotations = new HashMap<>(OperatorConfig.INSTANCE.getCommonAnnotations());
         annotations.putAll(resource.getMetadata().getAnnotations());
         helmRelease.mergeValue(Map.of(
                 ANNOTATIONS_ALIAS, annotations,

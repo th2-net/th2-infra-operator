@@ -179,8 +179,7 @@ public class Th2DictionaryEventHandler implements Watcher<Th2Dictionary> {
         configMapMD.setLabels(resMD.getLabels());
         configMapMD.setAnnotations(resMD.getAnnotations() != null ? resMD.getAnnotations() : new HashMap<>());
 
-        String encodedAlias = ".encoded";
-        String fieldName = resName + encodedAlias;
+        String fieldName = resName + DICTIONARY_SUFFIX;
         configMapData.put(fieldName, dictionary.getSpec().getData());
 
         ConfigMap configMap = new ConfigMap();

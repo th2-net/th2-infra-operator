@@ -85,9 +85,8 @@ public class Strings {
 
         @Override
         public String lookup(String key) {
-            String envVar = Strings.toUnderScoreUpperCase(key);
-            collector.add(new DictionaryEntity(key + DICTIONARY_SUFFIX, envVar, INITIAL_CHECKSUM));
-            return String.format("${%s}", envVar);
+            collector.add(new DictionaryEntity(key + DICTIONARY_SUFFIX, INITIAL_CHECKSUM));
+            return key + DICTIONARY_SUFFIX;
         }
     }
 }
