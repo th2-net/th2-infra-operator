@@ -123,7 +123,7 @@ public abstract class HelmReleaseTh2Op<CR extends Th2CustomResource> extends Abs
 
     public static final String ENABLED_ALIAS = "enabled";
 
-    private static final String DEFAULT_VALUE_ENABLED = Boolean.TRUE.toString();
+    private static final boolean DEFAULT_VALUE_ENABLED = Boolean.TRUE;
 
     protected final GrpcRouterConfigFactory grpcConfigFactory;
 
@@ -276,7 +276,7 @@ public abstract class HelmReleaseTh2Op<CR extends Th2CustomResource> extends Abs
     }
 
     private void mapPrometheus(CR resource, HelmRelease helmRelease) {
-        PrometheusConfiguration<String> prometheusConfig = resource.getSpec().getPrometheus();
+        PrometheusConfiguration<Boolean> prometheusConfig = resource.getSpec().getPrometheus();
         if (prometheusConfig == null) {
             prometheusConfig = PrometheusConfiguration.createDefault(DEFAULT_VALUE_ENABLED);
         }

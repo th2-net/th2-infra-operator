@@ -45,7 +45,7 @@ public class Th2Spec implements KubernetesResource {
 
     protected Map<String, Object> customConfig = new HashMap<>();
 
-    protected PrometheusConfiguration<String> prometheus;
+    protected PrometheusConfiguration<Boolean> prometheus;
 
     protected Map<String, Object> mqRouter;
 
@@ -88,7 +88,7 @@ public class Th2Spec implements KubernetesResource {
         return this.customConfig;
     }
 
-    public PrometheusConfiguration<String> getPrometheus() {
+    public PrometheusConfiguration<Boolean> getPrometheus() {
         return this.prometheus;
     }
 
@@ -114,6 +114,14 @@ public class Th2Spec implements KubernetesResource {
 
     public PinSpec getPins() {
         return this.pins;
+    }
+
+    public String getType() {
+        return type;
+    }
+
+    public boolean isDisabled() {
+        return disabled;
     }
 
     @Override
