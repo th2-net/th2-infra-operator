@@ -76,7 +76,10 @@ object BindQueueLinkResolver {
         val queueName = QueueName(namespace, MESSAGE_STORAGE_BOX_ALIAS, MESSAGE_STORAGE_PIN_ALIAS)
         // create message store link for only resources that need it
         for ((pinName, attributes) in resource.spec.pins.mq.publishers) {
-            if (attributes.contains(PinAttribute.store.name) && attributes.contains(PinAttribute.raw.name)) {
+            if (attributes.contains(PinAttribute.store.name) &&
+                attributes.contains(PinAttribute.raw.name) &&
+                !attributes.contains(PinAttribute.parsed.name)
+            ) {
                 val mstoreLinkDescription = LinkDescription(
                     queueName,
                     RoutingKeyName(namespace, resourceName, pinName),
