@@ -16,7 +16,7 @@
 
 package com.exactpro.th2.infraoperator.operator.manager.impl;
 
-import com.exactpro.th2.infraoperator.configuration.OperatorConfig;
+import com.exactpro.th2.infraoperator.configuration.ConfigLoader;
 import com.exactpro.th2.infraoperator.model.kubernetes.client.ResourceClient;
 import com.exactpro.th2.infraoperator.operator.HelmReleaseTh2Op;
 import com.exactpro.th2.infraoperator.spec.Th2CustomResource;
@@ -113,7 +113,7 @@ public class DefaultWatchManager {
     private <E extends HasMetadata> List<E> filterByNamespace(List<E> resources) {
         return resources.stream()
                 .filter(resource -> !Strings.nonePrefixMatch(resource.getMetadata().getNamespace(),
-                        OperatorConfig.INSTANCE.getNamespacePrefixes()))
+                        ConfigLoader.getConfig().getNamespacePrefixes()))
                 .collect(Collectors.toList());
     }
 

@@ -49,11 +49,6 @@ public class CoreBoxHelmTh2Op extends GenericHelmTh2Op<Th2CoreBox> {
     }
 
     @Override
-    protected String getKubObjDefPath(Th2CoreBox resource) {
-        return "/Th2CoreBox-HelmRelease.yml";
-    }
-
-    @Override
     protected MessageRouterConfigFactory getMqConfigFactory() {
         return new MessageRouterConfigFactoryBox();
     }

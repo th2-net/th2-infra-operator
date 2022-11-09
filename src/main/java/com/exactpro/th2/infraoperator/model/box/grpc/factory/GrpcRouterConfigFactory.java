@@ -17,7 +17,7 @@
 package com.exactpro.th2.infraoperator.model.box.grpc.factory;
 
 import com.exactpro.th2.infraoperator.OperatorState;
-import com.exactpro.th2.infraoperator.configuration.OperatorConfig;
+import com.exactpro.th2.infraoperator.configuration.ConfigLoader;
 import com.exactpro.th2.infraoperator.model.box.grpc.*;
 import com.exactpro.th2.infraoperator.spec.Th2CustomResource;
 import com.exactpro.th2.infraoperator.spec.shared.pin.GrpcClientPin;
@@ -126,7 +126,7 @@ public class GrpcRouterConfigFactory {
 
     private String getTargetBoxName(TargetBoxSpec targetBox) {
         if (targetBox.getHostNetwork()) {
-            return OperatorConfig.INSTANCE.getK8sUrl();
+            return ConfigLoader.getConfig().getK8sUrl();
         } else if (targetBox.getExternalBox()) {
             return targetBox.getExternalHost();
         }

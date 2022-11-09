@@ -17,6 +17,7 @@
 package com.exactpro.th2.infraoperator.operator;
 
 import com.exactpro.th2.infraoperator.OperatorState;
+import com.exactpro.th2.infraoperator.configuration.ConfigLoader;
 import com.exactpro.th2.infraoperator.configuration.OperatorConfig;
 import com.exactpro.th2.infraoperator.model.box.dictionary.DictionaryEntity;
 import com.exactpro.th2.infraoperator.model.box.grpc.GrpcRouterConfiguration;
@@ -50,7 +51,7 @@ import static com.exactpro.th2.infraoperator.operator.manager.impl.ConfigMapEven
 import static com.exactpro.th2.infraoperator.util.ExtractUtils.*;
 import static com.exactpro.th2.infraoperator.util.HelmReleaseUtils.*;
 
-public abstract class HelmReleaseTh2Op<CR extends Th2CustomResource> extends AbstractTh2Operator<CR, HelmRelease> {
+public abstract class HelmReleaseTh2Op<CR extends Th2CustomResource> extends AbstractTh2Operator<CR> {
 
     private static final Logger logger = LoggerFactory.getLogger(HelmReleaseTh2Op.class);
 
@@ -68,8 +69,6 @@ public abstract class HelmReleaseTh2Op<CR extends Th2CustomResource> extends Abs
     public static final String RELEASE_NAME_ALIAS = "releaseName";
 
     //values section
-    public static final String ROOT_PROPERTIES_ALIAS = "component";
-
     public static final String ANNOTATIONS_ALIAS = "commonAnnotations";
 
     //component section
@@ -141,12 +140,14 @@ public abstract class HelmReleaseTh2Op<CR extends Th2CustomResource> extends Abs
 
     public abstract SharedIndexInformer<CR> generateInformerFromFactory(SharedInformerFactory factory);
 
+    private final OperatorConfig config = ConfigLoader.getConfig();
+
     @Override
     protected void mapProperties(CR resource, HelmRelease helmRelease) {
         super.mapProperties(resource, helmRelease);
 
         Th2Spec resSpec = resource.getSpec();
-        helmRelease.putSpecProp(RELEASE_NAME_ALIAS, extractNamespace(helmRelease) + "-" + extractName(helmRelease));
+        helmRelease.getSpec().setReleaseName(extractNamespace(helmRelease) + "-" + extractName(helmRelease));
 
         mapRouterConfigs(resource, helmRelease);
         mapBoxConfigurations(resource, helmRelease);
@@ -156,14 +157,13 @@ public abstract class HelmReleaseTh2Op<CR extends Th2CustomResource> extends Abs
         mapPrometheus(resource, helmRelease);
         mapExtendedSettings(resource, helmRelease);
         mapIngress(helmRelease);
-        mapChartConfig(resource, helmRelease);
         mapAnnotations(resource, helmRelease);
 
-        helmRelease.mergeValue(PROPERTIES_MERGE_DEPTH, ROOT_PROPERTIES_ALIAS, Map.of(
+        helmRelease.addComponentValues(Map.of(
                 DOCKER_IMAGE_ALIAS, resSpec.getImageName() + ":" + resSpec.getImageVersion(),
                 COMPONENT_NAME_ALIAS, resource.getMetadata().getName(),
-                SCHEMA_SECRETS_ALIAS, new HelmReleaseSecrets(OperatorConfig.INSTANCE.getSchemaSecrets()),
-                PULL_SECRETS_ALIAS, OperatorConfig.INSTANCE.getImagePullSecrets(),
+                SCHEMA_SECRETS_ALIAS, new HelmReleaseSecrets(config.getSchemaSecrets()),
+                PULL_SECRETS_ALIAS, config.getImagePullSecrets(),
                 CUSTOM_CONFIG_ALIAS, resource.getSpec().getCustomConfig()
         ));
     }
@@ -171,7 +171,7 @@ public abstract class HelmReleaseTh2Op<CR extends Th2CustomResource> extends Abs
     private void mapRouterConfigs(CR resource, HelmRelease helmRelease) {
         MessageRouterConfiguration mqConfig = getMqConfigFactory().createConfig(resource);
         GrpcRouterConfiguration grpcConfig = grpcConfigFactory.createConfig(resource);
-        helmRelease.mergeValue(PROPERTIES_MERGE_DEPTH, ROOT_PROPERTIES_ALIAS, Map.of(
+        helmRelease.addComponentValues(Map.of(
                 MQ_QUEUE_CONFIG_ALIAS, JsonUtils.writeValueAsDeepMap(mqConfig),
                 GRPC_P2P_CONFIG_ALIAS, JsonUtils.writeValueAsDeepMap(grpcConfig)
         ));
@@ -229,7 +229,7 @@ public abstract class HelmReleaseTh2Op<CR extends Th2CustomResource> extends Abs
             throw new RuntimeException(e);
         }
 
-        helmRelease.mergeValue(PROPERTIES_MERGE_DEPTH, ROOT_PROPERTIES_ALIAS, Map.of(
+        helmRelease.addComponentValues(Map.of(
                 MQ_ROUTER_ALIAS, mqRouterSection,
                 GRPC_ROUTER_ALIAS, grpcRouterSection,
                 CRADLE_MGR_ALIAS, cradleManagerSection,
@@ -245,9 +245,7 @@ public abstract class HelmReleaseTh2Op<CR extends Th2CustomResource> extends Abs
         Map<String, String> bookConfigSection = new HashMap<>();
         bookConfigSection.put(BOOK_NAME_ALIAS, crBookName != null ? crBookName : defaultBookName);
 
-        helmRelease.mergeValue(PROPERTIES_MERGE_DEPTH, ROOT_PROPERTIES_ALIAS, Map.of(
-                BOOK_CONFIG_ALIAS, bookConfigSection
-        ));
+        helmRelease.addComponentValue(BOOK_CONFIG_ALIAS, bookConfigSection);
     }
 
     private void mapCustomSecrets(CR resource, HelmRelease helmRelease) {
@@ -255,7 +253,7 @@ public abstract class HelmReleaseTh2Op<CR extends Th2CustomResource> extends Abs
         Map<String, String> secretPathsConfig = new HashMap<>();
         generateSecretsConfig(resource.getSpec().getCustomConfig(), secretValuesConfig, secretPathsConfig);
 
-        helmRelease.mergeValue(PROPERTIES_MERGE_DEPTH, ROOT_PROPERTIES_ALIAS, Map.of(
+        helmRelease.addComponentValues(Map.of(
                 SECRET_VALUES_CONFIG_ALIAS, secretValuesConfig,
                 SECRET_PATHS_CONFIG_ALIAS, secretPathsConfig
         ));
@@ -267,9 +265,7 @@ public abstract class HelmReleaseTh2Op<CR extends Th2CustomResource> extends Abs
         String resNamespace = resource.getMetadata().getNamespace();
         Set<DictionaryEntity> dictionariesConfig = new HashSet<>();
         generateDictionariesConfig(resource.getSpec().getCustomConfig(), dictionariesConfig);
-        helmRelease.mergeValue(PROPERTIES_MERGE_DEPTH, ROOT_PROPERTIES_ALIAS, Map.of(
-                DICTIONARIES_ALIAS, dictionariesConfig
-        ));
+        helmRelease.addComponentValue(DICTIONARIES_ALIAS, dictionariesConfig);
         dictionariesConfig.forEach(
                 dictionary -> operatorState.linkResourceToDictionary(resNamespace, dictionary.getName(), resName)
         );
@@ -287,42 +283,30 @@ public abstract class HelmReleaseTh2Op<CR extends Th2CustomResource> extends Abs
                 Boolean.valueOf(prometheusConfig.getEnabled())
         );
 
-        helmRelease.mergeValue(PROPERTIES_MERGE_DEPTH, ROOT_PROPERTIES_ALIAS,
-                Map.of(PROMETHEUS_CONFIG_ALIAS, prometheusConfigForRelease));
+        helmRelease.addComponentValue(PROMETHEUS_CONFIG_ALIAS, prometheusConfigForRelease);
     }
 
     private void mapExtendedSettings(CR resource, HelmRelease helmRelease) {
         Map<String, Object> extendedSettings = resource.getSpec().getExtendedSettings();
         if (extendedSettings != null) {
-            helmRelease.mergeValue(PROPERTIES_MERGE_DEPTH, ROOT_PROPERTIES_ALIAS,
-                    Map.of(EXTENDED_SETTINGS_ALIAS, extendedSettings));
+            helmRelease.addComponentValue(EXTENDED_SETTINGS_ALIAS, extendedSettings);
         }
 
     }
 
     private void mapIngress(HelmRelease helmRelease) {
-        Object ingress = OperatorConfig.INSTANCE.getIngress();
+        Object ingress = config.getIngress();
         if (ingress != null) {
-            helmRelease.mergeValue(PROPERTIES_MERGE_DEPTH, ROOT_PROPERTIES_ALIAS,
-                    Map.of(INGRESS_ALIAS, ingress));
+            helmRelease.addComponentValue(INGRESS_ALIAS, ingress);
         }
-    }
-
-    private void mapChartConfig(CR resource, HelmRelease helmRelease) {
-        var defaultChartConfig = OperatorConfig.INSTANCE.getComponentChartConfig();
-        var chartConfig = resource.getSpec().getChartConfig();
-        if (chartConfig != null) {
-            defaultChartConfig = defaultChartConfig.overrideWith(chartConfig);
-        }
-        helmRelease.mergeSpecProp(CHART_PROPERTIES_ALIAS, defaultChartConfig.toMap());
     }
 
     private void mapAnnotations(CR resource, HelmRelease helmRelease) {
-        var annotations = new HashMap<>(OperatorConfig.INSTANCE.getCommonAnnotations());
+        var annotations = new HashMap<>(config.getCommonAnnotations());
         annotations.putAll(resource.getMetadata().getAnnotations());
-        helmRelease.mergeValue(Map.of(
+        helmRelease.addValueSection(Map.of(
                 ANNOTATIONS_ALIAS, annotations,
-                OPENSHIFT_ALIAS, OperatorConfig.INSTANCE.getOpenshift()
+                OPENSHIFT_ALIAS, config.getOpenshift()
         ));
     }
 
@@ -382,12 +366,6 @@ public abstract class HelmReleaseTh2Op<CR extends Th2CustomResource> extends Abs
 
     @Override
     protected void createKubObj(String namespace, HelmRelease helmRelease) {
-        String hrName = extractName(helmRelease);
-        HelmRelease existingRelease = helmReleaseClient.inNamespace(namespace).withName(hrName).get();
-
-        if (needsToBeDeleted(helmRelease, existingRelease)) {
-            helmReleaseClient.inNamespace(namespace).withName(hrName).delete();
-        }
         helmReleaseClient.inNamespace(namespace).resource(helmRelease).createOrReplace();
         OperatorState.INSTANCE.putHelmReleaseInCache(helmRelease, namespace);
     }
@@ -419,7 +397,7 @@ public abstract class HelmReleaseTh2Op<CR extends Th2CustomResource> extends Abs
                     logger.debug("Found HelmRelease \"{}\"", CustomResourceUtils.annotationFor(hr));
                 }
 
-                var hrRawGrpcConfig = extractHelmReleaseRawGrpcConfig(hr);
+                var hrRawGrpcConfig = hr.getComponentValuesSection().get(GRPC_P2P_CONFIG_ALIAS);
 
                 var newResGrpcConfig = grpcConfigFactory.createConfig(
                         OperatorState.INSTANCE.getResourceFromCache(linkedResourceName, namespace)
@@ -430,7 +408,7 @@ public abstract class HelmReleaseTh2Op<CR extends Th2CustomResource> extends Abs
                 if (!newResRawGrpcConfig.equals(hrRawGrpcConfig)) {
                     logger.info("Updating helm release of '{}.{}' resource", namespace, linkedResourceName);
 
-                    hr.mergeValue(PROPERTIES_MERGE_DEPTH, ROOT_PROPERTIES_ALIAS, Map.of(
+                    hr.addComponentValues(Map.of(
                             GRPC_P2P_CONFIG_ALIAS, newResRawGrpcConfig
                     ));
 
@@ -443,12 +421,6 @@ public abstract class HelmReleaseTh2Op<CR extends Th2CustomResource> extends Abs
 
             }
         }
-    }
-
-    private Map<String, Object> extractHelmReleaseRawGrpcConfig(HelmRelease helmRelease) {
-        var values = (Map<String, Object>) helmRelease.getValuesSection();
-        var componentConfigs = (Map<String, Object>) values.get(ROOT_PROPERTIES_ALIAS);
-        return (Map<String, Object>) componentConfigs.get(GRPC_P2P_CONFIG_ALIAS);
     }
 
     private Set<String> getGrpcLinkedResources(Th2CustomResource resource) {

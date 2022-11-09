@@ -17,8 +17,9 @@
 package com.exactpro.th2.infraoperator.operator.manager.impl;
 
 import com.exactpro.th2.infraoperator.OperatorState;
+import com.exactpro.th2.infraoperator.configuration.ConfigLoader;
 import com.exactpro.th2.infraoperator.configuration.OperatorConfig;
-import com.exactpro.th2.infraoperator.configuration.RabbitMQConfig;
+import com.exactpro.th2.infraoperator.configuration.fields.RabbitMQConfig;
 import com.exactpro.th2.infraoperator.metrics.OperatorMetrics;
 import com.exactpro.th2.infraoperator.model.kubernetes.configmaps.ConfigMaps;
 import com.exactpro.th2.infraoperator.spec.Th2CustomResource;
@@ -51,9 +52,10 @@ import org.slf4j.LoggerFactory;
 
 import java.util.*;
 
+import static com.exactpro.th2.infraoperator.configuration.OperatorConfig.RABBITMQ_SECRET_PASSWORD_KEY;
 import static com.exactpro.th2.infraoperator.operator.HelmReleaseTh2Op.*;
 import static com.exactpro.th2.infraoperator.util.CustomResourceUtils.annotationFor;
-import static com.exactpro.th2.infraoperator.util.JsonUtils.JSON_READER;
+import static com.exactpro.th2.infraoperator.util.JsonUtils.JSON_MAPPER;
 
 public class ConfigMapEventHandler implements Watcher<ConfigMap> {
     public static final String SECRET_TYPE_OPAQUE = "Opaque";
@@ -130,14 +132,14 @@ public class ConfigMapEventHandler implements Watcher<ConfigMap> {
         String namespace = resource.getMetadata().getNamespace();
         String configMapName = resource.getMetadata().getName();
 
-        if (configMapName.equals(OperatorConfig.INSTANCE.getRabbitMQConfigMapName())) {
+        if (configMapName.equals(ConfigLoader.getConfig().getRabbitMQConfigMapName())) {
             try {
                 logger.info("Processing {} event for \"{}\"", action, resourceLabel);
                 var lock = OperatorState.INSTANCE.getLock(namespace);
                 try {
                     lock.lock();
 
-                    OperatorConfig opConfig = OperatorConfig.INSTANCE;
+                    OperatorConfig opConfig = ConfigLoader.getConfig();
                     ConfigMaps configMaps = ConfigMaps.INSTANCE;
                     RabbitMQConfig rabbitMQConfig = configMaps.getRabbitMQConfig4Namespace(namespace);
 
@@ -148,7 +150,7 @@ public class ConfigMapEventHandler implements Watcher<ConfigMap> {
                         return;
                     }
 
-                    RabbitMQConfig newRabbitMQConfig = JSON_READER.readValue(configContent, RabbitMQConfig.class);
+                    RabbitMQConfig newRabbitMQConfig = JSON_MAPPER.readValue(configContent, RabbitMQConfig.class);
                     newRabbitMQConfig.setPassword(readRabbitMQPasswordForSchema(namespace,
                             opConfig.getSchemaSecrets().getRabbitMQ()));
 
@@ -274,8 +276,7 @@ public class ConfigMapEventHandler implements Watcher<ConfigMap> {
                 }
             }
             config.put(CHECKSUM_ALIAS, checksum);
-            hr.mergeValue(PROPERTIES_MERGE_DEPTH, ROOT_PROPERTIES_ALIAS,
-                    Map.of(key, config));
+            hr.addComponentValue(key, config);
 
             logger.debug("Updating \"{}\" resource", CustomResourceUtils.annotationFor(hr));
             createKubObj(namespace, hr);
@@ -318,10 +319,10 @@ public class ConfigMapEventHandler implements Watcher<ConfigMap> {
             throw new Exception(String.format("Invalid secret \"%s\". No data", annotationFor(secret)));
         }
 
-        String password = secret.getData().get(OperatorConfig.RABBITMQ_SECRET_PASSWORD_KEY);
+        String password = secret.getData().get(RABBITMQ_SECRET_PASSWORD_KEY);
         if (password == null) {
             throw new Exception(String.format("Invalid secret \"%s\". No password was found with key \"%s\""
-                    , annotationFor(secret), OperatorConfig.RABBITMQ_SECRET_PASSWORD_KEY));
+                    , annotationFor(secret), RABBITMQ_SECRET_PASSWORD_KEY));
         }
         if (secret.getType().equals(SECRET_TYPE_OPAQUE)) {
             password = new String(Base64.getDecoder().decode(password.getBytes()));

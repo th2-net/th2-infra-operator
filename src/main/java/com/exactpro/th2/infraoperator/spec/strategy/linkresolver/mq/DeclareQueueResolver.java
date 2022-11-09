@@ -17,7 +17,7 @@
 package com.exactpro.th2.infraoperator.spec.strategy.linkresolver.mq;
 
 import com.exactpro.th2.infraoperator.OperatorState;
-import com.exactpro.th2.infraoperator.configuration.OperatorConfig;
+import com.exactpro.th2.infraoperator.configuration.ConfigLoader;
 import com.exactpro.th2.infraoperator.spec.Th2CustomResource;
 import com.exactpro.th2.infraoperator.spec.helmrelease.HelmRelease;
 import com.exactpro.th2.infraoperator.spec.shared.pin.MqSubscriberPin;
@@ -84,7 +84,7 @@ public class DeclareQueueResolver {
 
         Channel channel = getChannel();
 
-        boolean persistence = OperatorConfig.INSTANCE.getRabbitMQManagementConfig().isPersistence();
+        boolean persistence = ConfigLoader.getConfig().getRabbitMQManagement().getPersistence();
         //get queues that are associated with current box and are not linked through Th2Link resources
         Set<String> boxQueues = getBoxPreviousQueues(namespace, extractName(resource));
 
@@ -117,7 +117,7 @@ public class DeclareQueueResolver {
         if (hr == null) {
             return getBoxQueuesFromRabbit(namespace, boxName);
         }
-        return HelmReleaseUtils.extractQueues(hr.getValuesSection());
+        return HelmReleaseUtils.extractQueues(hr.getComponentValuesSection());
     }
 
     private static Set<String> getBoxQueuesFromRabbit(String namespace, String boxName) {

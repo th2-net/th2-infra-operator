@@ -214,8 +214,7 @@ public class Th2DictionaryEventHandler implements Watcher<Th2Dictionary> {
                         entity.setChecksum(checksum);
                     }
                 }
-                hr.mergeValue(PROPERTIES_MERGE_DEPTH, ROOT_PROPERTIES_ALIAS,
-                        Map.of(DICTIONARIES_ALIAS, dictionaryConfig));
+                hr.addComponentValue(DICTIONARIES_ALIAS, dictionaryConfig);
                 logger.debug("Updating \"{}\"", CustomResourceUtils.annotationFor(hr));
                 createKubObj(namespace, hr);
                 logger.debug("Updated \"{}\"", CustomResourceUtils.annotationFor(hr));

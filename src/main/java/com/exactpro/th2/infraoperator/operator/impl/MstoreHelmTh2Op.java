@@ -49,11 +49,6 @@ public class MstoreHelmTh2Op extends StoreHelmTh2Op<Th2Mstore> {
     }
 
     @Override
-    protected String getKubObjDefPath(Th2Mstore resource) {
-        return "/Th2Mstore-HelmRelease.yml";
-    }
-
-    @Override
     protected MessageRouterConfigFactory getMqConfigFactory() {
         return new MessageRouterConfigFactoryMstore();
     }

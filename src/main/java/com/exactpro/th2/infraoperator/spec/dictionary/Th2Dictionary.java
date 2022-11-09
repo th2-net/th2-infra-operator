@@ -16,60 +16,15 @@
 
 package com.exactpro.th2.infraoperator.spec.dictionary;
 
-import com.fasterxml.jackson.annotation.JsonSetter;
+import com.exactpro.th2.infraoperator.spec.helmrelease.InstantiableMap;
 import io.fabric8.kubernetes.client.CustomResource;
 import io.fabric8.kubernetes.model.annotation.Group;
 import io.fabric8.kubernetes.model.annotation.Kind;
 import io.fabric8.kubernetes.model.annotation.Version;
 
-import java.util.Objects;
-
-import static com.exactpro.th2.infraoperator.util.ExtractUtils.extractName;
-import static com.exactpro.th2.infraoperator.util.ExtractUtils.extractNamespace;
-
 @Group("th2.exactpro.com")
 @Version("v2")
 @Kind("Th2Dictionary")
-public class Th2Dictionary extends CustomResource {
-
-    private Th2DictionarySpec spec;
-
-    public Th2Dictionary() { }
-
-    @Override
-    public boolean equals(Object object) {
-        if (this == object) {
-            return true;
-        }
-        if (!(object instanceof Th2Dictionary)) {
-            return false;
-        }
-        Th2Dictionary th2Dictionary = (Th2Dictionary) object;
-        return extractName(this).equals(extractName(th2Dictionary))
-                && extractNamespace(this).equals(extractNamespace(th2Dictionary));
-    }
-
-    @Override
-    public int hashCode() {
-        return Objects.hash(extractName(this), extractNamespace(this));
-    }
-
-    public Th2DictionarySpec getSpec() {
-        return this.spec;
-    }
-
-    @JsonSetter
-    public void setSpec(Th2DictionarySpec spec) {
-        this.spec = spec;
-    }
-
-    @Override
-    public void setSpec(Object spec) {
-        throw new AssertionError("Setting spec with Object argument");
-    }
-
-    public String toString() {
-        return "Th2Dictionary(super=" + super.toString() + ", spec=" + this.getSpec() + ")";
-    }
+public class Th2Dictionary extends CustomResource<Th2DictionarySpec, InstantiableMap> {
 }
 

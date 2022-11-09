@@ -14,15 +14,18 @@
  * limitations under the License.
  */
 
-package com.exactpro.th2.infraoperator.spec;
+package com.exactpro.th2.infraoperator.configuration.fields
 
-import com.exactpro.th2.infraoperator.spec.shared.status.StatusSpec;
-import io.fabric8.kubernetes.api.model.Namespaced;
-import io.fabric8.kubernetes.client.CustomResource;
+import com.fasterxml.jackson.databind.annotation.JsonDeserialize
 
-public abstract class Th2CustomResource extends CustomResource<Th2Spec, StatusSpec> implements Namespaced {
+@JsonDeserialize
+data class SchemaSecrets(
+    val rabbitMQ: String = DEFAULT_RABBITMQ_SECRET,
+    val cassandra: String = DEFAULT_CASSANDRA_SECRET,
+) {
 
-    public Th2CustomResource() {
-        this.status = new StatusSpec();
+    companion object {
+        const val DEFAULT_RABBITMQ_SECRET = "rabbitMQ"
+        const val DEFAULT_CASSANDRA_SECRET = "cassandra"
     }
 }

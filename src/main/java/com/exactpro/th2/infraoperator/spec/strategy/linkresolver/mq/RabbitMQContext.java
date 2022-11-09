@@ -17,10 +17,10 @@
 package com.exactpro.th2.infraoperator.spec.strategy.linkresolver.mq;
 
 import com.exactpro.th2.infraoperator.OperatorState;
-import com.exactpro.th2.infraoperator.configuration.OperatorConfig;
-import com.exactpro.th2.infraoperator.configuration.RabbitMQConfig;
-import com.exactpro.th2.infraoperator.configuration.RabbitMQManagementConfig;
-import com.exactpro.th2.infraoperator.configuration.RabbitMQNamespacePermissions;
+import com.exactpro.th2.infraoperator.configuration.ConfigLoader;
+import com.exactpro.th2.infraoperator.configuration.fields.RabbitMQConfig;
+import com.exactpro.th2.infraoperator.configuration.fields.RabbitMQManagementConfig;
+import com.exactpro.th2.infraoperator.configuration.fields.RabbitMQNamespacePermissions;
 import com.exactpro.th2.infraoperator.model.kubernetes.configmaps.ConfigMaps;
 import com.exactpro.th2.infraoperator.spec.shared.PinSettings;
 import com.exactpro.th2.infraoperator.spec.strategy.linkresolver.queue.QueueName;
@@ -74,7 +74,7 @@ public final class RabbitMQContext {
         String exchangeName = getManagementConfig().getExchangeName();
         RabbitMQManagementConfig rabbitMQManagementConfig = getManagementConfig();
         try {
-            getChannel().exchangeDeclare(exchangeName, "topic", rabbitMQManagementConfig.isPersistence());
+            getChannel().exchangeDeclare(exchangeName, "topic", rabbitMQManagementConfig.getPersistence());
         } catch (Exception e) {
             logger.error("Exception setting up exchange: \"{}\"", exchangeName, e);
             RetryTopicExchangeTask retryTopicExchangeTask = new RetryTopicExchangeTask(exchangeName, RETRY_DELAY);
@@ -104,7 +104,7 @@ public final class RabbitMQContext {
         RabbitMQConfig rabbitMQConfig = getRabbitMQConfig(namespace);
 
         String password = rabbitMQConfig.getPassword();
-        String vHostName = rabbitMQManagementConfig.getVHostName();
+        String vHostName = rabbitMQManagementConfig.getVhostName();
 
         if (Strings.isNullOrEmpty(namespace)) {
             return;
@@ -123,7 +123,7 @@ public final class RabbitMQContext {
 
             // set permissions
             RabbitMQNamespacePermissions rabbitMQNamespacePermissions =
-                    rabbitMQManagementConfig.getRabbitMQNamespacePermissions();
+                    rabbitMQManagementConfig.getSchemaPermissions();
             UserPermissions permissions = new UserPermissions();
             permissions.setConfigure(rabbitMQNamespacePermissions.getConfigure());
             permissions.setRead(rabbitMQNamespacePermissions.getRead());
@@ -140,7 +140,7 @@ public final class RabbitMQContext {
     private static void declareExchange(String exchangeName) throws Exception {
         RabbitMQManagementConfig rabbitMQManagementConfig = getManagementConfig();
         try {
-            getChannel().exchangeDeclare(exchangeName, "direct", rabbitMQManagementConfig.isPersistence());
+            getChannel().exchangeDeclare(exchangeName, "direct", rabbitMQManagementConfig.getPersistence());
         } catch (Exception e) {
             logger.error("Exception setting up exchange: \"{}\"", exchangeName, e);
             throw e;
@@ -152,7 +152,7 @@ public final class RabbitMQContext {
         RabbitMQManagementConfig rabbitMQManagementConfig = getManagementConfig();
         var declareResult = channel.queueDeclare(
                 new QueueName(namespace, EVENT_STORAGE_BOX_ALIAS, EVENT_STORAGE_PIN_ALIAS).toString(),
-                rabbitMQManagementConfig.isPersistence(),
+                rabbitMQManagementConfig.getPersistence(),
                 false,
                 false,
                 null
@@ -160,7 +160,7 @@ public final class RabbitMQContext {
         logger.info("Queue \"{}\" was successfully declared", declareResult.getQueue());
         declareResult = channel.queueDeclare(
                 new QueueName(namespace, MESSAGE_STORAGE_BOX_ALIAS, MESSAGE_STORAGE_PIN_ALIAS).toString(),
-                rabbitMQManagementConfig.isPersistence(),
+                rabbitMQManagementConfig.getPersistence(),
                 false,
                 false,
                 null
@@ -178,7 +178,7 @@ public final class RabbitMQContext {
     private static void removeSchemaUser(String namespace) throws Exception {
         RabbitMQManagementConfig rabbitMQManagementConfig = getManagementConfig();
 
-        String vHostName = rabbitMQManagementConfig.getVHostName();
+        String vHostName = rabbitMQManagementConfig.getVhostName();
 
         Client rmqClient = getClient();
 
@@ -225,7 +225,8 @@ public final class RabbitMQContext {
     public static void cleanUpRabbitBeforeStart() {
         try {
             Channel channel = getChannel();
-            List<String> namespacePrefixes = OperatorConfig.INSTANCE.getNamespacePrefixes();
+            List<String> namespacePrefixes = ConfigLoader.getConfig().getNamespacePrefixes();
+            ;
 
             List<QueueInfo> queueInfoList = getQueues();
             queueInfoList.forEach(q -> {
@@ -288,7 +289,7 @@ public final class RabbitMQContext {
 
     public static List<QueueInfo> getQueues() {
 
-        String vHostName = getManagementConfig().getVHostName();
+        String vHostName = getManagementConfig().getVhostName();
 
         try {
             Client rmqClient = getClient();
@@ -301,7 +302,7 @@ public final class RabbitMQContext {
     }
 
     public static List<BindingInfo> getQueueBindings(String queue) {
-        String vHostName = getManagementConfig().getVHostName();
+        String vHostName = getManagementConfig().getVhostName();
         try {
             Client rmqClient = getClient();
             return rmqClient.getQueueBindings(vHostName, queue);
@@ -326,7 +327,7 @@ public final class RabbitMQContext {
 
     public static QueueInfo getQueue(String queueName) {
 
-        String vHostName = getManagementConfig().getVHostName();
+        String vHostName = getManagementConfig().getVhostName();
         try {
             Client rmqClient = getClient();
             return rmqClient.getQueue(vHostName, queueName);
@@ -340,7 +341,7 @@ public final class RabbitMQContext {
     private static RabbitMQManagementConfig getManagementConfig() {
         // we do not need to synchronize as we are assigning immutable object from singleton
         if (managementConfig == null) {
-            managementConfig = OperatorConfig.INSTANCE.getRabbitMQManagementConfig();
+            managementConfig = ConfigLoader.getConfig().getRabbitMQManagement();
         }
         return managementConfig;
     }
@@ -387,7 +388,7 @@ public final class RabbitMQContext {
             ConnectionFactory connectionFactory = new ConnectionFactory();
             connectionFactory.setHost(rabbitMQManagementConfig.getHost());
             connectionFactory.setPort(rabbitMQManagementConfig.getApplicationPort());
-            connectionFactory.setVirtualHost(rabbitMQManagementConfig.getVHostName());
+            connectionFactory.setVirtualHost(rabbitMQManagementConfig.getVhostName());
             connectionFactory.setUsername(rabbitMQManagementConfig.getUsername());
             connectionFactory.setPassword(rabbitMQManagementConfig.getPassword());
             try {
@@ -428,7 +429,7 @@ public final class RabbitMQContext {
         @Override
         public void shutdownCompleted(ShutdownSignalException cause) {
             logger.error("Detected Rabbit mq connection lose", cause);
-                    RecreateQueuesAndBindings recreateQueuesAndBindingsTask = new RecreateQueuesAndBindings(
+            RecreateQueuesAndBindings recreateQueuesAndBindingsTask = new RecreateQueuesAndBindings(
                     OperatorState.INSTANCE.getAllBoxResources(),
                     RETRY_DELAY
             );

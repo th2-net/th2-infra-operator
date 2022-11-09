@@ -14,31 +14,26 @@
  * limitations under the License.
  */
 
-package com.exactpro.th2.infraoperator.configuration;
+package com.exactpro.th2.infraoperator.configuration.fields
 
-import java.util.Objects;
+import com.fasterxml.jackson.databind.annotation.JsonDeserialize
 
-public class EnvironmentConfig {
-    private boolean enabled;
+@JsonDeserialize
+data class ChartConfig(
+    val spec: ChartSpec = ChartSpec()
+)
 
-    public boolean isEnabled() {
-        return enabled;
-    }
+@JsonDeserialize
+data class ChartSpec(
+    val chart: String = "box-chart",
+    val version: String = "1.0.0",
+    val reconcileStrategy: String = "ChartVersion",
+    val sourceRef: ChartSourceRef = ChartSourceRef()
+)
 
-    @Override
-    public boolean equals(Object o) {
-        if (this == o) {
-            return true;
-        }
-        if (o == null || getClass() != o.getClass()) {
-            return false;
-        }
-        EnvironmentConfig that = (EnvironmentConfig) o;
-        return isEnabled() == that.isEnabled();
-    }
-
-    @Override
-    public int hashCode() {
-        return Objects.hash(isEnabled());
-    }
-}
+@JsonDeserialize
+data class ChartSourceRef(
+    val kind: String = "HelmRepository",
+    val name: String = "helm-repo",
+    val namespace: String = "flux-system",
+)

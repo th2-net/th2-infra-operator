@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2021 Exactpro (Exactpro Systems Limited)
+ * Copyright 2020-2022 Exactpro (Exactpro Systems Limited)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,18 +14,16 @@
  * limitations under the License.
  */
 
-package com.exactpro.th2.infraoperator.configuration
+package com.exactpro.th2.infraoperator.configuration.fields
 
-import com.fasterxml.jackson.databind.annotation.JsonDeserialize
-
-@JsonDeserialize
-data class SchemaSecrets(
-    val rabbitMQ: String = DEFAULT_RABBITMQ_SECRET,
-    val cassandra: String = DEFAULT_CASSANDRA_SECRET,
-) {
-
-    companion object {
-        const val DEFAULT_RABBITMQ_SECRET = "rabbitMQ"
-        const val DEFAULT_CASSANDRA_SECRET = "cassandra"
-    }
-}
+data class RabbitMQManagementConfig(
+    val host: String = "",
+    val managementPort: Int = 0,
+    val applicationPort: Int = 0,
+    val vhostName: String = "",
+    val exchangeName: String = "",
+    val username: String = "",
+    val password: String = "",
+    val persistence: Boolean = false,
+    val schemaPermissions: RabbitMQNamespacePermissions = RabbitMQNamespacePermissions()
+)
