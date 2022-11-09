@@ -16,10 +16,8 @@
 
 package com.exactpro.th2.infraoperator.spec;
 
-import com.exactpro.th2.infraoperator.configuration.ChartConfig;
 import com.exactpro.th2.infraoperator.spec.shared.*;
 import com.exactpro.th2.infraoperator.spec.shared.pin.*;
-import com.exactpro.th2.infraoperator.util.JsonUtils;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
@@ -31,8 +29,6 @@ import java.util.*;
 @JsonInclude(JsonInclude.Include.NON_EMPTY)
 @JsonIgnoreProperties(ignoreUnknown = true)
 public class Th2Spec implements KubernetesResource {
-    private static final String CHART_CFG_ALIAS = "chartCfg";
-
     protected String imageName;
 
     protected String imageVersion;
@@ -63,13 +59,7 @@ public class Th2Spec implements KubernetesResource {
     }
 
     public Map<String, Object> getExtendedSettings() {
-        var copy = new HashMap<>(extendedSettings);
-        copy.remove(CHART_CFG_ALIAS);
-        return copy;
-    }
-
-    public ChartConfig getChartConfig() {
-        return JsonUtils.JSON_READER.convertValue(extendedSettings.get(CHART_CFG_ALIAS), ChartConfig.class);
+        return new HashMap<>(extendedSettings);
     }
 
     public String getImageName() {

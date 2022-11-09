@@ -17,6 +17,7 @@
 package com.exactpro.th2.infraoperator.operator.manager.impl;
 
 import com.exactpro.th2.infraoperator.OperatorState;
+import com.exactpro.th2.infraoperator.configuration.ConfigLoader;
 import com.exactpro.th2.infraoperator.configuration.OperatorConfig;
 import com.exactpro.th2.infraoperator.operator.context.EventCounter;
 import com.exactpro.th2.infraoperator.spec.strategy.linkresolver.mq.RabbitMQContext;
@@ -37,6 +38,8 @@ public class NamespaceEventHandler implements ResourceEventHandler<Namespace>, W
 
     private EventQueue eventQueue;
 
+    private final OperatorConfig config = ConfigLoader.getConfig();
+
     public static NamespaceEventHandler newInstance(SharedInformerFactory sharedInformerFactory,
                                                     EventQueue eventQueue) {
         SharedIndexInformer<Namespace> namespaceInformer = sharedInformerFactory.sharedIndexInformerFor(
@@ -55,7 +58,7 @@ public class NamespaceEventHandler implements ResourceEventHandler<Namespace>, W
     @Override
     public void onAdd(Namespace namespace) {
         if (Strings.nonePrefixMatch(namespace.getMetadata().getName(),
-                OperatorConfig.INSTANCE.getNamespacePrefixes())) {
+                config.getNamespacePrefixes())) {
             return;
         }
 
@@ -65,9 +68,9 @@ public class NamespaceEventHandler implements ResourceEventHandler<Namespace>, W
     @Override
     public void onUpdate(Namespace oldNamespace, Namespace newNamespace) {
         if (Strings.nonePrefixMatch(oldNamespace.getMetadata().getName(),
-                OperatorConfig.INSTANCE.getNamespacePrefixes())
+                config.getNamespacePrefixes())
                 && Strings.nonePrefixMatch(newNamespace.getMetadata().getName(),
-                OperatorConfig.INSTANCE.getNamespacePrefixes())) {
+                config.getNamespacePrefixes())) {
             return;
         }
 
@@ -78,7 +81,7 @@ public class NamespaceEventHandler implements ResourceEventHandler<Namespace>, W
     public void onDelete(Namespace namespace, boolean deletedFinalStateUnknown) {
         String namespaceName = namespace.getMetadata().getName();
 
-        if (Strings.nonePrefixMatch(namespaceName, OperatorConfig.INSTANCE.getNamespacePrefixes())) {
+        if (Strings.nonePrefixMatch(namespaceName, config.getNamespacePrefixes())) {
             return;
         }
 

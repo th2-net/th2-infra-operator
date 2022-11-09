@@ -30,7 +30,6 @@ public class Th2CrdController {
 
     private static final Logger logger = LoggerFactory.getLogger(Th2CrdController.class);
 
-    //TODO At the start, operator must check the status of the services and not reboot everything
     public static void main(String[] args) {
 
         var watchManager = DefaultWatchManager.getInstance();

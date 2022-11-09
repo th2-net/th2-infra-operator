@@ -16,7 +16,7 @@
 
 package com.exactpro.th2.infraoperator.metrics;
 
-import com.exactpro.th2.infraoperator.configuration.OperatorConfig;
+import com.exactpro.th2.infraoperator.configuration.ConfigLoader;
 import com.exactpro.th2.infraoperator.spec.shared.PrometheusConfiguration;
 import io.prometheus.client.exporter.HTTPServer;
 import io.prometheus.client.hotspot.DefaultExports;
@@ -33,7 +33,7 @@ public class PrometheusServer {
 
     public static void start() {
         DefaultExports.initialize();
-        PrometheusConfiguration<String> prometheusConfiguration = OperatorConfig.INSTANCE.getPrometheusConfiguration();
+        PrometheusConfiguration<String> prometheusConfiguration = ConfigLoader.getConfig().getPrometheusConfiguration();
 
         String host = prometheusConfiguration.getHost();
         int port = Integer.parseInt(prometheusConfiguration.getPort());

@@ -16,7 +16,7 @@
 
 package com.exactpro.th2.infraoperator.spec.helmrelease;
 
-import com.exactpro.th2.infraoperator.configuration.SchemaSecrets;
+import com.exactpro.th2.infraoperator.configuration.fields.SchemaSecrets;
 
 public class HelmReleaseSecrets {
 

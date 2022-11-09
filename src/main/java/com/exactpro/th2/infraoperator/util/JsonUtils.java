@@ -26,11 +26,11 @@ import java.util.*;
 
 public class JsonUtils {
 
-    public static final ObjectMapper JSON_READER = new ObjectMapper(new JsonFactory())
+    public static final ObjectMapper JSON_MAPPER = new ObjectMapper(new JsonFactory())
             .registerModule(new KotlinModule.Builder().build())
             .enable(DeserializationFeature.READ_UNKNOWN_ENUM_VALUES_AS_NULL);
 
-    public static final ObjectMapper YAML_READER = new ObjectMapper(new YAMLFactory())
+    public static final ObjectMapper YAML_MAPPER = new ObjectMapper(new YAMLFactory())
             .registerModule(new KotlinModule.Builder().build());
 
     private JsonUtils() {
@@ -38,7 +38,7 @@ public class JsonUtils {
 
     @SuppressWarnings("unchecked")
     public static Map<String, Object> writeValueAsDeepMap(Object object) {
-        return (Map<String, Object>) JSON_READER.convertValue(object, Map.class);
+        return (Map<String, Object>) JSON_MAPPER.convertValue(object, Map.class);
     }
 
 }

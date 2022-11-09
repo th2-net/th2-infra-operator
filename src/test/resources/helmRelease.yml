@@ -9,9 +9,13 @@ spec:
   forceUpgrade: false
   releaseName: th2-core-box
   chart:
-    secretRef:
-      name: git-chart-creds
-    skipDepUpdate: true
+    spec:
+      chart: chart
+      version: 1.0.0
+      sourceRef:
+        kind: source-kind
+        name: source-name
+        namespace: namespace
   values:
     component:
       image: will-be-replaced

@@ -16,7 +16,7 @@
 
 package com.exactpro.th2.infraoperator.model.box.mq.factory
 
-import com.exactpro.th2.infraoperator.configuration.OperatorConfig
+import com.exactpro.th2.infraoperator.configuration.ConfigLoader
 import com.exactpro.th2.infraoperator.model.LinkDescription
 import com.exactpro.th2.infraoperator.model.box.mq.MessageRouterConfiguration
 import com.exactpro.th2.infraoperator.model.box.mq.QueueConfiguration
@@ -75,7 +75,7 @@ class MessageRouterConfigFactoryBox : MessageRouterConfigFactory() {
                 filters
             )
         }
-        val globalExchange = OperatorConfig.INSTANCE.rabbitMQManagementConfig.exchangeName
+        val globalExchange = ConfigLoader.config.rabbitMQManagement.exchangeName
         return MessageRouterConfiguration(queues, globalExchange)
     }
 }

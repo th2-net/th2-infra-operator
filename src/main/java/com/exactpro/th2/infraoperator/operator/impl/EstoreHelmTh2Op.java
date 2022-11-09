@@ -49,11 +49,6 @@ public class EstoreHelmTh2Op extends StoreHelmTh2Op<Th2Estore> {
     }
 
     @Override
-    protected String getKubObjDefPath(Th2Estore resource) {
-        return "/Th2Estore-HelmRelease.yml";
-    }
-
-    @Override
     protected MessageRouterConfigFactory getMqConfigFactory() {
         return new MessageRouterConfigFactoryEstore();
     }

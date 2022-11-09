@@ -23,13 +23,10 @@ import com.exactpro.th2.infraoperator.model.box.mq.MessageRouterConfiguration;
 import com.exactpro.th2.infraoperator.model.box.mq.QueueConfiguration;
 import com.exactpro.th2.infraoperator.spec.Th2CustomResource;
 import com.exactpro.th2.infraoperator.spec.helmrelease.HelmRelease;
-import com.exactpro.th2.infraoperator.spec.helmrelease.InstantiableMap;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.JsonNode;
 import org.apache.commons.text.StringSubstitutor;
 import org.apache.commons.text.lookup.StringLookupFactory;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import java.util.Collection;
 import java.util.List;
@@ -39,12 +36,9 @@ import java.util.stream.Collectors;
 
 import static com.exactpro.th2.infraoperator.operator.HelmReleaseTh2Op.*;
 import static com.exactpro.th2.infraoperator.util.CustomResourceUtils.annotationFor;
-import static com.exactpro.th2.infraoperator.util.JsonUtils.JSON_READER;
-import static com.exactpro.th2.infraoperator.util.JsonUtils.YAML_READER;
+import static com.exactpro.th2.infraoperator.util.JsonUtils.JSON_MAPPER;
 
 public class HelmReleaseUtils {
-
-    private static final Logger logger = LoggerFactory.getLogger(HelmReleaseUtils.class);
 
     private static final String HOST_NETWORK_ALIAS = "hostNetwork";
 
@@ -81,7 +75,7 @@ public class HelmReleaseUtils {
         }
         JsonNode endpointsNode = getFieldAsNode(boxSettings, SERVICE_ALIAS, NODE_PORT_ALIAS);
         if (endpointsNode != null) {
-            List<GrpcEndpointMapping> grpcEndpointMappings = JSON_READER.convertValue(endpointsNode,
+            List<GrpcEndpointMapping> grpcEndpointMappings = JSON_MAPPER.convertValue(endpointsNode,
                     new TypeReference<>() {
                     });
             for (GrpcEndpointMapping grpcEndpointMapping : grpcEndpointMappings) {
@@ -99,7 +93,7 @@ public class HelmReleaseUtils {
         }
         JsonNode endpointsNode = getFieldAsNode(boxSettings, EXTERNAL_BOX_ALIAS, ENDPOINTS_ALIAS);
         if (endpointsNode != null) {
-            List<GrpcExternalEndpointMapping> externalEndpoints = JSON_READER.convertValue(endpointsNode,
+            List<GrpcExternalEndpointMapping> externalEndpoints = JSON_MAPPER.convertValue(endpointsNode,
                     new TypeReference<>() {
                     });
             for (GrpcExternalEndpointMapping grpcExternalEndpointMapping : externalEndpoints) {
@@ -117,7 +111,7 @@ public class HelmReleaseUtils {
         }
         JsonNode address = getFieldAsNode(boxSettings, EXTERNAL_BOX_ALIAS, ADDRESS_ALIAS);
         if (address != null) {
-            return JSON_READER.convertValue(address, String.class);
+            return JSON_MAPPER.convertValue(address, String.class);
         }
         return null;
     }
@@ -137,7 +131,7 @@ public class HelmReleaseUtils {
     }
 
     private static JsonNode getFieldAsNode(Object sourceObj, String... fields) {
-        JsonNode currentField = JSON_READER.convertValue(sourceObj, JsonNode.class);
+        JsonNode currentField = JSON_MAPPER.convertValue(sourceObj, JsonNode.class);
         for (String field : fields) {
             currentField = currentField.get(field);
             if (currentField == null) {
@@ -152,18 +146,18 @@ public class HelmReleaseUtils {
     }
 
     private static boolean getFieldAsBoolean(Object sourceObj, boolean defaultValue, String... fields) {
-        JsonNode currentField = JSON_READER.convertValue(sourceObj, JsonNode.class);
+        JsonNode currentField = JSON_MAPPER.convertValue(sourceObj, JsonNode.class);
         for (String field : fields) {
             currentField = currentField.get(field);
             if (currentField == null) {
                 return defaultValue;
             }
         }
-        return JSON_READER.convertValue(currentField, Boolean.class);
+        return JSON_MAPPER.convertValue(currentField, Boolean.class);
     }
 
-    private static Map<String, Object> getSectionReference(Map<String, Object> values, String... fields) {
-        Map<String, Object> currentSection = (Map<String, Object>) values.get(fields[0]);
+    private static Map<String, Object> getSectionReference(Map<String, Object> componentValues, String... fields) {
+        Map<String, Object> currentSection = (Map<String, Object>) componentValues.get(fields[0]);
         for (int i = 1; i < fields.length; i++) {
             if (currentSection != null) {
                 currentSection = (Map<String, Object>) currentSection.get(fields[i]);
@@ -173,82 +167,15 @@ public class HelmReleaseUtils {
     }
 
     public static Map<String, Object> extractConfigSection(HelmRelease helmRelease, String key) {
-        var values = (Map<String, Object>) helmRelease.getValuesSection();
-        var componentConfigs = (Map<String, Object>) values.get(ROOT_PROPERTIES_ALIAS);
-        return (Map<String, Object>) componentConfigs.get(key);
+        return (Map<String, Object>) helmRelease.getComponentValuesSection().get(key);
     }
 
     public static String extractComponentName(HelmRelease helmRelease) {
-        var values = (Map<String, Object>) helmRelease.getValuesSection();
-        var componentConfigs = (Map<String, Object>) values.get(ROOT_PROPERTIES_ALIAS);
-        return (String) componentConfigs.get("name");
+        return (String) helmRelease.getComponentValuesSection().get("name");
     }
 
     public static Collection<DictionaryEntity> extractDictionariesConfig(HelmRelease helmRelease) {
-        var values = (Map<String, Object>) helmRelease.getValuesSection();
-        var componentConfigs = (Map<String, Object>) values.get(ROOT_PROPERTIES_ALIAS);
-        return (Collection<DictionaryEntity>) componentConfigs.get(DICTIONARIES_ALIAS);
-    }
-
-    public static boolean needsToBeDeleted(HelmRelease newHelmRelease, HelmRelease oldHelmRelease) {
-        if (oldHelmRelease == null) {
-            return false;
-        }
-        return isAlreadyFailed(oldHelmRelease)
-                || containsFailingService(newHelmRelease, oldHelmRelease)
-                || containsFailingExternalBox(newHelmRelease, oldHelmRelease)
-                || containsFailingHostNetwork(newHelmRelease, oldHelmRelease);
-    }
-
-    private static boolean isAlreadyFailed(HelmRelease oldHelmRelease) {
-        InstantiableMap statusSection = oldHelmRelease.getStatus();
-        if (statusSection == null ||
-                statusSection.get("phase") == null ||
-                statusSection.get("releaseStatus") == null ||
-                !statusSection.get("phase").equals("Succeeded") ||
-                !statusSection.get("releaseStatus").equals("deployed")
-        ) {
-            logger.warn("HelmRelease \"{}\" was failed. will be recreated",
-                    annotationFor(oldHelmRelease));
-            return true;
-        }
-        return false;
-    }
-
-    private static boolean containsFailingService(HelmRelease newHelmRelease, HelmRelease oldHelmRelease) {
-        Map<String, Object> newServiceSection = getSectionReference(newHelmRelease.getValuesSection(),
-                ROOT_PROPERTIES_ALIAS, EXTENDED_SETTINGS_ALIAS, SERVICE_ALIAS);
-        Map<String, Object> oldServiceSection = getSectionReference(oldHelmRelease.getValuesSection(),
-                ROOT_PROPERTIES_ALIAS, EXTENDED_SETTINGS_ALIAS, SERVICE_ALIAS);
-        if (newServiceSection == null && oldServiceSection == null) {
-            return false;
-        }
-        if (newServiceSection == null ^ oldServiceSection == null) {
-            return true;
-        }
-        try {
-            String newServiceSectionStr = YAML_READER.writeValueAsString(newServiceSection);
-            String oldServiceSectionStr = YAML_READER.writeValueAsString(oldServiceSection);
-            return !newServiceSectionStr.equals(oldServiceSectionStr);
-        } catch (Exception e) {
-            return true;
-        }
-    }
-
-    private static boolean containsFailingExternalBox(HelmRelease newHelmRelease, HelmRelease oldHelmRelease) {
-        boolean newExternalBoxEnabled = getFieldAsBoolean(newHelmRelease.getValuesSection(),
-                ROOT_PROPERTIES_ALIAS, EXTENDED_SETTINGS_ALIAS, EXTERNAL_BOX_ALIAS, ENABLED_ALIAS);
-        boolean oldExternalBoxEnabled = getFieldAsBoolean(oldHelmRelease.getValuesSection(),
-                ROOT_PROPERTIES_ALIAS, EXTENDED_SETTINGS_ALIAS, EXTERNAL_BOX_ALIAS, ENABLED_ALIAS);
-        return newExternalBoxEnabled ^ oldExternalBoxEnabled;
-    }
-
-    private static boolean containsFailingHostNetwork(HelmRelease newHelmRelease, HelmRelease oldHelmRelease) {
-        boolean newHostNetworkEnabled = getFieldAsBoolean(newHelmRelease.getValuesSection(),
-                ROOT_PROPERTIES_ALIAS, EXTENDED_SETTINGS_ALIAS, HOST_NETWORK);
-        boolean oldHostNetworkEnabled = getFieldAsBoolean(oldHelmRelease.getValuesSection(),
-                ROOT_PROPERTIES_ALIAS, EXTENDED_SETTINGS_ALIAS, HOST_NETWORK);
-        return newHostNetworkEnabled ^ oldHostNetworkEnabled;
+        return (Collection<DictionaryEntity>) helmRelease.getComponentValuesSection().get(DICTIONARIES_ALIAS);
     }
 
     public static void generateSecretsConfig(Map<String, Object> customConfig,
@@ -287,9 +214,11 @@ public class HelmReleaseUtils {
         }
     }
 
-    public static Set<String> extractQueues(Map<String, Object> values) {
-        var mqConfigObj = getFieldAsNode(values, ROOT_PROPERTIES_ALIAS, MQ_QUEUE_CONFIG_ALIAS);
-        MessageRouterConfiguration mqConfig = JSON_READER.convertValue(mqConfigObj, MessageRouterConfiguration.class);
+    public static Set<String> extractQueues(Map<String, Object> componentValues) {
+        MessageRouterConfiguration mqConfig = JSON_MAPPER.convertValue(
+                componentValues.get(MQ_QUEUE_CONFIG_ALIAS),
+                MessageRouterConfiguration.class
+        );
         return mqConfig.getQueues().values()
                 .stream()
                 .filter(queueConfiguration -> !(queueConfiguration.getQueueName().isEmpty()))

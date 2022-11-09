@@ -1,15 +1,12 @@
 ---
-apiVersion: helm.fluxcd.io/v1
+apiVersion: helm.toolkit.fluxcd.io/v2beta1
 kind: HelmRelease
 metadata:
   name: will-be-replaced
 spec:
   maxHistory: 2
-  resetValues: true
-  wait: false
-  releaseName: th2-box
-  chart:
-    skipDepUpdate: true
+  releaseName: th2-release
+  interval: 200m
   values:
     component:
       image: will-be-replaced
