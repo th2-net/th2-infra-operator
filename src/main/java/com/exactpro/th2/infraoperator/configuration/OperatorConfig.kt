@@ -30,11 +30,12 @@ data class OperatorConfig(
     var rabbitMQConfigMapName: String = DEFAULT_RABBITMQ_CONFIGMAP_NAME,
     var k8sUrl: String = "",
     var prometheusConfiguration: PrometheusConfiguration<String> = PrometheusConfiguration.createDefault("true"),
-    var commonAnnotations: Map<String, String> = HashMap(),
+    var commonAnnotations: Map<String, String>? = HashMap(),
     var ingress: Any? = null,
-    var imagePullSecrets: List<String> = ArrayList(),
+    private var imagePullSecrets: List<String>? = ArrayList(),
     var openshift: EnvironmentConfig = EnvironmentConfig()
 ) {
+    val imgPullSecrets = imagePullSecrets ?: ArrayList()
     companion object {
         const val DEFAULT_RABBITMQ_CONFIGMAP_NAME = "rabbit-mq-app-config"
         const val RABBITMQ_SECRET_PASSWORD_KEY = "rabbitmq-password"

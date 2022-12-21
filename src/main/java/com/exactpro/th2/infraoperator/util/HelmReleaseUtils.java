@@ -56,8 +56,6 @@ public class HelmReleaseUtils {
 
     private static final String DICTIONARY_LINK_PREFIX = "dictionary_link";
 
-    private static final String HOST_NETWORK = "hostNetwork";
-
     private HelmReleaseUtils() {
     }
 

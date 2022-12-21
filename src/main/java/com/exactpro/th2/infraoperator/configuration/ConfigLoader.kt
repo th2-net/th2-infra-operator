@@ -28,7 +28,7 @@ import java.io.FileInputStream
 object ConfigLoader {
 
     const val CONFIG_FILE_SYSTEM_PROPERTY = "infra.operator.config"
-    const val CONFIG_FILE_NAME = "/var/th2/config/infra-operator.yml"
+    private const val CONFIG_FILE_NAME = "/var/th2/config/infra-operator.yml"
 
     private val logger = KotlinLogging.logger { }
 

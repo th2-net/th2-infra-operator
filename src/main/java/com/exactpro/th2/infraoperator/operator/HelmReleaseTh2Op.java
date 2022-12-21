@@ -55,18 +55,12 @@ public abstract class HelmReleaseTh2Op<CR extends Th2CustomResource> extends Abs
 
     private static final Logger logger = LoggerFactory.getLogger(HelmReleaseTh2Op.class);
 
-    public static final int PROPERTIES_MERGE_DEPTH = 1;
-
     public static final String ANTECEDENT_LABEL_KEY_ALIAS = "th2.exactpro.com/antecedent";
 
     public static final String COMMIT_HASH_LABEL_KEY_ALIAS = "th2.exactpro.com/git-commit-hash";
 
     //spec section
-    private static final String CHART_PROPERTIES_ALIAS = "chart";
-
     private static final String OPENSHIFT_ALIAS = "openshift";
-
-    public static final String RELEASE_NAME_ALIAS = "releaseName";
 
     //values section
     public static final String ANNOTATIONS_ALIAS = "commonAnnotations";
@@ -163,7 +157,7 @@ public abstract class HelmReleaseTh2Op<CR extends Th2CustomResource> extends Abs
                 DOCKER_IMAGE_ALIAS, resSpec.getImageName() + ":" + resSpec.getImageVersion(),
                 COMPONENT_NAME_ALIAS, resource.getMetadata().getName(),
                 SCHEMA_SECRETS_ALIAS, new HelmReleaseSecrets(config.getSchemaSecrets()),
-                PULL_SECRETS_ALIAS, config.getImagePullSecrets(),
+                PULL_SECRETS_ALIAS, config.getImgPullSecrets(),
                 CUSTOM_CONFIG_ALIAS, resource.getSpec().getCustomConfig()
         ));
     }
@@ -280,7 +274,7 @@ public abstract class HelmReleaseTh2Op<CR extends Th2CustomResource> extends Abs
         PrometheusConfiguration<Boolean> prometheusConfigForRelease = new PrometheusConfiguration<>(
                 prometheusConfig.getHost(),
                 prometheusConfig.getPort(),
-                Boolean.valueOf(prometheusConfig.getEnabled())
+                prometheusConfig.getEnabled()
         );
 
         helmRelease.addComponentValue(PROMETHEUS_CONFIG_ALIAS, prometheusConfigForRelease);
@@ -302,7 +296,13 @@ public abstract class HelmReleaseTh2Op<CR extends Th2CustomResource> extends Abs
     }
 
     private void mapAnnotations(CR resource, HelmRelease helmRelease) {
-        var annotations = new HashMap<>(config.getCommonAnnotations());
+        var commonAnnotations = config.getCommonAnnotations();
+        Map<String, String> annotations;
+        if (commonAnnotations == null) {
+            annotations = new HashMap<>();
+        } else {
+            annotations = new HashMap<>(config.getCommonAnnotations());
+        }
         annotations.putAll(resource.getMetadata().getAnnotations());
         helmRelease.addValueSection(Map.of(
                 ANNOTATIONS_ALIAS, annotations,
