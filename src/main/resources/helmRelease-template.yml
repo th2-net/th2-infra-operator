@@ -7,6 +7,23 @@ spec:
   maxHistory: 2
   releaseName: th2-release
   interval: 200m
+  install:
+    createNamespace: false
+    disableHooks: true
+    disableOpenAPIValidation: true
+    disableWait: true
+    disableWaitForJobs: true
+  uninstall:
+    disableHooks: true
+    disableWait: true
+    keepHistory: false
+  upgrade:
+    disableHooks: true
+    disableOpenAPIValidation: true
+    disableWait: true
+    disableWaitForJobs: true
+    force: true
+    preserveValues: false
   values:
     component:
       image: will-be-replaced

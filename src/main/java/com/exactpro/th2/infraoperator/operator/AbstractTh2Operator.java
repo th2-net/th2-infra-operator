@@ -151,6 +151,7 @@ public abstract class AbstractTh2Operator<CR extends Th2CustomResource> implemen
 
             var helmRelease = parseStreamToKubObj(somePodYml);
             helmRelease.getSpec().setChart(ConfigLoader.getConfig().getChart());
+            helmRelease.getSpec().setTimeout(ConfigLoader.getConfig().getReleaseTimeout());
             return helmRelease;
         }
 

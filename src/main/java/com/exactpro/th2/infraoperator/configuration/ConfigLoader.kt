@@ -55,7 +55,8 @@ object ConfigLoader {
                 }
         } catch (e: UnrecognizedPropertyException) {
             logger.error(
-                "Bad configuration: unknown property(\"{}\") specified in configuration file", e.propertyName
+                "Bad configuration: unknown property(\"{}\") specified in configuration file",
+                e.propertyName
             )
             throw e
         } catch (e: JsonParseException) {

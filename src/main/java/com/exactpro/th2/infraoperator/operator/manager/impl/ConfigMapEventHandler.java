@@ -32,9 +32,7 @@ import com.exactpro.th2.infraoperator.util.HelmReleaseUtils;
 import com.exactpro.th2.infraoperator.util.Strings;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.core.type.TypeReference;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.ObjectReader;
-import com.fasterxml.jackson.module.kotlin.KotlinModule;
 import io.fabric8.kubernetes.api.model.ConfigMap;
 import io.fabric8.kubernetes.api.model.KubernetesResourceList;
 import io.fabric8.kubernetes.api.model.Secret;
@@ -332,13 +330,11 @@ public class ConfigMapEventHandler implements Watcher<ConfigMap> {
 
     public static Map<String, Object> mergeConfigs(String initialDataStr,
                                                    Map<String, Object> newData) throws JsonProcessingException {
-        ObjectMapper objectMapper = new ObjectMapper()
-                .registerModule(new KotlinModule.Builder().build());
-        Map<String, Object> defaults = objectMapper.readValue(initialDataStr, new TypeReference<>() {
+        Map<String, Object> defaults = JSON_MAPPER.readValue(initialDataStr, new TypeReference<>() {
         });
-        ObjectReader updater = objectMapper.readerForUpdating(defaults);
-        String newDataStr = objectMapper.writeValueAsString(newData);
-        return objectMapper.convertValue(updater.readValue(newDataStr), new TypeReference<>() {
+        ObjectReader updater = JSON_MAPPER.readerForUpdating(defaults);
+        String newDataStr = JSON_MAPPER.writeValueAsString(newData);
+        return JSON_MAPPER.convertValue(updater.readValue(newDataStr), new TypeReference<>() {
         });
     }
 

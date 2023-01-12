@@ -33,7 +33,8 @@ data class OperatorConfig(
     var commonAnnotations: Map<String, String>? = HashMap(),
     var ingress: Any? = null,
     private var imagePullSecrets: List<String>? = ArrayList(),
-    var openshift: EnvironmentConfig = EnvironmentConfig()
+    var openshift: EnvironmentConfig = EnvironmentConfig(),
+    var releaseTimeout: String = "2m"
 ) {
     val imgPullSecrets = imagePullSecrets ?: ArrayList()
     companion object {

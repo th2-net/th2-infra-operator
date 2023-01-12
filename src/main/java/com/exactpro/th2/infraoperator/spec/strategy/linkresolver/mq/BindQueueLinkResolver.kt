@@ -104,7 +104,9 @@ object BindQueueLinkResolver {
             channel.queueBind(queue.queueName.toString(), queue.exchange, queue.routingKey.toString())
             logger.info(
                 "Queue '{}' successfully bound to '{}' (commit-{})",
-                queueName, queue.routingKey.toString(), commitHash
+                queueName,
+                queue.routingKey.toString(),
+                commitHash
             )
         } catch (e: Exception) {
             val message = "Exception while working with rabbitMq"
