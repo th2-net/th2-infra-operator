@@ -27,7 +27,9 @@ import org.slf4j.LoggerFactory;
 
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.LinkedHashMap;
 import java.util.Map;
+import java.util.stream.Collectors;
 
 import static com.exactpro.th2.infraoperator.util.CustomResourceUtils.annotationFor;
 import static com.exactpro.th2.infraoperator.util.ExtractUtils.extractName;
@@ -107,12 +109,20 @@ public class GrpcRouterConfigFactory {
                     currentPin.getStrategy(),
                     new HashSet<>(endpoints.keySet())
             );
-            config = new GrpcServiceConfiguration(routingStrategy, serviceClass, endpoints, currentPin.getFilters());
+            var filters = currentPin.getFilters()
+                    .stream()
+                    .filter(it -> !it.equals(new LinkedHashMap<>()))
+                    .collect(Collectors.toList());
+            config = new GrpcServiceConfiguration(routingStrategy, serviceClass, endpoints, filters);
             services.put(serviceName, config);
         } else {
             config.getEndpoints().putAll(endpoints);
 
-            config.getFilters().addAll(currentPin.getFilters());
+            var filters = currentPin.getFilters()
+                    .stream()
+                    .filter(it -> !it.equals(new LinkedHashMap<>()))
+                    .collect(Collectors.toList());
+            config.getFilters().addAll(filters);
 
             config.getStrategy().getEndpoints().addAll(new HashSet<>(endpoints.keySet()));
         }
