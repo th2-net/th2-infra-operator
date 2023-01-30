@@ -20,6 +20,7 @@ import com.exactpro.th2.infraoperator.metrics.PrometheusServer;
 import com.exactpro.th2.infraoperator.operator.impl.BoxHelmTh2Op;
 import com.exactpro.th2.infraoperator.operator.impl.CoreBoxHelmTh2Op;
 import com.exactpro.th2.infraoperator.operator.impl.EstoreHelmTh2Op;
+import com.exactpro.th2.infraoperator.operator.impl.JobHelmTh2Op;
 import com.exactpro.th2.infraoperator.operator.impl.MstoreHelmTh2Op;
 import com.exactpro.th2.infraoperator.operator.manager.impl.DefaultWatchManager;
 import com.exactpro.th2.infraoperator.spec.strategy.linkresolver.mq.RabbitMQContext;
@@ -42,6 +43,7 @@ public class Th2CrdController {
             watchManager.addTarget(EstoreHelmTh2Op::new);
             watchManager.addTarget(BoxHelmTh2Op::new);
             watchManager.addTarget(CoreBoxHelmTh2Op::new);
+            watchManager.addTarget(JobHelmTh2Op::new);
 
 
             watchManager.startInformers();

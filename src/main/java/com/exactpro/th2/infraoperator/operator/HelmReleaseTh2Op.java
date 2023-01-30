@@ -104,6 +104,8 @@ public abstract class HelmReleaseTh2Op<CR extends Th2CustomResource> extends Abs
 
     public static final String EXTENDED_SETTINGS_ALIAS = "extendedSettings";
 
+    public static final String IS_JOB_ALIAS = "runAsJob";
+
     //extended settings section
     public static final String SERVICE_ALIAS = "service";
 
@@ -158,7 +160,8 @@ public abstract class HelmReleaseTh2Op<CR extends Th2CustomResource> extends Abs
                 COMPONENT_NAME_ALIAS, resource.getMetadata().getName(),
                 SCHEMA_SECRETS_ALIAS, new HelmReleaseSecrets(config.getSchemaSecrets()),
                 PULL_SECRETS_ALIAS, config.getImgPullSecrets(),
-                CUSTOM_CONFIG_ALIAS, resource.getSpec().getCustomConfig()
+                CUSTOM_CONFIG_ALIAS, resource.getSpec().getCustomConfig(),
+                IS_JOB_ALIAS, resource.getSpec().getRunAsJob()
         ));
     }
 
