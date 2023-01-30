@@ -53,6 +53,8 @@ public class Th2Spec implements KubernetesResource {
 
     protected String loggingConfig;
 
+    protected boolean runAsJob = false;
+
     protected PinSpec pins = new PinSpec();
 
     public Th2Spec() {
@@ -110,8 +112,12 @@ public class Th2Spec implements KubernetesResource {
         return type;
     }
 
-    public boolean isDisabled() {
-        return disabled;
+    public boolean getRunAsJob() {
+        return runAsJob;
+    }
+
+    public void setRunAsJob(boolean runAsJob) {
+        this.runAsJob = runAsJob;
     }
 
     @Override
@@ -120,15 +126,16 @@ public class Th2Spec implements KubernetesResource {
                 "imageName='" + imageName + '\'' +
                 ", imageVersion='" + imageVersion + '\'' +
                 ", type='" + type + '\'' +
-                ", disabled='" + disabled + '\'' +
+                ", disabled=" + disabled +
                 ", extendedSettings=" + extendedSettings +
                 ", customConfig=" + customConfig +
-                ", prometheusConfiguration=" + prometheus +
+                ", prometheus=" + prometheus +
                 ", mqRouter=" + mqRouter +
                 ", grpcRouter=" + grpcRouter +
                 ", cradleManager=" + cradleManager +
                 ", bookName='" + bookName + '\'' +
                 ", loggingConfig='" + loggingConfig + '\'' +
+                ", runAsJob=" + runAsJob +
                 ", pins=" + pins +
                 '}';
     }
