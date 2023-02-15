@@ -16,6 +16,7 @@
 
 package com.exactpro.th2.infraoperator.util;
 
+import com.exactpro.th2.infraoperator.spec.Th2Spec;
 import org.junit.jupiter.api.Test;
 
 import java.util.HashMap;
@@ -28,6 +29,7 @@ class SecretConfigTests {
 
     @Test
     void singleLevelConfigTest() {
+        Th2Spec spec = new Th2Spec();
         Map<String, Object> customConfig = new HashMap<>();
         customConfig.put("pass1", "${secret_value:myFixPassword}");
         customConfig.put("pass2", "${secret_value:myOtherPassword}");
@@ -37,8 +39,10 @@ class SecretConfigTests {
 
         Map<String, String> secretValuesConfig = new HashMap<>();
         Map<String, String> secretPathsConfig = new HashMap<>();
-        generateSecretsConfig(customConfig, secretValuesConfig, secretPathsConfig);
+        spec.setCustomConfig(customConfig);
+        generateSecretsConfig(spec, secretValuesConfig, secretPathsConfig);
 
+        customConfig = spec.getCustomConfig();
         // check custom config
         assertEquals("${MY_FIX_PASSWORD_1}", customConfig.get("pass1"));
         assertEquals("${MY_OTHER_PASSWORD_2}", customConfig.get("pass2"));
@@ -60,24 +64,29 @@ class SecretConfigTests {
 
     @Test
     void emptySecretValuesConfigTest() {
+        Th2Spec spec = new Th2Spec();
         Map<String, Object> customConfig = new HashMap<>();
         customConfig.put("noValue1", "${secret_value:}");
         customConfig.put("noValue2", "${secret_value}");
         Map<String, String> secretValuesConfig = new HashMap<>();
         Map<String, String> secretPathsConfig = new HashMap<>();
-        assertDoesNotThrow(() -> generateSecretsConfig(customConfig, secretValuesConfig, secretPathsConfig));
+        spec.setCustomConfig(customConfig);
+        assertDoesNotThrow(() -> generateSecretsConfig(spec, secretValuesConfig, secretPathsConfig));
     }
 
     @Test
     void suffixedTextTest() {
+        Th2Spec spec = new Th2Spec();
         Map<String, Object> customConfig = new HashMap<>();
         customConfig.put("pass1", "${secret_value:myFixPassword}someText");
         customConfig.put("user1", "${secret_value:myFixUser}someOtherText");
 
         Map<String, String> secretValuesConfig = new HashMap<>();
         Map<String, String> secretPathsConfig = new HashMap<>();
-        generateSecretsConfig(customConfig, secretValuesConfig, secretPathsConfig);
+        spec.setCustomConfig(customConfig);
+        generateSecretsConfig(spec, secretValuesConfig, secretPathsConfig);
 
+        customConfig = spec.getCustomConfig();
         // check custom config
         assertEquals("${MY_FIX_PASSWORD_1}someText", customConfig.get("pass1"));
         assertEquals("${MY_FIX_USER_0}someOtherText", customConfig.get("user1"));
@@ -93,6 +102,7 @@ class SecretConfigTests {
 
     @Test
     void multiLevelConfigTest() {
+        Th2Spec spec = new Th2Spec();
         Map<String, Object> customConfig = new HashMap<>();
         Map<String, Object> level1 = new HashMap<>();
         Map<String, Object> level2 = new HashMap<>();
@@ -105,14 +115,17 @@ class SecretConfigTests {
         level1.put("level2", level2);
 
         customConfig.put("file1", "${secret_path:mysecretfile}");
-        customConfig.put("level2", level1);
+        customConfig.put("level1", level1);
 
 
         Map<String, String> secretValuesConfig = new HashMap<>();
         Map<String, String> secretPathsConfig = new HashMap<>();
-        generateSecretsConfig(customConfig, secretValuesConfig, secretPathsConfig);
+        spec.setCustomConfig(customConfig);
+        generateSecretsConfig(spec, secretValuesConfig, secretPathsConfig);
 
-
+        customConfig = spec.getCustomConfig();
+        level1 = (Map<String, Object>) customConfig.get("level1");
+        level2 = (Map<String, Object>) level1.get("level2");
         //check custom config
         assertEquals(2, customConfig.size());
         assertEquals("${MYSECRETFILE_0}", customConfig.get("file1"));

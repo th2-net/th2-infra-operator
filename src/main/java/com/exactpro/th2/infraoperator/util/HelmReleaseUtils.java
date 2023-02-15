@@ -22,7 +22,9 @@ import com.exactpro.th2.infraoperator.model.box.grpc.GrpcExternalEndpointMapping
 import com.exactpro.th2.infraoperator.model.box.mq.MessageRouterConfiguration;
 import com.exactpro.th2.infraoperator.model.box.mq.QueueConfiguration;
 import com.exactpro.th2.infraoperator.spec.Th2CustomResource;
+import com.exactpro.th2.infraoperator.spec.Th2Spec;
 import com.exactpro.th2.infraoperator.spec.helmrelease.HelmRelease;
+import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.JsonNode;
 import org.apache.commons.text.StringSubstitutor;
@@ -37,6 +39,7 @@ import java.util.stream.Collectors;
 import static com.exactpro.th2.infraoperator.operator.HelmReleaseTh2Op.*;
 import static com.exactpro.th2.infraoperator.util.CustomResourceUtils.annotationFor;
 import static com.exactpro.th2.infraoperator.util.JsonUtils.JSON_MAPPER;
+import static com.exactpro.th2.infraoperator.util.JsonUtils.YAML_MAPPER;
 
 public class HelmReleaseUtils {
 
@@ -176,7 +179,7 @@ public class HelmReleaseUtils {
         return (Collection<DictionaryEntity>) helmRelease.getComponentValuesSection().get(DICTIONARIES_ALIAS);
     }
 
-    public static void generateSecretsConfig(Map<String, Object> customConfig,
+    public static void generateSecretsConfig(Th2Spec spec,
                                              Map<String, String> valuesCollector,
                                              Map<String, String> pathsCollector) {
         StringSubstitutor stringSubstitutor = new StringSubstitutor(
@@ -185,30 +188,30 @@ public class HelmReleaseUtils {
                                 SECRET_PATH_PREFIX, new Strings.CustomLookupForSecrets(pathsCollector)
                         ), null, false
                 ));
-        substituteAndCollect(customConfig, stringSubstitutor);
+        try {
+            String customConfigStr = YAML_MAPPER.writeValueAsString(spec.getCustomConfig());
+            spec.setCustomConfig(YAML_MAPPER.readValue(stringSubstitutor.replace(customConfigStr),
+                    new TypeReference<>() {
+                    }));
+        } catch (JsonProcessingException e) {
+            throw new RuntimeException(e);
+        }
     }
 
-    public static void generateDictionariesConfig(Map<String, Object> customConfig,
+    public static void generateDictionariesConfig(Th2Spec spec,
                                                   Set<DictionaryEntity> dictionariesCollector) {
         StringSubstitutor stringSubstitutor = new StringSubstitutor(
                 StringLookupFactory.INSTANCE.interpolatorStringLookup(
                         Map.of(DICTIONARY_LINK_PREFIX, new Strings.CustomLookupForDictionaries(dictionariesCollector)
                         ), null, false
                 ));
-        substituteAndCollect(customConfig, stringSubstitutor);
-    }
-
-    private static void substituteAndCollect(Map<String, Object> customConfig,
-                                             StringSubstitutor stringSubstitutor) {
-        for (var entry : customConfig.entrySet()) {
-            var value = entry.getValue();
-            if (value instanceof String) {
-                String valueStr = (String) value;
-                String substituted = stringSubstitutor.replace(valueStr);
-                customConfig.put(entry.getKey(), substituted);
-            } else if (value instanceof Map) {
-                substituteAndCollect((Map<String, Object>) value, stringSubstitutor);
-            }
+        try {
+            String customConfigStr = YAML_MAPPER.writeValueAsString(spec.getCustomConfig());
+            spec.setCustomConfig(YAML_MAPPER.readValue(stringSubstitutor.replace(customConfigStr),
+                    new TypeReference<>() {
+                    }));
+        } catch (JsonProcessingException e) {
+            throw new RuntimeException(e);
         }
     }
 

@@ -80,6 +80,10 @@ public class Th2Spec implements KubernetesResource {
         return this.customConfig;
     }
 
+    public void setCustomConfig(Map<String, Object> customConfig) {
+        this.customConfig = customConfig;
+    }
+
     public PrometheusConfiguration<Boolean> getPrometheus() {
         return this.prometheus;
     }

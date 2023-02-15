@@ -248,7 +248,7 @@ public abstract class HelmReleaseTh2Op<CR extends Th2CustomResource> extends Abs
     private void mapCustomSecrets(CR resource, HelmRelease helmRelease) {
         Map<String, String> secretValuesConfig = new HashMap<>();
         Map<String, String> secretPathsConfig = new HashMap<>();
-        generateSecretsConfig(resource.getSpec().getCustomConfig(), secretValuesConfig, secretPathsConfig);
+        generateSecretsConfig(resource.getSpec(), secretValuesConfig, secretPathsConfig);
 
         helmRelease.addComponentValues(Map.of(
                 SECRET_VALUES_CONFIG_ALIAS, secretValuesConfig,
@@ -261,7 +261,7 @@ public abstract class HelmReleaseTh2Op<CR extends Th2CustomResource> extends Abs
         String resName = resource.getMetadata().getName();
         String resNamespace = resource.getMetadata().getNamespace();
         Set<DictionaryEntity> dictionariesConfig = new HashSet<>();
-        generateDictionariesConfig(resource.getSpec().getCustomConfig(), dictionariesConfig);
+        generateDictionariesConfig(resource.getSpec(), dictionariesConfig);
         helmRelease.addComponentValue(DICTIONARIES_ALIAS, dictionariesConfig);
         dictionariesConfig.forEach(
                 dictionary -> operatorState.linkResourceToDictionary(resNamespace, dictionary.getName(), resName)
