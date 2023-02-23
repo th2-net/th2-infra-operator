@@ -19,6 +19,7 @@ plugins {
     id 'checkstyle'
     id "io.gitlab.arturbosch.detekt" version "${detekt_version}"
     id "org.jetbrains.kotlin.jvm" version "${kotlin_version}"
+    id "org.owasp.dependencycheck" version "8.1.0"
 }
 
 group = 'com.exactpro.th2'
@@ -29,7 +30,7 @@ repositories {
 }
 
 checkstyle {
-    toolVersion = "8.26"
+    toolVersion = "10.7.0"
 }
 
 detekt {
@@ -40,8 +41,8 @@ detekt {
 
 ext {
     jackson_databind_version = '2.14.0'
-    jackson_dataformat_version = '2.14.0'
-    jackson_kotlin_version = '2.13.2'
+    jackson_dataformat_version = '2.14.2'
+    jackson_kotlin_version = '2.14.2'
     uuid_generator_version = '4.1.0'
     okhttp_version = '4.10.0'
     commons_text_version = '1.10.0'
@@ -90,6 +91,17 @@ dependencies {
     testRuntimeOnly "org.junit.jupiter:junit-jupiter-engine:${jupiter_version}"
 
     detektPlugins("io.gitlab.arturbosch.detekt:detekt-formatting:${detekt_version}")
+}
+
+dependencyCheck {
+    formats=['SARIF', 'JSON', 'HTML']
+    failBuildOnCVSS=5
+
+    analyzers {
+        assemblyEnabled = false
+        nugetconfEnabled = false
+        nodeEnabled = false
+    }
 }
 
 jar {
