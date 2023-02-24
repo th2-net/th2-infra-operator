@@ -1,29 +1,15 @@
 ---
-apiVersion: helm.toolkit.fluxcd.io/v2beta1
+apiVersion: helm.fluxcd.io/v1
 kind: HelmRelease
 metadata:
   name: will-be-replaced
 spec:
   maxHistory: 2
+  resetValues: true
+  wait: false
   releaseName: th2-release
-  interval: 200m
-  install:
-    createNamespace: false
-    disableHooks: true
-    disableOpenAPIValidation: true
-    disableWait: true
-    disableWaitForJobs: true
-  uninstall:
-    disableHooks: true
-    disableWait: true
-    keepHistory: false
-  upgrade:
-    disableHooks: true
-    disableOpenAPIValidation: true
-    disableWait: true
-    disableWaitForJobs: true
-    force: true
-    preserveValues: false
+  chart:
+    skipDepUpdate: true
   values:
     component:
       image: will-be-replaced

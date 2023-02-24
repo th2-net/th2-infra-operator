@@ -16,14 +16,14 @@
 
 package com.exactpro.th2.infraoperator.configuration
 
-import com.exactpro.th2.infraoperator.configuration.fields.ChartConfig
 import com.exactpro.th2.infraoperator.configuration.fields.EnvironmentConfig
 import com.exactpro.th2.infraoperator.configuration.fields.RabbitMQManagementConfig
 import com.exactpro.th2.infraoperator.configuration.fields.SchemaSecrets
 import com.exactpro.th2.infraoperator.spec.shared.PrometheusConfiguration
 
 data class OperatorConfig(
-    var chart: ChartConfig = ChartConfig(),
+    // TODO change type to ChartConfig with default value ChartConfig()
+    var chart: Any? = null,
     var rabbitMQManagement: RabbitMQManagementConfig = RabbitMQManagementConfig(),
     var schemaSecrets: SchemaSecrets = SchemaSecrets(),
     var namespacePrefixes: List<String> = ArrayList(),
