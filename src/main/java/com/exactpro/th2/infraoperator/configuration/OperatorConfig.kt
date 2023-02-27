@@ -34,6 +34,7 @@ data class OperatorConfig(
     var ingress: Any? = null,
     private var imagePullSecrets: List<String>? = ArrayList(),
     var openshift: EnvironmentConfig = EnvironmentConfig(),
+    var rootless: EnvironmentConfig = EnvironmentConfig(),
     var releaseTimeout: String = "2m"
 ) {
     val imgPullSecrets = imagePullSecrets ?: ArrayList()

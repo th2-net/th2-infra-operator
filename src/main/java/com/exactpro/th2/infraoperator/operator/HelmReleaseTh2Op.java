@@ -66,6 +66,8 @@ public abstract class HelmReleaseTh2Op<CR extends Th2CustomResource> extends Abs
     public static final String ANNOTATIONS_ALIAS = "commonAnnotations";
 
     //component section
+    private static final String ROOTLESS_ALIAS = "rootless";
+
     private static final String COMPONENT_NAME_ALIAS = "name";
 
     private static final String DOCKER_IMAGE_ALIAS = "image";
@@ -153,6 +155,7 @@ public abstract class HelmReleaseTh2Op<CR extends Th2CustomResource> extends Abs
         mapPrometheus(resource, helmRelease);
         mapExtendedSettings(resource, helmRelease);
         mapIngress(helmRelease);
+        mapRootless(helmRelease);
         mapAnnotations(resource, helmRelease);
 
         helmRelease.addComponentValues(Map.of(
@@ -296,6 +299,10 @@ public abstract class HelmReleaseTh2Op<CR extends Th2CustomResource> extends Abs
         if (ingress != null) {
             helmRelease.addComponentValue(INGRESS_ALIAS, ingress);
         }
+    }
+
+    private void mapRootless(HelmRelease helmRelease) {
+        helmRelease.addComponentValue(ROOTLESS_ALIAS, config.getRootless());
     }
 
     private void mapAnnotations(CR resource, HelmRelease helmRelease) {
