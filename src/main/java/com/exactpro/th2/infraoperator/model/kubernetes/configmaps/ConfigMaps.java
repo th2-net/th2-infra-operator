@@ -16,7 +16,7 @@
 
 package com.exactpro.th2.infraoperator.model.kubernetes.configmaps;
 
-import com.exactpro.th2.infraoperator.configuration.RabbitMQConfig;
+import com.exactpro.th2.infraoperator.configuration.fields.RabbitMQConfig;
 import org.jetbrains.annotations.Nullable;
 
 import java.util.HashMap;

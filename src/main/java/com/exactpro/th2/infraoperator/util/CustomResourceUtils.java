@@ -22,7 +22,7 @@ import static com.exactpro.th2.infraoperator.util.ExtractUtils.extractType;
 
 import com.exactpro.th2.infraoperator.spec.Th2CustomResource;
 import com.exactpro.th2.infraoperator.spec.helmrelease.HelmRelease;
-import com.exactpro.th2.infraoperator.spec.shared.PinSpec;
+import com.exactpro.th2.infraoperator.spec.shared.pin.*;
 import io.fabric8.kubernetes.api.model.HasMetadata;
 
 import org.jetbrains.annotations.Nullable;
@@ -31,13 +31,10 @@ import org.slf4j.LoggerFactory;
 
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
-import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 import java.util.Objects;
 
-public final class CustomResourceUtils {
+public class CustomResourceUtils {
 
     private static final Logger logger = LoggerFactory.getLogger(CustomResourceUtils.class);
 
@@ -48,7 +45,6 @@ public final class CustomResourceUtils {
     private static final int SHORT_HASH_LENGTH = 8;
 
     private CustomResourceUtils() {
-        throw new AssertionError();
     }
 
     public static String annotationFor(String namespace, String kind, String resourceName) {
@@ -66,18 +62,6 @@ public final class CustomResourceUtils {
                 resource.getMetadata().getName(),
                 extractShortCommitHash(resource)
         );
-    }
-
-    public static void removeDuplicatedPins(Th2CustomResource resource) {
-        List<PinSpec> pins = resource.getSpec().getPins();
-        Map<String, PinSpec> uniquePins = new HashMap<>();
-        for (PinSpec pin : pins) {
-            if (uniquePins.put(pin.getName(), pin) != null) {
-                logger.warn("Detected duplicated pin: \"{}\" in \"{}\". will be substituted by the last ocurrence",
-                        pin.getName(), annotationFor(resource));
-            }
-        }
-        resource.getSpec().setPins(new ArrayList<>(uniquePins.values()));
     }
 
     @Nullable
@@ -139,7 +123,7 @@ public final class CustomResourceUtils {
         }
     }
 
-    private static String extractShortCommitHash(HasMetadata resource) {
+    public static String extractShortCommitHash(HasMetadata resource) {
         try {
             return resource.getMetadata().getAnnotations().get(GIT_COMMIT_HASH).substring(0, SHORT_HASH_LENGTH);
         } catch (NullPointerException e) {

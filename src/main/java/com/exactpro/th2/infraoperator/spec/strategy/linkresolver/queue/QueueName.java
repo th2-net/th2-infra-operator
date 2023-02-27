@@ -16,8 +16,6 @@
 
 package com.exactpro.th2.infraoperator.spec.strategy.linkresolver.queue;
 
-import com.exactpro.th2.infraoperator.spec.link.relation.pins.PinMQ;
-
 import java.util.Objects;
 
 public class QueueName extends AbstractName {
@@ -28,12 +26,8 @@ public class QueueName extends AbstractName {
 
     private static final String QUEUE_NAME_PREFIX = "link";
 
-    private static final String QUEUE_NAME_REGEXP =
+    public static final String QUEUE_NAME_REGEXP =
             QUEUE_NAME_PREFIX + "\\[" + NAMESPACE_REGEXP + ":" + BOX_NAME_REGEXP + ":" + PIN_NAME_REGEXP + "\\]";
-
-    public QueueName(String namespace, PinMQ mqPin) {
-        super(namespace, mqPin);
-    }
 
     public QueueName(String namespace, String boxName, String pinName) {
         super(namespace, boxName, pinName);

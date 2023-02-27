@@ -17,54 +17,12 @@
 package com.exactpro.th2.infraoperator.spec.mstore;
 
 import com.exactpro.th2.infraoperator.spec.Th2CustomResource;
-import com.fasterxml.jackson.annotation.JsonSetter;
 import io.fabric8.kubernetes.model.annotation.Group;
 import io.fabric8.kubernetes.model.annotation.Kind;
 import io.fabric8.kubernetes.model.annotation.Version;
 
-import java.util.Objects;
-
 @Group("th2.exactpro.com")
-@Version("v1")
+@Version("v2")
 @Kind("Th2Mstore")
 public class Th2Mstore extends Th2CustomResource {
-
-    private Th2MstoreSpec spec;
-
-    public Th2Mstore() {
-    }
-
-    @JsonSetter
-    public Th2MstoreSpec getSpec() {
-        return this.spec;
-    }
-
-    public void setSpec(Th2MstoreSpec spec) {
-        this.spec = spec;
-    }
-
-    public boolean equals(final Object o) {
-        if (o == this) {
-            return true;
-        }
-        if (!(o instanceof Th2Mstore)) {
-            return false;
-        }
-        final Th2Mstore other = (Th2Mstore) o;
-        if (!super.equals(o)) {
-            return false;
-        }
-        final Object thisSpec = this.getSpec();
-        final Object otherSpec = other.getSpec();
-
-        return Objects.equals(thisSpec, otherSpec);
-    }
-
-    public int hashCode() {
-        throw new AssertionError("HashCode is being called");
-    }
-
-    public String toString() {
-        return "Th2Mstore(super=" + super.toString() + ", spec=" + this.getSpec() + ")";
-    }
 }

@@ -18,11 +18,7 @@ package com.exactpro.th2.infraoperator.spec.dictionary;
 
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import io.fabric8.kubernetes.api.model.KubernetesResource;
-import lombok.Builder;
-import lombok.Data;
 
-@Data
-@Builder
 @JsonDeserialize
 public class Th2DictionarySpec implements KubernetesResource {
 
@@ -30,15 +26,43 @@ public class Th2DictionarySpec implements KubernetesResource {
 
     private boolean compressed;
 
-    protected Th2DictionarySpec() {
+    public Th2DictionarySpec() {
     }
 
-    protected Th2DictionarySpec(String data) {
+    public Th2DictionarySpec(String data) {
         this.data = data;
     }
 
-    protected Th2DictionarySpec(String data, boolean compressed) {
+    public Th2DictionarySpec(String data, boolean compressed) {
         this.data = data;
         this.compressed = compressed;
+    }
+
+    public String getData() {
+        return this.data;
+    }
+
+    public boolean isCompressed() {
+        return this.compressed;
+    }
+
+    public void setData(String data) {
+        this.data = data;
+    }
+
+    public void setCompressed(boolean compressed) {
+        this.compressed = compressed;
+    }
+
+    public boolean equals(final Object o) {
+        throw new AssertionError("method not defined");
+    }
+
+    public int hashCode() {
+        throw new AssertionError("method not defined");
+    }
+
+    public String toString() {
+        return "Th2DictionarySpec(data=" + this.getData() + ", compressed=" + this.isCompressed() + ")";
     }
 }

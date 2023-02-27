@@ -17,53 +17,12 @@
 package com.exactpro.th2.infraoperator.spec.corebox;
 
 import com.exactpro.th2.infraoperator.spec.Th2CustomResource;
-import com.fasterxml.jackson.annotation.JsonSetter;
 import io.fabric8.kubernetes.model.annotation.Group;
 import io.fabric8.kubernetes.model.annotation.Kind;
 import io.fabric8.kubernetes.model.annotation.Version;
 
-import java.util.Objects;
-
 @Group("th2.exactpro.com")
-@Version("v1")
+@Version("v2")
 @Kind("Th2CoreBox")
 public class Th2CoreBox extends Th2CustomResource {
-
-    private Th2CoreBoxSpec spec;
-
-    public Th2CoreBox() { }
-
-    public Th2CoreBoxSpec getSpec() {
-        return this.spec;
-    }
-
-    @JsonSetter
-    public void setSpec(Th2CoreBoxSpec spec) {
-        this.spec = spec;
-    }
-
-    public boolean equals(final Object o) {
-        if (o == this) {
-            return true;
-        }
-        if (!(o instanceof Th2CoreBox)) {
-            return false;
-        }
-        final Th2CoreBox other = (Th2CoreBox) o;
-        if (!super.equals(o)) {
-            return false;
-        }
-        final Object thisSpec = this.getSpec();
-        final Object otherSpec = other.getSpec();
-
-        return Objects.equals(thisSpec, otherSpec);
-    }
-
-    public int hashCode() {
-        throw new AssertionError("HashCode is being called");
-    }
-
-    public String toString() {
-        return "Th2CoreBox(super=" + super.toString() + ", spec=" + this.getSpec() + ")";
-    }
 }

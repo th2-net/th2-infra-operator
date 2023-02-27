@@ -18,13 +18,8 @@ package com.exactpro.th2.infraoperator.operator.manager.impl;
 
 import com.exactpro.th2.infraoperator.OperatorState;
 import com.exactpro.th2.infraoperator.metrics.OperatorMetrics;
-import com.exactpro.th2.infraoperator.model.box.configuration.dictionary.MultiDictionaryEntity;
-import com.exactpro.th2.infraoperator.model.kubernetes.client.impl.DictionaryClient;
-import com.exactpro.th2.infraoperator.model.box.configuration.dictionary.DictionaryEntity;
+import com.exactpro.th2.infraoperator.model.box.dictionary.DictionaryEntity;
 import com.exactpro.th2.infraoperator.spec.dictionary.Th2Dictionary;
-import com.exactpro.th2.infraoperator.spec.strategy.redeploy.NonTerminalException;
-import com.exactpro.th2.infraoperator.spec.strategy.redeploy.RetryableTaskQueue;
-import com.exactpro.th2.infraoperator.spec.strategy.redeploy.tasks.TriggerRedeployTask;
 import com.exactpro.th2.infraoperator.spec.helmrelease.HelmRelease;
 import com.exactpro.th2.infraoperator.util.CustomResourceUtils;
 import com.exactpro.th2.infraoperator.util.ExtractUtils;
@@ -51,22 +46,19 @@ import static com.exactpro.th2.infraoperator.util.CustomResourceUtils.RESYNC_TIM
 import static com.exactpro.th2.infraoperator.util.CustomResourceUtils.annotationFor;
 import static com.exactpro.th2.infraoperator.util.ExtractUtils.extractName;
 import static com.exactpro.th2.infraoperator.util.ExtractUtils.extractNamespace;
-import static com.exactpro.th2.infraoperator.util.HelmReleaseUtils.extractMultiDictionariesConfig;
-import static com.exactpro.th2.infraoperator.util.HelmReleaseUtils.extractOldDictionariesConfig;
+import static com.exactpro.th2.infraoperator.util.HelmReleaseUtils.extractDictionariesConfig;
 
 public class Th2DictionaryEventHandler implements Watcher<Th2Dictionary> {
 
     private static final Logger logger = LoggerFactory.getLogger(Th2DictionaryEventHandler.class);
 
-    private static final int REDEPLOY_DELAY = 120;
-
-    private final RetryableTaskQueue retryableTaskQueue = new RetryableTaskQueue();
-
     private KubernetesClient kubClient;
 
     private MixedOperation<HelmRelease, KubernetesResourceList<HelmRelease>, Resource<HelmRelease>> helmReleaseClient;
 
-    private final String dictionaryAlias = "-dictionary";
+    public static final String DICTIONARY_SUFFIX = "-dictionary";
+
+    public static final String INITIAL_CHECKSUM = "INITIAL_CHECKSUM";
 
     private final Map<String, String> sourceHashes = new ConcurrentHashMap<>();
 
@@ -101,27 +93,6 @@ public class Th2DictionaryEventHandler implements Watcher<Th2Dictionary> {
                     processDeleted(dictionary);
                     break;
             }
-        } catch (NonTerminalException e) {
-            String resourceLabel = annotationFor(dictionary);
-            String namespace = ExtractUtils.extractNamespace(dictionary);
-
-            logger.error("Non-terminal Exception processing {} event for \"{}\". Will try to redeploy.",
-                    action, resourceLabel, e);
-
-
-            Namespace namespaceObj = kubClient.namespaces().withName(namespace).get();
-            if (namespaceObj == null || !namespaceObj.getStatus().getPhase().equals("Active")) {
-                logger.info("Namespace \"{}\" deleted or not active, cancelling", namespace);
-                return;
-            }
-
-            //create and schedule task to redeploy failed component
-            TriggerRedeployTask triggerRedeployTask = new TriggerRedeployTask(this,
-                    new DictionaryClient(kubClient), kubClient, dictionary, action, REDEPLOY_DELAY);
-            retryableTaskQueue.add(triggerRedeployTask, true);
-
-            logger.info("Task \"{}\" added to scheduler, with delay \"{}\" seconds",
-                    triggerRedeployTask.getName(), REDEPLOY_DELAY);
         } catch (Exception e) {
             String resourceLabel = annotationFor(dictionary);
             logger.error("Terminal Exception processing {} event for {}. Will not try to redeploy",
@@ -135,20 +106,20 @@ public class Th2DictionaryEventHandler implements Watcher<Th2Dictionary> {
     private void processAdded(Th2Dictionary dictionary) {
         String namespace = ExtractUtils.extractNamespace(dictionary);
         String resourceLabel = annotationFor(dictionary);
-        String newChecksum = ExtractUtils.sourceHash(dictionary, false);
+        String newChecksum = ExtractUtils.fullSourceHash(dictionary);
 
         //create or replace corresponding config map from Kubernetes
         logger.debug("Creating config map for: \"{}\"", resourceLabel);
-        kubClient.configMaps().inNamespace(namespace).createOrReplace(toConfigMap(dictionary));
+        kubClient.resource(toConfigMap(dictionary)).inNamespace(namespace).createOrReplace();
         logger.debug("Created config map for: \"{}\"", resourceLabel);
         sourceHashes.put(resourceLabel, newChecksum);
     }
 
     private void processModified(Th2Dictionary dictionary) {
-        String dictionaryName = ExtractUtils.extractName(dictionary);
+        String dictionaryName = ExtractUtils.extractName(dictionary) + DICTIONARY_SUFFIX;
         String namespace = ExtractUtils.extractNamespace(dictionary);
         String resourceLabel = annotationFor(dictionary);
-        String newChecksum = ExtractUtils.sourceHash(dictionary, false);
+        String newChecksum = ExtractUtils.fullSourceHash(dictionary);
         String oldChecksum = sourceHashes.get(resourceLabel);
 
         if (oldChecksum != null && oldChecksum.equals(newChecksum)) {
@@ -158,7 +129,7 @@ public class Th2DictionaryEventHandler implements Watcher<Th2Dictionary> {
 
         //update corresponding config map from Kubernetes
         logger.debug("Updating config map for: \"{}\"", resourceLabel);
-        kubClient.configMaps().inNamespace(namespace).createOrReplace(toConfigMap(dictionary));
+        kubClient.resource(toConfigMap(dictionary)).inNamespace(namespace).createOrReplace();
         logger.debug("Updated config map for: \"{}\"", resourceLabel);
         sourceHashes.put(resourceLabel, newChecksum);
 
@@ -176,37 +147,24 @@ public class Th2DictionaryEventHandler implements Watcher<Th2Dictionary> {
     }
 
     private void processDeleted(Th2Dictionary dictionary) {
-        String dictionaryName = ExtractUtils.extractName(dictionary);
+        String dictionaryName = ExtractUtils.extractName(dictionary) + DICTIONARY_SUFFIX;
         String namespace = ExtractUtils.extractNamespace(dictionary);
         String resourceLabel = annotationFor(dictionary);
 
         //delete corresponding config map from Kubernetes
         logger.debug("Deleting config map for: \"{}\"", resourceLabel);
-        kubClient.configMaps().inNamespace(namespace).withName(dictionaryName + dictionaryAlias).delete();
+        kubClient.configMaps().inNamespace(namespace).withName(dictionaryName).delete();
         sourceHashes.remove(resourceLabel);
         logger.debug("Deleted config map for: \"{}\"", resourceLabel);
     }
 
     private Set<String> getLinkedResources(Th2Dictionary dictionary) {
 
-        Set<String> resources = new HashSet<>();
         String namespace = extractNamespace(dictionary);
-
         OperatorState operatorState = OperatorState.INSTANCE;
+        String dictionaryName = extractName(dictionary) + DICTIONARY_SUFFIX;
 
-        String dictionaryName = extractName(dictionary);
-        for (var dictionaryBinding : operatorState.getDictionaryLinks(namespace)) {
-            if (dictionaryBinding.getDictionary().getName().equals(dictionaryName)) {
-                resources.add(dictionaryBinding.getBox());
-            }
-        }
-        for (var dictionaryBinding : operatorState.getMultiDictionaryLinks(namespace)) {
-            if (dictionaryBinding.getDictionaries().stream().anyMatch(dict -> dict.getName().equals(dictionaryName))) {
-                resources.add(dictionaryBinding.getBox());
-            }
-        }
-
-        return resources;
+        return operatorState.getLinkedResourcesForDictionary(namespace, dictionaryName);
     }
 
     private ConfigMap toConfigMap(Th2Dictionary dictionary) {
@@ -216,13 +174,12 @@ public class Th2DictionaryEventHandler implements Watcher<Th2Dictionary> {
         var resMD = dictionary.getMetadata();
         var resName = resMD.getName();
 
-        configMapMD.setName(resName + dictionaryAlias);
+        configMapMD.setName(resName + DICTIONARY_SUFFIX);
         configMapMD.setNamespace(ExtractUtils.extractNamespace(dictionary));
         configMapMD.setLabels(resMD.getLabels());
         configMapMD.setAnnotations(resMD.getAnnotations() != null ? resMD.getAnnotations() : new HashMap<>());
 
-        String encodedAlias = ".encoded";
-        String fieldName = resName + encodedAlias;
+        String fieldName = resName + DICTIONARY_SUFFIX;
         configMapData.put(fieldName, dictionary.getSpec().getData());
 
         ConfigMap configMap = new ConfigMap();
@@ -250,35 +207,25 @@ public class Th2DictionaryEventHandler implements Watcher<Th2Dictionary> {
                 logger.debug("Found HelmRelease \"{}\"", CustomResourceUtils.annotationFor(hr));
             }
 
-            Collection<DictionaryEntity> dictionaryConfig = extractOldDictionariesConfig(hr);
+            Collection<DictionaryEntity> dictionaryConfig = extractDictionariesConfig(hr);
             if (dictionaryConfig != null) {
                 for (var entity : dictionaryConfig) {
                     if (entity.getName().equals(dictionaryName)) {
-                        entity.updateChecksum(checksum);
+                        entity.setChecksum(checksum);
                     }
                 }
-                hr.mergeValue(PROPERTIES_MERGE_DEPTH, ROOT_PROPERTIES_ALIAS,
-                        Map.of(DICTIONARIES_ALIAS, dictionaryConfig));
+                hr.addComponentValue(DICTIONARIES_ALIAS, dictionaryConfig);
+                logger.debug("Updating \"{}\"", CustomResourceUtils.annotationFor(hr));
+                createKubObj(namespace, hr);
+                logger.debug("Updated \"{}\"", CustomResourceUtils.annotationFor(hr));
+            } else {
+                logger.info("Dictionaries config for resource of '{}.{}' was null", namespace, linkedResourceName);
             }
-
-            List<MultiDictionaryEntity> multiDictionaryConfig = extractMultiDictionariesConfig(hr);
-            if (multiDictionaryConfig != null) {
-                for (var entity : multiDictionaryConfig) {
-                    if (entity.getName().equals(dictionaryName)) {
-                        entity.updateChecksum(checksum);
-                    }
-                }
-                hr.mergeValue(PROPERTIES_MERGE_DEPTH, ROOT_PROPERTIES_ALIAS,
-                        Map.of(MULTI_DICTIONARIES_ALIAS, multiDictionaryConfig));
-            }
-            logger.debug("Updating \"{}\"", CustomResourceUtils.annotationFor(hr));
-            createKubObj(namespace, hr);
-            logger.debug("Updated \"{}\"", CustomResourceUtils.annotationFor(hr));
         }
     }
 
     protected void createKubObj(String namespace, HelmRelease helmRelease) {
-        helmReleaseClient.inNamespace(namespace).createOrReplace(helmRelease);
+        helmReleaseClient.inNamespace(namespace).resource(helmRelease).createOrReplace();
         OperatorState.INSTANCE.putHelmReleaseInCache(helmRelease, namespace);
     }
 

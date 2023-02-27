@@ -16,45 +16,32 @@
 
 package com.exactpro.th2.infraoperator.spec;
 
-import com.exactpro.th2.infraoperator.configuration.ChartConfig;
-import com.exactpro.th2.infraoperator.operator.StoreHelmTh2Op;
 import com.exactpro.th2.infraoperator.spec.shared.*;
-import com.exactpro.th2.infraoperator.util.JsonUtils;
+import com.exactpro.th2.infraoperator.spec.shared.pin.*;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonInclude;
-import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import io.fabric8.kubernetes.api.model.KubernetesResource;
-import lombok.Data;
 
 import java.util.*;
 
-@Data
 @JsonDeserialize
 @JsonInclude(JsonInclude.Include.NON_EMPTY)
 @JsonIgnoreProperties(ignoreUnknown = true)
-public abstract class Th2Spec implements KubernetesResource {
-
-    private static final String CHART_CFG_ALIAS = "chart-cfg";
-
-    @JsonProperty("image-name")
+public class Th2Spec implements KubernetesResource {
     protected String imageName;
 
-    @JsonProperty("image-version")
     protected String imageVersion;
 
     protected String type;
 
-    protected String disabled = "false";
+    protected boolean disabled;
 
-    @JsonProperty("extended-settings")
     protected Map<String, Object> extendedSettings = new HashMap<>();
 
-    @JsonProperty("custom-config")
     protected Map<String, Object> customConfig = new HashMap<>();
 
-    @JsonProperty("prometheus")
-    protected PrometheusConfiguration<String> prometheusConfiguration;
+    protected PrometheusConfiguration<Boolean> prometheus;
 
     protected Map<String, Object> mqRouter;
 
@@ -62,50 +49,98 @@ public abstract class Th2Spec implements KubernetesResource {
 
     protected Map<String, Object> cradleManager;
 
+    protected String bookName;
+
     protected String loggingConfig;
 
-    protected List<ParamSpec> params = new ArrayList<>();
+    protected boolean runAsJob = false;
 
-    protected List<PinSpec> pins = initializeWithEstorePin();
+    protected PinSpec pins = new PinSpec();
 
-    public void setPins(List<PinSpec> pins) {
-        this.pins = pins;
-
-        if (Objects.isNull(getPin(StoreHelmTh2Op.EVENT_STORAGE_PIN_ALIAS))) {
-            var pin = new PinSpec();
-
-            pin.setName(StoreHelmTh2Op.EVENT_STORAGE_PIN_ALIAS);
-            pin.setConnectionType(SchemaConnectionType.mq);
-            pin.setAttributes(Set.of(PinAttribute.publish.name(), PinAttribute.event.name()));
-
-            getPins().add(pin);
-        }
+    public Th2Spec() {
     }
 
     public Map<String, Object> getExtendedSettings() {
-        var copy = new HashMap<>(extendedSettings);
-        copy.remove(CHART_CFG_ALIAS);
-        return copy;
+        return new HashMap<>(extendedSettings);
     }
 
-    public ChartConfig getChartConfig() {
-        return JsonUtils.JSON_READER.convertValue(extendedSettings.get(CHART_CFG_ALIAS), ChartConfig.class);
+    public String getImageName() {
+        return this.imageName;
     }
 
-    public PinSpec getPin(String name) {
-        return getPins().stream()
-                .filter(p -> p.getName().equals(name))
-                .findFirst()
-                .orElse(null);
+    public String getImageVersion() {
+        return this.imageVersion;
     }
 
-    private List<PinSpec> initializeWithEstorePin() {
-        List<PinSpec> pins = new ArrayList<>();
-        PinSpec pin = new PinSpec();
-        pin.setName(StoreHelmTh2Op.EVENT_STORAGE_PIN_ALIAS);
-        pin.setConnectionType(SchemaConnectionType.mq);
-        pin.setAttributes(Set.of(PinAttribute.publish.name(), PinAttribute.event.name()));
-        pins.add(pin);
-        return pins;
+    public boolean getDisabled() {
+        return this.disabled;
+    }
+
+    public Map<String, Object> getCustomConfig() {
+        return this.customConfig;
+    }
+
+    public void setCustomConfig(Map<String, Object> customConfig) {
+        this.customConfig = customConfig;
+    }
+
+    public PrometheusConfiguration<Boolean> getPrometheus() {
+        return this.prometheus;
+    }
+
+    public Map<String, Object> getMqRouter() {
+        return this.mqRouter;
+    }
+
+    public Map<String, Object> getGrpcRouter() {
+        return this.grpcRouter;
+    }
+
+    public Map<String, Object> getCradleManager() {
+        return this.cradleManager;
+    }
+
+    public String getBookName() {
+        return this.bookName;
+    }
+
+    public String getLoggingConfig() {
+        return this.loggingConfig;
+    }
+
+    public PinSpec getPins() {
+        return this.pins;
+    }
+
+    public String getType() {
+        return type;
+    }
+
+    public boolean getRunAsJob() {
+        return runAsJob;
+    }
+
+    public void setRunAsJob(boolean runAsJob) {
+        this.runAsJob = runAsJob;
+    }
+
+    @Override
+    public String toString() {
+        return "Th2Spec{" +
+                "imageName='" + imageName + '\'' +
+                ", imageVersion='" + imageVersion + '\'' +
+                ", type='" + type + '\'' +
+                ", disabled=" + disabled +
+                ", extendedSettings=" + extendedSettings +
+                ", customConfig=" + customConfig +
+                ", prometheus=" + prometheus +
+                ", mqRouter=" + mqRouter +
+                ", grpcRouter=" + grpcRouter +
+                ", cradleManager=" + cradleManager +
+                ", bookName='" + bookName + '\'' +
+                ", loggingConfig='" + loggingConfig + '\'' +
+                ", runAsJob=" + runAsJob +
+                ", pins=" + pins +
+                '}';
     }
 }

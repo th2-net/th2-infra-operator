@@ -18,7 +18,9 @@ package com.exactpro.th2.infraoperator.operator;
 
 import com.exactpro.th2.infraoperator.OperatorState;
 import com.exactpro.th2.infraoperator.Th2CrdController;
+import com.exactpro.th2.infraoperator.configuration.ConfigLoader;
 import com.exactpro.th2.infraoperator.metrics.OperatorMetrics;
+import com.exactpro.th2.infraoperator.model.box.mq.factory.MessageRouterConfigFactory;
 import com.exactpro.th2.infraoperator.model.http.HttpCode;
 import com.exactpro.th2.infraoperator.model.kubernetes.client.ResourceClient;
 import com.exactpro.th2.infraoperator.spec.Th2CustomResource;
@@ -38,10 +40,10 @@ import io.fabric8.kubernetes.client.KubernetesClientException;
 import io.fabric8.kubernetes.client.Watcher;
 import io.fabric8.kubernetes.client.WatcherException;
 import io.prometheus.client.Histogram;
-import lombok.SneakyThrows;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.io.IOException;
 import java.io.InputStream;
 import java.util.HashMap;
 import java.util.List;
@@ -54,7 +56,7 @@ import static com.exactpro.th2.infraoperator.util.ExtractUtils.extractName;
 import static com.exactpro.th2.infraoperator.util.ExtractUtils.extractNamespace;
 import static io.fabric8.kubernetes.client.Watcher.Action.MODIFIED;
 
-public abstract class AbstractTh2Operator<CR extends Th2CustomResource, KO extends HasMetadata> implements Watcher<CR> {
+public abstract class AbstractTh2Operator<CR extends Th2CustomResource> implements Watcher<CR> {
 
     private static final Logger logger = LoggerFactory.getLogger(AbstractTh2Operator.class);
 
@@ -90,8 +92,6 @@ public abstract class AbstractTh2Operator<CR extends Th2CustomResource, KO exten
             try {
                 logger.debug("refresh-token={}", resourceFingerprint.refreshToken);
 
-                CustomResourceUtils.removeDuplicatedPins(resource);
-
                 processEvent(action, resource);
 
             } catch (NonTerminalException e) {
@@ -109,8 +109,14 @@ public abstract class AbstractTh2Operator<CR extends Th2CustomResource, KO exten
                 updateStatus(resource);
 
                 //create and schedule task to redeploy failed component
-                TriggerRedeployTask triggerRedeployTask = new TriggerRedeployTask(this,
-                        getResourceClient(), kubClient, resource, action, REDEPLOY_DELAY);
+                TriggerRedeployTask triggerRedeployTask = new TriggerRedeployTask(
+                        this,
+                        getResourceClient(),
+                        kubClient,
+                        resource,
+                        action,
+                        REDEPLOY_DELAY
+                );
                 retryableTaskQueue.add(triggerRedeployTask, true);
 
                 logger.info("Task \"{}\" added to scheduler, with delay \"{}\" seconds",
@@ -139,30 +145,30 @@ public abstract class AbstractTh2Operator<CR extends Th2CustomResource, KO exten
 
     public abstract ResourceClient<CR> getResourceClient();
 
-    @SneakyThrows
-    protected KO loadKubObj(String kubObjDefPath) {
-
+    protected HelmRelease loadKubObj() throws IOException {
+        String kubObjDefPath = "/helmRelease-template.yml";
         try (var somePodYml = Th2CrdController.class.getResourceAsStream(kubObjDefPath)) {
 
-            var ko = parseStreamToKubObj(somePodYml);
-            String kubObjType = ko.getClass().getSimpleName();
-            logger.info("{} from \"{}\" has been loaded", kubObjType, kubObjDefPath);
-            return ko;
+            var helmRelease = parseStreamToKubObj(somePodYml);
+            helmRelease.getSpec().setChart(ConfigLoader.getConfig().getChart());
+//TODO restore this when moved to helm controller
+//            helmRelease.getSpec().setTimeout(ConfigLoader.getConfig().getReleaseTimeout());
+            return helmRelease;
         }
 
     }
 
     @SuppressWarnings("unchecked")
-    protected KO parseStreamToKubObj(InputStream stream) {
-        return (KO) kubClient.load(stream).get().get(0);
+    protected HelmRelease parseStreamToKubObj(InputStream stream) {
+        return (HelmRelease) kubClient.load(stream).get().get(0);
     }
 
-    protected void processEvent(Action action, CR resource) {
+    protected void processEvent(Action action, CR resource) throws IOException {
 
         String resourceLabel = CustomResourceUtils.annotationFor(resource);
         logger.debug("Processing event {} for \"{}\"", action, resourceLabel);
 
-        if (resource.getSpec().getDisabled().equals("true")) {
+        if (resource.getSpec().getDisabled()) {
             try {
                 logger.info("Resource \"{}\" has been disabled, executing DELETE action", resourceLabel);
                 deletedEvent(resource);
@@ -208,11 +214,11 @@ public abstract class AbstractTh2Operator<CR extends Th2CustomResource, KO exten
         }
     }
 
-    protected void addedEvent(CR resource) {
+    protected void addedEvent(CR resource) throws IOException {
         setupAndCreateKubObj(resource);
     }
 
-    protected void modifiedEvent(CR resource) {
+    protected void modifiedEvent(CR resource) throws IOException {
         setupAndCreateKubObj(resource);
     }
 
@@ -236,7 +242,8 @@ public abstract class AbstractTh2Operator<CR extends Th2CustomResource, KO exten
         var resClient = getResourceClient().getInstance();
 
         try {
-            return resClient.inNamespace(ExtractUtils.extractNamespace(resource)).replaceStatus(resource);
+            var res = resClient.inNamespace(ExtractUtils.extractNamespace(resource)).resource(resource);
+            return res.replaceStatus();
         } catch (KubernetesClientException e) {
 
             if (HttpCode.ofCode(e.getCode()) == HttpCode.SERVER_CONFLICT) {
@@ -265,9 +272,9 @@ public abstract class AbstractTh2Operator<CR extends Th2CustomResource, KO exten
         }
     }
 
-    protected void setupAndCreateKubObj(CR resource) {
+    protected void setupAndCreateKubObj(CR resource) throws IOException {
 
-        var kubObj = loadKubObj(getKubObjDefPath(resource));
+        var kubObj = loadKubObj();
 
         setupKubObj(resource, kubObj);
 
@@ -284,25 +291,25 @@ public abstract class AbstractTh2Operator<CR extends Th2CustomResource, KO exten
         updateStatus(resource);
     }
 
-    protected void setupKubObj(CR resource, KO kubObj) {
+    protected void setupKubObj(CR resource, HelmRelease helmRelease) {
 
-        mapProperties(resource, kubObj);
+        mapProperties(resource, helmRelease);
 
         logger.info("Generated additional properties from \"{}\" for the resource \"{}\""
                 , CustomResourceUtils.annotationFor(resource)
-                , CustomResourceUtils.annotationFor(kubObj));
+                , CustomResourceUtils.annotationFor(helmRelease));
 
-        kubObj.getMetadata().setOwnerReferences(List.of(createOwnerReference(resource)));
+        helmRelease.getMetadata().setOwnerReferences(List.of(createOwnerReference(resource)));
 
         logger.info("Property \"OwnerReference\" with reference to \"{}\" has been set for the resource \"{}\""
                 , CustomResourceUtils.annotationFor(resource)
-                , CustomResourceUtils.annotationFor(kubObj));
+                , CustomResourceUtils.annotationFor(helmRelease));
 
     }
 
-    protected void mapProperties(CR resource, KO kubObj) {
+    protected void mapProperties(CR resource, HelmRelease helmRelease) {
 
-        var kubObjMD = kubObj.getMetadata();
+        var kubObjMD = helmRelease.getMetadata();
         var resMD = resource.getMetadata();
         String resName = resMD.getName();
         String annotation = CustomResourceUtils.annotationFor(resource);
@@ -333,9 +340,9 @@ public abstract class AbstractTh2Operator<CR extends Th2CustomResource, KO exten
                 .build();
     }
 
-    protected abstract String getKubObjDefPath(CR resource);
+    protected abstract void createKubObj(String namespace, HelmRelease helmRelease);
 
-    protected abstract void createKubObj(String namespace, KO kubObj);
+    protected abstract MessageRouterConfigFactory getMqConfigFactory();
 
     @Override
     public void onClose(WatcherException cause) {

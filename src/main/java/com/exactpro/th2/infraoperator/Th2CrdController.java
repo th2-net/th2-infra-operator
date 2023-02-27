@@ -20,8 +20,10 @@ import com.exactpro.th2.infraoperator.metrics.PrometheusServer;
 import com.exactpro.th2.infraoperator.operator.impl.BoxHelmTh2Op;
 import com.exactpro.th2.infraoperator.operator.impl.CoreBoxHelmTh2Op;
 import com.exactpro.th2.infraoperator.operator.impl.EstoreHelmTh2Op;
+import com.exactpro.th2.infraoperator.operator.impl.JobHelmTh2Op;
 import com.exactpro.th2.infraoperator.operator.impl.MstoreHelmTh2Op;
 import com.exactpro.th2.infraoperator.operator.manager.impl.DefaultWatchManager;
+import com.exactpro.th2.infraoperator.spec.strategy.linkresolver.mq.RabbitMQContext;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -29,16 +31,20 @@ public class Th2CrdController {
 
     private static final Logger logger = LoggerFactory.getLogger(Th2CrdController.class);
 
-    //TODO At the start, operator must check the status of the services and not reboot everything
     public static void main(String[] args) {
 
         var watchManager = DefaultWatchManager.getInstance();
         PrometheusServer.start();
         try {
+            RabbitMQContext.declareTopicExchange();
+            RabbitMQContext.cleanUpRabbitBeforeStart();
+
             watchManager.addTarget(MstoreHelmTh2Op::new);
             watchManager.addTarget(EstoreHelmTh2Op::new);
             watchManager.addTarget(BoxHelmTh2Op::new);
             watchManager.addTarget(CoreBoxHelmTh2Op::new);
+            watchManager.addTarget(JobHelmTh2Op::new);
+
 
             watchManager.startInformers();
 

@@ -1,4 +1,4 @@
-FROM gradle:7.4.2-jdk11 AS build
+FROM gradle:7.6-jdk11 AS build
 ARG app_version=0.0.0
 COPY ./ .
 RUN gradle build -Prelease_version=${app_version}
@@ -6,7 +6,7 @@ RUN gradle build -Prelease_version=${app_version}
 RUN mkdir /home/app
 RUN cp ./build/libs/*.jar /home/app/application.jar
 
-FROM adoptopenjdk/openjdk11:alpine
+FROM eclipse-temurin:11-alpine
 COPY --from=build /home/app /home/app
 
 WORKDIR /home/app/

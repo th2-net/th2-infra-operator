@@ -16,25 +16,23 @@
 
 package com.exactpro.th2.infraoperator;
 
+import com.exactpro.th2.infraoperator.spec.Th2CustomResource;
 import com.exactpro.th2.infraoperator.spec.helmrelease.HelmRelease;
-import com.exactpro.th2.infraoperator.spec.link.Th2Link;
-import com.exactpro.th2.infraoperator.spec.link.relation.dictionaries.DictionaryBinding;
-import com.exactpro.th2.infraoperator.spec.link.relation.dictionaries.MultiDictionaryBinding;
-import com.exactpro.th2.infraoperator.spec.link.relation.pins.PinCouplingGRPC;
-import io.fabric8.kubernetes.api.model.HasMetadata;
 
 import java.util.*;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
 
 public class NamespaceState implements OperatorState.NamespaceLock {
-    private List<Th2Link> linkResources = new ArrayList<>();
-
     private final Map<String, ConfigMapDataContainer> configMapDataContainerMap = new HashMap<>();
 
-    private final Map<String, HasMetadata> resources = new HashMap<>();
+    private final Map<String, Th2CustomResource> resources = new HashMap<>();
 
     private final Map<String, HelmRelease> helmReleaseMap = new HashMap<>();
+
+    private final Map<String, Set<String>> dictionariesMap = new HashMap<>();
+
+    private String bookName;
 
     private final Lock lock = new ReentrantLock(true);
 
@@ -48,47 +46,23 @@ public class NamespaceState implements OperatorState.NamespaceLock {
         lock.unlock();
     }
 
-    public List<Th2Link> getLinkResources() {
-        return this.linkResources;
-    }
-
-    public List<PinCouplingGRPC> getGrpcLinks() {
-        List<PinCouplingGRPC> grpcLinks = new ArrayList<>();
-        for (var linkRes : linkResources) {
-            grpcLinks.addAll(linkRes.getSpec().getBoxesRelation().getRouterGrpc());
-        }
-        return grpcLinks;
-    }
-
-    public List<DictionaryBinding> getDictionaryLinks() {
-        List<DictionaryBinding> dictionaryBindings = new ArrayList<>();
-        for (var linkRes : linkResources) {
-            dictionaryBindings.addAll(linkRes.getSpec().getDictionariesRelation());
-        }
-        return dictionaryBindings;
-    }
-
-    public List<MultiDictionaryBinding> getMultiDictionaryLinks() {
-        List<MultiDictionaryBinding> multiDictionaryBindings = new ArrayList<>();
-        for (var linkRes : linkResources) {
-            multiDictionaryBindings.addAll(linkRes.getSpec().getMultiDictionariesRelation());
-        }
-        return multiDictionaryBindings;
-    }
-
     public ConfigMapDataContainer getConfigMapDataContainer(String key) {
         return configMapDataContainerMap.computeIfAbsent(key, k -> new ConfigMapDataContainer());
     }
 
-    public void setLinkResources(List<Th2Link> linkResources) {
-        this.linkResources = linkResources;
+    public String getBookName() {
+        return bookName;
     }
 
-    public HasMetadata getResource(String resName) {
+    public void setBookName(String bookName) {
+        this.bookName = bookName;
+    }
+
+    public Th2CustomResource getResource(String resName) {
         return resources.get(resName);
     }
 
-    public void putResource(HasMetadata resource) {
+    public void putResource(Th2CustomResource resource) {
         String resName = resource.getMetadata().getName();
         resources.put(resName, resource);
     }
@@ -112,6 +86,18 @@ public class NamespaceState implements OperatorState.NamespaceLock {
 
     public Collection<HelmRelease> getAllHelmReleases() {
         return helmReleaseMap.values();
+    }
+
+    public Collection<Th2CustomResource> getAllBoxes() {
+        return resources.values();
+    }
+
+    public void linkResourceToDictionary(String dictionary, String resourceName) {
+        dictionariesMap.computeIfAbsent(dictionary, key -> new HashSet<>()).add(resourceName);
+    }
+
+    public Set<String> getLinkedResourcesForDictionary(String dictionary) {
+        return dictionariesMap.get(dictionary);
     }
 
     @Override

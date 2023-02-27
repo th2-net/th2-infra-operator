@@ -16,9 +16,20 @@
 
 package com.exactpro.th2.infraoperator.util;
 
+import com.exactpro.th2.infraoperator.model.box.dictionary.DictionaryEntity;
+import org.apache.commons.text.lookup.StringLookup;
+
 import java.util.List;
+import java.util.Map;
+import java.util.Set;
+
+import static com.exactpro.th2.infraoperator.operator.manager.impl.Th2DictionaryEventHandler.DICTIONARY_SUFFIX;
+import static com.exactpro.th2.infraoperator.operator.manager.impl.Th2DictionaryEventHandler.INITIAL_CHECKSUM;
 
 public class Strings {
+    private Strings() {
+    }
+
     public static boolean isNullOrEmpty(String s) {
         return (s == null || s.isEmpty());
     }
@@ -28,6 +39,10 @@ public class Strings {
                 && prefixes != null
                 && prefixes.size() > 0
                 && prefixes.stream().noneMatch(namespace::startsWith));
+    }
+
+    public static String toUnderScoreUpperCaseWithId(String camelCase, int id) {
+        return String.format("%s_%d", toUnderScoreUpperCase(camelCase), id);
     }
 
     public static String toUnderScoreUpperCase(String camelCase) {
@@ -43,7 +58,35 @@ public class Strings {
         return result.toString();
     }
 
-    public static String toUnderScoreUpperCaseWithId(String varName, int id) {
-        return String.format("%s_%d", varName, id);
+    public static final class CustomLookupForSecrets implements StringLookup {
+        private final Map<String, String> collector;
+
+        private int id = 0;
+
+        public CustomLookupForSecrets(Map<String, String> collector) {
+            this.collector = collector;
+        }
+
+        @Override
+        public String lookup(String key) {
+            String envVarWithId = Strings.toUnderScoreUpperCaseWithId(key, id);
+            id++;
+            collector.put(envVarWithId, key);
+            return String.format("${%s}", envVarWithId);
+        }
+    }
+
+    public static final class CustomLookupForDictionaries implements StringLookup {
+        private final Set<DictionaryEntity> collector;
+
+        public CustomLookupForDictionaries(Set<DictionaryEntity> collector) {
+            this.collector = collector;
+        }
+
+        @Override
+        public String lookup(String key) {
+            collector.add(new DictionaryEntity(key + DICTIONARY_SUFFIX, INITIAL_CHECKSUM));
+            return key + DICTIONARY_SUFFIX;
+        }
     }
 }

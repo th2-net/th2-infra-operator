@@ -16,7 +16,7 @@
 
 package com.exactpro.th2.infraoperator.operator.manager.impl;
 
-import com.exactpro.th2.infraoperator.OperatorState;
+import com.exactpro.th2.infraoperator.configuration.ConfigLoader;
 import com.exactpro.th2.infraoperator.configuration.OperatorConfig;
 import com.exactpro.th2.infraoperator.operator.context.EventCounter;
 import com.exactpro.th2.infraoperator.util.CustomResourceUtils;
@@ -36,6 +36,8 @@ public class GenericResourceEventHandler<T extends HasMetadata> implements Resou
 
     private EventQueue eventQueue;
 
+    private final OperatorConfig config = ConfigLoader.getConfig();
+
     public GenericResourceEventHandler(Watcher<T> watcher, EventQueue eventQueue) {
         this.watcher = watcher;
         this.eventQueue = eventQueue;
@@ -44,18 +46,17 @@ public class GenericResourceEventHandler<T extends HasMetadata> implements Resou
     @Override
     public void onAdd(T obj) {
 
-        if (Strings.nonePrefixMatch(obj.getMetadata().getNamespace(), OperatorConfig.INSTANCE.getNamespacePrefixes())) {
+        if (Strings.nonePrefixMatch(obj.getMetadata().getNamespace(), config.getNamespacePrefixes())) {
             return;
         }
 
         String namespace = obj.getMetadata().getNamespace();
-        OperatorState.INSTANCE.putResourceInCache(obj, namespace);
         String resourceLabel = CustomResourceUtils.annotationFor(obj);
         String eventId = EventCounter.newEvent();
         logger.debug("Received ADDED event ({}) for \"{}\" {}, refresh-token={}",
                 eventId,
                 resourceLabel,
-                ExtractUtils.sourceHash(obj, true),
+                ExtractUtils.shortSourceHash(obj),
                 ExtractUtils.refreshToken(obj));
 
         eventQueue.addEvent(EventQueue.generateEvent(
@@ -70,20 +71,19 @@ public class GenericResourceEventHandler<T extends HasMetadata> implements Resou
     @Override
     public void onUpdate(T oldObj, T newObj) {
 
-        if (Strings.nonePrefixMatch(oldObj.getMetadata().getNamespace(), OperatorConfig.INSTANCE.getNamespacePrefixes())
+        if (Strings.nonePrefixMatch(oldObj.getMetadata().getNamespace(), config.getNamespacePrefixes())
                 && Strings.nonePrefixMatch(newObj.getMetadata().getNamespace(),
-                OperatorConfig.INSTANCE.getNamespacePrefixes())) {
+                config.getNamespacePrefixes())) {
             return;
         }
 
         String namespace = newObj.getMetadata().getNamespace();
-        OperatorState.INSTANCE.putResourceInCache(newObj, namespace);
         String resourceLabel = CustomResourceUtils.annotationFor(oldObj);
         String eventId = EventCounter.newEvent();
         logger.debug("Received MODIFIED event ({}) for \"{}\" {}, refresh-token={}",
                 eventId,
                 resourceLabel,
-                ExtractUtils.sourceHash(newObj, true),
+                ExtractUtils.shortSourceHash(newObj),
                 ExtractUtils.refreshToken(newObj));
 
         eventQueue.addEvent(EventQueue.generateEvent(
@@ -98,18 +98,17 @@ public class GenericResourceEventHandler<T extends HasMetadata> implements Resou
     @Override
     public void onDelete(T obj, boolean deletedFinalStateUnknown) {
 
-        if (Strings.nonePrefixMatch(obj.getMetadata().getNamespace(), OperatorConfig.INSTANCE.getNamespacePrefixes())) {
+        if (Strings.nonePrefixMatch(obj.getMetadata().getNamespace(), config.getNamespacePrefixes())) {
             return;
         }
 
         String namespace = obj.getMetadata().getNamespace();
-        OperatorState.INSTANCE.removeResourceFromCache(obj.getMetadata().getName(), namespace);
         String resourceLabel = CustomResourceUtils.annotationFor(obj);
         String eventId = EventCounter.newEvent();
         logger.debug("Received DELETED event ({}) for \"{}\" {}, refresh-token={}",
                 eventId,
                 resourceLabel,
-                ExtractUtils.sourceHash(obj, true),
+                ExtractUtils.shortSourceHash(obj),
                 ExtractUtils.refreshToken(obj));
 
         eventQueue.addEvent(EventQueue.generateEvent(
@@ -128,7 +127,7 @@ public class GenericResourceEventHandler<T extends HasMetadata> implements Resou
 
             String resourceLabel = CustomResourceUtils.annotationFor(resource);
             logger.debug("Processing {} event for \"{}\" {}", action, resourceLabel,
-                    ExtractUtils.sourceHash(resource, true));
+                    ExtractUtils.shortSourceHash(resource));
 
             try {
                 // let handler process the message

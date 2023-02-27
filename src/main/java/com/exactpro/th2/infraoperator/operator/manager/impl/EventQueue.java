@@ -18,12 +18,10 @@ package com.exactpro.th2.infraoperator.operator.manager.impl;
 
 import com.exactpro.th2.infraoperator.metrics.OperatorMetrics;
 import com.exactpro.th2.infraoperator.spec.dictionary.Th2Dictionary;
-import com.exactpro.th2.infraoperator.spec.link.Th2Link;
 import io.fabric8.kubernetes.api.model.ConfigMap;
 import io.fabric8.kubernetes.api.model.HasMetadata;
 import io.fabric8.kubernetes.api.model.Namespace;
 import io.fabric8.kubernetes.client.Watcher;
-import lombok.Getter;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -49,20 +47,19 @@ public class EventQueue {
         this.monitor = monitor;
     }
 
-    @Getter
     public static class Event {
 
         private String eventId;
 
         private String annotation;
 
-        private Watcher.Action action;
+        private final Watcher.Action action;
 
-        private String namespace;
+        private final String namespace;
 
         private HasMetadata resource;
 
-        private Watcher callback;
+        private final Watcher callback;
 
         public Event(String eventId, String annotation, Watcher.Action action, String namespace, HasMetadata resource
                 , Watcher callback) {
@@ -98,13 +95,36 @@ public class EventQueue {
                     ", action=" + getAction() +
                     '}';
         }
+
+        public String getEventId() {
+            return this.eventId;
+        }
+
+        public String getAnnotation() {
+            return this.annotation;
+        }
+
+        public Watcher.Action getAction() {
+            return this.action;
+        }
+
+        public String getNamespace() {
+            return this.namespace;
+        }
+
+        public HasMetadata getResource() {
+            return this.resource;
+        }
+
+        public Watcher getCallback() {
+            return this.callback;
+        }
     }
 
     /*
         High priority events which will be added
         in high priority queue
      */
-    @Getter
     public static class PriorityEvent extends Event {
 
         public PriorityEvent(String eventId, String annotation, Watcher.Action action, String namespace,
@@ -148,7 +168,6 @@ public class EventQueue {
             Watcher callback) {
 
         if (resource instanceof ConfigMap
-                || resource instanceof Th2Link
                 || resource instanceof Th2Dictionary
                 || resource instanceof Namespace) {
             return new PriorityEvent(eventId, annotation, action, namespace, resource, callback);

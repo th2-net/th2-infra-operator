@@ -16,36 +16,36 @@
 
 package com.exactpro.th2.infraoperator.util;
 
-import com.exactpro.th2.infraoperator.model.box.configuration.dictionary.DictionaryEntity;
-import com.exactpro.th2.infraoperator.model.box.configuration.dictionary.MultiDictionaryEntity;
-import com.exactpro.th2.infraoperator.model.box.configuration.grpc.GrpcEndpointMapping;
-import com.exactpro.th2.infraoperator.model.box.configuration.grpc.GrpcExternalEndpointMapping;
+import com.exactpro.th2.infraoperator.model.box.dictionary.DictionaryEntity;
+import com.exactpro.th2.infraoperator.model.box.grpc.GrpcEndpointMapping;
+import com.exactpro.th2.infraoperator.model.box.grpc.GrpcExternalEndpointMapping;
+import com.exactpro.th2.infraoperator.model.box.mq.MessageRouterConfiguration;
+import com.exactpro.th2.infraoperator.model.box.mq.QueueConfiguration;
 import com.exactpro.th2.infraoperator.spec.Th2CustomResource;
+import com.exactpro.th2.infraoperator.spec.Th2Spec;
 import com.exactpro.th2.infraoperator.spec.helmrelease.HelmRelease;
-import com.exactpro.th2.infraoperator.spec.helmrelease.InstantiableMap;
+import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import org.apache.commons.text.StringSubstitutor;
-import org.apache.commons.text.lookup.StringLookup;
 import org.apache.commons.text.lookup.StringLookupFactory;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import java.util.Collection;
 import java.util.List;
 import java.util.Map;
-import java.util.function.Function;
+import java.util.Set;
+import java.util.stream.Collectors;
 
 import static com.exactpro.th2.infraoperator.operator.HelmReleaseTh2Op.*;
 import static com.exactpro.th2.infraoperator.util.CustomResourceUtils.annotationFor;
-import static com.exactpro.th2.infraoperator.util.JsonUtils.JSON_READER;
+import static com.exactpro.th2.infraoperator.util.JsonUtils.JSON_MAPPER;
+import static com.exactpro.th2.infraoperator.util.JsonUtils.YAML_MAPPER;
 
 public class HelmReleaseUtils {
 
-    private static final Logger logger = LoggerFactory.getLogger(HelmReleaseUtils.class);
-
     private static final String HOST_NETWORK_ALIAS = "hostNetwork";
+
+    private static final String NODE_PORT_ALIAS = "nodePort";
 
     private static final String ENDPOINTS_ALIAS = "endpoints";
 
@@ -57,11 +57,7 @@ public class HelmReleaseUtils {
 
     private static final String SECRET_PATH_PREFIX = "secret_path";
 
-    private static final String SHARED_MEMORY_ALIAS = "sharedMemory";
-
-    private static final String K8S_PROBES = "k8sProbes";
-
-    private static final String HOST_NETWORK = "hostNetwork";
+    private static final String DICTIONARY_LINK_PREFIX = "dictionary_link";
 
     private HelmReleaseUtils() {
     }
@@ -78,9 +74,9 @@ public class HelmReleaseUtils {
         if (boxSettings == null) {
             return null;
         }
-        JsonNode endpointsNode = getFieldAsNode(boxSettings, SERVICE_ALIAS, ENDPOINTS_ALIAS);
+        JsonNode endpointsNode = getFieldAsNode(boxSettings, SERVICE_ALIAS, NODE_PORT_ALIAS);
         if (endpointsNode != null) {
-            List<GrpcEndpointMapping> grpcEndpointMappings = JSON_READER.convertValue(endpointsNode,
+            List<GrpcEndpointMapping> grpcEndpointMappings = JSON_MAPPER.convertValue(endpointsNode,
                     new TypeReference<>() {
                     });
             for (GrpcEndpointMapping grpcEndpointMapping : grpcEndpointMappings) {
@@ -98,7 +94,7 @@ public class HelmReleaseUtils {
         }
         JsonNode endpointsNode = getFieldAsNode(boxSettings, EXTERNAL_BOX_ALIAS, ENDPOINTS_ALIAS);
         if (endpointsNode != null) {
-            List<GrpcExternalEndpointMapping> externalEndpoints = JSON_READER.convertValue(endpointsNode,
+            List<GrpcExternalEndpointMapping> externalEndpoints = JSON_MAPPER.convertValue(endpointsNode,
                     new TypeReference<>() {
                     });
             for (GrpcExternalEndpointMapping grpcExternalEndpointMapping : externalEndpoints) {
@@ -116,7 +112,7 @@ public class HelmReleaseUtils {
         }
         JsonNode address = getFieldAsNode(boxSettings, EXTERNAL_BOX_ALIAS, ADDRESS_ALIAS);
         if (address != null) {
-            return JSON_READER.convertValue(address, String.class);
+            return JSON_MAPPER.convertValue(address, String.class);
         }
         return null;
     }
@@ -136,7 +132,7 @@ public class HelmReleaseUtils {
     }
 
     private static JsonNode getFieldAsNode(Object sourceObj, String... fields) {
-        JsonNode currentField = JSON_READER.convertValue(sourceObj, JsonNode.class);
+        JsonNode currentField = JSON_MAPPER.convertValue(sourceObj, JsonNode.class);
         for (String field : fields) {
             currentField = currentField.get(field);
             if (currentField == null) {
@@ -151,18 +147,18 @@ public class HelmReleaseUtils {
     }
 
     private static boolean getFieldAsBoolean(Object sourceObj, boolean defaultValue, String... fields) {
-        JsonNode currentField = JSON_READER.convertValue(sourceObj, JsonNode.class);
+        JsonNode currentField = JSON_MAPPER.convertValue(sourceObj, JsonNode.class);
         for (String field : fields) {
             currentField = currentField.get(field);
             if (currentField == null) {
                 return defaultValue;
             }
         }
-        return JSON_READER.convertValue(currentField, Boolean.class);
+        return JSON_MAPPER.convertValue(currentField, Boolean.class);
     }
 
-    private static Map<String, Object> getSectionReference(Map<String, Object> values, String... fields) {
-        Map<String, Object> currentSection = (Map<String, Object>) values.get(fields[0]);
+    private static Map<String, Object> getSectionReference(Map<String, Object> componentValues, String... fields) {
+        Map<String, Object> currentSection = (Map<String, Object>) componentValues.get(fields[0]);
         for (int i = 1; i < fields.length; i++) {
             if (currentSection != null) {
                 currentSection = (Map<String, Object>) currentSection.get(fields[i]);
@@ -171,165 +167,62 @@ public class HelmReleaseUtils {
         return currentSection;
     }
 
-    public static <R> void convertField(HelmRelease helmRelease, Function<String, R> converter, String fieldName,
-                                        String... fields) {
-        Map<String, Object> section = getSectionReference(helmRelease.getValuesSection(), fields);
-        if (section != null) {
-            var currentValue = section.get(fieldName);
-            if (currentValue != null) {
-                section.put(fieldName, converter.apply(currentValue.toString()));
-            }
-        }
-    }
-
-    public static void convertBooleanFields(HelmRelease helmRelease) {
-        convertField(helmRelease, Boolean::valueOf, ENABLED_ALIAS, ROOT_PROPERTIES_ALIAS,
-                EXTENDED_SETTINGS_ALIAS, SERVICE_ALIAS);
-        convertField(helmRelease, Boolean::valueOf, ENABLED_ALIAS, ROOT_PROPERTIES_ALIAS,
-                EXTENDED_SETTINGS_ALIAS, EXTERNAL_BOX_ALIAS);
-        convertField(helmRelease, Boolean::valueOf, ENABLED_ALIAS, ROOT_PROPERTIES_ALIAS,
-                EXTENDED_SETTINGS_ALIAS, SHARED_MEMORY_ALIAS);
-        convertField(helmRelease, Boolean::valueOf, K8S_PROBES, ROOT_PROPERTIES_ALIAS,
-                EXTENDED_SETTINGS_ALIAS);
-        convertField(helmRelease, Boolean::valueOf, HOST_NETWORK, ROOT_PROPERTIES_ALIAS,
-                EXTENDED_SETTINGS_ALIAS);
-    }
-
     public static Map<String, Object> extractConfigSection(HelmRelease helmRelease, String key) {
-        var values = (Map<String, Object>) helmRelease.getValuesSection();
-        var componentConfigs = (Map<String, Object>) values.get(ROOT_PROPERTIES_ALIAS);
-        return (Map<String, Object>) componentConfigs.get(key);
+        return (Map<String, Object>) helmRelease.getComponentValuesSection().get(key);
     }
 
     public static String extractComponentName(HelmRelease helmRelease) {
-        var values = (Map<String, Object>) helmRelease.getValuesSection();
-        var componentConfigs = (Map<String, Object>) values.get(ROOT_PROPERTIES_ALIAS);
-        return (String) componentConfigs.get("name");
+        return (String) helmRelease.getComponentValuesSection().get("name");
     }
 
-    public static Collection<DictionaryEntity> extractOldDictionariesConfig(HelmRelease helmRelease) {
-        var values = (Map<String, Object>) helmRelease.getValuesSection();
-        var componentConfigs = (Map<String, Object>) values.get(ROOT_PROPERTIES_ALIAS);
-        return (Collection<DictionaryEntity>) componentConfigs.get(DICTIONARIES_ALIAS);
+    public static Collection<DictionaryEntity> extractDictionariesConfig(HelmRelease helmRelease) {
+        return (Collection<DictionaryEntity>) helmRelease.getComponentValuesSection().get(DICTIONARIES_ALIAS);
     }
 
-    public static List<MultiDictionaryEntity> extractMultiDictionariesConfig(HelmRelease helmRelease) {
-        var values = (Map<String, Object>) helmRelease.getValuesSection();
-        var componentConfigs = (Map<String, Object>) values.get(ROOT_PROPERTIES_ALIAS);
-        return (List<MultiDictionaryEntity>) componentConfigs.get(MULTI_DICTIONARIES_ALIAS);
-    }
-
-    public static boolean needsToBeDeleted(HelmRelease newHelmRelease, HelmRelease oldHelmRelease) {
-        if (oldHelmRelease == null) {
-            return false;
-        }
-        return isAlreadyFailed(oldHelmRelease)
-                || containsFailingService(newHelmRelease, oldHelmRelease)
-                || containsFailingExternalBox(newHelmRelease, oldHelmRelease)
-                || containsFailingHostNetwork(newHelmRelease, oldHelmRelease);
-    }
-
-    private static boolean isAlreadyFailed(HelmRelease oldHelmRelease) {
-        InstantiableMap statusSection = oldHelmRelease.getStatus();
-        if (statusSection == null ||
-                statusSection.get("phase") == null ||
-                statusSection.get("releaseStatus") == null ||
-                !statusSection.get("phase").equals("Succeeded") ||
-                !statusSection.get("releaseStatus").equals("deployed")
-        ) {
-            logger.warn("HelmRelease \"{}\" was failed. will be recreated",
-                    annotationFor(oldHelmRelease));
-            return true;
-        }
-        return false;
-    }
-
-    private static boolean containsFailingService(HelmRelease newHelmRelease, HelmRelease oldHelmRelease) {
-        Map<String, Object> newServiceSection = getSectionReference(newHelmRelease.getValuesSection(),
-                ROOT_PROPERTIES_ALIAS, EXTENDED_SETTINGS_ALIAS, SERVICE_ALIAS);
-        Map<String, Object> oldServiceSection = getSectionReference(oldHelmRelease.getValuesSection(),
-                ROOT_PROPERTIES_ALIAS, EXTENDED_SETTINGS_ALIAS, SERVICE_ALIAS);
-        if (newServiceSection == null && oldServiceSection == null) {
-            return false;
-        }
-        if (newServiceSection == null ^ oldServiceSection == null) {
-            return true;
-        }
-        ObjectMapper mapper = new ObjectMapper();
-        try {
-            String newServiceSectionStr = mapper.writeValueAsString(newServiceSection);
-            String oldServiceSectionStr = mapper.writeValueAsString(oldServiceSection);
-            return !newServiceSectionStr.equals(oldServiceSectionStr);
-        } catch (Exception e) {
-            return true;
-        }
-    }
-
-    private static boolean containsFailingExternalBox(HelmRelease newHelmRelease, HelmRelease oldHelmRelease) {
-        boolean newExternalBoxEnabled = getFieldAsBoolean(newHelmRelease.getValuesSection(),
-                ROOT_PROPERTIES_ALIAS, EXTENDED_SETTINGS_ALIAS, EXTERNAL_BOX_ALIAS, ENABLED_ALIAS);
-        boolean oldExternalBoxEnabled = getFieldAsBoolean(oldHelmRelease.getValuesSection(),
-                ROOT_PROPERTIES_ALIAS, EXTENDED_SETTINGS_ALIAS, EXTERNAL_BOX_ALIAS, ENABLED_ALIAS);
-        return newExternalBoxEnabled ^ oldExternalBoxEnabled;
-    }
-
-    private static boolean containsFailingHostNetwork(HelmRelease newHelmRelease, HelmRelease oldHelmRelease) {
-        boolean newHostNetworkEnabled = getFieldAsBoolean(newHelmRelease.getValuesSection(),
-                ROOT_PROPERTIES_ALIAS, EXTENDED_SETTINGS_ALIAS, HOST_NETWORK);
-        boolean oldHostNetworkEnabled = getFieldAsBoolean(oldHelmRelease.getValuesSection(),
-                ROOT_PROPERTIES_ALIAS, EXTENDED_SETTINGS_ALIAS, HOST_NETWORK);
-        return newHostNetworkEnabled ^ oldHostNetworkEnabled;
-    }
-
-    public static void generateSecretsConfig(Map<String, Object> customConfig,
+    public static void generateSecretsConfig(Th2Spec spec,
                                              Map<String, String> valuesCollector,
                                              Map<String, String> pathsCollector) {
         StringSubstitutor stringSubstitutor = new StringSubstitutor(
                 StringLookupFactory.INSTANCE.interpolatorStringLookup(
-                        Map.of(SECRET_VALUE_PREFIX, new CustomLookupValues(valuesCollector),
-                                SECRET_PATH_PREFIX, new CustomLookupPaths(pathsCollector)
+                        Map.of(SECRET_VALUE_PREFIX, new Strings.CustomLookupForSecrets(valuesCollector),
+                                SECRET_PATH_PREFIX, new Strings.CustomLookupForSecrets(pathsCollector)
                         ), null, false
                 ));
-        for (var entry : customConfig.entrySet()) {
-            var value = entry.getValue();
-            if (value instanceof String) {
-                String valueStr = (String) value;
-                String substituted = stringSubstitutor.replace(valueStr);
-                customConfig.put(entry.getKey(), substituted);
-            } else if (value instanceof Map) {
-                generateSecretsConfig((Map<String, Object>) value, valuesCollector, pathsCollector);
-            }
+        try {
+            String customConfigStr = YAML_MAPPER.writeValueAsString(spec.getCustomConfig());
+            spec.setCustomConfig(YAML_MAPPER.readValue(stringSubstitutor.replace(customConfigStr),
+                    new TypeReference<>() {
+                    }));
+        } catch (JsonProcessingException e) {
+            throw new RuntimeException(e);
         }
     }
 
-    static class CustomLookup implements StringLookup {
-        int id = 0;
-
-        private Map<String, String> collector;
-
-        public CustomLookup(Map<String, String> collector) {
-            this.collector = collector;
-        }
-
-        @Override
-        public String lookup(String key) {
-            String envVarName = Strings.toUnderScoreUpperCase(key);
-            String envVarWithId = Strings.toUnderScoreUpperCaseWithId(envVarName, id);
-            id++;
-            collector.put(envVarWithId, key);
-            return String.format("${%s}", envVarWithId);
+    public static void generateDictionariesConfig(Th2Spec spec,
+                                                  Set<DictionaryEntity> dictionariesCollector) {
+        StringSubstitutor stringSubstitutor = new StringSubstitutor(
+                StringLookupFactory.INSTANCE.interpolatorStringLookup(
+                        Map.of(DICTIONARY_LINK_PREFIX, new Strings.CustomLookupForDictionaries(dictionariesCollector)
+                        ), null, false
+                ));
+        try {
+            String customConfigStr = YAML_MAPPER.writeValueAsString(spec.getCustomConfig());
+            spec.setCustomConfig(YAML_MAPPER.readValue(stringSubstitutor.replace(customConfigStr),
+                    new TypeReference<>() {
+                    }));
+        } catch (JsonProcessingException e) {
+            throw new RuntimeException(e);
         }
     }
 
-    static final class CustomLookupPaths extends CustomLookup {
-        public CustomLookupPaths(Map<String, String> collector) {
-            super(collector);
-        }
-    }
-
-    static final class CustomLookupValues extends CustomLookup {
-        public CustomLookupValues(Map<String, String> collector) {
-            super(collector);
-        }
+    public static Set<String> extractQueues(Map<String, Object> componentValues) {
+        MessageRouterConfiguration mqConfig = JSON_MAPPER.convertValue(
+                componentValues.get(MQ_QUEUE_CONFIG_ALIAS),
+                MessageRouterConfiguration.class
+        );
+        return mqConfig.getQueues().values()
+                .stream()
+                .filter(queueConfiguration -> !(queueConfiguration.getQueueName().isEmpty()))
+                .map(QueueConfiguration::getQueueName).collect(Collectors.toSet());
     }
 }
