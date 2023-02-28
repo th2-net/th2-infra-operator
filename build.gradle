@@ -19,7 +19,7 @@ plugins {
     id 'checkstyle'
     id "io.gitlab.arturbosch.detekt" version "${detekt_version}"
     id "org.jetbrains.kotlin.jvm" version "${kotlin_version}"
-    id "org.owasp.dependencycheck" version "8.1.0"
+    id "org.owasp.dependencycheck" version "${owaspVersion}"
 }
 
 group = 'com.exactpro.th2'
@@ -40,9 +40,7 @@ detekt {
 }
 
 ext {
-    jackson_databind_version = '2.14.0'
-    jackson_dataformat_version = '2.14.2'
-    jackson_kotlin_version = '2.14.2'
+    jackson_version = '2.14.2'
     uuid_generator_version = '4.1.0'
     okhttp_version = '4.10.0'
     commons_text_version = '1.10.0'
@@ -61,9 +59,8 @@ ext {
 }
 
 dependencies {
-    implementation "com.fasterxml.jackson.core:jackson-databind:${jackson_databind_version}"
-    implementation "com.fasterxml.jackson.dataformat:jackson-dataformat-yaml:${jackson_dataformat_version}"
-    implementation group: 'com.fasterxml.jackson.module', name: 'jackson-module-kotlin', version: "${jackson_kotlin_version}"
+    implementation "com.fasterxml.jackson.dataformat:jackson-dataformat-yaml:${jackson_version}"
+    implementation group: 'com.fasterxml.jackson.module', name: 'jackson-module-kotlin', version: "${jackson_version}"
     implementation "com.fasterxml.uuid:java-uuid-generator:${uuid_generator_version}"
 
     implementation "com.squareup.okhttp3:okhttp:${okhttp_version}"
