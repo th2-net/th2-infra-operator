@@ -40,47 +40,41 @@ detekt {
 }
 
 ext {
-    jackson_version = '2.14.2'
     uuid_generator_version = '4.1.0'
     okhttp_version = '4.10.0'
-    commons_text_version = '1.10.0'
     fabric8_version = '6.3.1'
     rabbit_amqp_version = '5.16.0'
     rabbit_http_version = '5.0.0'
-    springweb_version = '5.3.23'
-    slf4j_api_version = '2.0.5'
-    log4j_slf4j_impl_version = '2.19.0'
-    log4j_slf4j_core_version = '2.19.0'
-    kotlin_logging_version = '2.0.10'
+    kotlin_logging_version = '3.0.0' // 3.0.0 the las version supported 1.6.21
     jetbrains_annotations_version = '23.1.0'
-    prometheus_version = '0.16.0'
     mockito_version = '3.11.2'
     jupiter_version = '5.9.2'
 }
 
 dependencies {
-    implementation "com.fasterxml.jackson.dataformat:jackson-dataformat-yaml:${jackson_version}"
-    implementation group: 'com.fasterxml.jackson.module', name: 'jackson-module-kotlin', version: "${jackson_version}"
+    api platform('com.exactpro.th2:bom:4.2.0')
+    implementation "com.fasterxml.jackson.dataformat:jackson-dataformat-yaml"
+    implementation group: 'com.fasterxml.jackson.module', name: 'jackson-module-kotlin'
     implementation "com.fasterxml.uuid:java-uuid-generator:${uuid_generator_version}"
 
     implementation "com.squareup.okhttp3:okhttp:${okhttp_version}"
 
-    implementation "org.apache.commons:commons-text:${commons_text_version}"
+    implementation "org.apache.commons:commons-text"
 
     implementation "io.fabric8:kubernetes-client:${fabric8_version}"
     implementation "com.rabbitmq:amqp-client:${rabbit_amqp_version}"
     implementation "com.rabbitmq:http-client:${rabbit_http_version}"
 
-    implementation "org.slf4j:slf4j-api:${slf4j_api_version}"
-    implementation "org.apache.logging.log4j:log4j-slf4j2-impl:${log4j_slf4j_impl_version}"
-    implementation "org.apache.logging.log4j:log4j-core:${log4j_slf4j_impl_version}"
+    implementation "org.slf4j:slf4j-api"
+    implementation "org.apache.logging.log4j:log4j-slf4j2-impl"
+    implementation "org.apache.logging.log4j:log4j-core"
     implementation group: 'io.github.microutils', name: 'kotlin-logging', version: kotlin_logging_version
 
     implementation "org.jetbrains:annotations:${jetbrains_annotations_version}"
 
-    implementation "io.prometheus:simpleclient:${prometheus_version}"
-    implementation "io.prometheus:simpleclient_httpserver:${prometheus_version}"
-    implementation "io.prometheus:simpleclient_hotspot:${prometheus_version}"
+    implementation "io.prometheus:simpleclient"
+    implementation "io.prometheus:simpleclient_httpserver"
+    implementation "io.prometheus:simpleclient_hotspot"
 
     testImplementation group: 'org.mockito', name: 'mockito-core', version: "${mockito_version}"
 
