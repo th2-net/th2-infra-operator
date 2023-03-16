@@ -376,6 +376,12 @@ public abstract class HelmReleaseTh2Op<CR extends Th2CustomResource> extends Abs
 
     @Override
     protected void createKubObj(String namespace, HelmRelease helmRelease) {
+        String hrName = extractName(helmRelease);
+        HelmRelease existingRelease = helmReleaseClient.inNamespace(namespace).withName(hrName).get();
+
+        if (needsToBeDeleted(helmRelease, existingRelease)) {
+            helmReleaseClient.inNamespace(namespace).withName(hrName).delete();
+        }
         helmReleaseClient.inNamespace(namespace).resource(helmRelease).createOrReplace();
         OperatorState.INSTANCE.putHelmReleaseInCache(helmRelease, namespace);
     }
