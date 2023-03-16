@@ -24,11 +24,14 @@ import com.exactpro.th2.infraoperator.model.box.mq.QueueConfiguration;
 import com.exactpro.th2.infraoperator.spec.Th2CustomResource;
 import com.exactpro.th2.infraoperator.spec.Th2Spec;
 import com.exactpro.th2.infraoperator.spec.helmrelease.HelmRelease;
+import com.exactpro.th2.infraoperator.spec.helmrelease.InstantiableMap;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.JsonNode;
 import org.apache.commons.text.StringSubstitutor;
 import org.apache.commons.text.lookup.StringLookupFactory;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.util.Collection;
 import java.util.List;
@@ -42,6 +45,7 @@ import static com.exactpro.th2.infraoperator.util.JsonUtils.JSON_MAPPER;
 import static com.exactpro.th2.infraoperator.util.JsonUtils.YAML_MAPPER;
 
 public class HelmReleaseUtils {
+    private static final Logger logger = LoggerFactory.getLogger(HelmReleaseUtils.class);
 
     private static final String HOST_NETWORK_ALIAS = "hostNetwork";
 
@@ -224,5 +228,27 @@ public class HelmReleaseUtils {
                 .stream()
                 .filter(queueConfiguration -> !(queueConfiguration.getQueueName().isEmpty()))
                 .map(QueueConfiguration::getQueueName).collect(Collectors.toSet());
+    }
+
+    public static boolean needsToBeDeleted(HelmRelease newHelmRelease, HelmRelease oldHelmRelease) {
+        if (oldHelmRelease == null) {
+            return false;
+        }
+        return isAlreadyFailed(oldHelmRelease);
+    }
+
+    private static boolean isAlreadyFailed(HelmRelease oldHelmRelease) {
+        InstantiableMap statusSection = oldHelmRelease.getStatus();
+        if (statusSection == null ||
+                statusSection.get("phase") == null ||
+                statusSection.get("releaseStatus") == null ||
+                !statusSection.get("phase").equals("Succeeded") ||
+                !statusSection.get("releaseStatus").equals("deployed")
+        ) {
+            logger.warn("HelmRelease \"{}\" was failed. will be recreated",
+                    annotationFor(oldHelmRelease));
+            return true;
+        }
+        return false;
     }
 }
