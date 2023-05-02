@@ -37,7 +37,9 @@ import java.util.List;
 import java.util.Set;
 
 import static com.exactpro.th2.infraoperator.operator.StoreHelmTh2Op.EVENT_STORAGE_BOX_ALIAS;
+import static com.exactpro.th2.infraoperator.operator.StoreHelmTh2Op.EVENT_STORAGE_PIN_ALIAS;
 import static com.exactpro.th2.infraoperator.operator.StoreHelmTh2Op.MESSAGE_STORAGE_BOX_ALIAS;
+import static com.exactpro.th2.infraoperator.operator.StoreHelmTh2Op.MESSAGE_STORAGE_PIN_ALIAS;
 import static com.exactpro.th2.infraoperator.spec.strategy.linkresolver.mq.RabbitMQContext.getChannel;
 import static com.exactpro.th2.infraoperator.util.ExtractUtils.extractName;
 
@@ -46,11 +48,6 @@ public class DeclareQueueResolver {
     private static final Logger logger = LoggerFactory.getLogger(DeclareQueueResolver.class);
 
     public static void resolveAdd(Th2CustomResource resource) {
-        String resName = resource.getMetadata().getName();
-        if (resName.equals(EVENT_STORAGE_BOX_ALIAS) ||
-                resName.equals(MESSAGE_STORAGE_BOX_ALIAS)) {
-            return;
-        }
         String namespace = ExtractUtils.extractNamespace(resource);
         try {
             declareQueueBunch(namespace, resource);
@@ -62,17 +59,12 @@ public class DeclareQueueResolver {
     }
 
     public static void resolveDelete(Th2CustomResource resource) {
-        String resName = resource.getMetadata().getName();
-        if (resName.equals(EVENT_STORAGE_BOX_ALIAS) ||
-                resName.equals(MESSAGE_STORAGE_BOX_ALIAS)) {
-            return;
-        }
         String namespace = ExtractUtils.extractNamespace(resource);
         try {
             Channel channel = getChannel();
             //get queues that are associated with current box.
             Set<String> boxQueueNames = generateBoxQueues(namespace, resource);
-            removeExtinctQueues(channel, boxQueueNames, CustomResourceUtils.annotationFor(resource));
+            removeExtinctQueues(channel, boxQueueNames, CustomResourceUtils.annotationFor(resource), namespace);
         } catch (Exception e) {
             String message = "Exception while working with rabbitMq";
             logger.error(message, e);
@@ -109,7 +101,7 @@ public class DeclareQueueResolver {
                     declareResult.getQueue(), extractName(resource));
         }
         //remove from rabbit queues that are left i.e. inactive
-        removeExtinctQueues(channel, boxQueues, CustomResourceUtils.annotationFor(resource));
+        removeExtinctQueues(channel, boxQueues, CustomResourceUtils.annotationFor(resource), namespace);
     }
 
     private static Set<String> getBoxPreviousQueues(String namespace, String boxName) {
@@ -143,17 +135,28 @@ public class DeclareQueueResolver {
         return queueNames;
     }
 
-    private static void removeExtinctQueues(Channel channel, Set<String> extinctQueueNames, String resourceLabel) {
+    private static void removeExtinctQueues(
+            Channel channel,
+            Set<String> extinctQueueNames,
+            String resourceLabel,
+            String namespace
+    ) {
+        String estoreQueue = new QueueName(namespace, EVENT_STORAGE_BOX_ALIAS, EVENT_STORAGE_PIN_ALIAS).toString();
+        String mstoreQueue = new QueueName(namespace, MESSAGE_STORAGE_BOX_ALIAS, MESSAGE_STORAGE_PIN_ALIAS).toString();
+
         if (!extinctQueueNames.isEmpty()) {
             logger.info("Trying to delete queues associated with \"{}\"", resourceLabel);
-            extinctQueueNames.forEach(queueName -> {
-                try {
-                    channel.queueDelete(queueName);
-                    logger.info("Deleted queue: [{}]", queueName);
-                } catch (IOException e) {
-                    logger.error("Exception deleting queue: [{}]", queueName, e);
-                }
-            });
+            extinctQueueNames
+                    .stream()
+                    .filter(name -> !name.equals(estoreQueue) && !name.equals(mstoreQueue))
+                    .forEach(queueName -> {
+                        try {
+                            channel.queueDelete(queueName);
+                            logger.info("Deleted queue: [{}]", queueName);
+                        } catch (IOException e) {
+                            logger.error("Exception deleting queue: [{}]", queueName, e);
+                        }
+                    });
         }
     }
 }

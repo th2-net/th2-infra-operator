@@ -39,9 +39,6 @@ object BindQueueLinkResolver {
         val namespace = resource.metadata.namespace
         val resourceName = resource.metadata.name
         val commitHash = CustomResourceUtils.extractShortCommitHash(resource)
-        if (resourceName.equals(EVENT_STORAGE_BOX_ALIAS) || resourceName.equals(MESSAGE_STORAGE_BOX_ALIAS)) {
-            return
-        }
         for (subscriberPin in resource.spec.pins.mq.subscribers) {
             val queueName = QueueName(namespace, resourceName, subscriberPin.name)
             for ((box, pin) in subscriberPin.linkTo) {
