@@ -17,14 +17,10 @@
 package com.exactpro.th2.infraoperator.model.box.mq.factory
 
 import com.exactpro.th2.infraoperator.configuration.ConfigLoader
-import com.exactpro.th2.infraoperator.model.LinkDescription
 import com.exactpro.th2.infraoperator.model.box.mq.MessageRouterConfiguration
 import com.exactpro.th2.infraoperator.model.box.mq.QueueConfiguration
 import com.exactpro.th2.infraoperator.operator.StoreHelmTh2Op.EVENT_STORAGE_PIN_ALIAS
 import com.exactpro.th2.infraoperator.spec.Th2CustomResource
-import com.exactpro.th2.infraoperator.spec.shared.PinAttribute
-import com.exactpro.th2.infraoperator.spec.strategy.linkresolver.queue.QueueName
-import com.exactpro.th2.infraoperator.spec.strategy.linkresolver.queue.RoutingKeyName
 import com.exactpro.th2.infraoperator.util.ExtractUtils
 
 /**
@@ -40,41 +36,13 @@ class MessageRouterConfigFactoryBox : MessageRouterConfigFactory() {
      */
     @Override
     override fun createConfig(resource: Th2CustomResource): MessageRouterConfiguration {
-        val queues: MutableMap<String, QueueConfiguration> = HashMap()
+        val queues: MutableMap<String, QueueConfiguration> = generateDeclaredQueues(resource)
         val boxName = ExtractUtils.extractName(resource)
         val namespace = ExtractUtils.extractNamespace(resource)
 
         // add event storage pin config for each resource
         queues[EVENT_STORAGE_PIN_ALIAS] = generatePublishToEstorePin(namespace, boxName)
 
-        // add configurations for the rest of the pins
-        for ((pinName, attributes, filters) in resource.spec.pins.mq.publishers) {
-            queues[pinName!!] = QueueConfiguration(
-                LinkDescription(
-                    QueueName.EMPTY,
-                    RoutingKeyName(namespace, boxName, pinName),
-                    namespace
-                ),
-                attributes.apply {
-                    add(PinAttribute.publish.name)
-                },
-                filters
-            )
-        }
-
-        for ((pinName, attributes, filters) in resource.spec.pins.mq.subscribers) {
-            queues[pinName!!] = QueueConfiguration(
-                LinkDescription(
-                    QueueName(namespace, boxName, pinName),
-                    RoutingKeyName.EMPTY,
-                    namespace
-                ),
-                attributes.apply {
-                    add(PinAttribute.subscribe.name)
-                },
-                filters
-            )
-        }
         val globalExchange = ConfigLoader.config.rabbitMQManagement.exchangeName
         return MessageRouterConfiguration(queues, globalExchange)
     }

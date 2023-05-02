@@ -24,6 +24,7 @@ import com.exactpro.th2.infraoperator.spec.Th2CustomResource
 import com.exactpro.th2.infraoperator.spec.shared.PinAttribute
 import com.exactpro.th2.infraoperator.spec.strategy.linkresolver.queue.QueueName
 import com.exactpro.th2.infraoperator.spec.strategy.linkresolver.queue.RoutingKeyName
+import com.exactpro.th2.infraoperator.util.ExtractUtils
 
 /**
  * A factory that creates a mq configuration
@@ -38,7 +39,7 @@ abstract class MessageRouterConfigFactory {
      */
     abstract fun createConfig(resource: Th2CustomResource): MessageRouterConfiguration
 
-    fun generatePublishToEstorePin(namespace: String, boxName: String) = QueueConfiguration(
+    protected fun generatePublishToEstorePin(namespace: String, boxName: String) = QueueConfiguration(
         LinkDescription(
             QueueName.EMPTY,
             RoutingKeyName(namespace, boxName, StoreHelmTh2Op.EVENT_STORAGE_PIN_ALIAS),
@@ -47,4 +48,41 @@ abstract class MessageRouterConfigFactory {
         setOf(PinAttribute.publish.name, PinAttribute.event.name),
         emptyList()
     )
+
+    protected fun generateDeclaredQueues(
+        resource: Th2CustomResource
+    ): MutableMap<String, QueueConfiguration> {
+        val queues: MutableMap<String, QueueConfiguration> = HashMap()
+        val boxName = ExtractUtils.extractName(resource)
+        val namespace = ExtractUtils.extractNamespace(resource)
+
+        for ((pinName, attributes, filters) in resource.spec.pins.mq.publishers) {
+            queues[pinName!!] = QueueConfiguration(
+                LinkDescription(
+                    QueueName.EMPTY,
+                    RoutingKeyName(namespace, boxName, pinName),
+                    namespace
+                ),
+                attributes.apply {
+                    add(PinAttribute.publish.name)
+                },
+                filters
+            )
+        }
+
+        for ((pinName, attributes, filters) in resource.spec.pins.mq.subscribers) {
+            queues[pinName!!] = QueueConfiguration(
+                LinkDescription(
+                    QueueName(namespace, boxName, pinName),
+                    RoutingKeyName.EMPTY,
+                    namespace
+                ),
+                attributes.apply {
+                    add(PinAttribute.subscribe.name)
+                },
+                filters
+            )
+        }
+        return queues
+    }
 }

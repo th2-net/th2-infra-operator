@@ -41,7 +41,7 @@ class MessageRouterConfigFactoryMstore : MessageRouterConfigFactory() {
      */
     @Override
     override fun createConfig(resource: Th2CustomResource): MessageRouterConfiguration {
-        val queues: MutableMap<String, QueueConfiguration> = HashMap()
+        val queues: MutableMap<String, QueueConfiguration> = generateDeclaredQueues(resource)
         val boxName = ExtractUtils.extractName(resource)
         val namespace = ExtractUtils.extractNamespace(resource)
 
