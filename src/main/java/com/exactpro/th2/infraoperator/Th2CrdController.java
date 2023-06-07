@@ -16,6 +16,7 @@
 
 package com.exactpro.th2.infraoperator;
 
+import com.exactpro.th2.infraoperator.metrics.OperatorMetrics;
 import com.exactpro.th2.infraoperator.metrics.PrometheusServer;
 import com.exactpro.th2.infraoperator.operator.impl.BoxHelmTh2Op;
 import com.exactpro.th2.infraoperator.operator.impl.CoreBoxHelmTh2Op;
@@ -24,6 +25,8 @@ import com.exactpro.th2.infraoperator.operator.impl.JobHelmTh2Op;
 import com.exactpro.th2.infraoperator.operator.impl.MstoreHelmTh2Op;
 import com.exactpro.th2.infraoperator.operator.manager.impl.DefaultWatchManager;
 import com.exactpro.th2.infraoperator.spec.strategy.linkresolver.mq.RabbitMQContext;
+import com.exactpro.th2.infraoperator.spec.strategy.redeploy.ContinuousTaskWorker;
+import com.exactpro.th2.infraoperator.spec.strategy.redeploy.tasks.CheckResourceCacheTask;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -35,6 +38,7 @@ public class Th2CrdController {
 
         var watchManager = DefaultWatchManager.getInstance();
         PrometheusServer.start();
+        OperatorMetrics.resetCacheErrors();
         try {
             RabbitMQContext.declareTopicExchange();
             RabbitMQContext.cleanUpRabbitBeforeStart();
@@ -45,13 +49,14 @@ public class Th2CrdController {
             watchManager.addTarget(CoreBoxHelmTh2Op::new);
             watchManager.addTarget(JobHelmTh2Op::new);
 
-
             watchManager.startInformers();
 
+            new ContinuousTaskWorker().add(new CheckResourceCacheTask(300));
         } catch (Exception e) {
             logger.error("Exception in main thread", e);
             watchManager.stopInformers();
             watchManager.close();
+            throw e;
         }
     }
 }

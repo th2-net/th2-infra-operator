@@ -17,7 +17,6 @@
 package com.exactpro.th2.infraoperator.spec.strategy.redeploy.tasks;
 
 import com.exactpro.th2.infraoperator.model.kubernetes.client.ResourceClient;
-import com.exactpro.th2.infraoperator.spec.strategy.redeploy.RetryableTaskQueue;
 import com.exactpro.th2.infraoperator.util.CustomResourceUtils;
 import com.fasterxml.uuid.Generators;
 import io.fabric8.kubernetes.api.model.Namespace;
@@ -32,7 +31,7 @@ import java.util.HashMap;
 
 import static com.exactpro.th2.infraoperator.operator.AbstractTh2Operator.REFRESH_TOKEN_ALIAS;
 
-public class TriggerRedeployTask implements RetryableTaskQueue.Task {
+public class TriggerRedeployTask implements Task {
 
     private static final Logger logger = LoggerFactory.getLogger(TriggerRedeployTask.class);
 

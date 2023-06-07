@@ -35,6 +35,10 @@ public class OperatorMetrics {
             .labelNames("exported_namespace", "category")
             .register();
 
+    private static Gauge resourceCacheErrors = Gauge
+            .build("th2_infra_operator_resource_cache_errors", "Amount of errors in operator resource cache")
+            .register();
+
     private static Histogram crEventProcessingTime = Histogram
             .build("th2_infra_operator_custom_resource_event_processing_time",
                     "Time it took to process specific event by operator")
@@ -89,6 +93,14 @@ public class OperatorMetrics {
         String exportedNamespace = resource.getMetadata().getNamespace();
         String resName = resource.getMetadata().getName();
         return dictionaryEventProcessingTime.labels(exportedNamespace, resName).startTimer();
+    }
+
+    public static void resetCacheErrors() {
+        resourceCacheErrors.set(0);
+    }
+
+    public static void incrementCacheErrors() {
+        resourceCacheErrors.inc();
     }
 
     public static void observeTotal(HasMetadata resource) {

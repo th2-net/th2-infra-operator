@@ -125,9 +125,17 @@ public class CustomResourceUtils {
 
     public static String extractShortCommitHash(HasMetadata resource) {
         try {
-            return resource.getMetadata().getAnnotations().get(GIT_COMMIT_HASH).substring(0, SHORT_HASH_LENGTH);
+            return fullCommitHash(resource).substring(0, SHORT_HASH_LENGTH);
         } catch (NullPointerException e) {
             return "not related to specific commit, using default value";
         }
+    }
+
+    public static String fullCommitHash(HasMetadata resource) {
+        return resource.getMetadata().getAnnotations().get(GIT_COMMIT_HASH);
+    }
+
+    public static String stamp(HasMetadata resource) {
+        return ExtractUtils.fullSourceHash(resource) + ":" + fullCommitHash(resource);
     }
 }

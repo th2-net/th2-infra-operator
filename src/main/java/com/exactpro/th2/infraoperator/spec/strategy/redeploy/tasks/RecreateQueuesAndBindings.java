@@ -20,11 +20,10 @@ import com.exactpro.th2.infraoperator.spec.Th2CustomResource;
 import com.exactpro.th2.infraoperator.spec.strategy.linkresolver.mq.BindQueueLinkResolver;
 import com.exactpro.th2.infraoperator.spec.strategy.linkresolver.mq.DeclareQueueResolver;
 import com.exactpro.th2.infraoperator.spec.strategy.linkresolver.mq.RabbitMQContext;
-import com.exactpro.th2.infraoperator.spec.strategy.redeploy.RetryableTaskQueue;
 
 import java.util.Collection;
 
-public class RecreateQueuesAndBindings implements RetryableTaskQueue.Task {
+public class RecreateQueuesAndBindings implements Task {
     private final long retryDelay;
 
     private final Collection<Th2CustomResource> resources;
