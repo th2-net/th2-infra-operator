@@ -17,9 +17,8 @@
 package com.exactpro.th2.infraoperator.spec.strategy.redeploy.tasks;
 
 import com.exactpro.th2.infraoperator.spec.strategy.linkresolver.mq.RabbitMQContext;
-import com.exactpro.th2.infraoperator.spec.strategy.redeploy.RetryableTaskQueue;
 
-public class RetryTopicExchangeTask implements RetryableTaskQueue.Task {
+public class RetryTopicExchangeTask implements Task {
 
     private final long retryDelay;
 

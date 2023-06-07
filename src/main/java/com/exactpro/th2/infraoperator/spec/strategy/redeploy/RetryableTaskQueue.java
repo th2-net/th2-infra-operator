@@ -16,6 +16,7 @@
 
 package com.exactpro.th2.infraoperator.spec.strategy.redeploy;
 
+import com.exactpro.th2.infraoperator.spec.strategy.redeploy.tasks.Task;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -29,12 +30,6 @@ public class RetryableTaskQueue {
     private static final Logger logger = LoggerFactory.getLogger(RetryableTaskQueue.class);
 
     private static final int THREAD_POOL_SIZE = 3;
-
-    public interface Task extends Runnable {
-        String getName();
-
-        long getRetryDelay();
-    }
 
     private class RetryableTask implements Runnable {
         Task task;
