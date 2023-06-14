@@ -21,7 +21,7 @@ import io.fabric8.kubernetes.api.model.KubernetesResource
 
 @JsonDeserialize
 class HelmReleaseSpec : KubernetesResource {
-    val maxHistory: Int = 0
+    val maxHistory: Int = 2
 
     // TODO remove resetValues and wait when switched to helm controller
     val resetValues: Boolean = true
@@ -33,7 +33,9 @@ class HelmReleaseSpec : KubernetesResource {
     // TODO change type to ChartConfig
     var chart: Any? = null
 
-    val values: Map<String, Any> = HashMap()
+    val values: Map<String, Any> = HashMap<String, Any>().apply {
+        put(HelmRelease.ROOT_PROPERTIES_ALIAS, HashMap<String, Any>())
+    }
 // TODO restore this fields when switched to helm controller
 //    var timeout: String = "2m"
 //    val interval: String? = null

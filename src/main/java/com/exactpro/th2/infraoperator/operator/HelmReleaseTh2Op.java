@@ -44,7 +44,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
-import java.io.InputStream;
 import java.util.*;
 
 import static com.exactpro.th2.infraoperator.operator.manager.impl.ConfigMapEventHandler.mergeConfigs;
@@ -384,11 +383,6 @@ public abstract class HelmReleaseTh2Op<CR extends Th2CustomResource> extends Abs
         }
         helmReleaseClient.inNamespace(namespace).resource(helmRelease).createOrReplace();
         OperatorState.INSTANCE.putHelmReleaseInCache(helmRelease, namespace);
-    }
-
-    @Override
-    protected HelmRelease parseStreamToKubObj(InputStream stream) {
-        return helmReleaseClient.load(stream).get();
     }
 
     private void updateGrpcLinkedResourcesIfNeeded(CR currentResource) {

@@ -37,6 +37,10 @@ public class HelmRelease extends CustomResource<HelmReleaseSpec, InstantiableMap
 
     public static final int NAME_LENGTH_LIMIT = 26;
 
+    public HelmRelease() {
+        this.spec = new HelmReleaseSpec();
+    }
+
     @JsonIgnore
     public Map<String, Object> getValues() {
         return getSpec().getValues();
