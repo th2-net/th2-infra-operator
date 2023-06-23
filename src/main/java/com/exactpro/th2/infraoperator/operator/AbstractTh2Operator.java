@@ -17,7 +17,6 @@
 package com.exactpro.th2.infraoperator.operator;
 
 import com.exactpro.th2.infraoperator.OperatorState;
-import com.exactpro.th2.infraoperator.Th2CrdController;
 import com.exactpro.th2.infraoperator.configuration.ConfigLoader;
 import com.exactpro.th2.infraoperator.metrics.OperatorMetrics;
 import com.exactpro.th2.infraoperator.model.box.mq.factory.MessageRouterConfigFactory;
@@ -44,7 +43,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
-import java.io.InputStream;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -145,22 +143,12 @@ public abstract class AbstractTh2Operator<CR extends Th2CustomResource> implemen
 
     public abstract ResourceClient<CR> getResourceClient();
 
-    protected HelmRelease loadKubObj() throws IOException {
-        String kubObjDefPath = "/helmRelease-template.yml";
-        try (var somePodYml = Th2CrdController.class.getResourceAsStream(kubObjDefPath)) {
-
-            var helmRelease = parseStreamToKubObj(somePodYml);
+    protected HelmRelease loadKubObj() {
+            var helmRelease = new HelmRelease();
             helmRelease.getSpec().setChart(ConfigLoader.getConfig().getChart());
 //TODO restore this when moved to helm controller
 //            helmRelease.getSpec().setTimeout(ConfigLoader.getConfig().getReleaseTimeout());
-            return helmRelease;
-        }
-
-    }
-
-    @SuppressWarnings("unchecked")
-    protected HelmRelease parseStreamToKubObj(InputStream stream) {
-        return (HelmRelease) kubClient.load(stream).get().get(0);
+        return helmRelease;
     }
 
     protected void processEvent(Action action, CR resource) throws IOException {

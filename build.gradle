@@ -42,7 +42,7 @@ detekt {
 ext {
     uuid_generator_version = '4.2.0'
     okhttp_version = '4.10.0'
-    fabric8_version = '6.3.1'
+    fabric8_version = '6.6.2'
     rabbit_amqp_version = '5.16.0'
     rabbit_http_version = '5.0.0'
     kotlin_logging_version = '3.0.0' // 3.0.0 the las version supported 1.6.21
