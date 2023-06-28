@@ -29,6 +29,7 @@ import com.exactpro.th2.infraoperator.spec.strategy.linkresolver.queue.RoutingKe
 import com.exactpro.th2.infraoperator.spec.strategy.linkresolver.queue.RoutingKeyName.ROUTING_KEY_REGEXP
 import com.exactpro.th2.infraoperator.spec.strategy.redeploy.NonTerminalException
 import com.exactpro.th2.infraoperator.util.CustomResourceUtils
+import com.exactpro.th2.infraoperator.util.CustomResourceUtils.annotationFor
 import mu.KotlinLogging
 
 object BindQueueLinkResolver {
@@ -57,6 +58,7 @@ object BindQueueLinkResolver {
     fun resolveHiddenLinks(resource: Th2CustomResource) {
         val namespace = resource.metadata.namespace
         val resourceName = resource.metadata.name
+        val resourceLabel = annotationFor(resource)
         val commitHash = CustomResourceUtils.extractShortCommitHash(resource)
         if (resourceName.equals(EVENT_STORAGE_BOX_ALIAS) || resourceName.equals(MESSAGE_STORAGE_BOX_ALIAS)) {
             return
@@ -73,10 +75,7 @@ object BindQueueLinkResolver {
         val queueName = QueueName(namespace, MESSAGE_STORAGE_BOX_ALIAS, MESSAGE_STORAGE_PIN_ALIAS)
         // create message store link for only resources that need it
         for ((pinName, attributes) in resource.spec.pins.mq.publishers) {
-            if (attributes.contains(PinAttribute.store.name) &&
-                attributes.contains(PinAttribute.raw.name) &&
-                !attributes.contains(PinAttribute.parsed.name)
-            ) {
+            if (checkStorePinAttributes(attributes, resourceLabel, pinName)) {
                 val mstoreLinkDescription = LinkDescription(
                     queueName,
                     RoutingKeyName(namespace, resourceName, pinName),
@@ -87,6 +86,29 @@ object BindQueueLinkResolver {
             }
         }
         removeExtinctBindings(queueName, currentLinks, commitHash, resourceName)
+    }
+
+    private fun checkStorePinAttributes(attributes: Set<String>, resourceLabel: String, pinName: String?): Boolean {
+        if (!attributes.contains(PinAttribute.store.name)) {
+            return false
+        }
+        if (attributes.contains(PinAttribute.parsed.name)) {
+            logger.warn(
+                "Detected a pin: {}:{} with incorrect store configuration. attribute 'parsed' not allowed",
+                resourceLabel,
+                pinName
+            )
+            return false
+        }
+        if (!attributes.contains(PinAttribute.raw.name)) {
+            logger.warn(
+                "Detected a pin: {}:{} with incorrect store configuration. attribute 'raw' is missing",
+                resourceLabel,
+                pinName
+            )
+            return false
+        }
+        return true
     }
 
     private fun bindQueues(queue: LinkDescription, commitHash: String) {
