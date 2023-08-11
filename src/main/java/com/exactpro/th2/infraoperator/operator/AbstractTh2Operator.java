@@ -146,10 +146,9 @@ public abstract class AbstractTh2Operator<CR extends Th2CustomResource> implemen
     protected HelmRelease loadKubObj() {
             var helmRelease = new HelmRelease();
             helmRelease.getSpec().setChart(ConfigLoader.getConfig().getChart());
-//TODO restore this when moved to helm controller
-//            helmRelease.getSpec().setTimeout(ConfigLoader.getConfig().getReleaseTimeout());
-        return helmRelease;
-    }
+            helmRelease.getSpec().setTimeout(ConfigLoader.getConfig().getReleaseTimeout());
+            return helmRelease;
+        }
 
     protected void processEvent(Action action, CR resource) throws IOException {
 

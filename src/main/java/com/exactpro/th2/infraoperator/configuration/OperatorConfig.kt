@@ -16,14 +16,14 @@
 
 package com.exactpro.th2.infraoperator.configuration
 
+import com.exactpro.th2.infraoperator.configuration.fields.ChartConfig
 import com.exactpro.th2.infraoperator.configuration.fields.EnvironmentConfig
 import com.exactpro.th2.infraoperator.configuration.fields.RabbitMQManagementConfig
 import com.exactpro.th2.infraoperator.configuration.fields.SchemaSecrets
 import com.exactpro.th2.infraoperator.spec.shared.PrometheusConfiguration
 
 data class OperatorConfig(
-    // TODO change type to ChartConfig with default value ChartConfig()
-    var chart: Any? = null,
+    var chart: ChartConfig = ChartConfig(),
     var rabbitMQManagement: RabbitMQManagementConfig = RabbitMQManagementConfig(),
     var schemaSecrets: SchemaSecrets = SchemaSecrets(),
     var namespacePrefixes: List<String> = ArrayList(),
@@ -35,7 +35,7 @@ data class OperatorConfig(
     private var imagePullSecrets: List<String>? = ArrayList(),
     var openshift: EnvironmentConfig = EnvironmentConfig(),
     var rootless: EnvironmentConfig = EnvironmentConfig(),
-    var releaseTimeout: String = "2m"
+    var releaseTimeout: String = "10m"
 ) {
     val imgPullSecrets = imagePullSecrets ?: ArrayList()
     companion object {

@@ -16,6 +16,9 @@
 
 package com.exactpro.th2.infraoperator.configuration;
 
+import com.exactpro.th2.infraoperator.configuration.fields.ChartConfig;
+import com.exactpro.th2.infraoperator.configuration.fields.ChartSourceRef;
+import com.exactpro.th2.infraoperator.configuration.fields.ChartSpec;
 import com.exactpro.th2.infraoperator.configuration.fields.RabbitMQManagementConfig;
 import com.exactpro.th2.infraoperator.configuration.fields.RabbitMQNamespacePermissions;
 import com.exactpro.th2.infraoperator.configuration.fields.SchemaSecrets;
@@ -46,13 +49,12 @@ class ConfigurationTests {
     @Test
     void testFullConfig() {
         beforeEach("fullConfig.yml");
-// TODO restore this check
-//        expected.setChart(new ChartConfig(
-//                new ChartSpec(
-//                        "chart",
-//                        "1.0.0",
-//                        "reconcileStrategy",
-//                        new ChartSourceRef("source-kind", "source-name", "namespace"))));
+        expected.setChart(new ChartConfig(
+                new ChartSpec(
+                        "chart",
+                        "1.0.0",
+                        "reconcileStrategy",
+                        new ChartSourceRef("source-kind", "source-name", "namespace"))));
         expected.setRabbitMQManagement(
                 new RabbitMQManagementConfig(
                         "host",
