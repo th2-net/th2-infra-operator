@@ -22,7 +22,7 @@ import io.fabric8.kubernetes.model.annotation.Kind;
 import io.fabric8.kubernetes.model.annotation.Version;
 
 @Group("th2.exactpro.com")
-@Version("v2")
+@Version("v2-2")
 @Kind("Th2Box")
 public class Th2Box extends Th2CustomResource {
 }
