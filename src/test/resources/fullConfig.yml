@@ -1,16 +1,15 @@
 namespacePrefixes:
   - string1
   - string2
-# TODO restore this section when switched to helm controller
-#chart:
-#  spec:
-#    chart: chart
-#    version: 1.0.0
-#    reconcileStrategy: reconcileStrategy
-#    sourceRef:
-#      kind: source-kind
-#      name: source-name
-#      namespace: namespace
+chart:
+  spec:
+    chart: chart
+    version: 1.0.0
+    reconcileStrategy: reconcileStrategy
+    sourceRef:
+      kind: source-kind
+      name: source-name
+      namespace: namespace
 rabbitMQManagement:
   host: host
   managementPort: 8080

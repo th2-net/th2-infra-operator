@@ -16,32 +16,23 @@
 
 package com.exactpro.th2.infraoperator.spec.helmrelease
 
+import com.exactpro.th2.infraoperator.configuration.fields.ChartConfig
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize
 import io.fabric8.kubernetes.api.model.KubernetesResource
 
 @JsonDeserialize
 class HelmReleaseSpec : KubernetesResource {
     val maxHistory: Int = 2
-
-    // TODO remove resetValues and wait when switched to helm controller
-    val resetValues: Boolean = true
-
-    val wait: Boolean = false
-
-    var releaseName: String? = null
-
-    // TODO change type to ChartConfig
-    var chart: Any? = null
-
+    var timeout: String = "10m"
+    var releaseName: String = "th2-release"
+    val interval: String = "200m"
+    var chart: ChartConfig = ChartConfig()
     val values: Map<String, Any> = HashMap<String, Any>().apply {
         put(HelmRelease.ROOT_PROPERTIES_ALIAS, HashMap<String, Any>())
     }
-// TODO restore this fields when switched to helm controller
-//    var timeout: String = "2m"
-//    val interval: String? = null
-//    val install: Install = Install()
-//    val uninstall: Uninstall = Uninstall()
-//    val upgrade: Upgrade = Upgrade()
+    val install: Install = Install()
+    val uninstall: Uninstall = Uninstall()
+    val upgrade: Upgrade = Upgrade()
 }
 
 data class Install(
@@ -55,7 +46,7 @@ data class Install(
 data class Uninstall(
     val disableHooks: Boolean = true,
     val disableWait: Boolean = true,
-    val keepHistory: Boolean = true
+    val keepHistory: Boolean = false
 )
 
 data class Upgrade(

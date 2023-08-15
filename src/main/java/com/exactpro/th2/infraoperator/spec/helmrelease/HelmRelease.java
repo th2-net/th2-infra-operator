@@ -28,8 +28,8 @@ import java.util.Map;
 
 @SuppressWarnings("unchecked")
 @JsonIgnoreProperties(ignoreUnknown = true)
-@Group("helm.fluxcd.io")
-@Version("v1")
+@Group("helm.toolkit.fluxcd.io")
+@Version("v2beta1")
 @Kind("HelmRelease")
 public class HelmRelease extends CustomResource<HelmReleaseSpec, InstantiableMap> implements Namespaced {
 

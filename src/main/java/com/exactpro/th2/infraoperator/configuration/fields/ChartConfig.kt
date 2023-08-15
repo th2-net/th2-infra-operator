@@ -18,10 +18,8 @@ package com.exactpro.th2.infraoperator.configuration.fields
 
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize
 
-// TODO This config is to bee used when moved to helm controller. name should be changed back to ChartConfig
-
 @JsonDeserialize
-data class ChartConfigForHelmController(
+data class ChartConfig(
     val spec: ChartSpec = ChartSpec()
 )
 
@@ -37,5 +35,5 @@ data class ChartSpec(
 data class ChartSourceRef(
     val kind: String = "HelmRepository",
     val name: String = "helm-repo",
-    val namespace: String = "flux-system",
+    val namespace: String? = null
 )
