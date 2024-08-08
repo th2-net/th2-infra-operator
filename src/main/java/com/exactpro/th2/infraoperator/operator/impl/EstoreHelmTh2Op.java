@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2021 Exactpro (Exactpro Systems Limited)
+ * Copyright 2020-2024 Exactpro (Exactpro Systems Limited)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -28,6 +28,10 @@ import io.fabric8.kubernetes.client.informers.SharedIndexInformer;
 import io.fabric8.kubernetes.client.informers.SharedInformerFactory;
 
 public class EstoreHelmTh2Op extends StoreHelmTh2Op<Th2Estore> {
+
+    public static final String EVENT_STORAGE_PIN_ALIAS = "estore-pin";
+
+    public static final String EVENT_STORAGE_BOX_ALIAS = "estore";
 
     private final EstoreClient estoreClient;
 

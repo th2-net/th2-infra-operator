@@ -77,6 +77,12 @@ rabbitMQManagement:
   
   persistence: true
   # determines if the RabbitMQ resources are persistent or not
+
+  gcIntervalSec: 900
+  # Interval of garbage collection in RabbitMQ. Each GC task integration consist of:
+  # 1) collect redundant resources according current RabbitMQ and Kubernetes resources state.
+  # 2) delete only resources included into both current and previous integrations (previous intersect current).
+  # 3) save collected resources but not included in the previous integration (current minus previous) for the next iteration  
   
   schemaPermissions:
   # this section describes what permissions schema RabbitMQ user will have on its own resources
@@ -131,7 +137,5 @@ openshift:
   # this section indicates whether application is run in openshift environment or not
   enabled: true/false
   #if not indicated default values is false
-
-
 ```
 

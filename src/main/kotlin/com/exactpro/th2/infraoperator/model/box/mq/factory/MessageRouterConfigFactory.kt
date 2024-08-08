@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2022 Exactpro (Exactpro Systems Limited)
+ * Copyright 2020-2024 Exactpro (Exactpro Systems Limited)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -19,9 +19,10 @@ package com.exactpro.th2.infraoperator.model.box.mq.factory
 import com.exactpro.th2.infraoperator.model.LinkDescription
 import com.exactpro.th2.infraoperator.model.box.mq.MessageRouterConfiguration
 import com.exactpro.th2.infraoperator.model.box.mq.QueueConfiguration
-import com.exactpro.th2.infraoperator.operator.StoreHelmTh2Op
 import com.exactpro.th2.infraoperator.spec.Th2CustomResource
 import com.exactpro.th2.infraoperator.spec.shared.PinAttribute
+import com.exactpro.th2.infraoperator.spec.shared.pin.PinSpec
+import com.exactpro.th2.infraoperator.spec.strategy.linkresolver.buildEstoreRoutingKeyName
 import com.exactpro.th2.infraoperator.spec.strategy.linkresolver.queue.QueueName
 import com.exactpro.th2.infraoperator.spec.strategy.linkresolver.queue.RoutingKeyName
 import com.exactpro.th2.infraoperator.util.ExtractUtils
@@ -42,7 +43,7 @@ abstract class MessageRouterConfigFactory {
     protected fun generatePublishToEstorePin(namespace: String, boxName: String) = QueueConfiguration(
         LinkDescription(
             QueueName.EMPTY,
-            RoutingKeyName(namespace, boxName, StoreHelmTh2Op.EVENT_STORAGE_PIN_ALIAS),
+            buildEstoreRoutingKeyName(namespace, boxName),
             namespace
         ),
         setOf(PinAttribute.publish.name, PinAttribute.event.name),

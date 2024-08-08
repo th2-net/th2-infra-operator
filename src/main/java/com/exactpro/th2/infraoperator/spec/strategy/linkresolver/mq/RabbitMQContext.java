@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2021 Exactpro (Exactpro Systems Limited)
+ * Copyright 2020-2024 Exactpro (Exactpro Systems Limited)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -23,12 +23,13 @@ import com.exactpro.th2.infraoperator.configuration.fields.RabbitMQManagementCon
 import com.exactpro.th2.infraoperator.configuration.fields.RabbitMQNamespacePermissions;
 import com.exactpro.th2.infraoperator.model.kubernetes.configmaps.ConfigMaps;
 import com.exactpro.th2.infraoperator.spec.shared.PinSettings;
-import com.exactpro.th2.infraoperator.spec.strategy.linkresolver.queue.QueueName;
 import com.exactpro.th2.infraoperator.spec.strategy.redeploy.NonTerminalException;
 import com.exactpro.th2.infraoperator.spec.strategy.redeploy.RetryableTaskQueue;
+import com.exactpro.th2.infraoperator.spec.strategy.redeploy.tasks.RabbitMQGcTask;
 import com.exactpro.th2.infraoperator.spec.strategy.redeploy.tasks.RecreateQueuesAndBindings;
 import com.exactpro.th2.infraoperator.spec.strategy.redeploy.tasks.RetryRabbitSetup;
 import com.exactpro.th2.infraoperator.spec.strategy.redeploy.tasks.RetryTopicExchangeTask;
+import com.exactpro.th2.infraoperator.spec.strategy.redeploy.tasks.Task;
 import com.exactpro.th2.infraoperator.util.Strings;
 import com.rabbitmq.client.Channel;
 import com.rabbitmq.client.Connection;
@@ -41,17 +42,26 @@ import com.rabbitmq.http.client.domain.BindingInfo;
 import com.rabbitmq.http.client.domain.ExchangeInfo;
 import com.rabbitmq.http.client.domain.QueueInfo;
 import com.rabbitmq.http.client.domain.UserPermissions;
+import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.net.MalformedURLException;
 import java.net.URISyntaxException;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.stream.Collectors;
 
-import static com.exactpro.th2.infraoperator.operator.StoreHelmTh2Op.*;
+import static com.exactpro.th2.infraoperator.spec.strategy.linkresolver.Util.buildEstoreQueue;
+import static com.exactpro.th2.infraoperator.spec.strategy.linkresolver.Util.buildMstoreQueue;
 import static com.exactpro.th2.infraoperator.spec.strategy.linkresolver.queue.QueueName.QUEUE_NAME_REGEXP;
 import static java.lang.String.format;
+import static java.util.Objects.requireNonNullElse;
 
 public final class RabbitMQContext {
 
@@ -151,7 +161,7 @@ public final class RabbitMQContext {
         var channel = getChannel();
         RabbitMQManagementConfig rabbitMQManagementConfig = getManagementConfig();
         var declareResult = channel.queueDeclare(
-                new QueueName(namespace, EVENT_STORAGE_BOX_ALIAS, EVENT_STORAGE_PIN_ALIAS).toString(),
+                buildEstoreQueue(namespace),
                 rabbitMQManagementConfig.getPersistence(),
                 false,
                 false,
@@ -159,7 +169,7 @@ public final class RabbitMQContext {
         );
         logger.info("Queue \"{}\" was successfully declared", declareResult.getQueue());
         declareResult = channel.queueDeclare(
-                new QueueName(namespace, MESSAGE_STORAGE_BOX_ALIAS, MESSAGE_STORAGE_PIN_ALIAS).toString(),
+                buildMstoreQueue(namespace),
                 rabbitMQManagementConfig.getPersistence(),
                 false,
                 false,
@@ -203,18 +213,14 @@ public final class RabbitMQContext {
     private static void removeSchemaQueues(String namespace) {
         try {
             Channel channel = getChannel();
-
-            List<QueueInfo> queueInfoList = getQueues();
+            List<QueueInfo> queueInfoList = getTh2Queues();
             queueInfoList.forEach(q -> {
                 String queueName = q.getName();
-                var queue = QueueName.fromString(queueName);
-                if (queue != null && queue.getNamespace().equals(namespace)) {
-                    try {
-                        channel.queueDelete(queueName);
-                        logger.info("Deleted queue: [{}]", queueName);
-                    } catch (IOException e) {
-                        logger.error("Exception deleting queue: [{}]", queueName, e);
-                    }
+                try {
+                    channel.queueDelete(queueName);
+                    logger.info("Deleted queue: [{}]", queueName);
+                } catch (IOException e) {
+                    logger.error("Exception deleting queue: [{}]", queueName, e);
                 }
             });
         } catch (Exception e) {
@@ -222,22 +228,22 @@ public final class RabbitMQContext {
         }
     }
 
+    public static Task buildGarbageCollectTask() {
+        return new RabbitMQGcTask(getManagementConfig().getGcIntervalSec());
+    }
+
     public static void cleanUpRabbitBeforeStart() {
         try {
             Channel channel = getChannel();
             List<String> namespacePrefixes = ConfigLoader.getConfig().getNamespacePrefixes();
-            ;
-
-            List<QueueInfo> queueInfoList = getQueues();
+            List<QueueInfo> queueInfoList = getTh2Queues();
             queueInfoList.forEach(q -> {
                 String queueName = q.getName();
-                if (queueName != null && queueName.matches(QUEUE_NAME_REGEXP)) {
-                    try {
-                        channel.queueDelete(queueName);
-                        logger.info("Deleted queue: [{}]", queueName);
-                    } catch (IOException e) {
-                        logger.error("Exception deleting queue: [{}]", queueName, e);
-                    }
+                try {
+                    channel.queueDelete(queueName);
+                    logger.info("Deleted queue: [{}]", queueName);
+                } catch (IOException e) {
+                    logger.error("Exception deleting queue: [{}]", queueName, e);
                 }
             });
 
@@ -287,8 +293,7 @@ public final class RabbitMQContext {
         }
     }
 
-    public static List<QueueInfo> getQueues() {
-
+    public static @Nullable List<QueueInfo> getQueues() {
         String vHostName = getManagementConfig().getVhostName();
 
         try {
@@ -299,6 +304,12 @@ public final class RabbitMQContext {
             logger.error(message, e);
             throw new NonTerminalException(message, e);
         }
+    }
+
+    public static @NotNull List<QueueInfo> getTh2Queues() {
+        return requireNonNullElse(getQueues(), Collections.<QueueInfo>emptyList()).stream()
+                .filter(queueInfo -> queueInfo.getName() != null && queueInfo.getName().matches(QUEUE_NAME_REGEXP))
+                .collect(Collectors.toList());
     }
 
     public static List<BindingInfo> getQueueBindings(String queue) {

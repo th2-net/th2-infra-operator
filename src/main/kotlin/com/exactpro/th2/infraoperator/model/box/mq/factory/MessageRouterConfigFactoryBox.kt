@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2022 Exactpro (Exactpro Systems Limited)
+ * Copyright 2020-2024 Exactpro (Exactpro Systems Limited)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -19,8 +19,9 @@ package com.exactpro.th2.infraoperator.model.box.mq.factory
 import com.exactpro.th2.infraoperator.configuration.ConfigLoader
 import com.exactpro.th2.infraoperator.model.box.mq.MessageRouterConfiguration
 import com.exactpro.th2.infraoperator.model.box.mq.QueueConfiguration
-import com.exactpro.th2.infraoperator.operator.StoreHelmTh2Op.EVENT_STORAGE_PIN_ALIAS
+import com.exactpro.th2.infraoperator.operator.impl.EstoreHelmTh2Op.EVENT_STORAGE_PIN_ALIAS
 import com.exactpro.th2.infraoperator.spec.Th2CustomResource
+import com.exactpro.th2.infraoperator.spec.shared.pin.PinSpec
 import com.exactpro.th2.infraoperator.util.ExtractUtils
 
 /**

@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2021 Exactpro (Exactpro Systems Limited)
+ * Copyright 2020-2024 Exactpro (Exactpro Systems Limited)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -41,7 +41,6 @@ public class Th2CrdController {
         OperatorMetrics.resetCacheErrors();
         try {
             RabbitMQContext.declareTopicExchange();
-            RabbitMQContext.cleanUpRabbitBeforeStart();
 
             watchManager.addTarget(MstoreHelmTh2Op::new);
             watchManager.addTarget(EstoreHelmTh2Op::new);
@@ -51,7 +50,9 @@ public class Th2CrdController {
 
             watchManager.startInformers();
 
-            new ContinuousTaskWorker().add(new CheckResourceCacheTask(300));
+            ContinuousTaskWorker continuousTaskWorker = new ContinuousTaskWorker();
+            continuousTaskWorker.add(new CheckResourceCacheTask(300));
+            continuousTaskWorker.add(RabbitMQContext.buildGarbageCollectTask());
         } catch (Exception e) {
             logger.error("Exception in main thread", e);
             watchManager.stopInformers();

@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2021 Exactpro (Exactpro Systems Limited)
+ * Copyright 2020-2024 Exactpro (Exactpro Systems Limited)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,13 +17,14 @@
 package com.exactpro.th2.infraoperator.spec.strategy.linkresolver.mq
 
 import com.exactpro.th2.infraoperator.model.LinkDescription
-import com.exactpro.th2.infraoperator.operator.StoreHelmTh2Op.EVENT_STORAGE_BOX_ALIAS
-import com.exactpro.th2.infraoperator.operator.StoreHelmTh2Op.EVENT_STORAGE_PIN_ALIAS
-import com.exactpro.th2.infraoperator.operator.StoreHelmTh2Op.MESSAGE_STORAGE_BOX_ALIAS
-import com.exactpro.th2.infraoperator.operator.StoreHelmTh2Op.MESSAGE_STORAGE_PIN_ALIAS
+import com.exactpro.th2.infraoperator.operator.impl.EstoreHelmTh2Op.EVENT_STORAGE_BOX_ALIAS
+import com.exactpro.th2.infraoperator.operator.impl.MstoreHelmTh2Op.MESSAGE_STORAGE_BOX_ALIAS
 import com.exactpro.th2.infraoperator.spec.Th2CustomResource
 import com.exactpro.th2.infraoperator.spec.shared.PinAttribute
 import com.exactpro.th2.infraoperator.spec.shared.pin.Link
+import com.exactpro.th2.infraoperator.spec.strategy.linkresolver.buildEstoreQueueName
+import com.exactpro.th2.infraoperator.spec.strategy.linkresolver.buildEstoreRoutingKeyName
+import com.exactpro.th2.infraoperator.spec.strategy.linkresolver.buildMstoreQueueName
 import com.exactpro.th2.infraoperator.spec.strategy.linkresolver.queue.QueueName
 import com.exactpro.th2.infraoperator.spec.strategy.linkresolver.queue.RoutingKeyName
 import com.exactpro.th2.infraoperator.spec.strategy.linkresolver.queue.RoutingKeyName.ROUTING_KEY_REGEXP
@@ -65,14 +66,14 @@ object BindQueueLinkResolver {
         }
         // create event storage link for each resource
         val estoreLinkDescription = LinkDescription(
-            QueueName(namespace, EVENT_STORAGE_BOX_ALIAS, EVENT_STORAGE_PIN_ALIAS),
-            RoutingKeyName(namespace, resourceName, EVENT_STORAGE_PIN_ALIAS),
+            buildEstoreQueueName(namespace),
+            buildEstoreRoutingKeyName(namespace, resourceName),
             namespace
         )
         bindQueues(estoreLinkDescription, commitHash)
 
         val currentLinks: MutableList<Link> = ArrayList()
-        val queueName = QueueName(namespace, MESSAGE_STORAGE_BOX_ALIAS, MESSAGE_STORAGE_PIN_ALIAS)
+        val queueName = buildMstoreQueueName(namespace)
         // create message store link for only resources that need it
         for ((pinName, attributes) in resource.spec.pins.mq.publishers) {
             if (checkStorePinAttributes(attributes, resourceLabel, pinName)) {

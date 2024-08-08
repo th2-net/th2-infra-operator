@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2021 Exactpro (Exactpro Systems Limited)
+ * Copyright 2020-2024 Exactpro (Exactpro Systems Limited)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -28,6 +28,7 @@ import com.exactpro.th2.infraoperator.util.ExtractUtils;
 import com.exactpro.th2.infraoperator.util.HelmReleaseUtils;
 import com.rabbitmq.client.Channel;
 import com.rabbitmq.http.client.domain.QueueInfo;
+import org.jetbrains.annotations.NotNull;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -36,12 +37,12 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 
-import static com.exactpro.th2.infraoperator.operator.StoreHelmTh2Op.EVENT_STORAGE_BOX_ALIAS;
-import static com.exactpro.th2.infraoperator.operator.StoreHelmTh2Op.EVENT_STORAGE_PIN_ALIAS;
-import static com.exactpro.th2.infraoperator.operator.StoreHelmTh2Op.MESSAGE_STORAGE_BOX_ALIAS;
-import static com.exactpro.th2.infraoperator.operator.StoreHelmTh2Op.MESSAGE_STORAGE_PIN_ALIAS;
+import static com.exactpro.th2.infraoperator.spec.strategy.linkresolver.Util.buildEstoreQueue;
+import static com.exactpro.th2.infraoperator.spec.strategy.linkresolver.Util.buildMstoreQueue;
 import static com.exactpro.th2.infraoperator.spec.strategy.linkresolver.mq.RabbitMQContext.getChannel;
 import static com.exactpro.th2.infraoperator.util.ExtractUtils.extractName;
+import static java.util.Collections.emptyList;
+import static java.util.Objects.requireNonNullElse;
 
 public class DeclareQueueResolver {
 
@@ -112,9 +113,13 @@ public class DeclareQueueResolver {
         return HelmReleaseUtils.extractQueues(hr.getComponentValuesSection());
     }
 
-    private static Set<String> getBoxQueuesFromRabbit(String namespace, String boxName) {
+    /**
+     * Collect all queues related to the {@code namespace} {@code boxName} component in RabbitMQ
+     * @return mutable set of queues
+    */
+    private static @NotNull Set<String> getBoxQueuesFromRabbit(String namespace, String boxName) {
 
-        List<QueueInfo> queueInfoList = RabbitMQContext.getQueues();
+        List<QueueInfo> queueInfoList = requireNonNullElse(RabbitMQContext.getQueues(), emptyList());
 
         Set<String> queueNames = new HashSet<>();
         queueInfoList.forEach(q -> {
@@ -141,8 +146,8 @@ public class DeclareQueueResolver {
             String resourceLabel,
             String namespace
     ) {
-        String estoreQueue = new QueueName(namespace, EVENT_STORAGE_BOX_ALIAS, EVENT_STORAGE_PIN_ALIAS).toString();
-        String mstoreQueue = new QueueName(namespace, MESSAGE_STORAGE_BOX_ALIAS, MESSAGE_STORAGE_PIN_ALIAS).toString();
+        String estoreQueue = buildEstoreQueue(namespace);
+        String mstoreQueue = buildMstoreQueue(namespace);
 
         if (!extinctQueueNames.isEmpty()) {
             logger.info("Trying to delete queues associated with \"{}\"", resourceLabel);

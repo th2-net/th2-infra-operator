@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2022 Exactpro (Exactpro Systems Limited)
+ * Copyright 2020-2024 Exactpro (Exactpro Systems Limited)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -20,10 +20,11 @@ import com.exactpro.th2.infraoperator.configuration.ConfigLoader
 import com.exactpro.th2.infraoperator.model.LinkDescription
 import com.exactpro.th2.infraoperator.model.box.mq.MessageRouterConfiguration
 import com.exactpro.th2.infraoperator.model.box.mq.QueueConfiguration
-import com.exactpro.th2.infraoperator.operator.StoreHelmTh2Op.EVENT_STORAGE_PIN_ALIAS
+import com.exactpro.th2.infraoperator.operator.impl.EstoreHelmTh2Op.EVENT_STORAGE_PIN_ALIAS
 import com.exactpro.th2.infraoperator.spec.Th2CustomResource
 import com.exactpro.th2.infraoperator.spec.shared.PinAttribute
-import com.exactpro.th2.infraoperator.spec.strategy.linkresolver.queue.QueueName
+import com.exactpro.th2.infraoperator.spec.shared.pin.PinSpec
+import com.exactpro.th2.infraoperator.spec.strategy.linkresolver.buildEstoreQueueName
 import com.exactpro.th2.infraoperator.spec.strategy.linkresolver.queue.RoutingKeyName
 import com.exactpro.th2.infraoperator.util.ExtractUtils
 
@@ -47,7 +48,7 @@ class MessageRouterConfigFactoryEstore : MessageRouterConfigFactory() {
         // add event storage pin config for each resource
         queues[EVENT_STORAGE_PIN_ALIAS] = QueueConfiguration(
             LinkDescription(
-                QueueName(namespace, boxName, EVENT_STORAGE_PIN_ALIAS),
+                buildEstoreQueueName(namespace, boxName),
                 RoutingKeyName.EMPTY,
                 namespace
             ),

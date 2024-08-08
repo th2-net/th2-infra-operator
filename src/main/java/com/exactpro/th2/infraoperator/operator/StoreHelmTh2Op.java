@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2021 Exactpro (Exactpro Systems Limited)
+ * Copyright 2020-2024 Exactpro (Exactpro Systems Limited)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -28,15 +28,7 @@ import static com.exactpro.th2.infraoperator.util.ExtractUtils.*;
 
 public abstract class StoreHelmTh2Op<CR extends Th2CustomResource> extends HelmReleaseTh2Op<CR> {
 
-    private static final Logger logger = LoggerFactory.getLogger(StoreHelmTh2Op.class);
-
-    public static final String EVENT_STORAGE_PIN_ALIAS = "estore-pin";
-
-    public static final String EVENT_STORAGE_BOX_ALIAS = "estore";
-
-    public static final String MESSAGE_STORAGE_PIN_ALIAS = "mstore-pin";
-
-    public static final String MESSAGE_STORAGE_BOX_ALIAS = "mstore";
+    private static final Logger LOGGER = LoggerFactory.getLogger(StoreHelmTh2Op.class);
 
     public StoreHelmTh2Op(KubernetesClient client) {
         super(client);
@@ -57,7 +49,7 @@ public abstract class StoreHelmTh2Op<CR extends Th2CustomResource> extends HelmR
                 var msg = String.format("%s<%s.%s> has an invalid name, must be '%s'",
                         extractType(resource), msNamespace, msName, stName);
 
-                logger.warn(msg);
+                LOGGER.warn(msg);
                 resource.getStatus().failed(msg);
                 updateStatus(resource);
                 return;
