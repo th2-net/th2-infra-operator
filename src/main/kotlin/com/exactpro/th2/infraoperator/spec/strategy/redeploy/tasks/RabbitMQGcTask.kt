@@ -1,5 +1,5 @@
 /*
- * Copyright 2024 Exactpro (Exactpro Systems Limited)
+ * Copyright 2024-2024 Exactpro (Exactpro Systems Limited)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.exactpro.th2.infraoperator.spec.strategy.redeploy.tasks
 
 import com.exactpro.th2.infraoperator.OperatorState
@@ -23,12 +24,13 @@ import com.exactpro.th2.infraoperator.util.ExtractUtils
 import com.exactpro.th2.infraoperator.util.HelmReleaseUtils
 import com.rabbitmq.http.client.domain.QueueInfo
 import mu.KotlinLogging
+import java.io.IOException
 import java.util.concurrent.locks.ReentrantLock
 import kotlin.concurrent.withLock
 
 class RabbitMQGcTask(
     private val retryDelay: Long
-): Task {
+) : Task {
     private val lock = ReentrantLock()
     private var deleteCandidates: Set<String> = emptySet()
 
@@ -51,7 +53,6 @@ class RabbitMQGcTask(
                 deleteCandidates = emptySet()
                 return
             }
-
 
             val operatorState = OperatorState.INSTANCE
             operatorState.namespaces.forEach { namespace ->
@@ -81,7 +82,7 @@ class RabbitMQGcTask(
                 try {
                     channel.queueDelete(queue)
                     K_LOGGER.info { "Deleted queue: [$queue]" }
-                } catch (e: Exception) {
+                } catch (e: IOException) {
                     nextDeleteCandidates.add(queue)
                     K_LOGGER.error(e) { "Exception deleting queue: [$queue]" }
                 }
@@ -93,7 +94,7 @@ class RabbitMQGcTask(
             } else {
                 deleteCandidates = emptySet()
             }
-        } catch (e: Exception) {
+        } catch (e: IOException) {
             K_LOGGER.error(e) { "$name task failure" }
         }
     }

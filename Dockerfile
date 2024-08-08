@@ -1,13 +1,9 @@
-FROM gradle:7.6-jdk11 AS build
+FROM gradle:8.7-jdk11 AS build
 ARG app_version=0.0.0
 COPY ./ .
-RUN gradle build -Prelease_version=${app_version}
+RUN gradle --no-daemon clean build dockerPrepare -Prelease_version=${release_version}
 
-RUN mkdir /home/app
-RUN cp ./build/libs/*.jar /home/app/application.jar
-
-FROM eclipse-temurin:11-alpine
-COPY --from=build /home/app /home/app
-
-WORKDIR /home/app/
-ENTRYPOINT ["java", "-Dlog4j2.configurationFile=file:/var/th2/config/log4j2.properties", "-jar", "/home/app/application.jar"]
+FROM adoptopenjdk/openjdk11:alpine
+WORKDIR /home
+COPY --from=build /home/gradle/build/docker .
+ENTRYPOINT ["/home/service/bin/service", "-Dlog4j2.configurationFile=file:/var/th2/config/log4j2.properties"]

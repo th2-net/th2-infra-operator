@@ -395,13 +395,7 @@ public final class RabbitMQContext {
         private Channel channel;
 
         ChannelContext() {
-            RabbitMQManagementConfig rabbitMQManagementConfig = getManagementConfig();
-            ConnectionFactory connectionFactory = new ConnectionFactory();
-            connectionFactory.setHost(rabbitMQManagementConfig.getHost());
-            connectionFactory.setPort(rabbitMQManagementConfig.getApplicationPort());
-            connectionFactory.setVirtualHost(rabbitMQManagementConfig.getVhostName());
-            connectionFactory.setUsername(rabbitMQManagementConfig.getUsername());
-            connectionFactory.setPassword(rabbitMQManagementConfig.getPassword());
+            ConnectionFactory connectionFactory = createConnectionFactory();
             try {
                 this.connection = connectionFactory.newConnection();
                 this.connection.addShutdownListener(new RmqClientShutdownEventListener());
@@ -433,6 +427,18 @@ public final class RabbitMQContext {
             connection = null;
             channelContext = null;
         }
+    }
+
+    @NotNull
+    private static ConnectionFactory createConnectionFactory() {
+        RabbitMQManagementConfig rabbitMQManagementConfig = getManagementConfig();
+        ConnectionFactory connectionFactory = new ConnectionFactory();
+        connectionFactory.setHost(rabbitMQManagementConfig.getHost());
+        connectionFactory.setPort(rabbitMQManagementConfig.getApplicationPort());
+        connectionFactory.setVirtualHost(rabbitMQManagementConfig.getVhostName());
+        connectionFactory.setUsername(rabbitMQManagementConfig.getUsername());
+        connectionFactory.setPassword(rabbitMQManagementConfig.getPassword());
+        return connectionFactory;
     }
 
     private static class RmqClientShutdownEventListener implements ShutdownListener {

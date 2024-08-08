@@ -1,5 +1,5 @@
 /*
- * Copyright 2024 Exactpro (Exactpro Systems Limited)
+ * Copyright 2024-2024 Exactpro (Exactpro Systems Limited)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 @file:JvmName("Util")
 
 package com.exactpro.th2.infraoperator.spec.strategy.linkresolver
@@ -23,7 +24,6 @@ import com.exactpro.th2.infraoperator.operator.impl.MstoreHelmTh2Op.MESSAGE_STOR
 import com.exactpro.th2.infraoperator.operator.impl.MstoreHelmTh2Op.MESSAGE_STORAGE_PIN_ALIAS
 import com.exactpro.th2.infraoperator.spec.strategy.linkresolver.queue.QueueName
 import com.exactpro.th2.infraoperator.spec.strategy.linkresolver.queue.RoutingKeyName
-
 
 fun buildEstoreQueueName(namespace: String): QueueName = QueueName(
     namespace,
@@ -42,7 +42,11 @@ fun buildEstoreQueueName(namespace: String, component: String): QueueName = Queu
 fun buildEstoreQueue(namespace: String, component: String): String =
     buildEstoreQueueName(namespace, component).toString()
 
-fun buildEstoreRoutingKeyName(namespace: String, component: String) = RoutingKeyName(namespace, component, EVENT_STORAGE_PIN_ALIAS)
+fun buildEstoreRoutingKeyName(namespace: String, component: String) = RoutingKeyName(
+    namespace,
+    component,
+    EVENT_STORAGE_PIN_ALIAS
+)
 
 fun buildMstoreQueueName(namespace: String) = QueueName(
     namespace,

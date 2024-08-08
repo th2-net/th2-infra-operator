@@ -139,3 +139,17 @@ openshift:
   #if not indicated default values is false
 ```
 
+## Release notes
+
+### 4.7.0
++ Periodically deletes redundant resources from RabbitMQ instead of remove on start
++ Migrated to th2 plugin `0.1.1`
+
++ Updated:
+  + bom: `4.6.1`
+  + kubernetes-client: `6.13.1`
+    + force okhttp: `4.12.0`
+    + force logging-interceptor: `4.12.0`
+  + http-client: `5.2.0`
+  + java-uuid-generator: `5.1.0`
+  + kotlin-logging: `3.0.5`

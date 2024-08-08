@@ -31,6 +31,7 @@ public class MstoreHelmTh2Op extends StoreHelmTh2Op<Th2Mstore> {
     public static final String MESSAGE_STORAGE_PIN_ALIAS = "mstore-pin";
 
     public static final String MESSAGE_STORAGE_BOX_ALIAS = "mstore";
+
     private final MstoreClient mstoreClient;
 
     public MstoreHelmTh2Op(KubernetesClient client) {
