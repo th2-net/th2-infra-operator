@@ -25,7 +25,7 @@ import com.exactpro.th2.infraoperator.operator.impl.MstoreHelmTh2Op.MESSAGE_STOR
 import com.exactpro.th2.infraoperator.spec.Th2CustomResource
 import com.exactpro.th2.infraoperator.spec.shared.PinAttribute
 import com.exactpro.th2.infraoperator.spec.shared.pin.PinSpec
-import com.exactpro.th2.infraoperator.spec.strategy.linkresolver.buildMstoreQueueName
+import com.exactpro.th2.infraoperator.spec.strategy.linkresolver.createMstoreQueueName
 import com.exactpro.th2.infraoperator.spec.strategy.linkresolver.queue.RoutingKeyName
 import com.exactpro.th2.infraoperator.util.ExtractUtils
 
@@ -50,7 +50,7 @@ class MessageRouterConfigFactoryMstore : MessageRouterConfigFactory() {
         queues[EVENT_STORAGE_PIN_ALIAS] = generatePublishToEstorePin(namespace, boxName)
         queues[MESSAGE_STORAGE_PIN_ALIAS] = QueueConfiguration(
             LinkDescription(
-                buildMstoreQueueName(namespace, boxName),
+                createMstoreQueueName(namespace, boxName),
                 RoutingKeyName.EMPTY,
                 namespace
             ),

@@ -58,7 +58,7 @@ dependencies {
     testImplementation libs.junit.jupiter.api
     testRuntimeOnly libs.junit.jupiter.engine
 
-    detektPlugins("io.gitlab.arturbosch.detekt:detekt-formatting:${detekt_version}")
+    detektPlugins libs.detekt.formatting
 }
 
 test {

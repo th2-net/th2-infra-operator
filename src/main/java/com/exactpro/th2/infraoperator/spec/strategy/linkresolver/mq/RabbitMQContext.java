@@ -23,6 +23,7 @@ import com.exactpro.th2.infraoperator.configuration.fields.RabbitMQManagementCon
 import com.exactpro.th2.infraoperator.configuration.fields.RabbitMQNamespacePermissions;
 import com.exactpro.th2.infraoperator.model.kubernetes.configmaps.ConfigMaps;
 import com.exactpro.th2.infraoperator.spec.shared.PinSettings;
+import com.exactpro.th2.infraoperator.spec.strategy.linkresolver.queue.QueueName;
 import com.exactpro.th2.infraoperator.spec.strategy.redeploy.NonTerminalException;
 import com.exactpro.th2.infraoperator.spec.strategy.redeploy.RetryableTaskQueue;
 import com.exactpro.th2.infraoperator.spec.strategy.redeploy.tasks.RabbitMQGcTask;
@@ -43,7 +44,6 @@ import com.rabbitmq.http.client.domain.ExchangeInfo;
 import com.rabbitmq.http.client.domain.QueueInfo;
 import com.rabbitmq.http.client.domain.UserPermissions;
 import org.jetbrains.annotations.NotNull;
-import org.jetbrains.annotations.Nullable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -57,10 +57,11 @@ import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
 
-import static com.exactpro.th2.infraoperator.spec.strategy.linkresolver.Util.buildEstoreQueue;
-import static com.exactpro.th2.infraoperator.spec.strategy.linkresolver.Util.buildMstoreQueue;
+import static com.exactpro.th2.infraoperator.spec.strategy.linkresolver.Util.createEstoreQueue;
+import static com.exactpro.th2.infraoperator.spec.strategy.linkresolver.Util.createMstoreQueue;
 import static com.exactpro.th2.infraoperator.spec.strategy.linkresolver.queue.QueueName.QUEUE_NAME_REGEXP;
 import static java.lang.String.format;
+import static java.util.Collections.emptyList;
 import static java.util.Objects.requireNonNullElse;
 
 public final class RabbitMQContext {
@@ -80,8 +81,12 @@ public final class RabbitMQContext {
     private RabbitMQContext() {
     }
 
+    public static String getTopicExchangeName() {
+        return getManagementConfig().getExchangeName();
+    }
+
     public static void declareTopicExchange() {
-        String exchangeName = getManagementConfig().getExchangeName();
+        String exchangeName = getTopicExchangeName();
         RabbitMQManagementConfig rabbitMQManagementConfig = getManagementConfig();
         try {
             getChannel().exchangeDeclare(exchangeName, "topic", rabbitMQManagementConfig.getPersistence());
@@ -161,7 +166,7 @@ public final class RabbitMQContext {
         var channel = getChannel();
         RabbitMQManagementConfig rabbitMQManagementConfig = getManagementConfig();
         var declareResult = channel.queueDeclare(
-                buildEstoreQueue(namespace),
+                createEstoreQueue(namespace),
                 rabbitMQManagementConfig.getPersistence(),
                 false,
                 false,
@@ -169,7 +174,7 @@ public final class RabbitMQContext {
         );
         logger.info("Queue \"{}\" was successfully declared", declareResult.getQueue());
         declareResult = channel.queueDeclare(
-                buildMstoreQueue(namespace),
+                createMstoreQueue(namespace),
                 rabbitMQManagementConfig.getPersistence(),
                 false,
                 false,
@@ -213,14 +218,18 @@ public final class RabbitMQContext {
     private static void removeSchemaQueues(String namespace) {
         try {
             Channel channel = getChannel();
-            List<QueueInfo> queueInfoList = getTh2Queues();
+
+            List<QueueInfo> queueInfoList = getQueues();
             queueInfoList.forEach(q -> {
                 String queueName = q.getName();
-                try {
-                    channel.queueDelete(queueName);
-                    logger.info("Deleted queue: [{}]", queueName);
-                } catch (IOException e) {
-                    logger.error("Exception deleting queue: [{}]", queueName, e);
+                var queue = QueueName.fromString(queueName);
+                if (queue != null && queue.getNamespace().equals(namespace)) {
+                    try {
+                        channel.queueDelete(queueName);
+                        logger.info("Deleted queue: [{}]", queueName);
+                    } catch (IOException e) {
+                        logger.error("Exception deleting queue: [{}]", queueName, e);
+                    }
                 }
             });
         } catch (Exception e) {
@@ -228,43 +237,8 @@ public final class RabbitMQContext {
         }
     }
 
-    public static Task buildGarbageCollectTask() {
+    public static Task createGarbageCollectTask() {
         return new RabbitMQGcTask(getManagementConfig().getGcIntervalSec());
-    }
-
-    public static void cleanUpRabbitBeforeStart() {
-        try {
-            Channel channel = getChannel();
-            List<String> namespacePrefixes = ConfigLoader.getConfig().getNamespacePrefixes();
-            List<QueueInfo> queueInfoList = getTh2Queues();
-            queueInfoList.forEach(q -> {
-                String queueName = q.getName();
-                try {
-                    channel.queueDelete(queueName);
-                    logger.info("Deleted queue: [{}]", queueName);
-                } catch (IOException e) {
-                    logger.error("Exception deleting queue: [{}]", queueName, e);
-                }
-            });
-
-            List<ExchangeInfo> exchangeInfoList = getExchanges();
-            exchangeInfoList.forEach(e -> {
-                String exchangeName = e.getName();
-                for (String namespacePrefix : namespacePrefixes) {
-                    if (exchangeName.startsWith(namespacePrefix)) {
-                        try {
-                            channel.exchangeDelete(exchangeName);
-                            break;
-                        } catch (IOException ex) {
-                            logger.error("Exception deleting exchange: [{}]", exchangeName, ex);
-                            break;
-                        }
-                    }
-                }
-            });
-        } catch (Exception e) {
-            logger.error("Exception cleaning up rabbit", e);
-        }
     }
 
     public static Channel getChannel() {
@@ -293,12 +267,12 @@ public final class RabbitMQContext {
         }
     }
 
-    public static @Nullable List<QueueInfo> getQueues() {
+    public static @NotNull List<QueueInfo> getQueues() {
         String vHostName = getManagementConfig().getVhostName();
 
         try {
             Client rmqClient = getClient();
-            return rmqClient.getQueues(vHostName);
+            return requireNonNullElse(rmqClient.getQueues(vHostName), emptyList());
         } catch (Exception e) {
             String message = "Exception while fetching queues";
             logger.error(message, e);
@@ -307,7 +281,7 @@ public final class RabbitMQContext {
     }
 
     public static @NotNull List<QueueInfo> getTh2Queues() {
-        return requireNonNullElse(getQueues(), Collections.<QueueInfo>emptyList()).stream()
+        return getQueues().stream()
                 .filter(queueInfo -> queueInfo.getName() != null && queueInfo.getName().matches(QUEUE_NAME_REGEXP))
                 .collect(Collectors.toList());
     }
@@ -324,8 +298,7 @@ public final class RabbitMQContext {
         }
     }
 
-    public static List<ExchangeInfo> getExchanges() {
-
+    public static @NotNull List<ExchangeInfo> getExchanges() {
         try {
             Client rmqClient = getClient();
             return rmqClient.getExchanges();
@@ -334,6 +307,20 @@ public final class RabbitMQContext {
             logger.error(message, e);
             throw new NonTerminalException(message, e);
         }
+    }
+
+    public static @NotNull List<ExchangeInfo> getTh2Exchanges() {
+        List<String> namespacePrefixes = ConfigLoader.getConfig().getNamespacePrefixes();
+        return getExchanges().stream()
+                .filter(exchangeInfo -> {
+                    String name = exchangeInfo.getName();
+                    for (String namespacePrefix : namespacePrefixes) {
+                        if (name.startsWith(namespacePrefix)) {
+                            return true;
+                        }
+                    }
+                    return false;
+                }).collect(Collectors.toList());
     }
 
     public static QueueInfo getQueue(String queueName) {

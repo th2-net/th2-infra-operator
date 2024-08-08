@@ -25,42 +25,42 @@ import com.exactpro.th2.infraoperator.operator.impl.MstoreHelmTh2Op.MESSAGE_STOR
 import com.exactpro.th2.infraoperator.spec.strategy.linkresolver.queue.QueueName
 import com.exactpro.th2.infraoperator.spec.strategy.linkresolver.queue.RoutingKeyName
 
-fun buildEstoreQueueName(namespace: String): QueueName = QueueName(
+fun createEstoreQueueName(namespace: String): QueueName = QueueName(
     namespace,
     EVENT_STORAGE_BOX_ALIAS,
     EVENT_STORAGE_PIN_ALIAS
 )
 
-fun buildEstoreQueue(namespace: String): String = buildEstoreQueueName(namespace).toString()
+fun createEstoreQueue(namespace: String): String = createEstoreQueueName(namespace).toString()
 
-fun buildEstoreQueueName(namespace: String, component: String): QueueName = QueueName(
+fun createEstoreQueueName(namespace: String, component: String): QueueName = QueueName(
     namespace,
     component,
     EVENT_STORAGE_PIN_ALIAS
 )
 
-fun buildEstoreQueue(namespace: String, component: String): String =
-    buildEstoreQueueName(namespace, component).toString()
+fun createEstoreQueue(namespace: String, component: String): String =
+    createEstoreQueueName(namespace, component).toString()
 
-fun buildEstoreRoutingKeyName(namespace: String, component: String) = RoutingKeyName(
+fun createEstoreRoutingKeyName(namespace: String, component: String) = RoutingKeyName(
     namespace,
     component,
     EVENT_STORAGE_PIN_ALIAS
 )
 
-fun buildMstoreQueueName(namespace: String) = QueueName(
+fun createMstoreQueueName(namespace: String) = QueueName(
     namespace,
     MESSAGE_STORAGE_BOX_ALIAS,
     MESSAGE_STORAGE_PIN_ALIAS
 )
 
-fun buildMstoreQueue(namespace: String): String = buildMstoreQueueName(namespace).toString()
+fun createMstoreQueue(namespace: String): String = createMstoreQueueName(namespace).toString()
 
-fun buildMstoreQueueName(namespace: String, component: String) = QueueName(
+fun createMstoreQueueName(namespace: String, component: String) = QueueName(
     namespace,
     component,
     MESSAGE_STORAGE_PIN_ALIAS
 )
 
-fun buildMstoreQueue(namespace: String, component: String): String =
-    buildMstoreQueueName(namespace, component).toString()
+fun createMstoreQueue(namespace: String, component: String): String =
+    createMstoreQueueName(namespace, component).toString()

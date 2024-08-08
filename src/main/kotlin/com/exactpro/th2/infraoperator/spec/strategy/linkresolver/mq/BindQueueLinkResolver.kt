@@ -22,9 +22,9 @@ import com.exactpro.th2.infraoperator.operator.impl.MstoreHelmTh2Op.MESSAGE_STOR
 import com.exactpro.th2.infraoperator.spec.Th2CustomResource
 import com.exactpro.th2.infraoperator.spec.shared.PinAttribute
 import com.exactpro.th2.infraoperator.spec.shared.pin.Link
-import com.exactpro.th2.infraoperator.spec.strategy.linkresolver.buildEstoreQueueName
-import com.exactpro.th2.infraoperator.spec.strategy.linkresolver.buildEstoreRoutingKeyName
-import com.exactpro.th2.infraoperator.spec.strategy.linkresolver.buildMstoreQueueName
+import com.exactpro.th2.infraoperator.spec.strategy.linkresolver.createEstoreQueueName
+import com.exactpro.th2.infraoperator.spec.strategy.linkresolver.createEstoreRoutingKeyName
+import com.exactpro.th2.infraoperator.spec.strategy.linkresolver.createMstoreQueueName
 import com.exactpro.th2.infraoperator.spec.strategy.linkresolver.queue.QueueName
 import com.exactpro.th2.infraoperator.spec.strategy.linkresolver.queue.RoutingKeyName
 import com.exactpro.th2.infraoperator.spec.strategy.linkresolver.queue.RoutingKeyName.ROUTING_KEY_REGEXP
@@ -66,14 +66,14 @@ object BindQueueLinkResolver {
         }
         // create event storage link for each resource
         val estoreLinkDescription = LinkDescription(
-            buildEstoreQueueName(namespace),
-            buildEstoreRoutingKeyName(namespace, resourceName),
+            createEstoreQueueName(namespace),
+            createEstoreRoutingKeyName(namespace, resourceName),
             namespace
         )
         bindQueues(estoreLinkDescription, commitHash)
 
         val currentLinks: MutableList<Link> = ArrayList()
-        val queueName = buildMstoreQueueName(namespace)
+        val queueName = createMstoreQueueName(namespace)
         // create message store link for only resources that need it
         for ((pinName, attributes) in resource.spec.pins.mq.publishers) {
             if (checkStorePinAttributes(attributes, resourceLabel, pinName)) {

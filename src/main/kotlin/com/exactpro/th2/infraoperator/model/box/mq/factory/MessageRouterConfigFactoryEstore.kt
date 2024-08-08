@@ -24,7 +24,7 @@ import com.exactpro.th2.infraoperator.operator.impl.EstoreHelmTh2Op.EVENT_STORAG
 import com.exactpro.th2.infraoperator.spec.Th2CustomResource
 import com.exactpro.th2.infraoperator.spec.shared.PinAttribute
 import com.exactpro.th2.infraoperator.spec.shared.pin.PinSpec
-import com.exactpro.th2.infraoperator.spec.strategy.linkresolver.buildEstoreQueueName
+import com.exactpro.th2.infraoperator.spec.strategy.linkresolver.createEstoreQueueName
 import com.exactpro.th2.infraoperator.spec.strategy.linkresolver.queue.RoutingKeyName
 import com.exactpro.th2.infraoperator.util.ExtractUtils
 
@@ -48,7 +48,7 @@ class MessageRouterConfigFactoryEstore : MessageRouterConfigFactory() {
         // add event storage pin config for each resource
         queues[EVENT_STORAGE_PIN_ALIAS] = QueueConfiguration(
             LinkDescription(
-                buildEstoreQueueName(namespace, boxName),
+                createEstoreQueueName(namespace, boxName),
                 RoutingKeyName.EMPTY,
                 namespace
             ),

@@ -17,11 +17,12 @@
 package com.exactpro.th2.infraoperator.spec.strategy.redeploy.tasks
 
 import com.exactpro.th2.infraoperator.OperatorState
-import com.exactpro.th2.infraoperator.spec.strategy.linkresolver.buildEstoreQueue
-import com.exactpro.th2.infraoperator.spec.strategy.linkresolver.buildMstoreQueue
+import com.exactpro.th2.infraoperator.spec.strategy.linkresolver.createEstoreQueue
+import com.exactpro.th2.infraoperator.spec.strategy.linkresolver.createMstoreQueue
 import com.exactpro.th2.infraoperator.spec.strategy.linkresolver.mq.RabbitMQContext
 import com.exactpro.th2.infraoperator.util.ExtractUtils
 import com.exactpro.th2.infraoperator.util.HelmReleaseUtils
+import com.rabbitmq.http.client.domain.ExchangeInfo
 import com.rabbitmq.http.client.domain.QueueInfo
 import mu.KotlinLogging
 import java.io.IOException
@@ -32,70 +33,112 @@ class RabbitMQGcTask(
     private val retryDelay: Long
 ) : Task {
     private val lock = ReentrantLock()
-    private var deleteCandidates: Set<String> = emptySet()
+    private var queuesForDelete: Set<String> = emptySet()
+    private var exchangesForDelete: Set<String> = emptySet()
 
     override fun run(): Unit = lock.withLock {
-        deleteRedundantQueues()
+        try {
+            val operatorState = OperatorState.INSTANCE
+
+            deleteRedundantQueues(operatorState)
+            deleteRedundantExchanges(operatorState)
+        } catch (e: Exception) {
+            K_LOGGER.error(e) { "$name task failure" }
+        }
     }
 
     override fun getName(): String = "RabbitMQGC"
 
     override fun getRetryDelay(): Long = retryDelay
 
-    private fun deleteRedundantQueues() {
-        try {
-            val potentialGarbage = hashSetOf<String>()
-            RabbitMQContext.getTh2Queues().asSequence()
-                .map(QueueInfo::getName)
-                .forEach(potentialGarbage::add)
+    private fun deleteRedundantQueues(operatorState: OperatorState) {
+        val potentialGarbage = hashSetOf<String>()
+        RabbitMQContext.getTh2Queues().asSequence()
+            .map(QueueInfo::getName)
+            .forEach(potentialGarbage::add)
 
-            if (potentialGarbage.isEmpty()) {
-                deleteCandidates = emptySet()
-                return
-            }
+        if (potentialGarbage.isEmpty()) {
+            queuesForDelete = emptySet()
+            return
+        }
 
-            val operatorState = OperatorState.INSTANCE
-            operatorState.namespaces.forEach { namespace ->
-                potentialGarbage.remove(buildEstoreQueue(namespace))
-                potentialGarbage.remove(buildMstoreQueue(namespace))
-            }
+        operatorState.namespaces.forEach { namespace ->
+            potentialGarbage.remove(createEstoreQueue(namespace))
+            potentialGarbage.remove(createMstoreQueue(namespace))
+        }
 
-            operatorState.getAllBoxResources().asSequence()
-                .flatMap { cr ->
-                    val namespace = ExtractUtils.extractNamespace(cr)
-                    val name = ExtractUtils.extractName(cr)
-                    val hr = operatorState.getHelmReleaseFromCache(name, namespace)
-                    sequence<String> {
-                        yieldAll(HelmReleaseUtils.extractQueues(hr.componentValuesSection))
-                        yield(buildEstoreQueue(namespace, name))
-                    }
-                }.forEach(potentialGarbage::remove)
-
-            if (potentialGarbage.isEmpty()) {
-                deleteCandidates = emptySet()
-                return
-            }
-
-            val channel = RabbitMQContext.getChannel()
-            val nextDeleteCandidates = potentialGarbage.minus(deleteCandidates).toMutableSet()
-            deleteCandidates.intersect(potentialGarbage).forEach { queue ->
-                try {
-                    channel.queueDelete(queue)
-                    K_LOGGER.info { "Deleted queue: [$queue]" }
-                } catch (e: IOException) {
-                    nextDeleteCandidates.add(queue)
-                    K_LOGGER.error(e) { "Exception deleting queue: [$queue]" }
+        operatorState.getAllBoxResources().asSequence()
+            .flatMap { cr ->
+                val namespace = ExtractUtils.extractNamespace(cr)
+                val name = ExtractUtils.extractName(cr)
+                val hr = operatorState.getHelmReleaseFromCache(name, namespace)
+                sequence<String> {
+                    yieldAll(HelmReleaseUtils.extractQueues(hr.componentValuesSection))
+                    yield(createEstoreQueue(namespace, name))
                 }
-            }
+            }.forEach(potentialGarbage::remove)
 
-            if (nextDeleteCandidates.isNotEmpty()) {
-                K_LOGGER.info { "Queues $nextDeleteCandidates are delete candidates for the next iteration" }
-                deleteCandidates = nextDeleteCandidates
-            } else {
-                deleteCandidates = emptySet()
+        if (potentialGarbage.isEmpty()) {
+            queuesForDelete = emptySet()
+            return
+        }
+
+        val channel = RabbitMQContext.getChannel()
+        val nextDeleteCandidates = potentialGarbage.minus(queuesForDelete).toMutableSet()
+        queuesForDelete.intersect(potentialGarbage).forEach { queue ->
+            try {
+                channel.queueDelete(queue)
+                K_LOGGER.info { "Deleted queue: [$queue]" }
+            } catch (e: IOException) {
+                nextDeleteCandidates.add(queue)
+                K_LOGGER.error(e) { "Exception deleting queue: [$queue]" }
             }
-        } catch (e: IOException) {
-            K_LOGGER.error(e) { "$name task failure" }
+        }
+
+        if (nextDeleteCandidates.isNotEmpty()) {
+            K_LOGGER.info { "Queues $nextDeleteCandidates are delete candidates for the next iteration" }
+            queuesForDelete = nextDeleteCandidates
+        } else {
+            queuesForDelete = emptySet()
+        }
+    }
+
+    private fun deleteRedundantExchanges(operatorState: OperatorState) {
+        val potentialGarbage = hashSetOf<String>()
+        RabbitMQContext.getTh2Exchanges().asSequence()
+            .map(ExchangeInfo::getName)
+            .forEach(potentialGarbage::add)
+
+        potentialGarbage.remove(RabbitMQContext.getTopicExchangeName())
+
+        if (potentialGarbage.isEmpty()) {
+            exchangesForDelete = emptySet()
+            return
+        }
+        operatorState.namespaces.forEach(potentialGarbage::remove)
+
+        if (potentialGarbage.isEmpty()) {
+            exchangesForDelete = emptySet()
+            return
+        }
+
+        val channel = RabbitMQContext.getChannel()
+        val nextDeleteCandidates = potentialGarbage.minus(exchangesForDelete).toMutableSet()
+        exchangesForDelete.intersect(potentialGarbage).forEach { exchange ->
+            try {
+                channel.exchangeDelete(exchange)
+                K_LOGGER.info { "Deleted exchange: [$exchange]" }
+            } catch (e: IOException) {
+                nextDeleteCandidates.add(exchange)
+                K_LOGGER.error(e) { "Exception deleting exchange: [$exchange]" }
+            }
+        }
+
+        if (nextDeleteCandidates.isNotEmpty()) {
+            K_LOGGER.info { "Exchanges $nextDeleteCandidates are delete candidates for the next iteration" }
+            exchangesForDelete = nextDeleteCandidates
+        } else {
+            exchangesForDelete = emptySet()
         }
     }
 

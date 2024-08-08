@@ -22,7 +22,7 @@ import com.exactpro.th2.infraoperator.model.box.mq.QueueConfiguration
 import com.exactpro.th2.infraoperator.spec.Th2CustomResource
 import com.exactpro.th2.infraoperator.spec.shared.PinAttribute
 import com.exactpro.th2.infraoperator.spec.shared.pin.PinSpec
-import com.exactpro.th2.infraoperator.spec.strategy.linkresolver.buildEstoreRoutingKeyName
+import com.exactpro.th2.infraoperator.spec.strategy.linkresolver.createEstoreRoutingKeyName
 import com.exactpro.th2.infraoperator.spec.strategy.linkresolver.queue.QueueName
 import com.exactpro.th2.infraoperator.spec.strategy.linkresolver.queue.RoutingKeyName
 import com.exactpro.th2.infraoperator.util.ExtractUtils
@@ -43,7 +43,7 @@ abstract class MessageRouterConfigFactory {
     protected fun generatePublishToEstorePin(namespace: String, boxName: String) = QueueConfiguration(
         LinkDescription(
             QueueName.EMPTY,
-            buildEstoreRoutingKeyName(namespace, boxName),
+            createEstoreRoutingKeyName(namespace, boxName),
             namespace
         ),
         setOf(PinAttribute.publish.name, PinAttribute.event.name),

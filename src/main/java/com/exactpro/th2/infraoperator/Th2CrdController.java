@@ -52,7 +52,7 @@ public class Th2CrdController {
 
             ContinuousTaskWorker continuousTaskWorker = new ContinuousTaskWorker();
             continuousTaskWorker.add(new CheckResourceCacheTask(300));
-            continuousTaskWorker.add(RabbitMQContext.buildGarbageCollectTask());
+            continuousTaskWorker.add(RabbitMQContext.createGarbageCollectTask());
         } catch (Exception e) {
             logger.error("Exception in main thread", e);
             watchManager.stopInformers();
