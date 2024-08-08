@@ -21,7 +21,6 @@ import com.exactpro.th2.infraoperator.configuration.ConfigLoader;
 import com.exactpro.th2.infraoperator.spec.Th2CustomResource;
 import com.exactpro.th2.infraoperator.spec.helmrelease.HelmRelease;
 import com.exactpro.th2.infraoperator.spec.shared.pin.MqSubscriberPin;
-import com.exactpro.th2.infraoperator.spec.strategy.linkresolver.Util;
 import com.exactpro.th2.infraoperator.spec.strategy.linkresolver.queue.QueueName;
 import com.exactpro.th2.infraoperator.spec.strategy.redeploy.NonTerminalException;
 import com.exactpro.th2.infraoperator.util.CustomResourceUtils;
@@ -38,6 +37,8 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 
+import static com.exactpro.th2.infraoperator.spec.strategy.linkresolver.Util.createEstoreQueue;
+import static com.exactpro.th2.infraoperator.spec.strategy.linkresolver.Util.createMstoreQueue;
 import static com.exactpro.th2.infraoperator.spec.strategy.linkresolver.mq.RabbitMQContext.getChannel;
 import static com.exactpro.th2.infraoperator.util.ExtractUtils.extractName;
 
@@ -143,8 +144,8 @@ public class DeclareQueueResolver {
             String resourceLabel,
             String namespace
     ) {
-        String estoreQueue = Util.createEstoreQueue(namespace);
-        String mstoreQueue = Util.createMstoreQueue(namespace);
+        String estoreQueue = createEstoreQueue(namespace);
+        String mstoreQueue = createMstoreQueue(namespace);
 
         if (!extinctQueueNames.isEmpty()) {
             logger.info("Trying to delete queues associated with \"{}\"", resourceLabel);

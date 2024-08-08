@@ -64,22 +64,31 @@ chart:
 
 rabbitMQManagement:
   host: host
-  # RabbitMQ host used for managing vHosts and users
-  
-  port: 8080
-  # RabbitMQ port
+  # host used for managing vHosts and users
+
+  managementPort: 15672
+  # management port for HTTP requests 
+
+  applicationPort: 5672
+  # AMQP port
+
+  vhostName: vHost
+  # AMQP vHost name 
+
+  exchangeName: exchange
+  # topic exchange name
   
   username: username
-  # RabbitMQ management username
+  # username for management and AMQP 
   
   password: password
-  # password for management user
+  # password for management and AMQP
   
   persistence: true
   # determines if the RabbitMQ resources are persistent or not
 
-  gcIntervalSec: 900
-  # Interval of garbage collection in RabbitMQ. Each GC task integration consist of:
+  rubbishCollectionInterval: 900
+  # Interval in seconds of rubbish collection (RC) in RabbitMQ. Each RC task integration consist of:
   # 1) collect redundant resources according current RabbitMQ and Kubernetes resources state.
   # 2) delete only resources included into both current and previous integrations (previous intersect current).
   # 3) save collected resources but not included in the previous integration (current minus previous) for the next iteration  

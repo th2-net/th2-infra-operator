@@ -29,7 +29,7 @@ import java.io.IOException
 import java.util.concurrent.locks.ReentrantLock
 import kotlin.concurrent.withLock
 
-class RabbitMQGcTask(
+class RabbitMQRubbishCollectionTask(
     private val retryDelay: Long
 ) : Task {
     private val lock = ReentrantLock()
@@ -47,7 +47,7 @@ class RabbitMQGcTask(
         }
     }
 
-    override fun getName(): String = "RabbitMQGC"
+    override fun getName(): String = RabbitMQRubbishCollectionTask::class.java.simpleName
 
     override fun getRetryDelay(): Long = retryDelay
 

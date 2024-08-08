@@ -26,7 +26,7 @@ import com.exactpro.th2.infraoperator.spec.shared.PinSettings;
 import com.exactpro.th2.infraoperator.spec.strategy.linkresolver.queue.QueueName;
 import com.exactpro.th2.infraoperator.spec.strategy.redeploy.NonTerminalException;
 import com.exactpro.th2.infraoperator.spec.strategy.redeploy.RetryableTaskQueue;
-import com.exactpro.th2.infraoperator.spec.strategy.redeploy.tasks.RabbitMQGcTask;
+import com.exactpro.th2.infraoperator.spec.strategy.redeploy.tasks.RabbitMQRubbishCollectionTask;
 import com.exactpro.th2.infraoperator.spec.strategy.redeploy.tasks.RecreateQueuesAndBindings;
 import com.exactpro.th2.infraoperator.spec.strategy.redeploy.tasks.RetryRabbitSetup;
 import com.exactpro.th2.infraoperator.spec.strategy.redeploy.tasks.RetryTopicExchangeTask;
@@ -238,7 +238,7 @@ public final class RabbitMQContext {
     }
 
     public static Task createGarbageCollectTask() {
-        return new RabbitMQGcTask(getManagementConfig().getGcIntervalSec());
+        return new RabbitMQRubbishCollectionTask(getManagementConfig().getRubbishCollectionInterval());
     }
 
     public static Channel getChannel() {

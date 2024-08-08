@@ -22,6 +22,8 @@ import com.exactpro.th2.infraoperator.spec.helmrelease.HelmRelease;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 
+import static java.util.Collections.unmodifiableSet;
+
 public enum OperatorState {
     INSTANCE;
 
@@ -105,7 +107,7 @@ public enum OperatorState {
     }
 
     public Collection<String> getNamespaces() {
-        return Collections.unmodifiableSet(namespaceStates.keySet());
+        return unmodifiableSet(namespaceStates.keySet());
     }
 
     private NamespaceState computeIfAbsent(String namespace) {

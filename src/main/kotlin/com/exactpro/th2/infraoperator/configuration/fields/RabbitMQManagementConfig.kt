@@ -25,6 +25,6 @@ data class RabbitMQManagementConfig(
     val username: String = "",
     val password: String = "",
     val persistence: Boolean = false,
-    val gcIntervalSec: Int = 900,
+    val rubbishCollectionInterval: Int = 900,
     val schemaPermissions: RabbitMQNamespacePermissions = RabbitMQNamespacePermissions()
 )
