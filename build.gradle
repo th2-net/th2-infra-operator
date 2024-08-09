@@ -61,6 +61,11 @@ dependencies {
     detektPlugins libs.detekt.formatting
 }
 
+wrapper {
+    version '8.7'
+    distributionType Wrapper.DistributionType.BIN
+}
+
 test {
     useJUnitPlatform()
 }
