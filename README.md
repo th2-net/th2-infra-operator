@@ -1,19 +1,19 @@
 # infra-operator
 
-The infra-operator is a java implementation of Kubernetes 
-[custom resource controller](https://kubernetes.io/docs/concepts/extend-kubernetes/api-extension/custom-resources/#custom-controllers). 
-It is part of _th2 infrastructure_. Together with [infra-mgr](https://github.com/th2-net/th2-infra-mgr) and 
-[helm-operator](https://github.com/fluxcd/helm-operator) 
-it ensures the synchronization of custom resource files from GitHub and the actual resources 
-in Kubernetes. The infra-operator uses [fabric8](https://fabric8.io/guide/) library for communication with Kubernetes. 
+The infra-operator is a java implementation of Kubernetes
+[custom resource controller](https://kubernetes.io/docs/concepts/extend-kubernetes/api-extension/custom-resources/#custom-controllers).
+It is part of _th2 infrastructure_. Together with [infra-mgr](https://github.com/th2-net/th2-infra-mgr) and
+[helm-operator](https://github.com/fluxcd/helm-operator)
+it ensures the synchronization of custom resource files from GitHub and the actual resources
+in Kubernetes. The infra-operator uses [fabric8](https://fabric8.io/guide/) library for communication with Kubernetes.
 
-[Custom resources](https://kubernetes.io/docs/concepts/extend-kubernetes/api-extension/custom-resources/) 
-allow us to extend Kubernetes API with custom components specifically designed for our needs. 
-However, since such custom components are not part of the default Kubernetes installation, it is infra-operator's 
-task to look over them. The infra-operator monitors 5 kind of custom resources, which are defined in 
+[Custom resources](https://kubernetes.io/docs/concepts/extend-kubernetes/api-extension/custom-resources/)
+allow us to extend Kubernetes API with custom components specifically designed for our needs.
+However, since such custom components are not part of the default Kubernetes installation, it is infra-operator's
+task to look over them. The infra-operator monitors 5 kind of custom resources, which are defined in
 [th2-infra](https://github.com/th2-net/th2-infra/blob/master/values/CRD) repository.
 
-For more information about custom resources used in th2 and their configuration, 
+For more information about custom resources used in th2 and their configuration,
 please refer to [th2-documentation](https://github.com/th2-net/th2-documentation)
 
 The infra-operator is also responsible for queues and users permission management on [RabbitMQ](https://www.rabbitmq.com/documentation.html).
@@ -23,9 +23,9 @@ The list below covers the main duties and objectives of this component.
 #### Main objectives
 * It monitors Kubernetes events related to the _Th2CustomResources_ and generates or modifies the corresponding Helm Releases.
 * Based on the config map `rabbit-mq-app-config` which is deployed by infra-mgr, it creates Vhost in RabbitMQ for every schema namespace.
-* For each Vhost it creates a user in RabbitMQ and configures its permissions. 
-* Based on the pins described in CRs, and the pins described in _Th2Link_ resources it declares queues in RabbitMQ. 
-* It binds queues in RabbitMQ according to _Th2Link_ resources. 
+* For each Vhost it creates a user in RabbitMQ and configures its permissions.
+* Based on the pins described in CRs, and the pins described in _Th2Link_ resources it declares queues in RabbitMQ.
+* It binds queues in RabbitMQ according to _Th2Link_ resources.
 * Generate RabbitMQ configs for each resource that needs it.
 * Generate [gRPC](https://grpc.io/docs/) configs for each resource that needs it.
 
@@ -64,19 +64,31 @@ chart:
 
 rabbitMQManagement:
   host: host
-  # RabbitMQ host used for managing vHosts and users
-  
-  port: 8080
-  # RabbitMQ port
+  # host used for managing vHosts and users
+
+  managementPort: 15672
+  # management port for HTTP requests 
+
+  applicationPort: 5672
+  # AMQP port
+
+  vhostName: vHost
+  # AMQP vHost name 
+
+  exchangeName: exchange
+  # topic exchange name
   
   username: username
-  # RabbitMQ management username
+  # username for management and AMQP 
   
   password: password
-  # password for management user
+  # password for management and AMQP
   
   persistence: true
   # determines if the RabbitMQ resources are persistent or not
+
+  cleanUpOnStart: false
+  # if option is true, operator removes all queues and exchanges from RabbitMQ on start   
   
   schemaPermissions:
   # this section describes what permissions schema RabbitMQ user will have on its own resources
@@ -131,7 +143,19 @@ openshift:
   # this section indicates whether application is run in openshift environment or not
   enabled: true/false
   #if not indicated default values is false
-
-
 ```
 
+## Release notes
+
+### 4.7.0
++ Added `rabbitMQManagement.cleanUpOnStart` option 
++ Migrated to th2 plugin `0.1.1`
+
++ Updated:
+    + bom: `4.6.1`
+    + kubernetes-client: `6.13.1`
+        + force okhttp: `4.12.0`
+        + force logging-interceptor: `4.12.0`
+    + http-client: `5.2.0`
+    + java-uuid-generator: `5.1.0`
+    + kotlin-logging: `3.0.5`

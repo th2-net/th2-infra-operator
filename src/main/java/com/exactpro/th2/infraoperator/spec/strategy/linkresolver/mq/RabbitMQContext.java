@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2021 Exactpro (Exactpro Systems Limited)
+ * Copyright 2020-2024 Exactpro (Exactpro Systems Limited)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -41,6 +41,7 @@ import com.rabbitmq.http.client.domain.BindingInfo;
 import com.rabbitmq.http.client.domain.ExchangeInfo;
 import com.rabbitmq.http.client.domain.QueueInfo;
 import com.rabbitmq.http.client.domain.UserPermissions;
+import org.jetbrains.annotations.NotNull;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -224,9 +225,13 @@ public final class RabbitMQContext {
 
     public static void cleanUpRabbitBeforeStart() {
         try {
+            if (!getManagementConfig().getCleanUpOnStart()) {
+                logger.info("Cleanup RabbitMQ before start is skipped by config");
+                return;
+            }
+
             Channel channel = getChannel();
             List<String> namespacePrefixes = ConfigLoader.getConfig().getNamespacePrefixes();
-            ;
 
             List<QueueInfo> queueInfoList = getQueues();
             queueInfoList.forEach(q -> {
@@ -384,13 +389,7 @@ public final class RabbitMQContext {
         private Channel channel;
 
         ChannelContext() {
-            RabbitMQManagementConfig rabbitMQManagementConfig = getManagementConfig();
-            ConnectionFactory connectionFactory = new ConnectionFactory();
-            connectionFactory.setHost(rabbitMQManagementConfig.getHost());
-            connectionFactory.setPort(rabbitMQManagementConfig.getApplicationPort());
-            connectionFactory.setVirtualHost(rabbitMQManagementConfig.getVhostName());
-            connectionFactory.setUsername(rabbitMQManagementConfig.getUsername());
-            connectionFactory.setPassword(rabbitMQManagementConfig.getPassword());
+            ConnectionFactory connectionFactory = createConnectionFactory();
             try {
                 this.connection = connectionFactory.newConnection();
                 this.connection.addShutdownListener(new RmqClientShutdownEventListener());
@@ -421,6 +420,18 @@ public final class RabbitMQContext {
             channel = null;
             connection = null;
             channelContext = null;
+        }
+
+        @NotNull
+        private static ConnectionFactory createConnectionFactory() {
+            RabbitMQManagementConfig rabbitMQManagementConfig = getManagementConfig();
+            ConnectionFactory connectionFactory = new ConnectionFactory();
+            connectionFactory.setHost(rabbitMQManagementConfig.getHost());
+            connectionFactory.setPort(rabbitMQManagementConfig.getApplicationPort());
+            connectionFactory.setVirtualHost(rabbitMQManagementConfig.getVhostName());
+            connectionFactory.setUsername(rabbitMQManagementConfig.getUsername());
+            connectionFactory.setPassword(rabbitMQManagementConfig.getPassword());
+            return connectionFactory;
         }
     }
 

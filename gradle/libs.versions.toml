@@ -1,0 +1,26 @@
+[versions]
+kotlin = "1.8.22"
+th2-plugin = "0.1.1"
+jupiter = "5.10.3"
+okhttp3 = "4.12.0"
+detekt = "1.23.6"
+
+[libraries]
+kotlin-logging = { group = "io.github.microutils", name = "kotlin-logging", version = "3.0.5" }
+okhttp = { group = "com.squareup.okhttp3", name = "okhttp", version.ref = "okhttp3" }
+logging-interceptor = { group = "com.squareup.okhttp3", name = "logging-interceptor", version.ref = "okhttp3" }
+kubernetes-client = { group = "io.fabric8", name = "kubernetes-client", version = "6.13.1" }
+http-client = { group = "com.rabbitmq", name = "http-client", version = "5.2.0" }
+java-uuid-generator = { group = "com.fasterxml.uuid", name = "java-uuid-generator", version = "5.1.0" }
+
+mockito-core = { group = "org.mockito", name = "mockito-core", version = "5.12.0" }
+junit-jupiter-api = { group = "org.junit.jupiter", name = "junit-jupiter-api", version.ref = "jupiter" }
+junit-jupiter-engine = { group = "org.junit.jupiter", name = "junit-jupiter-engine", version.ref = "jupiter" }
+
+detekt-formatting = { group = "io.gitlab.arturbosch.detekt", name = "detekt-formatting", version.ref = "detekt" }
+
+[plugins]
+kotlin = { id = "org.jetbrains.kotlin.jvm", version.ref = "kotlin" }
+detekt = { id = "io.gitlab.arturbosch.detekt", version.ref = "detekt" }
+
+th2-component = { id = "com.exactpro.th2.gradle.component", version.ref = "th2-plugin" }
