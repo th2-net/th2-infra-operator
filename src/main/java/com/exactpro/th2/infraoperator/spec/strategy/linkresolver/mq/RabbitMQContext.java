@@ -26,11 +26,9 @@ import com.exactpro.th2.infraoperator.spec.shared.PinSettings;
 import com.exactpro.th2.infraoperator.spec.strategy.linkresolver.queue.QueueName;
 import com.exactpro.th2.infraoperator.spec.strategy.redeploy.NonTerminalException;
 import com.exactpro.th2.infraoperator.spec.strategy.redeploy.RetryableTaskQueue;
-import com.exactpro.th2.infraoperator.spec.strategy.redeploy.tasks.RabbitMQRubbishCollectionTask;
 import com.exactpro.th2.infraoperator.spec.strategy.redeploy.tasks.RecreateQueuesAndBindings;
 import com.exactpro.th2.infraoperator.spec.strategy.redeploy.tasks.RetryRabbitSetup;
 import com.exactpro.th2.infraoperator.spec.strategy.redeploy.tasks.RetryTopicExchangeTask;
-import com.exactpro.th2.infraoperator.spec.strategy.redeploy.tasks.Task;
 import com.exactpro.th2.infraoperator.util.Strings;
 import com.rabbitmq.client.Channel;
 import com.rabbitmq.client.Connection;
@@ -237,8 +235,47 @@ public final class RabbitMQContext {
         }
     }
 
-    public static Task createGarbageCollectTask() {
-        return new RabbitMQRubbishCollectionTask(getManagementConfig().getRubbishCollectionInterval());
+    public static void cleanUpRabbitBeforeStart() {
+        try {
+            if (!getManagementConfig().getCleanUpOnStart()) {
+                logger.info("Cleanup RabbitMQ before start is skipped by config");
+                return;
+            }
+
+            Channel channel = getChannel();
+            List<String> namespacePrefixes = ConfigLoader.getConfig().getNamespacePrefixes();
+
+            List<QueueInfo> queueInfoList = getQueues();
+            queueInfoList.forEach(q -> {
+                String queueName = q.getName();
+                if (queueName != null && queueName.matches(QUEUE_NAME_REGEXP)) {
+                    try {
+                        channel.queueDelete(queueName);
+                        logger.info("Deleted queue: [{}]", queueName);
+                    } catch (IOException e) {
+                        logger.error("Exception deleting queue: [{}]", queueName, e);
+                    }
+                }
+            });
+
+            List<ExchangeInfo> exchangeInfoList = getExchanges();
+            exchangeInfoList.forEach(e -> {
+                String exchangeName = e.getName();
+                for (String namespacePrefix : namespacePrefixes) {
+                    if (exchangeName.startsWith(namespacePrefix)) {
+                        try {
+                            channel.exchangeDelete(exchangeName);
+                            break;
+                        } catch (IOException ex) {
+                            logger.error("Exception deleting exchange: [{}]", exchangeName, ex);
+                            break;
+                        }
+                    }
+                }
+            });
+        } catch (Exception e) {
+            logger.error("Exception cleaning up rabbit", e);
+        }
     }
 
     public static Channel getChannel() {
@@ -413,6 +450,18 @@ public final class RabbitMQContext {
             channel = null;
             connection = null;
             channelContext = null;
+        }
+
+        @NotNull
+        private static ConnectionFactory createConnectionFactory() {
+            RabbitMQManagementConfig rabbitMQManagementConfig = getManagementConfig();
+            ConnectionFactory connectionFactory = new ConnectionFactory();
+            connectionFactory.setHost(rabbitMQManagementConfig.getHost());
+            connectionFactory.setPort(rabbitMQManagementConfig.getApplicationPort());
+            connectionFactory.setVirtualHost(rabbitMQManagementConfig.getVhostName());
+            connectionFactory.setUsername(rabbitMQManagementConfig.getUsername());
+            connectionFactory.setPassword(rabbitMQManagementConfig.getPassword());
+            return connectionFactory;
         }
     }
 

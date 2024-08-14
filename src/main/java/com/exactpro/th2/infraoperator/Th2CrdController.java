@@ -38,10 +38,10 @@ public class Th2CrdController {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(Th2CrdController.class);
 
-    private static final Path LOG4J2_PROPERTIES_DEFAULT_PATH = Path.of("var", "th2", "config", "log4j2.properties");
-
     public static void main(String[] args) {
-        configureLogger();
+        if (args.length > 0) {
+            configureLogger(args[0]);
+        }
         var watchManager = DefaultWatchManager.getInstance();
         PrometheusServer.start();
         OperatorMetrics.resetCacheErrors();
@@ -58,7 +58,6 @@ public class Th2CrdController {
 
             ContinuousTaskWorker continuousTaskWorker = new ContinuousTaskWorker();
             continuousTaskWorker.add(new CheckResourceCacheTask(300));
-            continuousTaskWorker.add(RabbitMQContext.createGarbageCollectTask());
         } catch (Exception e) {
             LOGGER.error("Exception in main thread", e);
             watchManager.stopInformers();
@@ -67,12 +66,13 @@ public class Th2CrdController {
         }
     }
 
-    private static void configureLogger() {
-        if (Files.exists(LOG4J2_PROPERTIES_DEFAULT_PATH)) {
+    private static void configureLogger(String filePath) {
+        Path path = Path.of(filePath);
+        if (Files.exists(path)) {
             LoggerContext loggerContext = LoggerContext.getContext(false);
-            loggerContext.setConfigLocation(LOG4J2_PROPERTIES_DEFAULT_PATH.toUri());
+            loggerContext.setConfigLocation(path.toUri());
             loggerContext.reconfigure();
-            LOGGER.info("Logger configuration from {} file is applied", LOG4J2_PROPERTIES_DEFAULT_PATH);
+            LOGGER.info("Logger configuration from {} file is applied", path);
         }
     }
 }
