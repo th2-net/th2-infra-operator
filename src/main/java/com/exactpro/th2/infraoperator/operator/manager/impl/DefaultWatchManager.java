@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2021 Exactpro (Exactpro Systems Limited)
+ * Copyright 2020-2024 Exactpro (Exactpro Systems Limited)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -28,6 +28,7 @@ import io.fabric8.kubernetes.api.model.HasMetadata;
 import io.fabric8.kubernetes.client.KubernetesClient;
 import io.fabric8.kubernetes.client.KubernetesClientBuilder;
 import io.fabric8.kubernetes.client.Watcher;
+import io.fabric8.kubernetes.client.informers.SharedIndexInformer;
 import io.fabric8.kubernetes.client.informers.SharedInformerFactory;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -41,6 +42,7 @@ import java.util.stream.Collectors;
 import static com.exactpro.th2.infraoperator.operator.AbstractTh2Operator.REFRESH_TOKEN_ALIAS;
 import static com.exactpro.th2.infraoperator.util.CustomResourceUtils.annotationFor;
 import static com.exactpro.th2.infraoperator.util.ExtractUtils.extractName;
+import static com.exactpro.th2.infraoperator.util.WatcherUtils.createExceptionHandler;
 
 public class DefaultWatchManager {
 
@@ -157,7 +159,11 @@ public class DefaultWatchManager {
             var handler = new BoxResourceEventHandler<>(
                     helmReleaseTh2Op,
                     eventDispatcher.getEventQueue());
-            helmReleaseTh2Op.generateInformerFromFactory(getInformerFactory()).addEventHandler(handler);
+
+            SharedIndexInformer<Th2CustomResource> customResourceInformer =
+                    helmReleaseTh2Op.generateInformerFromFactory(getInformerFactory());
+            customResourceInformer.exceptionHandler(createExceptionHandler(Th2CustomResource.class));
+            customResourceInformer.addEventHandler(handler);
             context.addHandler(handler);
         }
 

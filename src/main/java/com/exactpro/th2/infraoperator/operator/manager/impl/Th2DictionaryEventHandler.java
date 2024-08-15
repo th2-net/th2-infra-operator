@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2021 Exactpro (Exactpro Systems Limited)
+ * Copyright 2020-2024 Exactpro (Exactpro Systems Limited)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -47,6 +47,7 @@ import static com.exactpro.th2.infraoperator.util.CustomResourceUtils.annotation
 import static com.exactpro.th2.infraoperator.util.ExtractUtils.extractName;
 import static com.exactpro.th2.infraoperator.util.ExtractUtils.extractNamespace;
 import static com.exactpro.th2.infraoperator.util.HelmReleaseUtils.extractDictionariesConfig;
+import static com.exactpro.th2.infraoperator.util.WatcherUtils.createExceptionHandler;
 
 public class Th2DictionaryEventHandler implements Watcher<Th2Dictionary> {
 
@@ -72,6 +73,7 @@ public class Th2DictionaryEventHandler implements Watcher<Th2Dictionary> {
                 sharedInformerFactory.sharedIndexInformerFor(
                         Th2Dictionary.class, RESYNC_TIME);
 
+        dictionaryInformer.exceptionHandler(createExceptionHandler(Th2Dictionary.class));
         dictionaryInformer.addEventHandler(new GenericResourceEventHandler<>(res, eventQueue));
         return res;
     }

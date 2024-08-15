@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2021 Exactpro (Exactpro Systems Limited)
+ * Copyright 2020-2024 Exactpro (Exactpro Systems Limited)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,15 +16,9 @@
 
 package com.exactpro.th2.infraoperator.util;
 
-import static com.exactpro.th2.infraoperator.util.ExtractUtils.extractName;
-import static com.exactpro.th2.infraoperator.util.ExtractUtils.extractNamespace;
-import static com.exactpro.th2.infraoperator.util.ExtractUtils.extractType;
-
 import com.exactpro.th2.infraoperator.spec.Th2CustomResource;
 import com.exactpro.th2.infraoperator.spec.helmrelease.HelmRelease;
-import com.exactpro.th2.infraoperator.spec.shared.pin.*;
 import io.fabric8.kubernetes.api.model.HasMetadata;
-
 import org.jetbrains.annotations.Nullable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -33,6 +27,10 @@ import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.util.List;
 import java.util.Objects;
+
+import static com.exactpro.th2.infraoperator.util.ExtractUtils.extractName;
+import static com.exactpro.th2.infraoperator.util.ExtractUtils.extractNamespace;
+import static com.exactpro.th2.infraoperator.util.ExtractUtils.extractType;
 
 public class CustomResourceUtils {
 
@@ -86,7 +84,7 @@ public class CustomResourceUtils {
     @Nullable
     private static String extractOwnerFullName(HelmRelease helmRelease) {
         var ownerReferences = helmRelease.getMetadata().getOwnerReferences();
-        if (ownerReferences.size() > 0) {
+        if (!ownerReferences.isEmpty()) {
             return concatFullName(extractNamespace(helmRelease), ownerReferences.get(0).getName());
         } else {
             logger.warn("[{}<{}>] doesn't have owner resource", extractType(helmRelease), extractFullName(helmRelease));

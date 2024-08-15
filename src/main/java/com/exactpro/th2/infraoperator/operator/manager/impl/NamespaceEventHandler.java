@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2021 Exactpro (Exactpro Systems Limited)
+ * Copyright 2020-2024Exactpro (Exactpro Systems Limited)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -32,6 +32,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import static com.exactpro.th2.infraoperator.util.CustomResourceUtils.RESYNC_TIME;
+import static com.exactpro.th2.infraoperator.util.WatcherUtils.createExceptionHandler;
 
 public class NamespaceEventHandler implements ResourceEventHandler<Namespace>, Watcher<Namespace> {
     private static final Logger logger = LoggerFactory.getLogger(NamespaceEventHandler.class);
@@ -47,6 +48,7 @@ public class NamespaceEventHandler implements ResourceEventHandler<Namespace>, W
                 RESYNC_TIME);
 
         var res = new NamespaceEventHandler(eventQueue);
+        namespaceInformer.exceptionHandler(createExceptionHandler(Namespace.class));
         namespaceInformer.addEventHandler(res);
         return res;
     }

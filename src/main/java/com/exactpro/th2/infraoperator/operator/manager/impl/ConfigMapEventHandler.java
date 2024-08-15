@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2021 Exactpro (Exactpro Systems Limited)
+ * Copyright 2020-2024 Exactpro (Exactpro Systems Limited)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -48,12 +48,21 @@ import io.prometheus.client.Histogram;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.*;
+import java.util.Base64;
+import java.util.Collection;
+import java.util.Map;
+import java.util.Objects;
 
 import static com.exactpro.th2.infraoperator.configuration.OperatorConfig.RABBITMQ_SECRET_PASSWORD_KEY;
-import static com.exactpro.th2.infraoperator.operator.HelmReleaseTh2Op.*;
+import static com.exactpro.th2.infraoperator.operator.HelmReleaseTh2Op.CHECKSUM_ALIAS;
+import static com.exactpro.th2.infraoperator.operator.HelmReleaseTh2Op.CONFIG_ALIAS;
+import static com.exactpro.th2.infraoperator.operator.HelmReleaseTh2Op.CRADLE_MGR_ALIAS;
+import static com.exactpro.th2.infraoperator.operator.HelmReleaseTh2Op.GRPC_ROUTER_ALIAS;
+import static com.exactpro.th2.infraoperator.operator.HelmReleaseTh2Op.LOGGING_ALIAS;
+import static com.exactpro.th2.infraoperator.operator.HelmReleaseTh2Op.MQ_ROUTER_ALIAS;
 import static com.exactpro.th2.infraoperator.util.CustomResourceUtils.annotationFor;
 import static com.exactpro.th2.infraoperator.util.JsonUtils.JSON_MAPPER;
+import static com.exactpro.th2.infraoperator.util.WatcherUtils.createExceptionHandler;
 
 public class ConfigMapEventHandler implements Watcher<ConfigMap> {
     public static final String SECRET_TYPE_OPAQUE = "Opaque";
@@ -115,6 +124,7 @@ public class ConfigMapEventHandler implements Watcher<ConfigMap> {
                 ConfigMap.class,
                 CustomResourceUtils.RESYNC_TIME);
 
+        configMapInformer.exceptionHandler(createExceptionHandler(ConfigMap.class));
         configMapInformer.addEventHandler(new GenericResourceEventHandler<>(res, eventQueue));
         return res;
     }
