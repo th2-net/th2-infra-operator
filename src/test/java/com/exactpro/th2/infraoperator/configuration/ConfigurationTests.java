@@ -65,7 +65,7 @@ class ConfigurationTests {
                         "username",
                         "password",
                         true,
-                        false,
+                        true,
                         new RabbitMQNamespacePermissions(
                                 "configure", "read", "write"
                         )
@@ -101,7 +101,7 @@ class ConfigurationTests {
                         "username",
                         "password",
                         true,
-                        false,
+                        true,
                         new RabbitMQNamespacePermissions(
                                 "configure", "read", "write"
                         )

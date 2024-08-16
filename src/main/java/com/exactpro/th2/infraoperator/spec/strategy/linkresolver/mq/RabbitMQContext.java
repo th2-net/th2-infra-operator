@@ -103,7 +103,7 @@ public final class RabbitMQContext {
     public static void setUpRabbitMqForNamespace(String namespace) {
         try {
             createUser(namespace);
-            declareExchange(namespace);
+            declareExchange(toExchangeName(namespace));
             createStoreQueues(namespace);
         } catch (Exception e) {
             logger.error("Exception setting up rabbitMq for namespace: \"{}\"", namespace, e);
@@ -185,7 +185,7 @@ public final class RabbitMQContext {
     }
 
     public static void cleanupRabbit(String namespace) throws Exception {
-        removeSchemaExchange(namespace);
+        removeSchemaExchange(toExchangeName(namespace));
         removeSchemaQueues(namespace);
         removeSchemaUser(namespace);
 
@@ -236,6 +236,10 @@ public final class RabbitMQContext {
         } catch (Exception e) {
             logger.error("Exception cleaning up queues for: \"{}\"", namespace, e);
         }
+    }
+
+    public static String toExchangeName(String namespace) {
+        return namespace;
     }
 
     public static Channel getChannel() {

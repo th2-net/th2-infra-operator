@@ -55,6 +55,7 @@ dependencies {
     implementation "io.prometheus:simpleclient_hotspot"
 
     testImplementation libs.mockito.core
+    testImplementation libs.mockito.kotlin
     testImplementation libs.junit.jupiter.api
     testRuntimeOnly libs.junit.jupiter.engine
 
