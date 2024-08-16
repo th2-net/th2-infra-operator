@@ -55,7 +55,7 @@ fun KubernetesClient.customResources(namespace: String): List<Th2CustomResource>
         }.map { it.get() as Th2CustomResource }
         .toList()
 
-fun KubernetesClient.isActive(namespace: String): Boolean {
+fun KubernetesClient.isNotActive(namespace: String): Boolean {
     val namespaceObj: Namespace? = namespaces().withName(namespace).get()
     if (namespaceObj == null || namespaceObj.status.phase != "Active") {
         K_LOGGER.info { "Namespace \"$namespace\" deleted or not active, cancelling" }

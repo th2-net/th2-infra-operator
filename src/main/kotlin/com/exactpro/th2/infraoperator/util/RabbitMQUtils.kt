@@ -40,15 +40,14 @@ private val K_LOGGER = KotlinLogging.logger { }
 fun deleteRabbitMQRubbish() {
     try {
         val config = ConfigLoader.loadConfiguration()
-        val rabbitMQManagement = config.rabbitMQManagement
 
-        if (!rabbitMQManagement.cleanUpOnStart) {
+        if (!config.rabbitMQManagement.cleanUpOnStart) {
             K_LOGGER.info { "Cleanup RabbitMQ before start is skipped by config" }
             return
         }
 
         val namespacePrefixes = config.namespacePrefixes
-        val topicExchange = rabbitMQManagement.exchangeName
+        val topicExchange = RabbitMQContext.getTopicExchangeName()
 
         createKubernetesClient().use { kuClient ->
             val resourceHolder = kuClient.collectRabbitMQRubbish(

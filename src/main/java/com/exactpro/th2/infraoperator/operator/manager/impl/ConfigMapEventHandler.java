@@ -298,7 +298,7 @@ public class ConfigMapEventHandler implements Watcher<ConfigMap> {
         OperatorState.INSTANCE.putHelmReleaseInCache(helmRelease, namespace);
     }
 
-    private Map<String, Object> getConfigFromCR(CustomResource customResource, String key) {
+    private Map<String, Object> getConfigFromCR(CustomResource<?, ?> customResource, String key) {
         Th2Spec spec = (Th2Spec) customResource.getSpec();
         switch (key) {
             case MQ_ROUTER_ALIAS:

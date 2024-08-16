@@ -49,7 +49,7 @@ import static com.exactpro.th2.infraoperator.util.CustomResourceUtils.annotation
 import static com.exactpro.th2.infraoperator.util.ExtractUtils.extractName;
 import static com.exactpro.th2.infraoperator.util.ExtractUtils.extractNamespace;
 import static com.exactpro.th2.infraoperator.util.HelmReleaseUtils.extractDictionariesConfig;
-import static com.exactpro.th2.infraoperator.util.KubernetesUtils.isActive;
+import static com.exactpro.th2.infraoperator.util.KubernetesUtils.isNotActive;
 import static com.exactpro.th2.infraoperator.util.WatcherUtils.createExceptionHandler;
 
 public class Th2DictionaryEventHandler implements Watcher<Th2Dictionary> {
@@ -196,7 +196,7 @@ public class Th2DictionaryEventHandler implements Watcher<Th2Dictionary> {
     private void updateLinkedResources(String dictionaryName, String namespace,
                                        String checksum, Set<String> linkedResources) {
 
-        if (isActive(kubClient, namespace)) {
+        if (isNotActive(kubClient, namespace)) {
             return;
         }
         for (var linkedResourceName : linkedResources) {

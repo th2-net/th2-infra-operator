@@ -50,7 +50,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import static com.exactpro.th2.infraoperator.operator.HelmReleaseTh2Op.ANTECEDENT_LABEL_KEY_ALIAS;
 import static com.exactpro.th2.infraoperator.util.ExtractUtils.extractName;
 import static com.exactpro.th2.infraoperator.util.ExtractUtils.extractNamespace;
-import static com.exactpro.th2.infraoperator.util.KubernetesUtils.isActive;
+import static com.exactpro.th2.infraoperator.util.KubernetesUtils.isNotActive;
 import static io.fabric8.kubernetes.client.Watcher.Action.MODIFIED;
 
 public abstract class AbstractTh2Operator<CR extends Th2CustomResource> implements Watcher<CR> {
@@ -96,7 +96,7 @@ public abstract class AbstractTh2Operator<CR extends Th2CustomResource> implemen
                         action, resourceLabel, e);
 
                 String namespace = resource.getMetadata().getNamespace();
-                if (isActive(kubClient, namespace)) {
+                if (isNotActive(kubClient, namespace)) {
                     return;
                 }
 
@@ -126,7 +126,7 @@ public abstract class AbstractTh2Operator<CR extends Th2CustomResource> implemen
 
         } catch (Exception e) {
             String namespace = resource.getMetadata().getNamespace();
-            if (isActive(kubClient, namespace)) {
+            if (isNotActive(kubClient, namespace)) {
                 return;
             }
             resource.getStatus().failed(e.getMessage());

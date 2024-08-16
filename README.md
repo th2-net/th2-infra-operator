@@ -87,8 +87,8 @@ rabbitMQManagement:
   persistence: true
   # determines if the RabbitMQ resources are persistent or not
 
-  cleanUpOnStart: false
-  # if option is true, operator removes all redundant queues and exchanges from RabbitMQ on start   
+  cleanUpOnStart: true
+  # if option is true, operator removes redundant queues and exchanges from RabbitMQ on start   
   
   schemaPermissions:
   # this section describes what permissions schema RabbitMQ user will have on its own resources
@@ -148,7 +148,8 @@ openshift:
 ## Release notes
 
 ### 4.7.0
-+ Improved clean rubbish from RabbitMQ on start. This function enabled by default
++ Improved clean rubbish from RabbitMQ on start to delete only redundant resources.
+  `cleanUpOnStart` is enabled by default
 + Migrated to th2 plugin `0.1.1`
 
 + Updated:

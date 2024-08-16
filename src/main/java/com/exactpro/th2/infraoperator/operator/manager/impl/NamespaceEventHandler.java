@@ -37,7 +37,7 @@ import static com.exactpro.th2.infraoperator.util.WatcherUtils.createExceptionHa
 public class NamespaceEventHandler implements ResourceEventHandler<Namespace>, Watcher<Namespace> {
     private static final Logger logger = LoggerFactory.getLogger(NamespaceEventHandler.class);
 
-    private EventQueue eventQueue;
+    private final EventQueue eventQueue;
 
     private final OperatorConfig config = ConfigLoader.getConfig();
 

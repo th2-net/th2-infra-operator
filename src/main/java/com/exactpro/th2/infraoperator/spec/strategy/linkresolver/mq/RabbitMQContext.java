@@ -312,7 +312,7 @@ public final class RabbitMQContext {
 
     public static @NotNull List<ExchangeInfo> getTh2Exchanges() {
         Collection<String> namespacePrefixes = ConfigLoader.getConfig().getNamespacePrefixes();
-        String topicExchange = getManagementConfig().getExchangeName();
+        String topicExchange = getTopicExchangeName();
         return getExchanges().stream()
                 .filter(exchangeInfo -> {
                     String name = exchangeInfo.getName();
