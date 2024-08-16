@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2021 Exactpro (Exactpro Systems Limited)
+ * Copyright 2020-2024 Exactpro (Exactpro Systems Limited)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -26,7 +26,7 @@ data class OperatorConfig(
     var chart: Any? = null,
     var rabbitMQManagement: RabbitMQManagementConfig = RabbitMQManagementConfig(),
     var schemaSecrets: SchemaSecrets = SchemaSecrets(),
-    var namespacePrefixes: List<String> = ArrayList(),
+    var namespacePrefixes: Set<String> = emptySet(),
     var rabbitMQConfigMapName: String = DEFAULT_RABBITMQ_CONFIGMAP_NAME,
     var k8sUrl: String = "",
     var prometheusConfiguration: PrometheusConfiguration<String> = PrometheusConfiguration.createDefault("true"),

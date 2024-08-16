@@ -21,12 +21,14 @@ import com.exactpro.th2.infraoperator.configuration.fields.RabbitMQNamespacePerm
 import com.exactpro.th2.infraoperator.configuration.fields.SchemaSecrets;
 import org.junit.jupiter.api.Test;
 
-import java.util.Arrays;
-import java.util.Collections;
+import java.util.Set;
 
 import static com.exactpro.th2.infraoperator.configuration.ConfigLoader.CONFIG_FILE_SYSTEM_PROPERTY;
-import static org.junit.jupiter.api.Assertions.*;
-import static com.exactpro.th2.infraoperator.configuration.OperatorConfig.*;
+import static com.exactpro.th2.infraoperator.configuration.OperatorConfig.DEFAULT_RABBITMQ_CONFIGMAP_NAME;
+import static java.util.Collections.emptySet;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 class ConfigurationTests {
 
@@ -70,7 +72,7 @@ class ConfigurationTests {
                 )
         );
         expected.setSchemaSecrets(new SchemaSecrets("rabbitMQ", "cassandra"));
-        expected.setNamespacePrefixes(Arrays.asList("string1", "string2"));
+        expected.setNamespacePrefixes(Set.of("string1", "string2"));
         expected.setRabbitMQConfigMapName("rabbit-mq-app");
 
         assertEquals(expected, loadConfiguration());
@@ -80,7 +82,7 @@ class ConfigurationTests {
     void testNsPrefixes() {
         beforeEach("nsPrefixesConfig.yml");
 
-        expected.setNamespacePrefixes(Arrays.asList("string1", "string2"));
+        expected.setNamespacePrefixes(Set.of("string1", "string2"));
 
         assertEquals(expected, loadConfiguration());
     }
@@ -121,7 +123,7 @@ class ConfigurationTests {
     @Test
     void testDefaultConfig() {
         OperatorConfig config = new OperatorConfig();
-        assertEquals(Collections.emptyList(),
+        assertEquals(emptySet(),
                 config.getNamespacePrefixes());
 
         assertTrue(config.getRabbitMQManagement().getHost().isEmpty());

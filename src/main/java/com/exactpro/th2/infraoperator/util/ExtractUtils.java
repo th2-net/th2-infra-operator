@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2021 Exactpro (Exactpro Systems Limited)
+ * Copyright 2020-2024 Exactpro (Exactpro Systems Limited)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -20,6 +20,7 @@ import java.util.HashMap;
 import java.util.Map;
 
 import io.fabric8.kubernetes.api.model.HasMetadata;
+import org.apache.commons.lang3.StringUtils;
 
 public class ExtractUtils {
 
@@ -73,7 +74,7 @@ public class ExtractUtils {
 
     public static String shortSourceHash(HasMetadata res) {
         String fullHash = fullSourceHash(res);
-        if (Strings.isNullOrEmpty(fullHash)) {
+        if (StringUtils.isBlank(fullHash)) {
             return fullHash;
         }
         return "[" + fullHash.substring(0, 8) + "]";

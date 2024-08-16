@@ -26,14 +26,17 @@ import com.fasterxml.uuid.Generators;
 import io.fabric8.kubernetes.api.model.ConfigMap;
 import io.fabric8.kubernetes.api.model.HasMetadata;
 import io.fabric8.kubernetes.client.KubernetesClient;
-import io.fabric8.kubernetes.client.KubernetesClientBuilder;
 import io.fabric8.kubernetes.client.Watcher;
 import io.fabric8.kubernetes.client.informers.SharedIndexInformer;
 import io.fabric8.kubernetes.client.informers.SharedInformerFactory;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.*;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Objects;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.Function;
 import java.util.function.Supplier;
@@ -41,7 +44,7 @@ import java.util.stream.Collectors;
 
 import static com.exactpro.th2.infraoperator.operator.AbstractTh2Operator.REFRESH_TOKEN_ALIAS;
 import static com.exactpro.th2.infraoperator.util.CustomResourceUtils.annotationFor;
-import static com.exactpro.th2.infraoperator.util.ExtractUtils.extractName;
+import static com.exactpro.th2.infraoperator.util.KubernetesUtils.createKubernetesClient;
 import static com.exactpro.th2.infraoperator.util.WatcherUtils.createExceptionHandler;
 
 public class DefaultWatchManager {
@@ -187,20 +190,6 @@ public class DefaultWatchManager {
     }
 
     void refreshBoxes(String namespace) {
-        refreshBoxes(namespace, null, true);
-    }
-
-    void refreshBoxes(String namespace, Set<String> boxes) {
-        refreshBoxes(namespace, boxes, false);
-    }
-
-    private void refreshBoxes(String namespace, Set<String> boxes, boolean refreshAllBoxes) {
-
-        if (!refreshAllBoxes && (boxes == null || boxes.size() == 0)) {
-            logger.warn("Empty set of boxes was given to refresh");
-            return;
-        }
-
         if (!isWatching()) {
             logger.warn("Not watching for resources yet");
             return;
@@ -210,10 +199,8 @@ public class DefaultWatchManager {
         for (var resourceClient : resourceClients) {
             var mixedOperation = resourceClient.getInstance();
             for (var res : mixedOperation.inNamespace(namespace).list().getItems()) {
-                if (refreshAllBoxes || boxes.contains(extractName(res))) {
-                    createResource(namespace, res, resourceClient);
-                    refreshedBoxes++;
-                }
+                createResource(namespace, res, resourceClient);
+                refreshedBoxes++;
             }
         }
 
@@ -234,7 +221,7 @@ public class DefaultWatchManager {
 
     public static synchronized DefaultWatchManager getInstance() {
         if (instance == null) {
-            instance = new DefaultWatchManager(new KubernetesClientBuilder().build());
+            instance = new DefaultWatchManager(createKubernetesClient());
         }
 
         return instance;

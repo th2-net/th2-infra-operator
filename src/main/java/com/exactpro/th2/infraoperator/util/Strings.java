@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2021 Exactpro (Exactpro Systems Limited)
+ * Copyright 2020-2024 Exactpro (Exactpro Systems Limited)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -19,7 +19,7 @@ package com.exactpro.th2.infraoperator.util;
 import com.exactpro.th2.infraoperator.model.box.dictionary.DictionaryEntity;
 import org.apache.commons.text.lookup.StringLookup;
 
-import java.util.List;
+import java.util.Collection;
 import java.util.Map;
 import java.util.Set;
 
@@ -30,14 +30,17 @@ public class Strings {
     private Strings() {
     }
 
-    public static boolean isNullOrEmpty(String s) {
-        return (s == null || s.isEmpty());
-    }
-
-    public static boolean nonePrefixMatch(String namespace, List<String> prefixes) {
+    public static boolean anyPrefixMatch(String namespace, Collection<String> prefixes) {
         return (namespace != null
                 && prefixes != null
-                && prefixes.size() > 0
+                && !prefixes.isEmpty()
+                && prefixes.stream().anyMatch(namespace::startsWith));
+    }
+
+    public static boolean nonePrefixMatch(String namespace, Collection<String> prefixes) {
+        return (namespace != null
+                && prefixes != null
+                && !prefixes.isEmpty()
                 && prefixes.stream().noneMatch(namespace::startsWith));
     }
 

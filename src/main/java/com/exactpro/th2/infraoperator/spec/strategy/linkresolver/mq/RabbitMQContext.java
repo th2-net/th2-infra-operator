@@ -29,7 +29,6 @@ import com.exactpro.th2.infraoperator.spec.strategy.redeploy.RetryableTaskQueue;
 import com.exactpro.th2.infraoperator.spec.strategy.redeploy.tasks.RecreateQueuesAndBindings;
 import com.exactpro.th2.infraoperator.spec.strategy.redeploy.tasks.RetryRabbitSetup;
 import com.exactpro.th2.infraoperator.spec.strategy.redeploy.tasks.RetryTopicExchangeTask;
-import com.exactpro.th2.infraoperator.util.Strings;
 import com.rabbitmq.client.Channel;
 import com.rabbitmq.client.Connection;
 import com.rabbitmq.client.ConnectionFactory;
@@ -41,6 +40,7 @@ import com.rabbitmq.http.client.domain.BindingInfo;
 import com.rabbitmq.http.client.domain.ExchangeInfo;
 import com.rabbitmq.http.client.domain.QueueInfo;
 import com.rabbitmq.http.client.domain.UserPermissions;
+import org.apache.commons.lang3.StringUtils;
 import org.jetbrains.annotations.NotNull;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -49,6 +49,7 @@ import java.io.IOException;
 import java.net.MalformedURLException;
 import java.net.URISyntaxException;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
@@ -58,9 +59,11 @@ import java.util.stream.Collectors;
 import static com.exactpro.th2.infraoperator.spec.strategy.linkresolver.Util.createEstoreQueue;
 import static com.exactpro.th2.infraoperator.spec.strategy.linkresolver.Util.createMstoreQueue;
 import static com.exactpro.th2.infraoperator.spec.strategy.linkresolver.queue.QueueName.QUEUE_NAME_REGEXP;
+import static com.exactpro.th2.infraoperator.util.Strings.anyPrefixMatch;
 import static java.lang.String.format;
 import static java.util.Collections.emptyList;
 import static java.util.Objects.requireNonNullElse;
+import static org.apache.commons.lang3.StringUtils.isNoneBlank;
 
 public final class RabbitMQContext {
 
@@ -119,7 +122,7 @@ public final class RabbitMQContext {
         String password = rabbitMQConfig.getPassword();
         String vHostName = rabbitMQManagementConfig.getVhostName();
 
-        if (Strings.isNullOrEmpty(namespace)) {
+        if (StringUtils.isBlank(namespace)) {
             return;
         }
 
@@ -235,49 +238,6 @@ public final class RabbitMQContext {
         }
     }
 
-    public static void cleanUpRabbitBeforeStart() {
-        try {
-            if (!getManagementConfig().getCleanUpOnStart()) {
-                logger.info("Cleanup RabbitMQ before start is skipped by config");
-                return;
-            }
-
-            Channel channel = getChannel();
-            List<String> namespacePrefixes = ConfigLoader.getConfig().getNamespacePrefixes();
-
-            List<QueueInfo> queueInfoList = getQueues();
-            queueInfoList.forEach(q -> {
-                String queueName = q.getName();
-                if (queueName != null && queueName.matches(QUEUE_NAME_REGEXP)) {
-                    try {
-                        channel.queueDelete(queueName);
-                        logger.info("Deleted queue: [{}]", queueName);
-                    } catch (IOException e) {
-                        logger.error("Exception deleting queue: [{}]", queueName, e);
-                    }
-                }
-            });
-
-            List<ExchangeInfo> exchangeInfoList = getExchanges();
-            exchangeInfoList.forEach(e -> {
-                String exchangeName = e.getName();
-                for (String namespacePrefix : namespacePrefixes) {
-                    if (exchangeName.startsWith(namespacePrefix)) {
-                        try {
-                            channel.exchangeDelete(exchangeName);
-                            break;
-                        } catch (IOException ex) {
-                            logger.error("Exception deleting exchange: [{}]", exchangeName, ex);
-                            break;
-                        }
-                    }
-                }
-            });
-        } catch (Exception e) {
-            logger.error("Exception cleaning up rabbit", e);
-        }
-    }
-
     public static Channel getChannel() {
         Channel channel = getChannelContext().channel;
         if (!channel.isOpen()) {
@@ -347,16 +307,14 @@ public final class RabbitMQContext {
     }
 
     public static @NotNull List<ExchangeInfo> getTh2Exchanges() {
-        List<String> namespacePrefixes = ConfigLoader.getConfig().getNamespacePrefixes();
+        Collection<String> namespacePrefixes = ConfigLoader.getConfig().getNamespacePrefixes();
+        String topicExchange = getManagementConfig().getExchangeName();
         return getExchanges().stream()
                 .filter(exchangeInfo -> {
                     String name = exchangeInfo.getName();
-                    for (String namespacePrefix : namespacePrefixes) {
-                        if (name.startsWith(namespacePrefix)) {
-                            return true;
-                        }
-                    }
-                    return false;
+                    return isNoneBlank(name)
+                            && (name.equals(topicExchange) || anyPrefixMatch(name, namespacePrefixes));
+
                 }).collect(Collectors.toList());
     }
 
@@ -463,18 +421,6 @@ public final class RabbitMQContext {
             connectionFactory.setPassword(rabbitMQManagementConfig.getPassword());
             return connectionFactory;
         }
-    }
-
-    @NotNull
-    private static ConnectionFactory createConnectionFactory() {
-        RabbitMQManagementConfig rabbitMQManagementConfig = getManagementConfig();
-        ConnectionFactory connectionFactory = new ConnectionFactory();
-        connectionFactory.setHost(rabbitMQManagementConfig.getHost());
-        connectionFactory.setPort(rabbitMQManagementConfig.getApplicationPort());
-        connectionFactory.setVirtualHost(rabbitMQManagementConfig.getVhostName());
-        connectionFactory.setUsername(rabbitMQManagementConfig.getUsername());
-        connectionFactory.setPassword(rabbitMQManagementConfig.getPassword());
-        return connectionFactory;
     }
 
     private static class RmqClientShutdownEventListener implements ShutdownListener {

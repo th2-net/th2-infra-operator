@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2021 Exactpro (Exactpro Systems Limited)
+ * Copyright 2020-2024 Exactpro (Exactpro Systems Limited)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -29,18 +29,20 @@ import io.fabric8.kubernetes.client.informers.ResourceEventHandler;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import static java.util.Objects.requireNonNull;
+
 public class GenericResourceEventHandler<T extends HasMetadata> implements ResourceEventHandler<T>, Watcher<T> {
     private static final Logger logger = LoggerFactory.getLogger(GenericResourceEventHandler.class);
 
-    private Watcher<T> watcher;
+    private final Watcher<T> watcher;
 
-    private EventQueue eventQueue;
+    private final EventQueue eventQueue;
 
     private final OperatorConfig config = ConfigLoader.getConfig();
 
     public GenericResourceEventHandler(Watcher<T> watcher, EventQueue eventQueue) {
-        this.watcher = watcher;
-        this.eventQueue = eventQueue;
+        this.watcher = requireNonNull(watcher, "watcher can't be null");
+        this.eventQueue = requireNonNull(eventQueue, "event queue can't be null");
     }
 
     @Override
@@ -146,6 +148,7 @@ public class GenericResourceEventHandler<T extends HasMetadata> implements Resou
 
     @Override
     public void onClose(WatcherException cause) {
+        logger.error("Watcher for '{}' has been closed", watcher.getClass().getSimpleName());
         throw new AssertionError("This method should not be called");
     }
 }

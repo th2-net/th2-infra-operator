@@ -24,7 +24,6 @@ import com.exactpro.th2.infraoperator.spec.helmrelease.HelmRelease;
 import com.exactpro.th2.infraoperator.util.CustomResourceUtils;
 import com.exactpro.th2.infraoperator.util.ExtractUtils;
 import io.fabric8.kubernetes.api.model.ConfigMap;
-import io.fabric8.kubernetes.api.model.Namespace;
 import io.fabric8.kubernetes.api.model.KubernetesResourceList;
 import io.fabric8.kubernetes.api.model.ObjectMeta;
 import io.fabric8.kubernetes.client.KubernetesClient;
@@ -38,15 +37,19 @@ import io.prometheus.client.Histogram;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.*;
+import java.util.Collection;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 
-import static com.exactpro.th2.infraoperator.operator.HelmReleaseTh2Op.*;
+import static com.exactpro.th2.infraoperator.operator.HelmReleaseTh2Op.DICTIONARIES_ALIAS;
 import static com.exactpro.th2.infraoperator.util.CustomResourceUtils.RESYNC_TIME;
 import static com.exactpro.th2.infraoperator.util.CustomResourceUtils.annotationFor;
 import static com.exactpro.th2.infraoperator.util.ExtractUtils.extractName;
 import static com.exactpro.th2.infraoperator.util.ExtractUtils.extractNamespace;
 import static com.exactpro.th2.infraoperator.util.HelmReleaseUtils.extractDictionariesConfig;
+import static com.exactpro.th2.infraoperator.util.KubernetesUtils.isActive;
 import static com.exactpro.th2.infraoperator.util.WatcherUtils.createExceptionHandler;
 
 public class Th2DictionaryEventHandler implements Watcher<Th2Dictionary> {
@@ -193,9 +196,7 @@ public class Th2DictionaryEventHandler implements Watcher<Th2Dictionary> {
     private void updateLinkedResources(String dictionaryName, String namespace,
                                        String checksum, Set<String> linkedResources) {
 
-        Namespace namespaceObj = kubClient.namespaces().withName(namespace).get();
-        if (namespaceObj == null || !namespaceObj.getStatus().getPhase().equals("Active")) {
-            logger.info("Namespace \"{}\" deleted or not active, cancelling", namespace);
+        if (isActive(kubClient, namespace)) {
             return;
         }
         for (var linkedResourceName : linkedResources) {

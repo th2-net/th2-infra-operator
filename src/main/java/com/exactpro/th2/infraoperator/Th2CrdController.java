@@ -27,6 +27,7 @@ import com.exactpro.th2.infraoperator.operator.manager.impl.DefaultWatchManager;
 import com.exactpro.th2.infraoperator.spec.strategy.linkresolver.mq.RabbitMQContext;
 import com.exactpro.th2.infraoperator.spec.strategy.redeploy.ContinuousTaskWorker;
 import com.exactpro.th2.infraoperator.spec.strategy.redeploy.tasks.CheckResourceCacheTask;
+import com.exactpro.th2.infraoperator.util.RabbitMQUtils;
 import org.apache.logging.log4j.core.LoggerContext;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -47,6 +48,7 @@ public class Th2CrdController {
         OperatorMetrics.resetCacheErrors();
         try {
             RabbitMQContext.declareTopicExchange();
+            RabbitMQUtils.deleteRabbitMQRubbish();
 
             watchManager.addTarget(MstoreHelmTh2Op::new);
             watchManager.addTarget(EstoreHelmTh2Op::new);

@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2021 Exactpro (Exactpro Systems Limited)
+ * Copyright 2020-2024 Exactpro (Exactpro Systems Limited)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -29,9 +29,7 @@ import com.exactpro.th2.infraoperator.spec.strategy.redeploy.RetryableTaskQueue;
 import com.exactpro.th2.infraoperator.spec.strategy.redeploy.tasks.TriggerRedeployTask;
 import com.exactpro.th2.infraoperator.util.CustomResourceUtils;
 import com.exactpro.th2.infraoperator.util.ExtractUtils;
-
 import io.fabric8.kubernetes.api.model.HasMetadata;
-import io.fabric8.kubernetes.api.model.Namespace;
 import io.fabric8.kubernetes.api.model.OwnerReference;
 import io.fabric8.kubernetes.api.model.OwnerReferenceBuilder;
 import io.fabric8.kubernetes.client.KubernetesClient;
@@ -52,6 +50,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import static com.exactpro.th2.infraoperator.operator.HelmReleaseTh2Op.ANTECEDENT_LABEL_KEY_ALIAS;
 import static com.exactpro.th2.infraoperator.util.ExtractUtils.extractName;
 import static com.exactpro.th2.infraoperator.util.ExtractUtils.extractNamespace;
+import static com.exactpro.th2.infraoperator.util.KubernetesUtils.isActive;
 import static io.fabric8.kubernetes.client.Watcher.Action.MODIFIED;
 
 public abstract class AbstractTh2Operator<CR extends Th2CustomResource> implements Watcher<CR> {
@@ -97,9 +96,7 @@ public abstract class AbstractTh2Operator<CR extends Th2CustomResource> implemen
                         action, resourceLabel, e);
 
                 String namespace = resource.getMetadata().getNamespace();
-                Namespace namespaceObj = kubClient.namespaces().withName(namespace).get();
-                if (namespaceObj == null || !namespaceObj.getStatus().getPhase().equals("Active")) {
-                    logger.info("Namespace \"{}\" deleted or not active, cancelling", namespace);
+                if (isActive(kubClient, namespace)) {
                     return;
                 }
 
@@ -129,9 +126,7 @@ public abstract class AbstractTh2Operator<CR extends Th2CustomResource> implemen
 
         } catch (Exception e) {
             String namespace = resource.getMetadata().getNamespace();
-            Namespace namespaceObj = kubClient.namespaces().withName(namespace).get();
-            if (namespaceObj == null || !namespaceObj.getStatus().getPhase().equals("Active")) {
-                logger.info("Namespace \"{}\" deleted or not active, cancelling", namespace);
+            if (isActive(kubClient, namespace)) {
                 return;
             }
             resource.getStatus().failed(e.getMessage());
@@ -260,7 +255,7 @@ public abstract class AbstractTh2Operator<CR extends Th2CustomResource> implemen
         }
     }
 
-    protected void setupAndCreateKubObj(CR resource) throws IOException {
+    protected void setupAndCreateKubObj(CR resource) {
 
         var kubObj = loadKubObj();
 
