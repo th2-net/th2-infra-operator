@@ -27,7 +27,9 @@ private val K_LOGGER = KotlinLogging.logger { }
 fun createExceptionHandler(clazz: Class<*>): ExceptionHandler {
     return ExceptionHandler { isStarted: Boolean, t: Throwable ->
         K_LOGGER.error(t) { "${clazz.simpleName} informer catch error, isStarted: $isStarted" }
-        // the code below is copied from io.fabric8.kubernetes.client.informers.impl.cache.Reflector.handler
+        // Default condition copied from io.fabric8.kubernetes.client.informers.impl.cache.Reflector.handler.
+        // We should monitor caught errors in real cluster
+        //  after that change the condition to maintain a component in working order
         isStarted && t !is WatcherException
     }
 }

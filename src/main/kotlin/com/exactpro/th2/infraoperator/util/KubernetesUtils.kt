@@ -32,7 +32,7 @@ import kotlin.streams.toList
 
 private val K_LOGGER = KotlinLogging.logger { }
 
-val CUSTOM_RESOURCE_KINDS =
+val CUSTOM_RESOURCE_KINDS: Set<Class<out Th2CustomResource>> =
     setOf(Th2Estore::class.java, Th2Mstore::class.java, Th2CoreBox::class.java, Th2Box::class.java, Th2Job::class.java)
 
 fun createKubernetesClient(): KubernetesClient = KubernetesClientBuilder().build()

@@ -41,11 +41,6 @@ fun deleteRabbitMQRubbish() {
     try {
         val config = ConfigLoader.loadConfiguration()
 
-        if (!config.rabbitMQManagement.cleanUpOnStart) {
-            K_LOGGER.info { "Cleanup RabbitMQ before start is skipped by config" }
-            return
-        }
-
         val namespacePrefixes = config.namespacePrefixes
         val topicExchange = RabbitMQContext.getTopicExchangeName()
 
@@ -71,7 +66,6 @@ internal fun KubernetesClient.collectRabbitMQRubbish(
     th2Exchanges: Collection<ExchangeInfo>,
 ): ResourceHolder = ResourceHolder().apply {
     val namespaces: Set<String> = namespaces(namespacePrefixes)
-    val factories: Map<Class<out Th2CustomResource>, MessageRouterConfigFactory> = createFactories()
 
     th2Queues.asSequence()
         .map(QueueInfo::getName)
@@ -90,6 +84,7 @@ internal fun KubernetesClient.collectRabbitMQRubbish(
     K_LOGGER.debug { "Search RabbitMQ resources in $namespaces namespaces" }
     exchanges.remove(topicExchange)
 
+    val factories: Map<Class<out Th2CustomResource>, MessageRouterConfigFactory> = createFactories()
     namespaces.forEach { namespace ->
         exchanges.remove(namespace)
 
