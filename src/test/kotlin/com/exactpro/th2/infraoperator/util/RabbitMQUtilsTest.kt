@@ -18,8 +18,6 @@ package com.exactpro.th2.infraoperator.util
 
 import com.exactpro.th2.infraoperator.spec.strategy.linkresolver.mq.RabbitMQContext.toExchangeName
 import com.rabbitmq.client.Channel
-import com.rabbitmq.http.client.domain.ExchangeInfo
-import com.rabbitmq.http.client.domain.QueueInfo
 import io.fabric8.kubernetes.api.model.KubernetesResourceList
 import io.fabric8.kubernetes.api.model.Namespace
 import io.fabric8.kubernetes.api.model.NamespaceList
@@ -42,13 +40,12 @@ class RabbitMQUtilsTest {
     fun `no ns and topic exchange`() {
         val client: KubernetesClient = mockKubernetesClient()
         val actual =
-            client.collectRabbitMQRubbish(
+            ResourceHolder(
+                exchanges = hashSetOf(TOPIC_EXCHANGE_NAME),
+            ).filterRubbishResources(
+                client,
                 setOf("th2"),
                 TOPIC_EXCHANGE_NAME,
-                emptyList(),
-                listOf(
-                    ExchangeInfo().apply { name = TOPIC_EXCHANGE_NAME },
-                ),
             )
         val expected =
             ResourceHolder(
@@ -63,13 +60,12 @@ class RabbitMQUtilsTest {
         val exchangeName = "th2-test-exchange"
         val client: KubernetesClient = mockKubernetesClient()
         val actual =
-            client.collectRabbitMQRubbish(
+            ResourceHolder(
+                exchanges = hashSetOf(exchangeName),
+            ).filterRubbishResources(
+                client,
                 setOf("th2"),
                 TOPIC_EXCHANGE_NAME,
-                emptyList(),
-                listOf(
-                    ExchangeInfo().apply { name = exchangeName },
-                ),
             )
         val expected =
             ResourceHolder(
@@ -84,13 +80,12 @@ class RabbitMQUtilsTest {
         val queueName = "test-link[th2-test-namespace:test-component:test-pin]"
         val client: KubernetesClient = mockKubernetesClient()
         val actual =
-            client.collectRabbitMQRubbish(
+            ResourceHolder(
+                queues = hashSetOf(queueName),
+            ).filterRubbishResources(
+                client,
                 setOf("th2"),
                 TOPIC_EXCHANGE_NAME,
-                listOf(
-                    QueueInfo().apply { name = queueName },
-                ),
-                emptyList(),
             )
         val expected =
             ResourceHolder(
@@ -109,15 +104,12 @@ class RabbitMQUtilsTest {
                 setOf(namespaceName),
             )
         val actual =
-            client.collectRabbitMQRubbish(
+            ResourceHolder(
+                exchanges = hashSetOf(exchangeName, toExchangeName(namespaceName), TOPIC_EXCHANGE_NAME),
+            ).filterRubbishResources(
+                client,
                 setOf("th2"),
                 TOPIC_EXCHANGE_NAME,
-                emptyList(),
-                listOf(
-                    ExchangeInfo().apply { name = exchangeName },
-                    ExchangeInfo().apply { name = toExchangeName(namespaceName) },
-                    ExchangeInfo().apply { name = TOPIC_EXCHANGE_NAME },
-                ),
             )
         val expected =
             ResourceHolder(
@@ -136,16 +128,13 @@ class RabbitMQUtilsTest {
                 setOf(namespaceName),
             )
         val actual =
-            client.collectRabbitMQRubbish(
+            ResourceHolder(
+                queues = hashSetOf(queueName),
+                exchanges = hashSetOf(toExchangeName(namespaceName), TOPIC_EXCHANGE_NAME),
+            ).filterRubbishResources(
+                client,
                 setOf("th2"),
                 TOPIC_EXCHANGE_NAME,
-                listOf(
-                    QueueInfo().apply { name = queueName },
-                ),
-                listOf(
-                    ExchangeInfo().apply { name = toExchangeName(namespaceName) },
-                    ExchangeInfo().apply { name = TOPIC_EXCHANGE_NAME },
-                ),
             )
         val expected =
             ResourceHolder(

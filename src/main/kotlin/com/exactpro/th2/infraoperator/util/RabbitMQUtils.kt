@@ -39,34 +39,36 @@ private val K_LOGGER = KotlinLogging.logger { }
 
 fun deleteRabbitMQRubbish() {
     try {
-        val config = ConfigLoader.loadConfiguration()
+        val resourceHolder = collectRabbitMQResources(
+            RabbitMQContext.getTh2Queues(),
+            RabbitMQContext.getTh2Exchanges(),
+        )
 
-        val namespacePrefixes = config.namespacePrefixes
+        if (resourceHolder.isHolderEmpty()) {
+            return
+        }
+
+        val namespacePrefixes = ConfigLoader.loadConfiguration().namespacePrefixes
         val topicExchange = RabbitMQContext.getTopicExchangeName()
 
         createKubernetesClient().use { kuClient ->
-            val resourceHolder = kuClient.collectRabbitMQRubbish(
+            resourceHolder.filterRubbishResources(
+                kuClient,
                 namespacePrefixes,
                 topicExchange,
-                RabbitMQContext.getTh2Queues(),
-                RabbitMQContext.getTh2Exchanges(),
             )
-            K_LOGGER.info { "RabbitMQ rubbish: $resourceHolder" }
-            deleteRabbitMQRubbish(resourceHolder, RabbitMQContext::getChannel)
         }
+        K_LOGGER.info { "RabbitMQ rubbish: $resourceHolder" }
+        deleteRabbitMQRubbish(resourceHolder, RabbitMQContext::getChannel)
     } catch (e: Exception) {
         K_LOGGER.error(e) { "Delete RabbitMQ rubbish failure" }
     }
 }
 
-internal fun KubernetesClient.collectRabbitMQRubbish(
-    namespacePrefixes: Set<String>,
-    topicExchange: String,
+internal fun collectRabbitMQResources(
     th2Queues: Collection<QueueInfo>,
     th2Exchanges: Collection<ExchangeInfo>,
 ): ResourceHolder = ResourceHolder().apply {
-    val namespaces: Set<String> = namespaces(namespacePrefixes)
-
     th2Queues.asSequence()
         .map(QueueInfo::getName)
         .forEach(queues::add)
@@ -76,8 +78,15 @@ internal fun KubernetesClient.collectRabbitMQRubbish(
         .forEach(exchanges::add)
 
     K_LOGGER.debug { "Actual set in RabbitMQ, queues: $queues, exchanges: $exchanges" }
+}
 
-    if (isHolderEmpty() || namespaces.isEmpty()) {
+internal fun ResourceHolder.filterRubbishResources(
+    client: KubernetesClient,
+    namespacePrefixes: Set<String>,
+    topicExchange: String,
+): ResourceHolder = this.apply {
+    val namespaces: Set<String> = client.namespaces(namespacePrefixes)
+    if (namespaces.isEmpty()) {
         return@apply
     }
 
@@ -88,7 +97,7 @@ internal fun KubernetesClient.collectRabbitMQRubbish(
     namespaces.forEach { namespace ->
         exchanges.remove(namespace)
 
-        customResources(namespace).asSequence()
+        client.customResources(namespace).asSequence()
             .flatMap { cr ->
                 factories[cr.javaClass]?.createConfig(cr)?.queues?.values
                     ?: error("MQ config factory isn't present for ${cr.javaClass.simpleName}")
