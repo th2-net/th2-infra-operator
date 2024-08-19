@@ -84,7 +84,7 @@ internal fun ResourceHolder.filterRubbishResources(
     client: KubernetesClient,
     namespacePrefixes: Set<String>,
     topicExchange: String,
-): ResourceHolder = this.apply {
+): ResourceHolder = apply {
     val namespaces: Set<String> = client.namespaces(namespacePrefixes)
     if (namespaces.isEmpty()) {
         return@apply
