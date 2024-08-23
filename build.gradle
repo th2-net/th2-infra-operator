@@ -64,6 +64,8 @@ dependencies {
     testImplementation libs.junit.jupiter.api
     testImplementation "org.jetbrains.kotlin:kotlin-test-junit5"
     testImplementation libs.bcpkix.jdk18on
+    testImplementation libs.awaitility
+
 
     testRuntimeOnly libs.junit.jupiter.engine
 

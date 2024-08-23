@@ -20,6 +20,7 @@ junit-jupiter-engine = { group = "org.junit.jupiter", name = "junit-jupiter-engi
 
 testcontainers-bom = { group = "org.testcontainers", name = "testcontainers-bom", version = "1.20.1" }
 bcpkix-jdk18on = { group = "org.bouncycastle", name = "bcpkix-jdk18on", version = "1.78.1" }
+awaitility = { group = "org.awaitility", name = "awaitility", version = "4.2.2" }
 
 detekt-formatting = { group = "io.gitlab.arturbosch.detekt", name = "detekt-formatting", version.ref = "detekt" }
 

@@ -26,7 +26,7 @@ data class RabbitMQNamespacePermissions(
 ) {
 
     companion object {
-        const val DEFAULT_CONFIGURE_PERMISSION = ""
+        const val DEFAULT_CONFIGURE_PERMISSION = ".*"
         const val DEFAULT_READ_PERMISSION = ".*"
         const val DEFAULT_WRITE_PERMISSION = ".*"
     }
