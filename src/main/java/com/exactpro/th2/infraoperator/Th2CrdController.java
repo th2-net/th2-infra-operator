@@ -39,10 +39,7 @@ public class Th2CrdController {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(Th2CrdController.class);
 
-    public static void main(String[] args) {
-        if (args.length > 0) {
-            configureLogger(args[0]);
-        }
+    public void start() {
         var watchManager = DefaultWatchManager.getInstance();
         PrometheusServer.start();
         OperatorMetrics.resetCacheErrors();
@@ -66,6 +63,14 @@ public class Th2CrdController {
             watchManager.close();
             throw e;
         }
+    }
+
+    public static void main(String[] args) {
+        if (args.length > 0) {
+            configureLogger(args[0]);
+        }
+        Th2CrdController controller = new Th2CrdController();
+        controller.start();
     }
 
     private static void configureLogger(String filePath) {

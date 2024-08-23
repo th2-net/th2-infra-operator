@@ -335,6 +335,14 @@ public final class RabbitMQContext {
         }
     }
 
+    public static Client createClient(String host, int port, String username, String password) throws MalformedURLException, URISyntaxException {
+            return new Client(new ClientParameters()
+                    .url(format("http://%s:%s/api", host, port))
+                    .username(username)
+                    .password(password)
+            );
+    }
+
     private static RabbitMQManagementConfig getManagementConfig() {
         // we do not need to synchronize as we are assigning immutable object from singleton
         if (managementConfig == null) {
@@ -346,12 +354,10 @@ public final class RabbitMQContext {
     private static Client getClient() throws MalformedURLException, URISyntaxException {
         if (rmqClient == null) {
             RabbitMQManagementConfig rabbitMQMngConfig = getManagementConfig();
-            String apiStr = "http://%s:%s/api";
-            rmqClient = new Client(new ClientParameters()
-                    .url(format(apiStr, rabbitMQMngConfig.getHost(), rabbitMQMngConfig.getManagementPort()))
-                    .username(rabbitMQMngConfig.getUsername())
-                    .password(rabbitMQMngConfig.getPassword())
-            );
+            rmqClient = createClient(rabbitMQMngConfig.getHost(),
+                    rabbitMQMngConfig.getManagementPort(),
+                    rabbitMQMngConfig.getUsername(),
+                    rabbitMQMngConfig.getPassword());
         }
         return rmqClient;
     }
