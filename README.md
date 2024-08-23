@@ -156,7 +156,7 @@ openshift:
     + force logging-interceptor: `4.12.0`
   + http-client: `5.2.0`
   + java-uuid-generator: `5.1.0`
-  + kotlin-logging: `3.0.5`
+  + kotlin-logging: `5.1.4`
 
 ### 4.6.4
 + Added `rabbitMQManagement.cleanUpOnStart` option

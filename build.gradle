@@ -54,6 +54,11 @@ dependencies {
     implementation "io.prometheus:simpleclient_httpserver"
     implementation "io.prometheus:simpleclient_hotspot"
 
+    testImplementation(platform(libs.testcontainers.bom))
+    testImplementation 'org.testcontainers:rabbitmq'
+    testImplementation 'org.testcontainers:k3s'
+
+
     testImplementation libs.mockito.core
     testImplementation libs.mockito.kotlin
     testImplementation libs.junit.jupiter.api
@@ -68,7 +73,19 @@ wrapper {
 }
 
 test {
-    useJUnitPlatform()
+    useJUnitPlatform {
+        excludeTags("integration-test")
+    }
+}
+
+tasks.register("integrationTest", Test.class) {
+    group = "verification"
+    useJUnitPlatform {
+        includeTags("integration-test")
+    }
+    testLogging {
+        showStandardStreams = true
+    }
 }
 
 dependencyCheck {

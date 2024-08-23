@@ -31,7 +31,7 @@ import com.exactpro.th2.infraoperator.spec.strategy.linkresolver.queue.RoutingKe
 import com.exactpro.th2.infraoperator.spec.strategy.redeploy.NonTerminalException
 import com.exactpro.th2.infraoperator.util.CustomResourceUtils
 import com.exactpro.th2.infraoperator.util.CustomResourceUtils.annotationFor
-import mu.KotlinLogging
+import io.github.oshai.kotlinlogging.KotlinLogging
 
 object BindQueueLinkResolver {
     private val logger = KotlinLogging.logger { }

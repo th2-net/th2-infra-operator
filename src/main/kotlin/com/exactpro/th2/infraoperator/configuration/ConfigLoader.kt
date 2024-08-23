@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2022 Exactpro (Exactpro Systems Limited)
+ * Copyright 2020-2024 Exactpro (Exactpro Systems Limited)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -20,7 +20,7 @@ import com.exactpro.th2.infraoperator.util.JsonUtils.YAML_MAPPER
 import com.fasterxml.jackson.core.JsonParseException
 import com.fasterxml.jackson.databind.exc.UnrecognizedPropertyException
 import com.fasterxml.jackson.module.kotlin.readValue
-import mu.KotlinLogging
+import io.github.oshai.kotlinlogging.KotlinLogging
 import org.apache.commons.text.StringSubstitutor
 import org.apache.commons.text.lookup.StringLookupFactory
 import java.io.FileInputStream
@@ -54,13 +54,12 @@ object ConfigLoader {
                     return YAML_MAPPER.readValue(content)
                 }
         } catch (e: UnrecognizedPropertyException) {
-            logger.error(
-                "Bad configuration: unknown property(\"{}\") specified in configuration file",
-                e.propertyName
-            )
+            logger.error(e) {
+                "Bad configuration: unknown property('${e.propertyName}') specified in configuration file"
+            }
             throw e
         } catch (e: JsonParseException) {
-            logger.error("Bad configuration: exception while parsing configuration file")
+            logger.error { "Bad configuration: exception while parsing configuration file" }
             throw e
         }
     }

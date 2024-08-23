@@ -27,7 +27,7 @@ import com.exactpro.th2.infraoperator.spec.mstore.Th2Mstore
 import io.fabric8.kubernetes.api.model.Namespace
 import io.fabric8.kubernetes.client.KubernetesClient
 import io.fabric8.kubernetes.client.KubernetesClientBuilder
-import mu.KotlinLogging
+import io.github.oshai.kotlinlogging.KotlinLogging
 import kotlin.streams.toList
 
 private val K_LOGGER = KotlinLogging.logger { }

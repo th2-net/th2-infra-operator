@@ -20,7 +20,7 @@ package com.exactpro.th2.infraoperator.util
 
 import io.fabric8.kubernetes.client.WatcherException
 import io.fabric8.kubernetes.client.informers.ExceptionHandler
-import mu.KotlinLogging
+import io.github.oshai.kotlinlogging.KotlinLogging
 
 private val K_LOGGER = KotlinLogging.logger { }
 

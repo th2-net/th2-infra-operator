@@ -32,7 +32,7 @@ import com.rabbitmq.client.Channel
 import com.rabbitmq.http.client.domain.ExchangeInfo
 import com.rabbitmq.http.client.domain.QueueInfo
 import io.fabric8.kubernetes.client.KubernetesClient
-import mu.KotlinLogging
+import io.github.oshai.kotlinlogging.KotlinLogging
 import java.io.IOException
 
 private val K_LOGGER = KotlinLogging.logger { }
