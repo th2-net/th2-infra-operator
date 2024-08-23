@@ -70,6 +70,8 @@ public final class RabbitMQContext {
     private static final Logger logger = LoggerFactory.getLogger(RabbitMQContext.class);
 
     private static final int RETRY_DELAY = 120;
+    public static final String TOPIC = "topic";
+    public static final String DIRECT = "direct";
 
     private static volatile RabbitMQManagementConfig managementConfig;
 
@@ -90,7 +92,7 @@ public final class RabbitMQContext {
         String exchangeName = getTopicExchangeName();
         RabbitMQManagementConfig rabbitMQManagementConfig = getManagementConfig();
         try {
-            getChannel().exchangeDeclare(exchangeName, "topic", rabbitMQManagementConfig.getPersistence());
+            getChannel().exchangeDeclare(exchangeName, TOPIC, rabbitMQManagementConfig.getPersistence());
         } catch (Exception e) {
             logger.error("Exception setting up exchange: \"{}\"", exchangeName, e);
             RetryTopicExchangeTask retryTopicExchangeTask = new RetryTopicExchangeTask(exchangeName, RETRY_DELAY);
@@ -156,7 +158,7 @@ public final class RabbitMQContext {
     private static void declareExchange(String exchangeName) throws Exception {
         RabbitMQManagementConfig rabbitMQManagementConfig = getManagementConfig();
         try {
-            getChannel().exchangeDeclare(exchangeName, "direct", rabbitMQManagementConfig.getPersistence());
+            getChannel().exchangeDeclare(exchangeName, DIRECT, rabbitMQManagementConfig.getPersistence());
         } catch (Exception e) {
             logger.error("Exception setting up exchange: \"{}\"", exchangeName, e);
             throw e;

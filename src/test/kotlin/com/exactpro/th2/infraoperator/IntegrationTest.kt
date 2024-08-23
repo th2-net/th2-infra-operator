@@ -20,6 +20,7 @@ import com.exactpro.th2.infraoperator.configuration.OperatorConfig
 import com.exactpro.th2.infraoperator.configuration.fields.RabbitMQManagementConfig
 import com.exactpro.th2.infraoperator.spec.shared.PrometheusConfiguration
 import com.exactpro.th2.infraoperator.spec.strategy.linkresolver.mq.RabbitMQContext
+import com.exactpro.th2.infraoperator.spec.strategy.linkresolver.mq.RabbitMQContext.TOPIC
 import com.exactpro.th2.infraoperator.util.JsonUtils.YAML_MAPPER
 import com.exactpro.th2.infraoperator.util.createKubernetesClient
 import com.fasterxml.jackson.module.kotlin.readValue
@@ -44,6 +45,10 @@ import java.nio.file.Files
 import java.nio.file.Path
 import kotlin.io.path.absolutePathString
 import kotlin.io.path.createDirectories
+import kotlin.test.assertEquals
+import kotlin.test.assertFalse
+import kotlin.test.assertNotNull
+import kotlin.test.assertTrue
 import io.fabric8.kubernetes.api.model.apiextensions.v1.CustomResourceDefinition as CRD
 
 @Tag("integration-test")
@@ -58,9 +63,9 @@ class IntegrationTest {
 
     private lateinit var operatorConfig: Path
 
-    private lateinit var k3s: K3sContainer
+    private lateinit var k3sContainer: K3sContainer
 
-    private lateinit var rabbitMQ: RabbitMQContainer
+    private lateinit var rabbitMQContainer: RabbitMQContainer
 
     private lateinit var kubeClient: KubernetesClient
 
@@ -77,26 +82,28 @@ class IntegrationTest {
         operatorConfig = configDir.resolve("infra-operator.yml")
         configDir.createDirectories()
 
-        k3s = K3sContainer(K3S_DOCKER_IMAGE)
+        k3sContainer = K3sContainer(K3S_DOCKER_IMAGE)
             .withLogConsumer(Slf4jLogConsumer(getLogger("K3S")).withSeparateOutputStreams())
             .also(Startable::start)
 
-        rabbitMQ = RabbitMQContainer(RABBITMQ_DOCKER_IMAGE)
+        rabbitMQContainer = RabbitMQContainer(RABBITMQ_DOCKER_IMAGE)
             .withLogConsumer(Slf4jLogConsumer(getLogger("RABBIT_MQ")).withSeparateOutputStreams())
             .also(Startable::start)
 
-        K_LOGGER.info { "RabbitMQ URL: ${rabbitMQ.httpUrl}" }
+        K_LOGGER.info { "RabbitMQ URL: ${rabbitMQContainer.httpUrl}" }
 
-        println(k3s.kubeConfigYaml)
-        Files.writeString(kubeConfig, k3s.kubeConfigYaml)
-        YAML_MAPPER.writeValue(operatorConfig.toFile(), createConfig(rabbitMQ))
+        println(k3sContainer.kubeConfigYaml)
+        Files.writeString(kubeConfig, k3sContainer.kubeConfigYaml)
+        YAML_MAPPER.writeValue(operatorConfig.toFile(), createConfig(rabbitMQContainer))
 
         System.setProperty(Config.KUBERNETES_KUBECONFIG_FILE, kubeConfig.absolutePathString())
         System.setProperty(CONFIG_FILE_SYSTEM_PROPERTY, operatorConfig.absolutePathString())
 
         kubeClient = createKubernetesClient().apply { configureK3s() }
-        rabbitMQClient = createRabbitMQClient(rabbitMQ)
+        rabbitMQClient = createRabbitMQClient(rabbitMQContainer)
         controller = Th2CrdController().apply(Th2CrdController::start)
+
+        rabbitMQClient.assertExchange(TOPIC_EXCHANGE, TOPIC)
     }
 
     @AfterAll
@@ -104,11 +111,11 @@ class IntegrationTest {
         if(this::kubeClient.isInitialized) {
             kubeClient.close()
         }
-        if(this::k3s.isInitialized) {
-            k3s.stop()
+        if(this::k3sContainer.isInitialized) {
+            k3sContainer.stop()
         }
-        if(this::rabbitMQ.isInitialized) {
-            rabbitMQ.stop()
+        if(this::rabbitMQContainer.isInitialized) {
+            rabbitMQContainer.stop()
         }
     }
 
@@ -141,13 +148,6 @@ class IntegrationTest {
         private val RABBITMQ_DOCKER_IMAGE = DockerImageName.parse("rabbitmq:3.12.6-management")
         private val K3S_DOCKER_IMAGE = DockerImageName.parse("rancher/k3s:v1.21.3-k3s1")
 
-        private fun createRabbitMQClient(rabbitMQ: RabbitMQContainer) = RabbitMQContext.createClient(
-            rabbitMQ.host,
-            rabbitMQ.httpPort,
-            rabbitMQ.adminUsername,
-            rabbitMQ.adminPassword,
-        )
-
         private fun createConfig(rabbitMQ: RabbitMQContainer) = OperatorConfig(
             rabbitMQManagement = RabbitMQManagementConfig(
                 host = rabbitMQ.host,
@@ -157,6 +157,7 @@ class IntegrationTest {
                 exchangeName = TOPIC_EXCHANGE,
                 username = rabbitMQ.adminUsername,
                 password = rabbitMQ.adminPassword,
+                persistence = true,
             ),
             prometheusConfiguration = PrometheusConfiguration(
                 "0.0.0.0",
@@ -164,6 +165,26 @@ class IntegrationTest {
                 false.toString(),
             ),
         )
+
+        private fun createRabbitMQClient(rabbitMQ: RabbitMQContainer) = RabbitMQContext.createClient(
+            rabbitMQ.host,
+            rabbitMQ.httpPort,
+            rabbitMQ.adminUsername,
+            rabbitMQ.adminPassword,
+        )
+
+        private fun Client.assertExchange(exchange: String, type: String) {
+            val exchangeInfo = exchanges.asSequence()
+                .filter { it.name == exchange }
+                .firstOrNull()
+            assertNotNull(exchangeInfo, "Exchange '$exchange' isn't found")
+            assertEquals(type, exchangeInfo.type, "Exchange '$exchange' has incorrect type")
+            assertEquals(V_HOST, exchangeInfo.vhost, "Exchange '$exchange' has incorrect vHost")
+            assertEquals(emptyMap(), exchangeInfo.arguments, "Exchange '$exchange' has arguments")
+            assertTrue(exchangeInfo.isDurable, "Exchange '$exchange' isn't durable")
+            assertFalse(exchangeInfo.isInternal, "Exchange '$exchange' is internal")
+            assertFalse(exchangeInfo.isAutoDelete, "Exchange '$exchange' is auto delete")
+        }
 
         private fun KubernetesClient.configureK3s() {
             CRD_RESOURCE_NAME.asSequence()
