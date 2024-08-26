@@ -58,12 +58,14 @@ fun KubernetesClient.deleteNamespace(
 fun KubernetesClient.createSecret(
     namespace: String,
     name: String,
+    annotations: Map<String, String>,
     data: Map<String, String>,
 ) {
     resource(Secret().apply {
         metadata = ObjectMeta().apply {
             this.name = name
             this.namespace = namespace
+            this.annotations.putAll(annotations)
         }
         this.type = SECRET_TYPE_OPAQUE
         this.data = data.mapValues { (_, value) -> String(Base64.getEncoder().encode(value.toByteArray())); }
@@ -83,12 +85,14 @@ fun KubernetesClient.deleteSecret(
 fun KubernetesClient.createConfigMap(
     namespace: String,
     name: String,
+    annotations: Map<String, String>,
     data: Map<String, String>,
 ) {
     resource(ConfigMap().apply {
         metadata = ObjectMeta().apply {
             this.name = name
             this.namespace = namespace
+            this.annotations.putAll(annotations)
         }
         this.data.putAll(data)
     }).create()

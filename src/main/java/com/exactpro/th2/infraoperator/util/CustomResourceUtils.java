@@ -38,7 +38,7 @@ public class CustomResourceUtils {
 
     public static final long RESYNC_TIME = 180000;
 
-    private static final String GIT_COMMIT_HASH = "th2.exactpro.com/git-commit-hash";
+    public static final String GIT_COMMIT_HASH = "th2.exactpro.com/git-commit-hash";
 
     private static final int SHORT_HASH_LENGTH = 8;
 

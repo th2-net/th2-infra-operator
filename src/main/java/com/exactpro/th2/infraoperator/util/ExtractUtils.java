@@ -24,7 +24,7 @@ import org.apache.commons.lang3.StringUtils;
 
 public class ExtractUtils {
 
-    static final String KEY_SOURCE_HASH = "th2.exactpro.com/source-hash";
+    public static final String KEY_SOURCE_HASH = "th2.exactpro.com/source-hash";
 
     public static final String REFRESH_TOKEN_ALIAS = "refresh-token";
 
