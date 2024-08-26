@@ -16,31 +16,50 @@
 
 package com.exactpro.th2.infraoperator.integration
 
-import com.exactpro.th2.infraoperator.configuration.OperatorConfig.Companion.DEFAULT_RABBITMQ_CONFIGMAP_NAME
-import com.exactpro.th2.infraoperator.configuration.fields.RabbitMQConfig
-import com.exactpro.th2.infraoperator.configuration.fields.RabbitMQConfig.Companion.CONFIG_MAP_RABBITMQ_PROP_NAME
+import com.exactpro.th2.infraoperator.operator.manager.impl.ConfigMapEventHandler.BOOK_CONFIG_CM_NAME
+import com.exactpro.th2.infraoperator.operator.manager.impl.ConfigMapEventHandler.DEFAULT_BOOK
 import com.exactpro.th2.infraoperator.operator.manager.impl.ConfigMapEventHandler.SECRET_TYPE_OPAQUE
-import com.exactpro.th2.infraoperator.util.JsonUtils.JSON_MAPPER
 import io.fabric8.kubernetes.api.model.ConfigMap
 import io.fabric8.kubernetes.api.model.Namespace
 import io.fabric8.kubernetes.api.model.ObjectMeta
 import io.fabric8.kubernetes.api.model.Secret
 import io.fabric8.kubernetes.client.KubernetesClient
+import io.fabric8.kubernetes.client.dsl.Deletable
+import io.github.oshai.kotlinlogging.KotlinLogging
+import org.testcontainers.shaded.org.awaitility.Awaitility.await
 import java.util.Base64
+import java.util.concurrent.TimeUnit
+
+private val K_LOGGER = KotlinLogging.logger {}
 
 fun KubernetesClient.createNamespace(
     namespace: String,
+    timeout: Long = 200,
+    unit: TimeUnit = TimeUnit.MILLISECONDS,
 ) {
     resource(Namespace().apply {
         metadata = ObjectMeta().apply {
             name = namespace
         }
     }).create()
+
+    await("createNamespace('$namespace')")
+        .timeout(timeout, unit)
+        .until { namespaces().withName(namespace) != null }
+}
+
+fun KubernetesClient.deleteNamespace(
+    namespace: String,
+    timeout: Long = 200,
+    unit: TimeUnit = TimeUnit.MILLISECONDS,
+) {
+    namespaces().withName(namespace)
+        ?.awaitDeleteResource("deleteNamespace('$namespace')", timeout, unit)
 }
 
 fun KubernetesClient.createSecret(
-    name: String,
     namespace: String,
+    name: String,
     data: Map<String, String>,
 ) {
     resource(Secret().apply {
@@ -53,15 +72,63 @@ fun KubernetesClient.createSecret(
     }).create()
 }
 
-fun KubernetesClient.createRabbitMQAppConfigCfgMap(
+fun KubernetesClient.deleteSecret(
     namespace: String,
-    data: RabbitMQConfig,
+    name: String,
+    timeout: Long = 200,
+    unit: TimeUnit = TimeUnit.MILLISECONDS,
+) {
+    secrets().inNamespace(namespace)?.withName(name)
+        ?.awaitDeleteResource("deleteSecret('$namespace/$name')", timeout, unit)
+}
+
+fun KubernetesClient.createConfigMap(
+    namespace: String,
+    name: String,
+    data: Map<String, String>,
 ) {
     resource(ConfigMap().apply {
         metadata = ObjectMeta().apply {
-            this.name = DEFAULT_RABBITMQ_CONFIGMAP_NAME
+            this.name = name
             this.namespace = namespace
         }
-        this.data[CONFIG_MAP_RABBITMQ_PROP_NAME] = JSON_MAPPER.writeValueAsString(data)
+        this.data.putAll(data)
     }).create()
+}
+
+fun KubernetesClient.deleteConfigMap(
+    namespace: String,
+    name: String,
+    timeout: Long = 200,
+    unit: TimeUnit = TimeUnit.MILLISECONDS,
+) {
+    configMaps().inNamespace(namespace)?.withName(name)
+        ?.awaitDeleteResource("deleteConfigMap('$namespace/$name')", timeout, unit)
+}
+
+fun KubernetesClient.createBookConfigCfgMap(
+    namespace: String,
+    book: String
+) {
+    resource(ConfigMap().apply {
+        metadata = ObjectMeta().apply {
+            this.name = BOOK_CONFIG_CM_NAME
+            this.namespace = namespace
+        }
+        this.data[DEFAULT_BOOK] = book
+    }).create()
+}
+
+private fun Deletable.awaitDeleteResource(
+    alias: String,
+    timeout: Long,
+    unit: TimeUnit,
+) {
+    delete().also {
+        K_LOGGER.info { "Delete status ($alias): $it" }
+        if (it.isEmpty()) return
+    }
+    await(alias)
+        .timeout(timeout, unit)
+        .until { delete().also { K_LOGGER.info { "Delete status ($alias): $it" }}.isEmpty() }
 }

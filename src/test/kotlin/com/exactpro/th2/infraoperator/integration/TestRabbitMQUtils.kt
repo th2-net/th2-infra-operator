@@ -29,7 +29,7 @@ fun Client.assertUser(
     user: String,
     vHost: String,
     permissions: RabbitMQNamespacePermissions,
-    timeout: Long = 500,
+    timeout: Long = 200,
     unit: TimeUnit = TimeUnit.MILLISECONDS,
 ) {
     await("assertUser('$user')")
@@ -47,11 +47,21 @@ fun Client.assertUser(
     assertEquals(permissions.write, userPermissions.write, "User permission '$user' has incorrect write permission")
 }
 
+fun Client.assertNoUser(
+    user: String,
+    timeout: Long = 200,
+    unit: TimeUnit = TimeUnit.MILLISECONDS,
+) {
+    await("assertNoUser('$user')")
+        .timeout(timeout, unit)
+        .until { users.firstOrNull { it.name == user } == null }
+}
+
 fun Client.assertExchange(
     exchange: String,
     type: String,
     vHost: String,
-    timeout: Long = 500,
+    timeout: Long = 200,
     unit: TimeUnit = TimeUnit.MILLISECONDS,
 ) {
     await("assertExchange('$exchange')")
@@ -66,6 +76,16 @@ fun Client.assertExchange(
     assertTrue(exchangeInfo.isDurable, "Exchange '$exchange' isn't durable")
     assertFalse(exchangeInfo.isInternal, "Exchange '$exchange' is internal")
     assertFalse(exchangeInfo.isAutoDelete, "Exchange '$exchange' is auto delete")
+}
+
+fun Client.assertNoExchange(
+    exchange: String,
+    timeout: Long = 200,
+    unit: TimeUnit = TimeUnit.MILLISECONDS,
+) {
+    await("assertNoExchange('$exchange')")
+        .timeout(timeout, unit)
+        .until { exchanges.firstOrNull { it.name == exchange } == null }
 }
 
 fun Client.assertQueue(
@@ -87,4 +107,14 @@ fun Client.assertQueue(
     assertTrue(queueInfo.isDurable, "Queue '$queue' isn't durable")
     assertFalse(queueInfo.isExclusive, "Queue '$queue' is exclusive")
     assertFalse(queueInfo.isAutoDelete, "Queue '$queue' is auto delete")
+}
+
+fun Client.assertNoQueue(
+    queue: String,
+    timeout: Long = 200,
+    unit: TimeUnit = TimeUnit.MILLISECONDS,
+) {
+    await("assertQueue('$queue')")
+        .timeout(timeout, unit)
+        .until { queues.firstOrNull { it.name == queue } == null }
 }

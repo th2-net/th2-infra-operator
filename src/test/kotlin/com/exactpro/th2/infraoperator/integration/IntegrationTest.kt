@@ -18,8 +18,10 @@ package com.exactpro.th2.infraoperator.integration
 import com.exactpro.th2.infraoperator.Th2CrdController
 import com.exactpro.th2.infraoperator.configuration.ConfigLoader.CONFIG_FILE_SYSTEM_PROPERTY
 import com.exactpro.th2.infraoperator.configuration.OperatorConfig
+import com.exactpro.th2.infraoperator.configuration.OperatorConfig.Companion.DEFAULT_RABBITMQ_CONFIGMAP_NAME
 import com.exactpro.th2.infraoperator.configuration.OperatorConfig.Companion.RABBITMQ_SECRET_PASSWORD_KEY
 import com.exactpro.th2.infraoperator.configuration.fields.RabbitMQConfig
+import com.exactpro.th2.infraoperator.configuration.fields.RabbitMQConfig.Companion.CONFIG_MAP_RABBITMQ_PROP_NAME
 import com.exactpro.th2.infraoperator.configuration.fields.RabbitMQManagementConfig
 import com.exactpro.th2.infraoperator.configuration.fields.RabbitMQNamespacePermissions
 import com.exactpro.th2.infraoperator.spec.shared.PrometheusConfiguration
@@ -29,6 +31,7 @@ import com.exactpro.th2.infraoperator.spec.strategy.linkresolver.mq.RabbitMQCont
 import com.exactpro.th2.infraoperator.spec.strategy.linkresolver.mq.RabbitMQContext.DIRECT
 import com.exactpro.th2.infraoperator.spec.strategy.linkresolver.mq.RabbitMQContext.TOPIC
 import com.exactpro.th2.infraoperator.spec.strategy.linkresolver.mq.RabbitMQContext.toExchangeName
+import com.exactpro.th2.infraoperator.util.JsonUtils.JSON_MAPPER
 import com.exactpro.th2.infraoperator.util.JsonUtils.YAML_MAPPER
 import com.exactpro.th2.infraoperator.util.createKubernetesClient
 import com.fasterxml.jackson.module.kotlin.readValue
@@ -38,7 +41,9 @@ import io.fabric8.kubernetes.client.KubernetesClient
 import io.fabric8.kubernetes.client.dsl.NamespaceableResource
 import io.github.oshai.kotlinlogging.KotlinLogging
 import org.junit.jupiter.api.AfterAll
+import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.BeforeAll
+import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Tag
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.TestInstance
@@ -51,6 +56,7 @@ import org.testcontainers.lifecycle.Startable
 import org.testcontainers.utility.DockerImageName
 import java.nio.file.Files
 import java.nio.file.Path
+import java.util.concurrent.TimeUnit.SECONDS
 import kotlin.io.path.absolutePathString
 import kotlin.io.path.createDirectories
 import io.fabric8.kubernetes.api.model.apiextensions.v1.CustomResourceDefinition as CRD
@@ -123,27 +129,37 @@ class IntegrationTest {
         }
     }
 
-    @Test
-    fun `create namespace`() {
-        val namespace = "${PREFIX}test"
-        kubeClient.createNamespace(namespace)
-        kubeClient.createSecret("rabbitmq", namespace, mapOf(RABBITMQ_SECRET_PASSWORD_KEY to "test-pass"))
-        kubeClient.createRabbitMQAppConfigCfgMap(
-            namespace,
-            createRabbitMQConfig(rabbitMQContainer, namespace)
-        )
+    @BeforeEach
+    fun beforeEach() {
+        kubeClient.createNamespace(NAMESPACE)
 
-        rabbitMQClient.assertUser(namespace, V_HOST, RABBIT_MQ_NAMESPACE_PERMISSIONS)
-        rabbitMQClient.assertExchange(toExchangeName(namespace), DIRECT, V_HOST)
-        rabbitMQClient.assertQueue(createMstoreQueue(namespace), QUEUE_CLASSIC_TYPE, V_HOST)
-        rabbitMQClient.assertQueue(createEstoreQueue(namespace), QUEUE_CLASSIC_TYPE, V_HOST)
+        kubeClient.createRabbitMQSecret(NAMESPACE)
+        kubeClient.createRabbitMQAppConfigCfgMap(NAMESPACE, createRabbitMQConfig(rabbitMQContainer, NAMESPACE))
+        rabbitMQClient.assertUser(NAMESPACE, V_HOST, RABBIT_MQ_NAMESPACE_PERMISSIONS)
+        rabbitMQClient.assertExchange(toExchangeName(NAMESPACE), DIRECT, V_HOST)
+        rabbitMQClient.assertQueue(createMstoreQueue(NAMESPACE), QUEUE_CLASSIC_TYPE, V_HOST)
+        rabbitMQClient.assertQueue(createEstoreQueue(NAMESPACE), QUEUE_CLASSIC_TYPE, V_HOST)
+
+//        kubeClient.createBookConfigCfgMap(NAMESPACE, )
+    }
+
+    @AfterEach
+    fun afterEach() {
+        kubeClient.deleteRabbitMQAppConfigCfgMap(NAMESPACE)
+        kubeClient.deleteRabbitMQSecret(NAMESPACE)
+        kubeClient.deleteNamespace(NAMESPACE,10, SECONDS)
+
+        rabbitMQClient.assertNoQueue(createEstoreQueue(NAMESPACE))
+        rabbitMQClient.assertNoQueue(createMstoreQueue(NAMESPACE))
+        rabbitMQClient.assertNoExchange(toExchangeName(NAMESPACE))
+        rabbitMQClient.assertNoUser(NAMESPACE)
     }
 
     @Test
     fun test() {
 //        val controller = Th2CrdController()
 //        controller.start()
-//        Thread.sleep(5_000)
+//        Thread.sleep(1_000)
 
 //        createKubernetesClient().use { client ->
 //            println("NAME_SPACE ${client.namespaces().list().items.map{ it.metadata.name }}")
@@ -165,6 +181,7 @@ class IntegrationTest {
 
         private const val QUEUE_CLASSIC_TYPE = "classic"
         private const val PREFIX = "th2-"
+        private const val NAMESPACE = "${PREFIX}test"
         private const val V_HOST = "/"
         private const val TOPIC_EXCHANGE = "global-exchange"
 
@@ -218,5 +235,34 @@ class IntegrationTest {
             requireNotNull(IntegrationTest::class.java.classLoader.getResource("crds/$resourceName")) {
                 "Resource '$resourceName' isn't found"
             }.let(YAML_MAPPER::readValue)
+
+        private fun KubernetesClient.createRabbitMQSecret(
+            namespace: String,
+        ) {
+            createSecret(namespace, "rabbitmq", mapOf(RABBITMQ_SECRET_PASSWORD_KEY to "test-pass"))
+        }
+
+        private fun KubernetesClient.deleteRabbitMQSecret(
+            namespace: String,
+        ) {
+            deleteSecret(namespace, "rabbitmq")
+        }
+
+        private fun KubernetesClient.createRabbitMQAppConfigCfgMap(
+            namespace: String,
+            data: RabbitMQConfig,
+        ) {
+            createConfigMap(
+                namespace,
+                DEFAULT_RABBITMQ_CONFIGMAP_NAME,
+                mapOf(CONFIG_MAP_RABBITMQ_PROP_NAME to JSON_MAPPER.writeValueAsString(data))
+            )
+        }
+
+        fun KubernetesClient.deleteRabbitMQAppConfigCfgMap(
+            namespace: String,
+        ) {
+            deleteConfigMap(namespace, DEFAULT_RABBITMQ_CONFIGMAP_NAME)
+        }
     }
 }

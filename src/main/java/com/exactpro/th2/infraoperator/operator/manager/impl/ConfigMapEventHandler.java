@@ -83,7 +83,7 @@ public class ConfigMapEventHandler implements Watcher<ConfigMap> {
 
     public static final String BOOK_CONFIG_CM_NAME = "book-config";
 
-    private static final String DEFAULT_BOOK = "defaultBook";
+    public static final String DEFAULT_BOOK = "defaultBook";
 
     private static final Map<String, ConfigMapMeta> cmMapping = Map.of(
             LOGGING_CM_NAME, new ConfigMapMeta(LOGGING_ALIAS, ""),
