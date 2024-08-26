@@ -24,6 +24,12 @@ import com.exactpro.th2.infraoperator.configuration.fields.RabbitMQConfig
 import com.exactpro.th2.infraoperator.configuration.fields.RabbitMQConfig.Companion.CONFIG_MAP_RABBITMQ_PROP_NAME
 import com.exactpro.th2.infraoperator.configuration.fields.RabbitMQManagementConfig
 import com.exactpro.th2.infraoperator.configuration.fields.RabbitMQNamespacePermissions
+import com.exactpro.th2.infraoperator.operator.manager.impl.ConfigMapEventHandler.BOOK_CONFIG_CM_NAME
+import com.exactpro.th2.infraoperator.operator.manager.impl.ConfigMapEventHandler.CRADLE_MANAGER_CM_NAME
+import com.exactpro.th2.infraoperator.operator.manager.impl.ConfigMapEventHandler.DEFAULT_BOOK
+import com.exactpro.th2.infraoperator.operator.manager.impl.ConfigMapEventHandler.GRPC_ROUTER_CM_NAME
+import com.exactpro.th2.infraoperator.operator.manager.impl.ConfigMapEventHandler.LOGGING_CM_NAME
+import com.exactpro.th2.infraoperator.operator.manager.impl.ConfigMapEventHandler.MQ_ROUTER_CM_NAME
 import com.exactpro.th2.infraoperator.spec.shared.PrometheusConfiguration
 import com.exactpro.th2.infraoperator.spec.strategy.linkresolver.createEstoreQueue
 import com.exactpro.th2.infraoperator.spec.strategy.linkresolver.createMstoreQueue
@@ -56,7 +62,7 @@ import org.testcontainers.lifecycle.Startable
 import org.testcontainers.utility.DockerImageName
 import java.nio.file.Files
 import java.nio.file.Path
-import java.util.concurrent.TimeUnit.SECONDS
+import java.util.concurrent.TimeUnit.MINUTES
 import kotlin.io.path.absolutePathString
 import kotlin.io.path.createDirectories
 import io.fabric8.kubernetes.api.model.apiextensions.v1.CustomResourceDefinition as CRD
@@ -140,14 +146,24 @@ class IntegrationTest {
         rabbitMQClient.assertQueue(createMstoreQueue(NAMESPACE), QUEUE_CLASSIC_TYPE, V_HOST)
         rabbitMQClient.assertQueue(createEstoreQueue(NAMESPACE), QUEUE_CLASSIC_TYPE, V_HOST)
 
-//        kubeClient.createBookConfigCfgMap(NAMESPACE, )
+        kubeClient.createBookConfigCfgMap(NAMESPACE, BOOK)
+        kubeClient.createLoggingCfgMap(NAMESPACE)
+        kubeClient.createMQRouterCfgMap(NAMESPACE)
+        kubeClient.createGrpcRouterCfgMap(NAMESPACE)
+        kubeClient.createCradleManagerCfgMap(NAMESPACE)
     }
 
     @AfterEach
     fun afterEach() {
+        kubeClient.deleteCradleManagerCfgMap(NAMESPACE)
+        kubeClient.deleteGrpcRouterCfgMap(NAMESPACE)
+        kubeClient.deleteMQRouterCfgMap(NAMESPACE)
+        kubeClient.deleteLoggingCfgMap(NAMESPACE)
+        kubeClient.deleteBookConfigCfgMap(NAMESPACE)
+
         kubeClient.deleteRabbitMQAppConfigCfgMap(NAMESPACE)
         kubeClient.deleteRabbitMQSecret(NAMESPACE)
-        kubeClient.deleteNamespace(NAMESPACE,10, SECONDS)
+        kubeClient.deleteNamespace(NAMESPACE,1, MINUTES)
 
         rabbitMQClient.assertNoQueue(createEstoreQueue(NAMESPACE))
         rabbitMQClient.assertNoQueue(createMstoreQueue(NAMESPACE))
@@ -184,6 +200,7 @@ class IntegrationTest {
         private const val NAMESPACE = "${PREFIX}test"
         private const val V_HOST = "/"
         private const val TOPIC_EXCHANGE = "global-exchange"
+        private const val BOOK = "test_book"
 
         private val RABBITMQ_DOCKER_IMAGE = DockerImageName.parse("rabbitmq:3.12.6-management")
         private val K3S_DOCKER_IMAGE = DockerImageName.parse("rancher/k3s:v1.21.3-k3s1")
@@ -264,5 +281,46 @@ class IntegrationTest {
         ) {
             deleteConfigMap(namespace, DEFAULT_RABBITMQ_CONFIGMAP_NAME)
         }
+
+        fun KubernetesClient.createBookConfigCfgMap(
+            namespace: String,
+            book: String
+        ) { createConfigMap(namespace, BOOK_CONFIG_CM_NAME, mapOf(DEFAULT_BOOK to book)) }
+
+        fun KubernetesClient.deleteBookConfigCfgMap(
+            namespace: String,
+        ) { deleteConfigMap(namespace, BOOK_CONFIG_CM_NAME) }
+
+        fun KubernetesClient.createLoggingCfgMap(
+            namespace: String
+        ) { createConfigMap(namespace, LOGGING_CM_NAME, mapOf("log4j2.properties" to "test-content")) }
+
+        fun KubernetesClient.deleteLoggingCfgMap(
+            namespace: String,
+        ) { deleteConfigMap(namespace, LOGGING_CM_NAME) }
+
+        fun KubernetesClient.createMQRouterCfgMap(
+            namespace: String
+        ) { createConfigMap(namespace, MQ_ROUTER_CM_NAME, mapOf("mq_router.json" to "test-content")) }
+
+        fun KubernetesClient.deleteMQRouterCfgMap(
+            namespace: String,
+        ) { deleteConfigMap(namespace, MQ_ROUTER_CM_NAME) }
+
+        fun KubernetesClient.createGrpcRouterCfgMap(
+            namespace: String
+        ) { createConfigMap(namespace, GRPC_ROUTER_CM_NAME, mapOf("grpc_router.json" to "test-content")) }
+
+        fun KubernetesClient.deleteGrpcRouterCfgMap(
+            namespace: String,
+        ) { deleteConfigMap(namespace, GRPC_ROUTER_CM_NAME) }
+
+        fun KubernetesClient.createCradleManagerCfgMap(
+            namespace: String
+        ) { createConfigMap(namespace, CRADLE_MANAGER_CM_NAME, mapOf("cradle_manager.json" to "test-content")) }
+
+        fun KubernetesClient.deleteCradleManagerCfgMap(
+            namespace: String,
+        ) { deleteConfigMap(namespace, CRADLE_MANAGER_CM_NAME) }
     }
 }

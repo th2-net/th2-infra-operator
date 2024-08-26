@@ -16,8 +16,6 @@
 
 package com.exactpro.th2.infraoperator.integration
 
-import com.exactpro.th2.infraoperator.operator.manager.impl.ConfigMapEventHandler.BOOK_CONFIG_CM_NAME
-import com.exactpro.th2.infraoperator.operator.manager.impl.ConfigMapEventHandler.DEFAULT_BOOK
 import com.exactpro.th2.infraoperator.operator.manager.impl.ConfigMapEventHandler.SECRET_TYPE_OPAQUE
 import io.fabric8.kubernetes.api.model.ConfigMap
 import io.fabric8.kubernetes.api.model.Namespace
@@ -104,19 +102,6 @@ fun KubernetesClient.deleteConfigMap(
 ) {
     configMaps().inNamespace(namespace)?.withName(name)
         ?.awaitDeleteResource("deleteConfigMap('$namespace/$name')", timeout, unit)
-}
-
-fun KubernetesClient.createBookConfigCfgMap(
-    namespace: String,
-    book: String
-) {
-    resource(ConfigMap().apply {
-        metadata = ObjectMeta().apply {
-            this.name = BOOK_CONFIG_CM_NAME
-            this.namespace = namespace
-        }
-        this.data[DEFAULT_BOOK] = book
-    }).create()
 }
 
 private fun Deletable.awaitDeleteResource(
