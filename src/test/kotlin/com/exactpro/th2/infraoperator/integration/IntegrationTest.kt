@@ -64,6 +64,7 @@ import org.testcontainers.lifecycle.Startable
 import org.testcontainers.utility.DockerImageName
 import java.nio.file.Files
 import java.nio.file.Path
+import java.util.UUID
 import java.util.concurrent.TimeUnit.MINUTES
 import java.util.concurrent.atomic.AtomicLong
 import kotlin.io.path.absolutePathString
@@ -144,9 +145,9 @@ class IntegrationTest {
     fun beforeEach() {
         val gitHash = RESOURCE_GIT_HASH_COUNTER.incrementAndGet().toString()
         kubeClient.createNamespace(TH2_NAMESPACE)
-
         kubeClient.createRabbitMQSecret(TH2_NAMESPACE, gitHash)
         kubeClient.createRabbitMQAppConfigCfgMap(TH2_NAMESPACE, gitHash, createRabbitMQConfig(rabbitMQContainer, TH2_NAMESPACE))
+
         rabbitMQClient.assertUser(TH2_NAMESPACE, RABBIT_MQ_V_HOST, RABBIT_MQ_NAMESPACE_PERMISSIONS)
         rabbitMQClient.assertExchange(toExchangeName(TH2_NAMESPACE), DIRECT, RABBIT_MQ_V_HOST)
         rabbitMQClient.assertQueue(createMstoreQueue(TH2_NAMESPACE), RABBIT_MQ_QUEUE_CLASSIC_TYPE, RABBIT_MQ_V_HOST)
@@ -161,14 +162,6 @@ class IntegrationTest {
 
     @AfterEach
     fun afterEach() {
-        kubeClient.deleteCradleManagerCfgMap(TH2_NAMESPACE)
-        kubeClient.deleteGrpcRouterCfgMap(TH2_NAMESPACE)
-        kubeClient.deleteMQRouterCfgMap(TH2_NAMESPACE)
-        kubeClient.deleteLoggingCfgMap(TH2_NAMESPACE)
-        kubeClient.deleteBookConfigCfgMap(TH2_NAMESPACE)
-
-        kubeClient.deleteRabbitMQAppConfigCfgMap(TH2_NAMESPACE)
-        kubeClient.deleteRabbitMQSecret(TH2_NAMESPACE)
         kubeClient.deleteNamespace(TH2_NAMESPACE, 1, MINUTES)
 
         rabbitMQClient.assertNoQueue(createEstoreQueue(TH2_NAMESPACE))
@@ -178,7 +171,40 @@ class IntegrationTest {
     }
 
     @Test
-    fun test() {
+    fun `add mstore`() {
+//        val controller = Th2CrdController()
+//        controller.start()
+//        Thread.sleep(1_000)
+
+//        createKubernetesClient().use { client ->
+//            println("NAME_SPACE ${client.namespaces().list().items.map{ it.metadata.name }}")
+//        }
+    }
+
+    @Test
+    fun `add estore`() {
+//        val controller = Th2CrdController()
+//        controller.start()
+//        Thread.sleep(1_000)
+
+//        createKubernetesClient().use { client ->
+//            println("NAME_SPACE ${client.namespaces().list().items.map{ it.metadata.name }}")
+//        }
+    }
+
+    @Test
+    fun `add core component`() {
+//        val controller = Th2CrdController()
+//        controller.start()
+//        Thread.sleep(1_000)
+
+//        createKubernetesClient().use { client ->
+//            println("NAME_SPACE ${client.namespaces().list().items.map{ it.metadata.name }}")
+//        }
+    }
+
+    @Test
+    fun `add component`() {
 //        val controller = Th2CrdController()
 //        controller.start()
 //        Thread.sleep(1_000)
@@ -289,7 +315,7 @@ class IntegrationTest {
                 namespace,
                 "rabbitmq",
                 createAnnotations(gitHash, TEST_CONTENT),
-                mapOf(RABBITMQ_SECRET_PASSWORD_KEY to TEST_CONTENT),
+                mapOf(RABBITMQ_SECRET_PASSWORD_KEY to UUID.randomUUID().toString()),
             )
         }
 

@@ -172,7 +172,7 @@ public class ConfigMapEventHandler implements Watcher<ConfigMap> {
                         logger.info("box-definition(s) have been updated");
                         processTimer.observeDuration();
                     } else {
-                        logger.info("RabbitMQ ConfigMap data hasn't changed");
+                            logger.info("RabbitMQ ConfigMap data hasn't changed");
                     }
                 } finally {
                     lock.unlock();

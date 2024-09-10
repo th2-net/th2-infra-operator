@@ -105,6 +105,7 @@ public final class RabbitMQContext {
     public static void setUpRabbitMqForNamespace(String namespace) {
         try {
             createUser(namespace);
+            declareTopicExchange();
             declareExchange(toExchangeName(namespace));
             createStoreQueues(namespace);
         } catch (Exception e) {

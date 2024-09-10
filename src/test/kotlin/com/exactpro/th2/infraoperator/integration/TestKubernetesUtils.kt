@@ -25,8 +25,11 @@ import io.fabric8.kubernetes.client.KubernetesClient
 import io.fabric8.kubernetes.client.dsl.Deletable
 import io.github.oshai.kotlinlogging.KotlinLogging
 import org.testcontainers.shaded.org.awaitility.Awaitility.await
+import java.time.Instant
 import java.util.Base64
+import java.util.UUID
 import java.util.concurrent.TimeUnit
+import java.util.concurrent.atomic.AtomicInteger
 
 private val K_LOGGER = KotlinLogging.logger {}
 
@@ -35,11 +38,11 @@ fun KubernetesClient.createNamespace(
     timeout: Long = 200,
     unit: TimeUnit = TimeUnit.MILLISECONDS,
 ) {
-    resource(Namespace().apply {
-        metadata = ObjectMeta().apply {
-            name = namespace
-        }
-    }).create()
+    resource(
+        Namespace().apply {
+            metadata = createMeta(namespace, null)
+        },
+    ).create()
 
     await("createNamespace('$namespace')")
         .timeout(timeout, unit)
@@ -51,7 +54,8 @@ fun KubernetesClient.deleteNamespace(
     timeout: Long = 200,
     unit: TimeUnit = TimeUnit.MILLISECONDS,
 ) {
-    namespaces().withName(namespace)
+    namespaces()
+        .withName(namespace)
         ?.awaitDeleteResource("deleteNamespace('$namespace')", timeout, unit)
 }
 
@@ -61,15 +65,16 @@ fun KubernetesClient.createSecret(
     annotations: Map<String, String>,
     data: Map<String, String>,
 ) {
-    resource(Secret().apply {
-        metadata = ObjectMeta().apply {
-            this.name = name
-            this.namespace = namespace
-            this.annotations.putAll(annotations)
-        }
-        this.type = SECRET_TYPE_OPAQUE
-        this.data = data.mapValues { (_, value) -> String(Base64.getEncoder().encode(value.toByteArray())); }
-    }).create()
+    resource(
+        Secret().apply {
+            metadata = createMeta(name, namespace, annotations)
+            this.type = SECRET_TYPE_OPAQUE
+            this.data =
+                data.mapValues { (_, value) ->
+                    String(Base64.getEncoder().encode(value.toByteArray()))
+                }
+        },
+    ).create()
 }
 
 fun KubernetesClient.deleteSecret(
@@ -78,7 +83,9 @@ fun KubernetesClient.deleteSecret(
     timeout: Long = 200,
     unit: TimeUnit = TimeUnit.MILLISECONDS,
 ) {
-    secrets().inNamespace(namespace)?.withName(name)
+    secrets()
+        .inNamespace(namespace)
+        ?.withName(name)
         ?.awaitDeleteResource("deleteSecret('$namespace/$name')", timeout, unit)
 }
 
@@ -88,14 +95,12 @@ fun KubernetesClient.createConfigMap(
     annotations: Map<String, String>,
     data: Map<String, String>,
 ) {
-    resource(ConfigMap().apply {
-        metadata = ObjectMeta().apply {
-            this.name = name
-            this.namespace = namespace
-            this.annotations.putAll(annotations)
-        }
-        this.data.putAll(data)
-    }).create()
+    resource(
+        ConfigMap().apply {
+            metadata = createMeta(name, namespace, annotations)
+            this.data.putAll(data)
+        },
+    ).create()
 }
 
 fun KubernetesClient.deleteConfigMap(
@@ -104,7 +109,9 @@ fun KubernetesClient.deleteConfigMap(
     timeout: Long = 200,
     unit: TimeUnit = TimeUnit.MILLISECONDS,
 ) {
-    configMaps().inNamespace(namespace)?.withName(name)
+    configMaps()
+        .inNamespace(namespace)
+        ?.withName(name)
         ?.awaitDeleteResource("deleteConfigMap('$namespace/$name')", timeout, unit)
 }
 
@@ -114,10 +121,25 @@ private fun Deletable.awaitDeleteResource(
     unit: TimeUnit,
 ) {
     delete().also {
-        K_LOGGER.info { "Delete status ($alias): $it" }
+        K_LOGGER.info { "Deleted ($alias)" }
         if (it.isEmpty()) return
     }
+
+    val counter = AtomicInteger(0)
     await(alias)
         .timeout(timeout, unit)
-        .until { delete().also { K_LOGGER.info { "Delete status ($alias): $it" }}.isEmpty() }
+        .until { delete().also { counter.incrementAndGet() }.isEmpty() }
+    K_LOGGER.info { "Deleted ($alias) after $counter iterations" }
+}
+
+private fun createMeta(
+    name: String,
+    namespace: String?,
+    annotations: Map<String, String> = emptyMap(),
+): ObjectMeta = ObjectMeta().apply {
+    this.name = name
+    this.namespace = namespace
+    this.annotations.putAll(annotations)
+    this.uid = UUID.randomUUID().toString()
+    this.creationTimestamp = Instant.now().toString()
 }

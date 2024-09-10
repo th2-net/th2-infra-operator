@@ -114,7 +114,7 @@ public class NamespaceEventHandler implements ResourceEventHandler<Namespace>, W
             try {
                 lock.lock();
 
-                logger.debug("Processing {} event for namespace: \"{}\"", action, namespaceName);
+                logger.info("Processing {} event for namespace: \"{}\"", action, namespaceName);
                 RabbitMQContext.cleanupRabbit(namespaceName);
                 logger.info("Deleted namespace {}", namespaceName);
             } catch (Exception e) {
