@@ -28,7 +28,6 @@ import com.exactpro.th2.infraoperator.spec.strategy.redeploy.NonTerminalExceptio
 import com.exactpro.th2.infraoperator.spec.strategy.redeploy.RetryableTaskQueue;
 import com.exactpro.th2.infraoperator.spec.strategy.redeploy.tasks.TriggerRedeployTask;
 import com.exactpro.th2.infraoperator.util.CustomResourceUtils;
-import com.exactpro.th2.infraoperator.util.ExtractUtils;
 
 import io.fabric8.kubernetes.api.model.HasMetadata;
 import io.fabric8.kubernetes.api.model.Namespace;
