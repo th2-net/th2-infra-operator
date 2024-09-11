@@ -147,5 +147,10 @@ openshift:
 
 ## Release notes
 
+### 4.6.5
+
++ Fix issue when changing `desabled` flag to `true` does not remove the resource from k8s
+  for components with name longer than 26 characters.
+
 ### 4.6.4
 + Added `rabbitMQManagement.cleanUpOnStart` option
