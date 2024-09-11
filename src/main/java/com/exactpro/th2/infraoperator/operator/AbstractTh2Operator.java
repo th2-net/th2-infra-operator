@@ -159,11 +159,12 @@ public abstract class AbstractTh2Operator<CR extends Th2CustomResource> implemen
             try {
                 logger.info("Resource \"{}\" has been disabled, executing DELETE action", resourceLabel);
                 deletedEvent(resource);
-                // FIXME: work with Th2CustomResource should be encapsulated somewhere
+                // TODO: work with Th2CustomResource should be encapsulated somewhere
                 //        to void issues with choosing the right function to extract the name
                 kubClient.resources(HelmRelease.class)
                         .inNamespace(extractNamespace(resource))
-                        .withName(CustomResourceUtils.extractHashedName(resource)) // name must be hashed if it exceeds the limit
+                        // name must be hashed if it exceeds the limit
+                        .withName(CustomResourceUtils.extractHashedName(resource))
                         .delete();
                 resource.getStatus().disabled("Resource has been disabled");
                 updateStatus(resource);
@@ -220,7 +221,10 @@ public abstract class AbstractTh2Operator<CR extends Th2CustomResource> implemen
         String resourceLabel = CustomResourceUtils.annotationFor(resource);
         fingerprints.remove(resourceLabel);
         // The HelmRelease name is hashed if Th2CustomResource name exceeds the limit
-        OperatorState.INSTANCE.removeHelmReleaseFromCache(CustomResourceUtils.extractHashedName(resource), extractNamespace(resource));
+        OperatorState.INSTANCE.removeHelmReleaseFromCache(
+                CustomResourceUtils.extractHashedName(resource),
+                extractNamespace(resource)
+        );
     }
 
     protected void errorEvent(CR resource) {
