@@ -85,11 +85,11 @@ internal fun ResourceHolder.filterRubbishResources(
     namespacePrefixes: Set<String>,
     topicExchange: String,
 ): ResourceHolder = apply {
-    exchanges.remove(topicExchange) // FIXME: topic exchange should be declare after each namespace creation
     val namespaces: Set<String> = client.namespaces(namespacePrefixes)
     if (namespaces.isEmpty()) {
         return@apply
     }
+    exchanges.remove(topicExchange) // FIXME: topic exchange should be declare after each namespace creation
 
     K_LOGGER.debug { "Search RabbitMQ resources in $namespaces namespaces" }
 //    exchanges.remove(topicExchange) FIXME: uncomment this line when topic exchange is declared after each namespace creation

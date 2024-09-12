@@ -44,8 +44,8 @@ public class Th2CrdController {
         PrometheusServer.start();
         OperatorMetrics.resetCacheErrors();
         try {
-            RabbitMQContext.declareTopicExchange();
             RabbitMQUtils.deleteRabbitMQRubbish();
+            RabbitMQContext.declareTopicExchange();
 
             watchManager.addTarget(MstoreHelmTh2Op::new);
             watchManager.addTarget(EstoreHelmTh2Op::new);

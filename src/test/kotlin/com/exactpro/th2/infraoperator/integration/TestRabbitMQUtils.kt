@@ -45,7 +45,11 @@ fun Client.assertUser(
     val userPermissions = this.permissions.firstOrNull { it.user == user }
     assertNotNull(userPermissions, "User permission '$user' isn't found")
     assertEquals(vHost, userPermissions.vhost, "User permission '$user' has incorrect vHost")
-    assertEquals(permissions.configure, userPermissions.configure, "User permission '$user' has incorrect configure permission")
+    assertEquals(
+        permissions.configure,
+        userPermissions.configure,
+        "User permission '$user' has incorrect configure permission"
+    )
     assertEquals(permissions.read, userPermissions.read, "User permission '$user' has incorrect read permission")
     assertEquals(permissions.write, userPermissions.write, "User permission '$user' has incorrect write permission")
 }

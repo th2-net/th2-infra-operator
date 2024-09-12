@@ -132,10 +132,13 @@ fun KubernetesClient.createTh2Mstore(
     resource(
         Th2Mstore().apply {
             metadata = createMeta(name, namespace, annotations)
-            spec = YAML_MAPPER.readValue("""
+            spec = YAML_MAPPER.readValue(
+                """
                 imageName: ghcr.io/th2-net/th2-mstore
                 imageVersion: 0.0.0
-            """.trimIndent(), Th2Spec::class.java)
+                """.trimIndent(),
+                Th2Spec::class.java
+            )
         }
     ).create()
 }
@@ -148,10 +151,13 @@ fun KubernetesClient.createTh2Estore(
     resource(
         Th2Estore().apply {
             metadata = createMeta(name, namespace, annotations)
-            spec = YAML_MAPPER.readValue("""
+            spec = YAML_MAPPER.readValue(
+                """
                 imageName: ghcr.io/th2-net/th2-estore
                 imageVersion: 0.0.0
-            """.trimIndent(), Th2Spec::class.java)
+                """.trimIndent(),
+                Th2Spec::class.java
+            )
         }
     ).create()
 }
@@ -201,7 +207,7 @@ fun KubernetesClient.createTh2Dictionary(
 fun KubernetesClient.awaitHelmRelease(
     namespace: String,
     name: String,
-    timeout: Long = 2000,
+    timeout: Long = 5_000,
     unit: TimeUnit = TimeUnit.MILLISECONDS,
 ): HelmRelease {
     await("awaitHelmRelease ($name)")

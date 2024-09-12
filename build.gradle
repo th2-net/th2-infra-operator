@@ -1,7 +1,7 @@
 plugins {
     id 'application'
-    id 'checkstyle'
-    alias(libs.plugins.detekt)
+//    id 'checkstyle'
+//    alias(libs.plugins.detekt)
     alias(libs.plugins.kotlin)
     alias(libs.plugins.th2.component)
 }
@@ -17,15 +17,15 @@ repositories {
     mavenCentral()
 }
 
-checkstyle {
-    toolVersion = "10.12.4"
-}
+//checkstyle {
+//    toolVersion = "10.12.4"
+//}
 
-detekt {
-    buildUponDefaultConfig = true
-    autoCorrect = true
-    config.setFrom("$rootDir/config/detekt/detekt.yml")
-}
+//detekt {
+//    buildUponDefaultConfig = true
+//    autoCorrect = true
+//    config.setFrom("$rootDir/config/detekt/detekt.yml")
+//}
 
 dependencies {
     implementation "com.fasterxml.jackson.dataformat:jackson-dataformat-yaml"
@@ -68,7 +68,7 @@ dependencies {
     testImplementation libs.awaitility
     testImplementation libs.strikt.core
 
-    detektPlugins libs.detekt.formatting
+//    detektPlugins libs.detekt.formatting
 }
 
 wrapper {

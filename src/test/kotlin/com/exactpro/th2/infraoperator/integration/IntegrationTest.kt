@@ -84,6 +84,7 @@ import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Tag
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.TestInstance
+import org.junit.jupiter.api.Timeout
 import org.junit.jupiter.api.io.TempDir
 import org.junit.jupiter.params.ParameterizedTest
 import org.junit.jupiter.params.provider.ValueSource
@@ -133,6 +134,7 @@ class IntegrationTest {
     private lateinit var controller: Th2CrdController
 
     @BeforeAll
+    @Timeout(30_000)
     fun beforeAll(
         @TempDir tempDir: Path,
     ) {
@@ -169,6 +171,7 @@ class IntegrationTest {
     }
 
     @AfterAll
+    @Timeout(30_000)
     fun afterAll() {
         if (this::kubeClient.isInitialized) {
             kubeClient.close()
@@ -182,11 +185,16 @@ class IntegrationTest {
     }
 
     @BeforeEach
+    @Timeout(30_000)
     fun beforeEach() {
         val gitHash = RESOURCE_GIT_HASH_COUNTER.incrementAndGet().toString()
         kubeClient.createNamespace(TH2_NAMESPACE)
         kubeClient.createRabbitMQSecret(TH2_NAMESPACE, gitHash)
-        kubeClient.createRabbitMQAppConfigCfgMap(TH2_NAMESPACE, gitHash, createRabbitMQConfig(rabbitMQContainer, TH2_NAMESPACE))
+        kubeClient.createRabbitMQAppConfigCfgMap(
+            TH2_NAMESPACE,
+            gitHash,
+            createRabbitMQConfig(rabbitMQContainer, TH2_NAMESPACE)
+        )
 
         rabbitMQClient.assertUser(TH2_NAMESPACE, RABBIT_MQ_V_HOST, RABBIT_MQ_NAMESPACE_PERMISSIONS)
         rabbitMQClient.assertExchange(toExchangeName(TH2_NAMESPACE), DIRECT, RABBIT_MQ_V_HOST)
@@ -201,6 +209,7 @@ class IntegrationTest {
     }
 
     @AfterEach
+    @Timeout(30_000)
     fun afterEach() {
         kubeClient.deleteNamespace(TH2_NAMESPACE, 1, MINUTES)
         // FIXME: Secret not found "th2-test:Secret/rabbitMQ"
@@ -214,6 +223,7 @@ class IntegrationTest {
     }
 
     @Test
+    @Timeout(30_000)
     fun `add mstore`() {
         val gitHash = RESOURCE_GIT_HASH_COUNTER.incrementAndGet().toString()
         kubeClient.createTh2Mstore(TH2_NAMESPACE, MESSAGE_STORAGE_BOX_ALIAS, createAnnotations(gitHash, TEST_CONTENT))
@@ -223,6 +233,7 @@ class IntegrationTest {
     }
 
     @Test
+    @Timeout(30_000)
     fun `add estore`() {
         val gitHash = RESOURCE_GIT_HASH_COUNTER.incrementAndGet().toString()
         kubeClient.createTh2Estore(TH2_NAMESPACE, EVENT_STORAGE_BOX_ALIAS, createAnnotations(gitHash, TEST_CONTENT))
@@ -236,18 +247,19 @@ class IntegrationTest {
         )
     }
 
-    @ParameterizedTest
-    @ValueSource(strings = ["th2-core-component", "th2-core-component-more-than-$NAME_LENGTH_LIMIT-character"] )
     /**
      * Max name length is limited by [HelmRelease.NAME_LENGTH_LIMIT]
      */
+    @Timeout(30_000)
+    @ParameterizedTest
+    @ValueSource(strings = ["th2-core-component", "th2-core-component-more-than-$NAME_LENGTH_LIMIT-character"])
     fun `add core component (min configuration)`(name: String) {
         val gitHash = RESOURCE_GIT_HASH_COUNTER.incrementAndGet().toString()
         val spec = """
                 imageName: $IMAGE
                 imageVersion: $VERSION
                 type: th2-rpt-data-provider
-            """.trimIndent()
+        """.trimIndent()
 
         kubeClient.createTh2CoreBox(
             TH2_NAMESPACE,
@@ -266,18 +278,19 @@ class IntegrationTest {
         )
     }
 
-    @ParameterizedTest
-    @ValueSource(strings = ["th2-component", "th2-component-more-than-$NAME_LENGTH_LIMIT-character"] )
     /**
      * Max name length is limited by [HelmRelease.NAME_LENGTH_LIMIT]
      */
+    @Timeout(30_000)
+    @ParameterizedTest
+    @ValueSource(strings = ["th2-component", "th2-component-more-than-$NAME_LENGTH_LIMIT-character"])
     fun `add component (min configuration)`(name: String) {
         val gitHash = RESOURCE_GIT_HASH_COUNTER.incrementAndGet().toString()
         val spec = """
                 imageName: $IMAGE
                 imageVersion: $VERSION
                 type: th2-codec
-            """.trimIndent()
+        """.trimIndent()
 
         kubeClient.createTh2Box(
             TH2_NAMESPACE,
@@ -297,12 +310,13 @@ class IntegrationTest {
     }
 
 //    @Test  // FIXME Failure executing: POST at: https://localhost:33114/apis/th2.exactpro.com/v2/th2dictionaries. Message: Not Found.
+    @Timeout(30_000)
     fun `add dictionary (short name)`() {
         val gitHash = RESOURCE_GIT_HASH_COUNTER.incrementAndGet().toString()
         val name = "th2-dictionary"
         val spec = """
                 data: $DICTIONARY_CONTENT
-            """.trimIndent()
+        """.trimIndent()
 
         kubeClient.createTh2Dictionary(
             TH2_NAMESPACE,
@@ -314,8 +328,8 @@ class IntegrationTest {
     }
 
 //    @Test
+    @Timeout(30_000)
     fun `create job`() {
-
     }
 
     companion object {
@@ -358,23 +372,23 @@ class IntegrationTest {
                 chart = ChartSpec(),
                 namespacePrefixes = setOf(TH2_PREFIX),
                 rabbitMQManagement =
-                    RabbitMQManagementConfig(
-                        host = rabbitMQ.host,
-                        managementPort = rabbitMQ.httpPort,
-                        applicationPort = rabbitMQ.amqpPort,
-                        vhostName = RABBIT_MQ_V_HOST,
-                        exchangeName = RABBIT_MQ_TOPIC_EXCHANGE,
-                        username = rabbitMQ.adminUsername,
-                        password = rabbitMQ.adminPassword,
-                        persistence = true,
-                        schemaPermissions = RABBIT_MQ_NAMESPACE_PERMISSIONS,
-                    ),
+                RabbitMQManagementConfig(
+                    host = rabbitMQ.host,
+                    managementPort = rabbitMQ.httpPort,
+                    applicationPort = rabbitMQ.amqpPort,
+                    vhostName = RABBIT_MQ_V_HOST,
+                    exchangeName = RABBIT_MQ_TOPIC_EXCHANGE,
+                    username = rabbitMQ.adminUsername,
+                    password = rabbitMQ.adminPassword,
+                    persistence = true,
+                    schemaPermissions = RABBIT_MQ_NAMESPACE_PERMISSIONS,
+                ),
                 prometheusConfiguration =
-                    PrometheusConfiguration(
-                        "0.0.0.0",
-                        "9752",
-                        false.toString(),
-                    ),
+                PrometheusConfiguration(
+                    "0.0.0.0",
+                    "9752",
+                    false.toString(),
+                ),
             )
 
         private fun createRabbitMQConfig(
@@ -563,7 +577,6 @@ class IntegrationTest {
                         getValue("workers") isEqualTo 5
                     }
                     getValue("services").isA<Map<String, Any?>>().isEmpty()
-
                 }
                 getValue(IS_JOB_ALIAS) isEqualTo false
                 getValue(SECRET_PATHS_CONFIG_ALIAS).isA<Map<String, Any?>>().isEmpty()
