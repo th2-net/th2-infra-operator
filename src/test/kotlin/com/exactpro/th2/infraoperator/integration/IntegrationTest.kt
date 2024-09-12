@@ -57,6 +57,7 @@ import com.exactpro.th2.infraoperator.operator.manager.impl.ConfigMapEventHandle
 import com.exactpro.th2.infraoperator.operator.manager.impl.ConfigMapEventHandler.GRPC_ROUTER_CM_NAME
 import com.exactpro.th2.infraoperator.operator.manager.impl.ConfigMapEventHandler.LOGGING_CM_NAME
 import com.exactpro.th2.infraoperator.operator.manager.impl.ConfigMapEventHandler.MQ_ROUTER_CM_NAME
+import com.exactpro.th2.infraoperator.operator.manager.impl.Th2DictionaryEventHandler.DICTIONARY_SUFFIX
 import com.exactpro.th2.infraoperator.spec.helmrelease.HelmRelease
 import com.exactpro.th2.infraoperator.spec.helmrelease.HelmRelease.NAME_LENGTH_LIMIT
 import com.exactpro.th2.infraoperator.spec.shared.PrometheusConfiguration
@@ -220,6 +221,7 @@ class IntegrationTest {
         rabbitMQClient.assertNoUser(TH2_NAMESPACE)
 
         kubeClient.awaitNoHelmRelease(TH2_NAMESPACE)
+        kubeClient.awaitNoConfigMap(TH2_NAMESPACE)
     }
 
     @Test
@@ -252,7 +254,7 @@ class IntegrationTest {
      */
     @Timeout(30_000)
     @ParameterizedTest
-    @ValueSource(strings = ["th2-core-component", "th2-core-component-more-than-$NAME_LENGTH_LIMIT-character"])
+    @ValueSource(strings = ["th2-core-component", "th2-core-component-more-than-$NAME_LENGTH_LIMIT-characters"])
     fun `add core component (min configuration)`(name: String) {
         val gitHash = RESOURCE_GIT_HASH_COUNTER.incrementAndGet().toString()
         val spec = """
@@ -283,7 +285,7 @@ class IntegrationTest {
      */
     @Timeout(30_000)
     @ParameterizedTest
-    @ValueSource(strings = ["th2-component", "th2-component-more-than-$NAME_LENGTH_LIMIT-character"])
+    @ValueSource(strings = ["th2-component", "th2-component-more-than-$NAME_LENGTH_LIMIT-characters"])
     fun `add component (min configuration)`(name: String) {
         val gitHash = RESOURCE_GIT_HASH_COUNTER.incrementAndGet().toString()
         val spec = """
@@ -309,7 +311,7 @@ class IntegrationTest {
         )
     }
 
-//    @Test  // FIXME Failure executing: POST at: https://localhost:33114/apis/th2.exactpro.com/v2/th2dictionaries. Message: Not Found.
+    @Test
     @Timeout(30_000)
     fun `add dictionary (short name)`() {
         val gitHash = RESOURCE_GIT_HASH_COUNTER.incrementAndGet().toString()
@@ -318,13 +320,24 @@ class IntegrationTest {
                 data: $DICTIONARY_CONTENT
         """.trimIndent()
 
+        val annotations = createAnnotations(gitHash, spec.hashCode().toString())
         kubeClient.createTh2Dictionary(
             TH2_NAMESPACE,
             name,
-            createAnnotations(gitHash, spec.hashCode().toString()),
+            annotations,
             spec
         )
-        kubeClient.awaitHelmRelease(TH2_NAMESPACE, name).assertMinCfg(name)
+        kubeClient.awaitConfigMap(TH2_NAMESPACE, "$name$DICTIONARY_SUFFIX").also { configMap ->
+            expectThat(configMap) {
+                get { metadata }.and {
+                    get { this.annotations } isEqualTo annotations
+                }
+                get { data }.isA<Map<String, String>>().and {
+                    hasSize(1)
+                    getValue("$name$DICTIONARY_SUFFIX") isEqualTo DICTIONARY_CONTENT
+                }
+            }
+        }
     }
 
 //    @Test

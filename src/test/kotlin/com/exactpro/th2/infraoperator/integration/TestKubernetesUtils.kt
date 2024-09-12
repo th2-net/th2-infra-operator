@@ -112,6 +112,29 @@ fun KubernetesClient.createConfigMap(
     ).create()
 }
 
+fun KubernetesClient.awaitConfigMap(
+    namespace: String,
+    name: String,
+    timeout: Long = 5_000,
+    unit: TimeUnit = TimeUnit.MILLISECONDS,
+): ConfigMap {
+    await("awaitConfigMap ($name)")
+        .timeout(timeout, unit)
+        .until { resources(ConfigMap::class.java).inNamespace(namespace).withName(name).get() != null }
+
+    return resources(ConfigMap::class.java).inNamespace(namespace).withName(name).get()
+}
+
+fun KubernetesClient.awaitNoConfigMap(
+    namespace: String,
+    timeout: Long = 5_000,
+    unit: TimeUnit = TimeUnit.MILLISECONDS,
+) {
+    await("awaitNoConfigMap")
+        .timeout(timeout, unit)
+        .until { resources(ConfigMap::class.java).inNamespace(namespace).list().items.isEmpty() }
+}
+
 fun KubernetesClient.deleteConfigMap(
     namespace: String,
     name: String,
@@ -198,9 +221,9 @@ fun KubernetesClient.createTh2Dictionary(
 ) {
     resource(
         Th2Dictionary().apply {
-            this.metadata = createMeta(name, namespace, annotations)
-            this.spec = YAML_MAPPER.readValue(spec, Th2DictionarySpec::class.java)
-        }
+        this.metadata = createMeta(name, namespace, annotations)
+        this.spec = YAML_MAPPER.readValue(spec, Th2DictionarySpec::class.java)
+    }
     ).create()
 }
 
