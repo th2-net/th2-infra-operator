@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2021 Exactpro (Exactpro Systems Limited)
+ * Copyright 2020-2024 Exactpro (Exactpro Systems Limited)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -25,35 +25,35 @@ public class OperatorMetrics {
 
     private static final double[] TOTAL_PROCESSING_TIME_BUCKETS = {5, 10, 20, 30, 40, 50, 60, 70, 80, 120};
 
-    private static final String KEY_DETECTION_TIME = "th2.exactpro.com/detection-time";
+    public static final String KEY_DETECTION_TIME = "th2.exactpro.com/detection-time";
 
     private static final double MILLIS_PER_SECOND = 1000;
 
     //local metrics
-    private static Gauge eventCounter = Gauge
+    private static final Gauge EVENT_COUNTER = Gauge
             .build("th2_infra_operator_event_queue", "Amount of events to be processed")
             .labelNames("exported_namespace", "category")
             .register();
 
-    private static Gauge resourceCacheErrors = Gauge
+    private static final Gauge RESOURCE_CACHE_ERRORS = Gauge
             .build("th2_infra_operator_resource_cache_errors", "Amount of errors in operator resource cache")
             .register();
 
-    private static Histogram crEventProcessingTime = Histogram
+    private static final Histogram CR_EVENT_PROCESSING_TIME = Histogram
             .build("th2_infra_operator_custom_resource_event_processing_time",
                     "Time it took to process specific event by operator")
             .buckets(LOCAL_PROCESSING_TIME_BUCKETS)
             .labelNames("exported_namespace", "kind", "resName")
             .register();
 
-    private static Histogram cmEventProcessingTime = Histogram
+    private static final Histogram CM_EVENT_PROCESSING_TIME = Histogram
             .build("th2_infra_operator_config_map_event_processing_time",
                     "Time it took to process specific config map")
             .buckets(LOCAL_PROCESSING_TIME_BUCKETS)
             .labelNames("exported_namespace", "resName")
             .register();
 
-    private static Histogram dictionaryEventProcessingTime = Histogram
+    private static final Histogram DICTIONARY_EVENT_PROCESSING_TIME = Histogram
             .build("th2_infra_operator_dictionary_event_processing_time",
                     "Time it took to process dictionary")
             .buckets(LOCAL_PROCESSING_TIME_BUCKETS)
@@ -61,7 +61,7 @@ public class OperatorMetrics {
             .register();
 
     //total processing time metric
-    private static Histogram eventProcessingTimeTotal = Histogram
+    private static final Histogram EVENT_PROCESSING_TIME_TOTAL = Histogram
             .build("th2_infra_event_processing_total_time",
                     "Time it took to process specific event by both manager and operator")
             .buckets(TOTAL_PROCESSING_TIME_BUCKETS)
@@ -69,38 +69,38 @@ public class OperatorMetrics {
             .register();
 
     public static void setPriorityEventCount(int value, String exportedNamespace) {
-        eventCounter.labels(exportedNamespace, "priority").set(value);
+        EVENT_COUNTER.labels(exportedNamespace, "priority").set(value);
     }
 
     public static void setRegularEventCount(int value, String exportedNamespace) {
-        eventCounter.labels(exportedNamespace, "regular").set(value);
+        EVENT_COUNTER.labels(exportedNamespace, "regular").set(value);
     }
 
     public static Histogram.Timer getCustomResourceEventTimer(HasMetadata resource) {
         String exportedNamespace = resource.getMetadata().getNamespace();
         String resName = resource.getMetadata().getName();
         String kind = resource.getKind();
-        return crEventProcessingTime.labels(exportedNamespace, kind, resName).startTimer();
+        return CR_EVENT_PROCESSING_TIME.labels(exportedNamespace, kind, resName).startTimer();
     }
 
     public static Histogram.Timer getConfigMapEventTimer(HasMetadata resource) {
         String exportedNamespace = resource.getMetadata().getNamespace();
         String resName = resource.getMetadata().getName();
-        return cmEventProcessingTime.labels(exportedNamespace, resName).startTimer();
+        return CM_EVENT_PROCESSING_TIME.labels(exportedNamespace, resName).startTimer();
     }
 
     public static Histogram.Timer getDictionaryEventTimer(HasMetadata resource) {
         String exportedNamespace = resource.getMetadata().getNamespace();
         String resName = resource.getMetadata().getName();
-        return dictionaryEventProcessingTime.labels(exportedNamespace, resName).startTimer();
+        return DICTIONARY_EVENT_PROCESSING_TIME.labels(exportedNamespace, resName).startTimer();
     }
 
     public static void resetCacheErrors() {
-        resourceCacheErrors.set(0);
+        RESOURCE_CACHE_ERRORS.set(0);
     }
 
     public static void incrementCacheErrors() {
-        resourceCacheErrors.inc();
+        RESOURCE_CACHE_ERRORS.inc();
     }
 
     public static void observeTotal(HasMetadata resource) {
@@ -113,6 +113,6 @@ public class OperatorMetrics {
         String resName = resource.getMetadata().getName();
         long detectionTime = Long.parseLong(detectionTimeStr);
         double duration = (System.currentTimeMillis() - detectionTime) / MILLIS_PER_SECOND;
-        eventProcessingTimeTotal.labels(exportedNamespace, kind, resName).observe(duration);
+        EVENT_PROCESSING_TIME_TOTAL.labels(exportedNamespace, kind, resName).observe(duration);
     }
 }

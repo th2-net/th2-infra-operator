@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2021 Exactpro (Exactpro Systems Limited)
+ * Copyright 2020-2024 Exactpro (Exactpro Systems Limited)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -65,25 +65,25 @@ public abstract class HelmReleaseTh2Op<CR extends Th2CustomResource> extends Abs
     public static final String ANNOTATIONS_ALIAS = "commonAnnotations";
 
     //component section
-    private static final String ROOTLESS_ALIAS = "rootless";
+    public static final String ROOTLESS_ALIAS = "rootless";
 
-    private static final String COMPONENT_NAME_ALIAS = "name";
+    public static final String COMPONENT_NAME_ALIAS = "name";
 
-    private static final String DOCKER_IMAGE_ALIAS = "image";
+    public static final String DOCKER_IMAGE_ALIAS = "image";
 
-    private static final String CUSTOM_CONFIG_ALIAS = "custom";
+    public static final String CUSTOM_CONFIG_ALIAS = "custom";
 
-    private static final String SECRET_VALUES_CONFIG_ALIAS = "secretValuesConfig";
+    public static final String SECRET_VALUES_CONFIG_ALIAS = "secretValuesConfig";
 
-    private static final String SECRET_PATHS_CONFIG_ALIAS = "secretPathsConfig";
+    public static final String SECRET_PATHS_CONFIG_ALIAS = "secretPathsConfig";
 
-    private static final String PROMETHEUS_CONFIG_ALIAS = "prometheus";
+    public static final String PROMETHEUS_CONFIG_ALIAS = "prometheus";
 
     public static final String DICTIONARIES_ALIAS = "dictionaries";
 
     public static final String MQ_QUEUE_CONFIG_ALIAS = "mq";
 
-    private static final String GRPC_P2P_CONFIG_ALIAS = "grpc";
+    public static final String GRPC_P2P_CONFIG_ALIAS = "grpc";
 
     public static final String MQ_ROUTER_ALIAS = "mqRouter";
 

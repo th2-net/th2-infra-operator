@@ -100,7 +100,7 @@ public class CustomResourceUtils {
         return namespace + "." + name;
     }
 
-    private static String hashNameIfNeeded(String resName) {
+    public static String hashNameIfNeeded(String resName) {
         if (resName.length() >= HelmRelease.NAME_LENGTH_LIMIT) {
             return digest(resName);
         }

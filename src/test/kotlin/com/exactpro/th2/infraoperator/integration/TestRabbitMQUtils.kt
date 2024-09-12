@@ -18,6 +18,9 @@ package com.exactpro.th2.infraoperator.integration
 
 import com.exactpro.th2.infraoperator.configuration.fields.RabbitMQNamespacePermissions
 import com.rabbitmq.http.client.Client
+import com.rabbitmq.http.client.domain.DestinationType
+import com.rabbitmq.http.client.domain.QueueInfo
+import org.junit.jupiter.api.assertAll
 import org.testcontainers.shaded.org.awaitility.Awaitility.await
 import java.util.concurrent.TimeUnit
 import kotlin.test.assertEquals
@@ -29,7 +32,7 @@ fun Client.assertUser(
     user: String,
     vHost: String,
     permissions: RabbitMQNamespacePermissions,
-    timeout: Long = 200,
+    timeout: Long = 1_000,
     unit: TimeUnit = TimeUnit.MILLISECONDS,
 ) {
     await("assertUser('$user')")
@@ -49,7 +52,7 @@ fun Client.assertUser(
 
 fun Client.assertNoUser(
     user: String,
-    timeout: Long = 200,
+    timeout: Long = 1_000,
     unit: TimeUnit = TimeUnit.MILLISECONDS,
 ) {
     await("assertNoUser('$user')")
@@ -61,7 +64,7 @@ fun Client.assertExchange(
     exchange: String,
     type: String,
     vHost: String,
-    timeout: Long = 200,
+    timeout: Long = 1_000,
     unit: TimeUnit = TimeUnit.MILLISECONDS,
 ) {
     await("assertExchange('$exchange')")
@@ -80,7 +83,7 @@ fun Client.assertExchange(
 
 fun Client.assertNoExchange(
     exchange: String,
-    timeout: Long = 200,
+    timeout: Long = 1_000,
     unit: TimeUnit = TimeUnit.MILLISECONDS,
 ) {
     await("assertNoExchange('$exchange')")
@@ -92,26 +95,102 @@ fun Client.assertQueue(
     queue: String,
     type: String,
     vHost: String,
-    timeout: Long = 200,
+    timeout: Long = 1_000,
     unit: TimeUnit = TimeUnit.MILLISECONDS,
-) {
+): QueueInfo {
     await("assertQueue('$queue')")
         .timeout(timeout, unit)
-        .until { queues.firstOrNull { it.name == queue } != null }
+        .until { getQueue(vHost, queue) != null }
 
-    val queueInfo = queues.firstOrNull { it.name == queue }
-    assertNotNull(queueInfo, "Queue '$queue' isn't found")
-    assertEquals(type, queueInfo.type, "Queue '$queue' has incorrect type")
-    assertEquals(vHost, queueInfo.vhost, "Queue '$queue' has incorrect vHost")
-    assertEquals(emptyMap(), queueInfo.arguments, "Queue '$queue' has arguments")
-    assertTrue(queueInfo.isDurable, "Queue '$queue' isn't durable")
-    assertFalse(queueInfo.isExclusive, "Queue '$queue' is exclusive")
-    assertFalse(queueInfo.isAutoDelete, "Queue '$queue' is auto delete")
+    return assertNotNull(getQueue(vHost, queue), "Queue '$queue' isn't found")
+        .also { queueInfo ->
+            assertEquals(type, queueInfo.type, "Queue '$queue' has incorrect type")
+            assertEquals(emptyMap(), queueInfo.arguments, "Queue '$queue' has arguments")
+            assertTrue(queueInfo.isDurable, "Queue '$queue' isn't durable")
+            assertFalse(queueInfo.isExclusive, "Queue '$queue' is exclusive")
+            assertFalse(queueInfo.isAutoDelete, "Queue '$queue' is auto delete")
+        }
+}
+
+fun Client.assertBindings(
+    queue: String,
+    vHost: String,
+    routingKeys: Set<String> = emptySet(),
+    timeout: Long = 1_000,
+    unit: TimeUnit = TimeUnit.MILLISECONDS,
+) {
+    await("assertBindings('$queue'), bindings: $routingKeys")
+        .timeout(timeout, unit)
+        .untilAsserted {
+            val queueBindings = getQueueBindings(vHost, queue)
+            when {
+                routingKeys.isEmpty() -> assertTrue(
+                    queueBindings.isEmpty(),
+                    "Bindings isn't empty for queue '$queue', actual: $queueBindings"
+                )
+                else -> assertAll(
+                    buildList {
+                        add {
+                            assertEquals(
+                                routingKeys.size,
+                                queueBindings.size,
+                                "Bindings number is incorrect for queue '$queue', actual: $queueBindings"
+                            )
+                        }
+                        routingKeys.forEach { routingKey ->
+                            add {
+                                val queueBinding = assertNotNull(
+                                    queueBindings.singleOrNull { it.routingKey == routingKey },
+                                    "Queue '$queue' doesn't contain routing key, actual: $queueBindings"
+                                )
+                                assertAll(
+                                    {
+                                        assertEquals(
+                                            vHost,
+                                            queueBinding.vhost,
+                                            "Binding has incorrect vHost for routing key '$routingKey' in queue '$queue'",
+                                        )
+                                    },
+                                    {
+                                        assertEquals(
+                                            emptyMap(),
+                                            queueBinding.arguments,
+                                            "Binding has arguments for routing key '$routingKey' in queue '$queue'",
+                                        )
+                                    },
+                                    {
+                                        assertEquals(
+                                            routingKey.replace("[", "%5B").replace(":", "%3A").replace("]", "%5D"),
+                                            queueBinding.propertiesKey,
+                                            "Binding has 'propertiesKey' for routing key '$routingKey' in queue '$queue'",
+                                        )
+                                    },
+                                    {
+                                        assertEquals(
+                                            queue,
+                                            queueBinding.destination,
+                                            "Binding has incorrect 'destination' for routing key '$routingKey' in queue '$queue'",
+                                        )
+                                    },
+                                    {
+                                        assertEquals(
+                                            DestinationType.QUEUE,
+                                            queueBinding.destinationType,
+                                            "Binding has incorrect 'destinationType' for routing key '$routingKey' in queue '$queue'",
+                                        )
+                                    },
+                                )
+                            }
+                        }
+                    }
+                )
+            }
+        }
 }
 
 fun Client.assertNoQueue(
     queue: String,
-    timeout: Long = 200,
+    timeout: Long = 1_000,
     unit: TimeUnit = TimeUnit.MILLISECONDS,
 ) {
     await("assertQueue('$queue')")

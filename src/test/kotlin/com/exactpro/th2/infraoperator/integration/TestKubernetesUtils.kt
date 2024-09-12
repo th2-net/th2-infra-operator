@@ -17,6 +17,15 @@
 package com.exactpro.th2.infraoperator.integration
 
 import com.exactpro.th2.infraoperator.operator.manager.impl.ConfigMapEventHandler.SECRET_TYPE_OPAQUE
+import com.exactpro.th2.infraoperator.spec.Th2Spec
+import com.exactpro.th2.infraoperator.spec.box.Th2Box
+import com.exactpro.th2.infraoperator.spec.corebox.Th2CoreBox
+import com.exactpro.th2.infraoperator.spec.dictionary.Th2Dictionary
+import com.exactpro.th2.infraoperator.spec.dictionary.Th2DictionarySpec
+import com.exactpro.th2.infraoperator.spec.estore.Th2Estore
+import com.exactpro.th2.infraoperator.spec.helmrelease.HelmRelease
+import com.exactpro.th2.infraoperator.spec.mstore.Th2Mstore
+import com.exactpro.th2.infraoperator.util.JsonUtils.YAML_MAPPER
 import io.fabric8.kubernetes.api.model.ConfigMap
 import io.fabric8.kubernetes.api.model.Namespace
 import io.fabric8.kubernetes.api.model.ObjectMeta
@@ -113,6 +122,103 @@ fun KubernetesClient.deleteConfigMap(
         .inNamespace(namespace)
         ?.withName(name)
         ?.awaitDeleteResource("deleteConfigMap('$namespace/$name')", timeout, unit)
+}
+
+fun KubernetesClient.createTh2Mstore(
+    namespace: String,
+    name: String,
+    annotations: Map<String, String>,
+) {
+    resource(
+        Th2Mstore().apply {
+            metadata = createMeta(name, namespace, annotations)
+            spec = YAML_MAPPER.readValue("""
+                imageName: ghcr.io/th2-net/th2-mstore
+                imageVersion: 0.0.0
+            """.trimIndent(), Th2Spec::class.java)
+        }
+    ).create()
+}
+
+fun KubernetesClient.createTh2Estore(
+    namespace: String,
+    name: String,
+    annotations: Map<String, String>,
+) {
+    resource(
+        Th2Estore().apply {
+            metadata = createMeta(name, namespace, annotations)
+            spec = YAML_MAPPER.readValue("""
+                imageName: ghcr.io/th2-net/th2-estore
+                imageVersion: 0.0.0
+            """.trimIndent(), Th2Spec::class.java)
+        }
+    ).create()
+}
+
+fun KubernetesClient.createTh2CoreBox(
+    namespace: String,
+    name: String,
+    annotations: Map<String, String>,
+    spec: String,
+) {
+    resource(
+        Th2CoreBox().apply {
+            this.metadata = createMeta(name, namespace, annotations)
+            this.spec = YAML_MAPPER.readValue(spec, Th2Spec::class.java)
+        }
+    ).create()
+}
+
+fun KubernetesClient.createTh2Box(
+    namespace: String,
+    name: String,
+    annotations: Map<String, String>,
+    spec: String,
+) {
+    resource(
+        Th2Box().apply {
+            this.metadata = createMeta(name, namespace, annotations)
+            this.spec = YAML_MAPPER.readValue(spec, Th2Spec::class.java)
+        }
+    ).create()
+}
+
+fun KubernetesClient.createTh2Dictionary(
+    namespace: String,
+    name: String,
+    annotations: Map<String, String>,
+    spec: String,
+) {
+    resource(
+        Th2Dictionary().apply {
+            this.metadata = createMeta(name, namespace, annotations)
+            this.spec = YAML_MAPPER.readValue(spec, Th2DictionarySpec::class.java)
+        }
+    ).create()
+}
+
+fun KubernetesClient.awaitHelmRelease(
+    namespace: String,
+    name: String,
+    timeout: Long = 2000,
+    unit: TimeUnit = TimeUnit.MILLISECONDS,
+): HelmRelease {
+    await("awaitHelmRelease ($name)")
+        .timeout(timeout, unit)
+        .until { resources(HelmRelease::class.java).inNamespace(namespace).withName(name).get() != null }
+
+    return resources(HelmRelease::class.java).inNamespace(namespace).withName(name).get()
+}
+
+fun KubernetesClient.awaitNoHelmRelease(
+    namespace: String,
+    timeout: Long = 2000,
+    unit: TimeUnit = TimeUnit.MILLISECONDS,
+) {
+    await("awaitNoHelmRelease")
+        .timeout(timeout, unit)
+        .until { resources(HelmRelease::class.java).inNamespace(namespace).list().items.isEmpty() }
 }
 
 private fun Deletable.awaitDeleteResource(

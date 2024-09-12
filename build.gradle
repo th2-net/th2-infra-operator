@@ -61,13 +61,12 @@ dependencies {
 
     testImplementation libs.mockito.core
     testImplementation libs.mockito.kotlin
-    testImplementation libs.junit.jupiter.api
+    testImplementation libs.junit.jupiter
+    testImplementation libs.junit.jupiter.params
     testImplementation "org.jetbrains.kotlin:kotlin-test-junit5"
     testImplementation libs.bcpkix.jdk18on
     testImplementation libs.awaitility
-
-
-    testRuntimeOnly libs.junit.jupiter.engine
+    testImplementation libs.strikt.core
 
     detektPlugins libs.detekt.formatting
 }
