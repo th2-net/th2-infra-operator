@@ -159,7 +159,6 @@ class IntegrationTest {
 
         K_LOGGER.info { "RabbitMQ URL: ${rabbitMQContainer.httpUrl}" }
 
-        println(k3sContainer.kubeConfigYaml)
         Files.writeString(kubeConfig, k3sContainer.kubeConfigYaml)
         YAML_MAPPER.writeValue(operatorConfig.toFile(), createOperatorConfig(rabbitMQContainer))
 

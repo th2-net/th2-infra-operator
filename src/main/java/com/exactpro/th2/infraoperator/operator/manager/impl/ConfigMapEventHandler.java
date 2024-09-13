@@ -103,7 +103,7 @@ public class ConfigMapEventHandler implements Watcher<ConfigMap> {
         }
     }
 
-    private static final Logger logger = LoggerFactory.getLogger(ConfigMapEventHandler.class);
+    private static final Logger LOGGER = LoggerFactory.getLogger(ConfigMapEventHandler.class);
 
     private KubernetesClient client;
 
@@ -142,10 +142,10 @@ public class ConfigMapEventHandler implements Watcher<ConfigMap> {
 
         if (configMapName.equals(ConfigLoader.getConfig().getRabbitMQConfigMapName())) {
             try {
-                logger.info("Processing {} event for \"{}\"", action, resourceLabel);
+                LOGGER.info("Processing {} event for \"{}\"", action, resourceLabel);
                 var lock = OperatorState.INSTANCE.getLock(namespace);
+                lock.lock();
                 try {
-                    lock.lock();
 
                     OperatorConfig opConfig = ConfigLoader.getConfig();
                     ConfigMaps configMaps = ConfigMaps.INSTANCE;
@@ -153,7 +153,7 @@ public class ConfigMapEventHandler implements Watcher<ConfigMap> {
 
                     String configContent = resource.getData().get(RabbitMQConfig.CONFIG_MAP_RABBITMQ_PROP_NAME);
                     if (StringUtils.isBlank(configContent)) {
-                        logger.error("Key \"{}\" not found in \"{}\"", RabbitMQConfig.CONFIG_MAP_RABBITMQ_PROP_NAME,
+                        LOGGER.error("Key \"{}\" not found in \"{}\"", RabbitMQConfig.CONFIG_MAP_RABBITMQ_PROP_NAME,
                                 resourceLabel);
                         return;
                     }
@@ -166,19 +166,19 @@ public class ConfigMapEventHandler implements Watcher<ConfigMap> {
                         Histogram.Timer processTimer = OperatorMetrics.getConfigMapEventTimer(resource);
                         configMaps.setRabbitMQConfig4Namespace(namespace, newRabbitMQConfig);
                         RabbitMQContext.setUpRabbitMqForNamespace(namespace);
-                        logger.info("RabbitMQ ConfigMap has been updated in namespace \"{}\". Updating all boxes",
+                        LOGGER.info("RabbitMQ ConfigMap has been updated in namespace \"{}\". Updating all boxes",
                                 namespace);
                         DefaultWatchManager.getInstance().refreshBoxes(namespace);
-                        logger.info("box-definition(s) have been updated");
+                        LOGGER.info("box-definition(s) have been updated");
                         processTimer.observeDuration();
                     } else {
-                            logger.info("RabbitMQ ConfigMap data hasn't changed");
+                            LOGGER.info("RabbitMQ ConfigMap data hasn't changed");
                     }
                 } finally {
                     lock.unlock();
                 }
             } catch (Exception e) {
-                logger.error("Exception processing {} event for \"{}\"", action, resourceLabel, e);
+                LOGGER.error("Exception processing {} event for \"{}\"", action, resourceLabel, e);
             }
         } else if (configMapName.equals(BOOK_CONFIG_CM_NAME)) {
             updateDefaultBookName(action, namespace, resource, resourceLabel);
@@ -192,7 +192,7 @@ public class ConfigMapEventHandler implements Watcher<ConfigMap> {
     private void updateConfigMap(Action action, String namespace, ConfigMap resource, final String cmName,
                                  String resourceLabel) {
         try {
-            logger.info("Processing {} event for \"{}\"", action, resourceLabel);
+            LOGGER.info("Processing {} event for \"{}\"", action, resourceLabel);
             if (isActionInvalid(action, resourceLabel)) {
                 return;
             }
@@ -202,8 +202,8 @@ public class ConfigMapEventHandler implements Watcher<ConfigMap> {
             String dataFileName = titles.dataFileName;
 
             var lock = OperatorState.INSTANCE.getLock(namespace);
+            lock.lock();
             try {
-                lock.lock();
                 String oldChecksum = OperatorState.INSTANCE.getConfigChecksum(namespace, alias);
                 String newChecksum = ExtractUtils.fullSourceHash(resource);
                 if (!newChecksum.equals(oldChecksum)) {
@@ -214,27 +214,27 @@ public class ConfigMapEventHandler implements Watcher<ConfigMap> {
                         cmData = resource.getData().get(dataFileName);
                         OperatorState.INSTANCE.putConfigData(namespace, alias, cmData);
                     }
-                    logger.info("\"{}\" has been updated. Updating all boxes", resourceLabel);
+                    LOGGER.info("\"{}\" has been updated. Updating all boxes", resourceLabel);
                     int refreshedBoxesCount = updateResourceChecksumAndData(namespace, newChecksum, cmData, alias);
-                    logger.info("{} HelmRelease(s) have been updated", refreshedBoxesCount);
+                    LOGGER.info("{} HelmRelease(s) have been updated", refreshedBoxesCount);
                     processTimer.observeDuration();
                 }
             } finally {
                 lock.unlock();
             }
         } catch (Exception e) {
-            logger.error("Exception processing {} event for \"{}\"", action, resourceLabel, e);
+            LOGGER.error("Exception processing {} event for \"{}\"", action, resourceLabel, e);
         }
     }
 
     private boolean isActionInvalid(Action action, String resourceLabel) {
         boolean isInvalid = false;
         if (action == Action.DELETED) {
-            logger.error("DELETED action is not supported for \"{}\". ", resourceLabel);
+            LOGGER.error("DELETED action is not supported for \"{}\". ", resourceLabel);
             isInvalid = true;
 
         } else if (action == Action.ERROR) {
-            logger.error("Received ERROR action for \"{}\" Canceling update", resourceLabel);
+            LOGGER.error("Received ERROR action for \"{}\" Canceling update", resourceLabel);
             isInvalid = true;
         }
         return isInvalid;
@@ -242,29 +242,29 @@ public class ConfigMapEventHandler implements Watcher<ConfigMap> {
 
     private void updateDefaultBookName(Action action, String namespace, ConfigMap resource, String resourceLabel) {
         try {
-            logger.info("Processing {} event for \"{}\"", action, resourceLabel);
+            LOGGER.info("Processing {} event for \"{}\"", action, resourceLabel);
             if (isActionInvalid(action, resourceLabel)) {
                 return;
             }
 
             var lock = OperatorState.INSTANCE.getLock(namespace);
+            lock.lock();
             try {
-                lock.lock();
                 String oldBookName = OperatorState.INSTANCE.getBookName(namespace);
                 String newBookName = resource.getData().get(DEFAULT_BOOK);
                 if (!newBookName.equals(oldBookName)) {
                     Histogram.Timer processTimer = OperatorMetrics.getConfigMapEventTimer(resource);
                     OperatorState.INSTANCE.setBookName(namespace, newBookName);
-                    logger.info("\"{}\" has been updated. Updating all boxes", resourceLabel);
+                    LOGGER.info("\"{}\" has been updated. Updating all boxes", resourceLabel);
                     DefaultWatchManager.getInstance().refreshBoxes(namespace);
-                    logger.info("box-definition(s) have been updated");
+                    LOGGER.info("box-definition(s) have been updated");
                     processTimer.observeDuration();
                 }
             } finally {
                 lock.unlock();
             }
         } catch (Exception e) {
-            logger.error("Exception processing {} event for \"{}\"", action, resourceLabel, e);
+            LOGGER.error("Exception processing {} event for \"{}\"", action, resourceLabel, e);
         }
     }
 
@@ -286,9 +286,9 @@ public class ConfigMapEventHandler implements Watcher<ConfigMap> {
             config.put(CHECKSUM_ALIAS, checksum);
             hr.addComponentValue(key, config);
 
-            logger.debug("Updating \"{}\" resource", CustomResourceUtils.annotationFor(hr));
+            LOGGER.debug("Updating \"{}\" resource", CustomResourceUtils.annotationFor(hr));
             createKubObj(namespace, hr);
-            logger.debug("\"{}\" Updated", CustomResourceUtils.annotationFor(hr));
+            LOGGER.debug("\"{}\" Updated", CustomResourceUtils.annotationFor(hr));
         }
         return helmReleases.size();
     }

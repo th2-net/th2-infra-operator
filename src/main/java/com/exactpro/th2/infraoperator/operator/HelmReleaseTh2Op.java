@@ -324,8 +324,8 @@ public abstract class HelmReleaseTh2Op<CR extends Th2CustomResource> extends Abs
 
         String namespace = extractNamespace(resource);
         var lock = OperatorState.INSTANCE.getLock(namespace);
+        lock.lock();
         try {
-            lock.lock();
             DeclareQueueResolver.resolveAdd(resource);
             BindQueueLinkResolver.resolveDeclaredLinks(resource);
             BindQueueLinkResolver.resolveHiddenLinks(resource);
@@ -342,9 +342,8 @@ public abstract class HelmReleaseTh2Op<CR extends Th2CustomResource> extends Abs
 
         String namespace = extractNamespace(resource);
         var lock = OperatorState.INSTANCE.getLock(namespace);
+        lock.lock();
         try {
-            lock.lock();
-
             DeclareQueueResolver.resolveAdd(resource);
             BindQueueLinkResolver.resolveDeclaredLinks(resource);
             BindQueueLinkResolver.resolveHiddenLinks(resource);
@@ -359,8 +358,8 @@ public abstract class HelmReleaseTh2Op<CR extends Th2CustomResource> extends Abs
     protected void deletedEvent(CR resource) {
 
         var lock = OperatorState.INSTANCE.getLock(extractNamespace(resource));
+        lock.lock();
         try {
-            lock.lock();
             super.deletedEvent(resource);
             DeclareQueueResolver.resolveDelete(resource);
         } finally {

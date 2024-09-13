@@ -38,9 +38,8 @@ public abstract class StoreHelmTh2Op<CR extends Th2CustomResource> extends HelmR
         var msNamespace = extractNamespace(resource);
         var lock = OperatorState.INSTANCE.getLock(msNamespace);
 
+        lock.lock();
         try {
-            lock.lock();
-
             var msName = extractName(resource);
             var stName = getStorageName();
 
