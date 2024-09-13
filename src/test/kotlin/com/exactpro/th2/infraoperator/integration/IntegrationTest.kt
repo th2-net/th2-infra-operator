@@ -25,7 +25,6 @@ import com.exactpro.th2.infraoperator.configuration.fields.RabbitMQConfig
 import com.exactpro.th2.infraoperator.configuration.fields.RabbitMQConfig.Companion.CONFIG_MAP_RABBITMQ_PROP_NAME
 import com.exactpro.th2.infraoperator.configuration.fields.RabbitMQManagementConfig
 import com.exactpro.th2.infraoperator.configuration.fields.RabbitMQNamespacePermissions
-import com.exactpro.th2.infraoperator.metrics.OperatorMetrics.KEY_DETECTION_TIME
 import com.exactpro.th2.infraoperator.operator.HelmReleaseTh2Op.BOOK_CONFIG_ALIAS
 import com.exactpro.th2.infraoperator.operator.HelmReleaseTh2Op.BOOK_NAME_ALIAS
 import com.exactpro.th2.infraoperator.operator.HelmReleaseTh2Op.CHECKSUM_ALIAS
@@ -73,14 +72,13 @@ import com.exactpro.th2.infraoperator.spec.strategy.linkresolver.mq.RabbitMQCont
 import com.exactpro.th2.infraoperator.spec.strategy.linkresolver.mq.RabbitMQContext.DIRECT
 import com.exactpro.th2.infraoperator.spec.strategy.linkresolver.mq.RabbitMQContext.TOPIC
 import com.exactpro.th2.infraoperator.spec.strategy.linkresolver.mq.RabbitMQContext.toExchangeName
-import com.exactpro.th2.infraoperator.util.CustomResourceUtils.GIT_COMMIT_HASH
 import com.exactpro.th2.infraoperator.util.CustomResourceUtils.hashNameIfNeeded
-import com.exactpro.th2.infraoperator.util.ExtractUtils.KEY_SOURCE_HASH
 import com.exactpro.th2.infraoperator.util.JsonUtils.JSON_MAPPER
 import com.exactpro.th2.infraoperator.util.JsonUtils.YAML_MAPPER
 import com.exactpro.th2.infraoperator.util.createKubernetesClient
 import com.fasterxml.jackson.module.kotlin.readValue
 import com.rabbitmq.http.client.Client
+import io.fabric8.kubernetes.api.model.ConfigMap
 import io.fabric8.kubernetes.client.Config
 import io.fabric8.kubernetes.client.KubernetesClient
 import io.github.oshai.kotlinlogging.KotlinLogging
@@ -88,6 +86,7 @@ import org.junit.jupiter.api.AfterAll
 import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.BeforeAll
 import org.junit.jupiter.api.BeforeEach
+import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Tag
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.TestInstance
@@ -223,208 +222,235 @@ class IntegrationTest {
         rabbitMQClient.assertNoExchange(toExchangeName(TH2_NAMESPACE))
         rabbitMQClient.assertNoUser(TH2_NAMESPACE)
 
-        kubeClient.awaitNoHelmReleases(TH2_NAMESPACE)
-        kubeClient.awaitNoConfigMaps(TH2_NAMESPACE)
-        kubeClient.awaitNoTh2Estores(TH2_NAMESPACE)
-        kubeClient.awaitNoTh2Mstores(TH2_NAMESPACE)
-        kubeClient.awaitNoTh2CoreBoxes(TH2_NAMESPACE)
-        kubeClient.awaitNoTh2Boxes(TH2_NAMESPACE)
+        kubeClient.awaitNoResources<HelmRelease>(TH2_NAMESPACE)
+        kubeClient.awaitNoResources<ConfigMap>(TH2_NAMESPACE)
+        kubeClient.awaitNoResources<Th2Estore>(TH2_NAMESPACE)
+        kubeClient.awaitNoResources<Th2Mstore>(TH2_NAMESPACE)
+        kubeClient.awaitNoResources<Th2CoreBox>(TH2_NAMESPACE)
+        kubeClient.awaitNoResources<Th2Box>(TH2_NAMESPACE)
     }
 
-    @Test
-    @Timeout(30_000)
-    fun `add mstore`() {
-        val gitHash = RESOURCE_GIT_HASH_COUNTER.incrementAndGet().toString()
-        kubeClient.createTh2Mstore(TH2_NAMESPACE, MESSAGE_STORAGE_BOX_ALIAS, createAnnotations(gitHash, TEST_CONTENT))
-        kubeClient.awaitPhase(TH2_NAMESPACE, MESSAGE_STORAGE_BOX_ALIAS, Th2Mstore::class.java, SUCCEEDED)
-        kubeClient.awaitHelmRelease(TH2_NAMESPACE, MESSAGE_STORAGE_BOX_ALIAS)
-        // FIXME: estore should have binding
+    @Nested
+    inner class Mstore {
+        @Test
+        @Timeout(30_000)
+        fun `add mstore`() {
+            val gitHash = RESOURCE_GIT_HASH_COUNTER.incrementAndGet().toString()
+            val spec = """
+                imageName: ghcr.io/th2-net/th2-mstore
+                imageVersion: 0.0.0
+            """.trimIndent()
+            kubeClient.createTh2CustomResource(TH2_NAMESPACE, MESSAGE_STORAGE_BOX_ALIAS, gitHash, spec, ::Th2Mstore)
+            kubeClient.awaitPhase<Th2Mstore>(TH2_NAMESPACE, MESSAGE_STORAGE_BOX_ALIAS, SUCCEEDED)
+            kubeClient.awaitResource<HelmRelease>(TH2_NAMESPACE, MESSAGE_STORAGE_BOX_ALIAS)
+            // FIXME: estore should have binding
 //        println("Bindings: ${rabbitMQClient.getQueueBindings(RABBIT_MQ_V_HOST, createEstoreQueue(TH2_NAMESPACE))}")
+        }
     }
 
-    @Test
-    @Timeout(30_000)
-    fun `add estore`() {
-        val gitHash = RESOURCE_GIT_HASH_COUNTER.incrementAndGet().toString()
-        kubeClient.createTh2Estore(TH2_NAMESPACE, EVENT_STORAGE_BOX_ALIAS, createAnnotations(gitHash, TEST_CONTENT))
-        kubeClient.awaitPhase(TH2_NAMESPACE, EVENT_STORAGE_BOX_ALIAS, Th2Estore::class.java, SUCCEEDED)
-        kubeClient.awaitHelmRelease(TH2_NAMESPACE, EVENT_STORAGE_BOX_ALIAS)
-        rabbitMQClient.assertBindings(
-            createEstoreQueue(TH2_NAMESPACE),
-            RABBIT_MQ_V_HOST,
-            setOf(
-                "link[$TH2_NAMESPACE:$EVENT_STORAGE_BOX_ALIAS:$EVENT_STORAGE_PIN_ALIAS]",
+    @Nested
+    inner class Estore {
+        @Test
+        @Timeout(30_000)
+        fun `add estore`() {
+            val gitHash = RESOURCE_GIT_HASH_COUNTER.incrementAndGet().toString()
+            val spec = """
+                imageName: ghcr.io/th2-net/th2-estore
+                imageVersion: 0.0.0
+            """.trimIndent()
+            kubeClient.createTh2CustomResource(TH2_NAMESPACE, EVENT_STORAGE_BOX_ALIAS, gitHash, spec, ::Th2Estore)
+            kubeClient.awaitPhase<Th2Estore>(TH2_NAMESPACE, EVENT_STORAGE_BOX_ALIAS, SUCCEEDED)
+            kubeClient.awaitResource<HelmRelease>(TH2_NAMESPACE, EVENT_STORAGE_BOX_ALIAS)
+            rabbitMQClient.assertBindings(
+                createEstoreQueue(TH2_NAMESPACE),
+                RABBIT_MQ_V_HOST,
+                setOf(
+                    "link[$TH2_NAMESPACE:$EVENT_STORAGE_BOX_ALIAS:$EVENT_STORAGE_PIN_ALIAS]",
+                )
             )
-        )
+        }
     }
 
-    @Timeout(30_000)
-    @ParameterizedTest
-    @ValueSource(strings = ["th2-core-component", "th2-core-component-more-than-$NAME_LENGTH_LIMIT-characters"])
-    fun `add core component (min configuration)`(name: String) {
-        val gitHash = RESOURCE_GIT_HASH_COUNTER.incrementAndGet().toString()
-        val spec = """
+    @Nested
+    inner class CoreComponent {
+        @Timeout(30_000)
+        @ParameterizedTest
+        @ValueSource(strings = ["th2-core-component", "th2-core-component-more-than-$NAME_LENGTH_LIMIT-characters"])
+        fun `add core component (min configuration)`(name: String) {
+            val gitHash = RESOURCE_GIT_HASH_COUNTER.incrementAndGet().toString()
+            val spec = """
                 imageName: $IMAGE
                 imageVersion: $VERSION
                 type: th2-rpt-data-provider
-        """.trimIndent()
+            """.trimIndent()
 
-        kubeClient.createTh2CoreBox(TH2_NAMESPACE, name, createAnnotations(gitHash, spec.hashCode().toString()), spec)
-        kubeClient.awaitPhase(TH2_NAMESPACE, name, Th2CoreBox::class.java, SUCCEEDED)
-        kubeClient.awaitHelmRelease(TH2_NAMESPACE, hashNameIfNeeded(name)).assertMinCfg(name)
-        rabbitMQClient.assertBindings(
-            createEstoreQueue(TH2_NAMESPACE),
-            RABBIT_MQ_V_HOST,
-            setOf(
-                "link[$TH2_NAMESPACE:$EVENT_STORAGE_BOX_ALIAS:$EVENT_STORAGE_PIN_ALIAS]",
-                "key[$TH2_NAMESPACE:$name:$EVENT_STORAGE_PIN_ALIAS]"
+            kubeClient.createTh2CustomResource(TH2_NAMESPACE, name, gitHash, spec, ::Th2CoreBox)
+            kubeClient.awaitPhase<Th2CoreBox>(TH2_NAMESPACE, name, SUCCEEDED)
+            kubeClient.awaitResource<HelmRelease>(TH2_NAMESPACE, hashNameIfNeeded(name)).assertMinCfg(name)
+            rabbitMQClient.assertBindings(
+                createEstoreQueue(TH2_NAMESPACE),
+                RABBIT_MQ_V_HOST,
+                setOf(
+                    "link[$TH2_NAMESPACE:$EVENT_STORAGE_BOX_ALIAS:$EVENT_STORAGE_PIN_ALIAS]",
+                    "key[$TH2_NAMESPACE:$name:$EVENT_STORAGE_PIN_ALIAS]"
+                )
             )
-        )
+        }
     }
 
-    @Timeout(30_000)
-    @ParameterizedTest
-    @ValueSource(strings = ["th2-component", "th2-component-more-than-$NAME_LENGTH_LIMIT-characters"])
-    fun `add component (min configuration)`(name: String) {
-        val gitHash = RESOURCE_GIT_HASH_COUNTER.incrementAndGet().toString()
-        val spec = """
+    @Nested
+    inner class Component {
+        @Timeout(30_000)
+        @ParameterizedTest
+        @ValueSource(strings = ["th2-component", "th2-component-more-than-$NAME_LENGTH_LIMIT-characters"])
+        fun `add component (min configuration)`(name: String) {
+            val gitHash = RESOURCE_GIT_HASH_COUNTER.incrementAndGet().toString()
+            val spec = """
                 imageName: $IMAGE
                 imageVersion: $VERSION
                 type: th2-codec
-        """.trimIndent()
+            """.trimIndent()
 
-        kubeClient.createTh2Box(TH2_NAMESPACE, name, createAnnotations(gitHash, spec.hashCode().toString()), spec)
-        kubeClient.awaitPhase(TH2_NAMESPACE, name, Th2Box::class.java, SUCCEEDED)
-        kubeClient.awaitHelmRelease(TH2_NAMESPACE, hashNameIfNeeded(name)).assertMinCfg(name)
-        rabbitMQClient.assertBindings(
-            createEstoreQueue(TH2_NAMESPACE),
-            RABBIT_MQ_V_HOST,
-            setOf(
-                "link[$TH2_NAMESPACE:$EVENT_STORAGE_BOX_ALIAS:$EVENT_STORAGE_PIN_ALIAS]",
-                "key[$TH2_NAMESPACE:$name:$EVENT_STORAGE_PIN_ALIAS]"
+            kubeClient.createTh2CustomResource(TH2_NAMESPACE, name, gitHash, spec, ::Th2Box)
+            kubeClient.awaitPhase<Th2Box>(TH2_NAMESPACE, name, SUCCEEDED)
+            kubeClient.awaitResource<HelmRelease>(TH2_NAMESPACE, hashNameIfNeeded(name)).assertMinCfg(name)
+            rabbitMQClient.assertBindings(
+                createEstoreQueue(TH2_NAMESPACE),
+                RABBIT_MQ_V_HOST,
+                setOf(
+                    "link[$TH2_NAMESPACE:$EVENT_STORAGE_BOX_ALIAS:$EVENT_STORAGE_PIN_ALIAS]",
+                    "key[$TH2_NAMESPACE:$name:$EVENT_STORAGE_PIN_ALIAS]"
+                )
             )
-        )
-    }
+        }
 
-    @Timeout(30_000)
-    @ParameterizedTest
-    @ValueSource(strings = ["th2-component", "th2-component-more-than-$NAME_LENGTH_LIMIT-characters"])
-    fun `disable component (min configuration)`(name: String) {
-        var gitHash = RESOURCE_GIT_HASH_COUNTER.incrementAndGet().toString()
-        var spec = """
+        @Timeout(30_000)
+        @ParameterizedTest
+        @ValueSource(strings = ["th2-component", "th2-component-more-than-$NAME_LENGTH_LIMIT-characters"])
+        fun `disable component (min configuration)`(name: String) {
+            var gitHash = RESOURCE_GIT_HASH_COUNTER.incrementAndGet().toString()
+            var spec = """
                 imageName: $IMAGE
                 imageVersion: $VERSION
                 type: th2-codec
                 disabled: false
-        """.trimIndent()
+            """.trimIndent()
 
-        kubeClient.createTh2Box(TH2_NAMESPACE, name, createAnnotations(gitHash, spec.hashCode().toString()), spec)
-        kubeClient.awaitPhase(TH2_NAMESPACE, name, Th2Box::class.java, SUCCEEDED)
-        kubeClient.awaitHelmRelease(TH2_NAMESPACE, hashNameIfNeeded(name)).assertMinCfg(name)
-        rabbitMQClient.assertBindings(
-            createEstoreQueue(TH2_NAMESPACE),
-            RABBIT_MQ_V_HOST,
-            setOf(
-                "link[$TH2_NAMESPACE:$EVENT_STORAGE_BOX_ALIAS:$EVENT_STORAGE_PIN_ALIAS]",
-                "key[$TH2_NAMESPACE:$name:$EVENT_STORAGE_PIN_ALIAS]"
+            kubeClient.createTh2CustomResource(TH2_NAMESPACE, name, gitHash, spec, ::Th2Box)
+            kubeClient.awaitPhase<Th2Box>(TH2_NAMESPACE, name, SUCCEEDED)
+            kubeClient.awaitResource<HelmRelease>(TH2_NAMESPACE, hashNameIfNeeded(name)).assertMinCfg(name)
+            rabbitMQClient.assertBindings(
+                createEstoreQueue(TH2_NAMESPACE),
+                RABBIT_MQ_V_HOST,
+                setOf(
+                    "link[$TH2_NAMESPACE:$EVENT_STORAGE_BOX_ALIAS:$EVENT_STORAGE_PIN_ALIAS]",
+                    "key[$TH2_NAMESPACE:$name:$EVENT_STORAGE_PIN_ALIAS]"
+                )
             )
-        )
 
-        gitHash = RESOURCE_GIT_HASH_COUNTER.incrementAndGet().toString()
-        spec = """
+            gitHash = RESOURCE_GIT_HASH_COUNTER.incrementAndGet().toString()
+            spec = """
+                imageName: $IMAGE
+                imageVersion: $VERSION
+                type: th2-codec
+                disabled: true
+            """.trimIndent()
+
+            kubeClient.modifyTh2CustomResource<Th2Box>(TH2_NAMESPACE, name, gitHash, spec)
+            kubeClient.awaitPhase<Th2Box>(TH2_NAMESPACE, name, DISABLED)
+            kubeClient.awaitNoResource<HelmRelease>(TH2_NAMESPACE, name)
+            rabbitMQClient.assertBindings(
+                createEstoreQueue(TH2_NAMESPACE),
+                RABBIT_MQ_V_HOST,
+                setOf(
+                    "link[$TH2_NAMESPACE:$EVENT_STORAGE_BOX_ALIAS:$EVENT_STORAGE_PIN_ALIAS]",
+                    "key[$TH2_NAMESPACE:$name:$EVENT_STORAGE_PIN_ALIAS]"
+                )
+            )
+        }
+
+        @Timeout(30_000)
+        @ParameterizedTest
+        @ValueSource(strings = ["th2-component", "th2-component-more-than-$NAME_LENGTH_LIMIT-characters"])
+        fun `enabled component (min configuration)`(name: String) {
+            var gitHash = RESOURCE_GIT_HASH_COUNTER.incrementAndGet().toString()
+            var spec = """
                 imageName: $IMAGE
                 imageVersion: $VERSION
                 type: th2-codec
                 disabled: true
         """.trimIndent()
 
-        kubeClient.modifyTh2Box(TH2_NAMESPACE, name, createAnnotations(gitHash, spec.hashCode().toString()), spec)
-        kubeClient.awaitPhase(TH2_NAMESPACE, name, Th2Box::class.java, DISABLED)
-        kubeClient.awaitNoHelmRelease(TH2_NAMESPACE, name)
-        rabbitMQClient.assertBindings(
-            createEstoreQueue(TH2_NAMESPACE),
-            RABBIT_MQ_V_HOST,
-            setOf(
-                "link[$TH2_NAMESPACE:$EVENT_STORAGE_BOX_ALIAS:$EVENT_STORAGE_PIN_ALIAS]",
-                "key[$TH2_NAMESPACE:$name:$EVENT_STORAGE_PIN_ALIAS]"
+            kubeClient.createTh2CustomResource(TH2_NAMESPACE, name, gitHash, spec, ::Th2Box)
+            kubeClient.awaitPhase<Th2Box>(TH2_NAMESPACE, name, DISABLED)
+            kubeClient.awaitNoResource<HelmRelease>(TH2_NAMESPACE, name)
+            rabbitMQClient.assertBindings(
+                createEstoreQueue(TH2_NAMESPACE),
+                RABBIT_MQ_V_HOST,
+                setOf("link[$TH2_NAMESPACE:$EVENT_STORAGE_BOX_ALIAS:$EVENT_STORAGE_PIN_ALIAS]")
             )
-        )
-    }
 
-    @Timeout(30_000)
-    @ParameterizedTest
-    @ValueSource(strings = ["th2-component", "th2-component-more-than-$NAME_LENGTH_LIMIT-characters"])
-    fun `enabled component (min configuration)`(name: String) {
-        var gitHash = RESOURCE_GIT_HASH_COUNTER.incrementAndGet().toString()
-        var spec = """
-                imageName: $IMAGE
-                imageVersion: $VERSION
-                type: th2-codec
-                disabled: true
-        """.trimIndent()
-
-        kubeClient.createTh2Box(TH2_NAMESPACE, name, createAnnotations(gitHash, spec.hashCode().toString()), spec)
-        kubeClient.awaitPhase(TH2_NAMESPACE, name, Th2Box::class.java, DISABLED)
-        kubeClient.awaitNoHelmRelease(TH2_NAMESPACE, name)
-        rabbitMQClient.assertBindings(
-            createEstoreQueue(TH2_NAMESPACE),
-            RABBIT_MQ_V_HOST,
-            setOf("link[$TH2_NAMESPACE:$EVENT_STORAGE_BOX_ALIAS:$EVENT_STORAGE_PIN_ALIAS]")
-        )
-
-        gitHash = RESOURCE_GIT_HASH_COUNTER.incrementAndGet().toString()
-        spec = """
+            gitHash = RESOURCE_GIT_HASH_COUNTER.incrementAndGet().toString()
+            spec = """
                 imageName: $IMAGE
                 imageVersion: $VERSION
                 type: th2-codec
                 disabled: false
-        """.trimIndent()
+            """.trimIndent()
 
-        kubeClient.modifyTh2Box(TH2_NAMESPACE, name, createAnnotations(gitHash, spec.hashCode().toString()), spec)
-        kubeClient.awaitPhase(TH2_NAMESPACE, name, Th2Box::class.java, SUCCEEDED)
-        kubeClient.awaitHelmRelease(TH2_NAMESPACE, hashNameIfNeeded(name)).assertMinCfg(name)
-        rabbitMQClient.assertBindings(
-            createEstoreQueue(TH2_NAMESPACE),
-            RABBIT_MQ_V_HOST,
-            setOf(
-                "link[$TH2_NAMESPACE:$EVENT_STORAGE_BOX_ALIAS:$EVENT_STORAGE_PIN_ALIAS]",
-                "key[$TH2_NAMESPACE:$name:$EVENT_STORAGE_PIN_ALIAS]"
+            kubeClient.modifyTh2CustomResource<Th2Box>(TH2_NAMESPACE, name, gitHash, spec)
+            kubeClient.awaitPhase<Th2Box>(TH2_NAMESPACE, name, SUCCEEDED)
+            kubeClient.awaitResource<HelmRelease>(TH2_NAMESPACE, hashNameIfNeeded(name)).assertMinCfg(name)
+            rabbitMQClient.assertBindings(
+                createEstoreQueue(TH2_NAMESPACE),
+                RABBIT_MQ_V_HOST,
+                setOf(
+                    "link[$TH2_NAMESPACE:$EVENT_STORAGE_BOX_ALIAS:$EVENT_STORAGE_PIN_ALIAS]",
+                    "key[$TH2_NAMESPACE:$name:$EVENT_STORAGE_PIN_ALIAS]"
+                )
             )
-        )
+        }
     }
 
-    @Test
-    @Timeout(30_000)
-    fun `add dictionary (short name)`() {
-        val gitHash = RESOURCE_GIT_HASH_COUNTER.incrementAndGet().toString()
-        val name = "th2-dictionary"
-        val spec = """
+    @Nested
+    inner class Dictionary {
+
+        @Test
+        @Timeout(30_000)
+        fun `add dictionary (short name)`() {
+            val gitHash = RESOURCE_GIT_HASH_COUNTER.incrementAndGet().toString()
+            val name = "th2-dictionary"
+            val spec = """
                 data: $DICTIONARY_CONTENT
         """.trimIndent()
 
-        val annotations = createAnnotations(gitHash, spec.hashCode().toString())
-        kubeClient.createTh2Dictionary(
-            TH2_NAMESPACE,
-            name,
-            annotations,
-            spec
-        )
-        kubeClient.awaitConfigMap(TH2_NAMESPACE, "$name$DICTIONARY_SUFFIX").also { configMap ->
-            expectThat(configMap) {
-                get { metadata }.and {
-                    get { this.annotations } isEqualTo annotations
-                }
-                get { data }.isA<Map<String, String>>().and {
-                    hasSize(1)
-                    getValue("$name$DICTIONARY_SUFFIX") isEqualTo DICTIONARY_CONTENT
+            val annotations = createAnnotations(gitHash, spec.hashCode().toString())
+            kubeClient.createTh2Dictionary(
+                TH2_NAMESPACE,
+                name,
+                annotations,
+                spec
+            )
+            kubeClient.awaitResource<ConfigMap>(TH2_NAMESPACE, "$name$DICTIONARY_SUFFIX").also { configMap ->
+                expectThat(configMap) {
+                    get { metadata }.and {
+                        get { this.annotations } isEqualTo annotations
+                    }
+                    get { data }.isA<Map<String, String>>().and {
+                        hasSize(1)
+                        getValue("$name$DICTIONARY_SUFFIX") isEqualTo DICTIONARY_CONTENT
+                    }
                 }
             }
         }
     }
 
-//    @Test
-    @Timeout(30_000)
-    fun `create job`() {
+    @Nested
+    inner class Job {
+        //    @Test
+        @Timeout(30_000)
+        fun `create job`() {
+        }
     }
 
     companion object {
@@ -521,15 +547,6 @@ class IntegrationTest {
             requireNotNull(IntegrationTest::class.java.classLoader.getResource("crds/$resourceName")) {
                 "Resource '$resourceName' isn't found"
             }.let(YAML_MAPPER::readValue)
-
-        private fun createAnnotations(
-            gitHash: String,
-            sourceHash: String,
-        ) = mapOf(
-            KEY_DETECTION_TIME to System.currentTimeMillis().toString(),
-            GIT_COMMIT_HASH to gitHash,
-            KEY_SOURCE_HASH to sourceHash.hashCode().toString(),
-        )
 
         private fun KubernetesClient.createRabbitMQSecret(
             namespace: String,
