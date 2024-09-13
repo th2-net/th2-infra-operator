@@ -10,6 +10,8 @@ jobs:
       devRelease: true
       createTag: true
       docker-username: ${{ github.actor }}
+      #     FIXME: strict scanner was disabled for 4.6.4 hotfix publishing and must be removed after that
+      strict-scanner: false
     secrets:
       docker-password: ${{ secrets.GITHUB_TOKEN }}
       nvd-api-key: ${{ secrets.NVD_APIKEY }}

@@ -28,7 +28,6 @@ import com.exactpro.th2.infraoperator.spec.strategy.redeploy.NonTerminalExceptio
 import com.exactpro.th2.infraoperator.spec.strategy.redeploy.RetryableTaskQueue;
 import com.exactpro.th2.infraoperator.spec.strategy.redeploy.tasks.TriggerRedeployTask;
 import com.exactpro.th2.infraoperator.util.CustomResourceUtils;
-import com.exactpro.th2.infraoperator.util.ExtractUtils;
 import io.fabric8.kubernetes.api.model.HasMetadata;
 import io.fabric8.kubernetes.api.model.OwnerReference;
 import io.fabric8.kubernetes.api.model.OwnerReferenceBuilder;
@@ -155,8 +154,12 @@ public abstract class AbstractTh2Operator<CR extends Th2CustomResource> implemen
         if (resource.getSpec().getDisabled()) {
             try {
                 deletedEvent(resource);
+                // TODO: work with Th2CustomResource should be encapsulated somewhere
+                //        to void issues with choosing the right function to extract the name
                 Resource<HelmRelease> helmRelease = kubClient.resources(HelmRelease.class)
-                        .inNamespace(extractNamespace(resource)).withName(extractName(resource));
+                        .inNamespace(extractNamespace(resource))
+                        // name must be hashed if it exceeds the limit
+                        .withName(CustomResourceUtils.extractHashedName(resource));
                 String helmReleaseLabel = CustomResourceUtils.annotationFor(helmRelease.get());
                 helmRelease.delete();
                 logger.info("Resource \"{}\" has been deleted", helmReleaseLabel);
@@ -214,7 +217,11 @@ public abstract class AbstractTh2Operator<CR extends Th2CustomResource> implemen
 
         String resourceLabel = CustomResourceUtils.annotationFor(resource);
         fingerprints.remove(resourceLabel);
-        OperatorState.INSTANCE.removeHelmReleaseFromCache(extractName(resource), extractNamespace(resource));
+        // The HelmRelease name is hashed if Th2CustomResource name exceeds the limit
+        OperatorState.INSTANCE.removeHelmReleaseFromCache(
+                CustomResourceUtils.extractHashedName(resource),
+                extractNamespace(resource)
+        );
     }
 
     protected void errorEvent(CR resource) {
@@ -228,7 +235,7 @@ public abstract class AbstractTh2Operator<CR extends Th2CustomResource> implemen
         var resClient = getResourceClient().getInstance();
 
         try {
-            var res = resClient.inNamespace(ExtractUtils.extractNamespace(resource)).resource(resource);
+            var res = resClient.inNamespace(extractNamespace(resource)).resource(resource);
             return res.replaceStatus();
         } catch (KubernetesClientException e) {
 
@@ -236,7 +243,7 @@ public abstract class AbstractTh2Operator<CR extends Th2CustomResource> implemen
                 logger.warn("Failed to update status for \"{}\"  to \"{}\" because it has been " +
                                 "already changed on the server. Trying to sync a resource...",
                         resourceLabel, resource.getStatus().getPhase());
-                var freshRes = resClient.inNamespace(ExtractUtils.extractNamespace(resource)).list().getItems().stream()
+                var freshRes = resClient.inNamespace(extractNamespace(resource)).list().getItems().stream()
                         .filter(r -> extractName(r).equals(extractName(resource)))
                         .findFirst()
                         .orElse(null);
@@ -264,7 +271,7 @@ public abstract class AbstractTh2Operator<CR extends Th2CustomResource> implemen
 
         setupKubObj(resource, kubObj);
 
-        createKubObj(ExtractUtils.extractNamespace(resource), kubObj);
+        createKubObj(extractNamespace(resource), kubObj);
 
         logger.info("Generated \"{}\" based on \"{}\""
                 , CustomResourceUtils.annotationFor(kubObj)
@@ -307,10 +314,10 @@ public abstract class AbstractTh2Operator<CR extends Th2CustomResource> implemen
         }
 
         kubObjMD.setName(finalName);
-        kubObjMD.setNamespace(ExtractUtils.extractNamespace(resource));
+        kubObjMD.setNamespace(extractNamespace(resource));
         kubObjMD.setLabels(resMD.getLabels());
         kubObjMD.setAnnotations(resMD.getAnnotations());
-        kubObjMD.setAnnotations(kubObjMD.getAnnotations() != null ? kubObjMD.getAnnotations() : new HashMap<>());
+        kubObjMD.setAnnotations(kubObjMD.getAnnotations() == null ? new HashMap<>() : kubObjMD.getAnnotations());
 
         kubObjMD.getAnnotations().put(ANTECEDENT_LABEL_KEY_ALIAS, annotation);
 
