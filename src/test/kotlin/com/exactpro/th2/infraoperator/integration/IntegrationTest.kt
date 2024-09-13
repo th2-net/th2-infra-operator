@@ -58,10 +58,15 @@ import com.exactpro.th2.infraoperator.operator.manager.impl.ConfigMapEventHandle
 import com.exactpro.th2.infraoperator.operator.manager.impl.ConfigMapEventHandler.LOGGING_CM_NAME
 import com.exactpro.th2.infraoperator.operator.manager.impl.ConfigMapEventHandler.MQ_ROUTER_CM_NAME
 import com.exactpro.th2.infraoperator.operator.manager.impl.Th2DictionaryEventHandler.DICTIONARY_SUFFIX
+import com.exactpro.th2.infraoperator.spec.box.Th2Box
+import com.exactpro.th2.infraoperator.spec.corebox.Th2CoreBox
+import com.exactpro.th2.infraoperator.spec.estore.Th2Estore
 import com.exactpro.th2.infraoperator.spec.helmrelease.HelmRelease
 import com.exactpro.th2.infraoperator.spec.helmrelease.HelmRelease.NAME_LENGTH_LIMIT
+import com.exactpro.th2.infraoperator.spec.mstore.Th2Mstore
 import com.exactpro.th2.infraoperator.spec.shared.PrometheusConfiguration
-import com.exactpro.th2.infraoperator.spec.shared.status.RolloutPhase
+import com.exactpro.th2.infraoperator.spec.shared.status.RolloutPhase.DISABLED
+import com.exactpro.th2.infraoperator.spec.shared.status.RolloutPhase.SUCCEEDED
 import com.exactpro.th2.infraoperator.spec.strategy.linkresolver.createEstoreQueue
 import com.exactpro.th2.infraoperator.spec.strategy.linkresolver.createMstoreQueue
 import com.exactpro.th2.infraoperator.spec.strategy.linkresolver.mq.RabbitMQContext
@@ -231,6 +236,7 @@ class IntegrationTest {
     fun `add mstore`() {
         val gitHash = RESOURCE_GIT_HASH_COUNTER.incrementAndGet().toString()
         kubeClient.createTh2Mstore(TH2_NAMESPACE, MESSAGE_STORAGE_BOX_ALIAS, createAnnotations(gitHash, TEST_CONTENT))
+        kubeClient.awaitPhase(TH2_NAMESPACE, MESSAGE_STORAGE_BOX_ALIAS, Th2Mstore::class.java, SUCCEEDED)
         kubeClient.awaitHelmRelease(TH2_NAMESPACE, MESSAGE_STORAGE_BOX_ALIAS)
         // FIXME: estore should have binding
 //        println("Bindings: ${rabbitMQClient.getQueueBindings(RABBIT_MQ_V_HOST, createEstoreQueue(TH2_NAMESPACE))}")
@@ -241,6 +247,7 @@ class IntegrationTest {
     fun `add estore`() {
         val gitHash = RESOURCE_GIT_HASH_COUNTER.incrementAndGet().toString()
         kubeClient.createTh2Estore(TH2_NAMESPACE, EVENT_STORAGE_BOX_ALIAS, createAnnotations(gitHash, TEST_CONTENT))
+        kubeClient.awaitPhase(TH2_NAMESPACE, EVENT_STORAGE_BOX_ALIAS, Th2Estore::class.java, SUCCEEDED)
         kubeClient.awaitHelmRelease(TH2_NAMESPACE, EVENT_STORAGE_BOX_ALIAS)
         rabbitMQClient.assertBindings(
             createEstoreQueue(TH2_NAMESPACE),
@@ -262,12 +269,8 @@ class IntegrationTest {
                 type: th2-rpt-data-provider
         """.trimIndent()
 
-        kubeClient.createTh2CoreBox(
-            TH2_NAMESPACE,
-            name,
-            createAnnotations(gitHash, spec.hashCode().toString()),
-            spec
-        )
+        kubeClient.createTh2CoreBox(TH2_NAMESPACE, name, createAnnotations(gitHash, spec.hashCode().toString()), spec)
+        kubeClient.awaitPhase(TH2_NAMESPACE, name, Th2CoreBox::class.java, SUCCEEDED)
         kubeClient.awaitHelmRelease(TH2_NAMESPACE, hashNameIfNeeded(name)).assertMinCfg(name)
         rabbitMQClient.assertBindings(
             createEstoreQueue(TH2_NAMESPACE),
@@ -291,6 +294,7 @@ class IntegrationTest {
         """.trimIndent()
 
         kubeClient.createTh2Box(TH2_NAMESPACE, name, createAnnotations(gitHash, spec.hashCode().toString()), spec)
+        kubeClient.awaitPhase(TH2_NAMESPACE, name, Th2Box::class.java, SUCCEEDED)
         kubeClient.awaitHelmRelease(TH2_NAMESPACE, hashNameIfNeeded(name)).assertMinCfg(name)
         rabbitMQClient.assertBindings(
             createEstoreQueue(TH2_NAMESPACE),
@@ -315,6 +319,7 @@ class IntegrationTest {
         """.trimIndent()
 
         kubeClient.createTh2Box(TH2_NAMESPACE, name, createAnnotations(gitHash, spec.hashCode().toString()), spec)
+        kubeClient.awaitPhase(TH2_NAMESPACE, name, Th2Box::class.java, SUCCEEDED)
         kubeClient.awaitHelmRelease(TH2_NAMESPACE, hashNameIfNeeded(name)).assertMinCfg(name)
         rabbitMQClient.assertBindings(
             createEstoreQueue(TH2_NAMESPACE),
@@ -334,8 +339,50 @@ class IntegrationTest {
         """.trimIndent()
 
         kubeClient.modifyTh2Box(TH2_NAMESPACE, name, createAnnotations(gitHash, spec.hashCode().toString()), spec)
+        kubeClient.awaitPhase(TH2_NAMESPACE, name, Th2Box::class.java, DISABLED)
         kubeClient.awaitNoHelmRelease(TH2_NAMESPACE, name)
-        kubeClient.awaitPhase(TH2_NAMESPACE, name, RolloutPhase.DISABLED)
+        rabbitMQClient.assertBindings(
+            createEstoreQueue(TH2_NAMESPACE),
+            RABBIT_MQ_V_HOST,
+            setOf(
+                "link[$TH2_NAMESPACE:$EVENT_STORAGE_BOX_ALIAS:$EVENT_STORAGE_PIN_ALIAS]",
+                "key[$TH2_NAMESPACE:$name:$EVENT_STORAGE_PIN_ALIAS]"
+            )
+        )
+    }
+
+    @Timeout(30_000)
+    @ParameterizedTest
+    @ValueSource(strings = ["th2-component", "th2-component-more-than-$NAME_LENGTH_LIMIT-characters"])
+    fun `enabled component (min configuration)`(name: String) {
+        var gitHash = RESOURCE_GIT_HASH_COUNTER.incrementAndGet().toString()
+        var spec = """
+                imageName: $IMAGE
+                imageVersion: $VERSION
+                type: th2-codec
+                disabled: true
+        """.trimIndent()
+
+        kubeClient.createTh2Box(TH2_NAMESPACE, name, createAnnotations(gitHash, spec.hashCode().toString()), spec)
+        kubeClient.awaitPhase(TH2_NAMESPACE, name, Th2Box::class.java, DISABLED)
+        kubeClient.awaitNoHelmRelease(TH2_NAMESPACE, name)
+        rabbitMQClient.assertBindings(
+            createEstoreQueue(TH2_NAMESPACE),
+            RABBIT_MQ_V_HOST,
+            setOf("link[$TH2_NAMESPACE:$EVENT_STORAGE_BOX_ALIAS:$EVENT_STORAGE_PIN_ALIAS]")
+        )
+
+        gitHash = RESOURCE_GIT_HASH_COUNTER.incrementAndGet().toString()
+        spec = """
+                imageName: $IMAGE
+                imageVersion: $VERSION
+                type: th2-codec
+                disabled: false
+        """.trimIndent()
+
+        kubeClient.modifyTh2Box(TH2_NAMESPACE, name, createAnnotations(gitHash, spec.hashCode().toString()), spec)
+        kubeClient.awaitPhase(TH2_NAMESPACE, name, Th2Box::class.java, SUCCEEDED)
+        kubeClient.awaitHelmRelease(TH2_NAMESPACE, hashNameIfNeeded(name)).assertMinCfg(name)
         rabbitMQClient.assertBindings(
             createEstoreQueue(TH2_NAMESPACE),
             RABBIT_MQ_V_HOST,

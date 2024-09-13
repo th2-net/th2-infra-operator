@@ -19,18 +19,14 @@ package com.exactpro.th2.infraoperator.util;
 import com.exactpro.th2.infraoperator.spec.Th2CustomResource;
 import com.exactpro.th2.infraoperator.spec.helmrelease.HelmRelease;
 import io.fabric8.kubernetes.api.model.HasMetadata;
-import org.jetbrains.annotations.Nullable;
+import org.jetbrains.annotations.NotNull;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
-import java.util.List;
-import java.util.Objects;
 
 import static com.exactpro.th2.infraoperator.util.ExtractUtils.extractName;
-import static com.exactpro.th2.infraoperator.util.ExtractUtils.extractNamespace;
-import static com.exactpro.th2.infraoperator.util.ExtractUtils.extractType;
 
 public class CustomResourceUtils {
 
@@ -53,7 +49,7 @@ public class CustomResourceUtils {
         return String.format("%s:%s/%s(commit-%s)", namespace, kind, resourceName, commitHash);
     }
 
-    public static String annotationFor(HasMetadata resource) {
+    public static String annotationFor(@NotNull HasMetadata resource) {
         return annotationFor(
                 resource.getMetadata().getNamespace(),
                 resource.getKind(),
@@ -62,47 +58,15 @@ public class CustomResourceUtils {
         );
     }
 
-    @Nullable
-    public static HelmRelease search(List<HelmRelease> helmReleases, Th2CustomResource resource) {
-        String resFullName = extractHashedFullName(resource);
-        return helmReleases.stream()
-                .filter(hr -> {
-                    var owner = extractOwnerFullName(hr);
-                    return Objects.nonNull(owner) && owner.equals(resFullName);
-                }).findFirst()
-                .orElse(null);
-    }
-
     public static String extractHashedName(Th2CustomResource customResource) {
         return hashNameIfNeeded(extractName(customResource));
     }
 
-    private static String extractHashedFullName(Th2CustomResource customResource) {
-        return concatFullName(extractNamespace(customResource), extractHashedName(customResource));
-    }
-
-    @Nullable
-    private static String extractOwnerFullName(HelmRelease helmRelease) {
-        var ownerReferences = helmRelease.getMetadata().getOwnerReferences();
-        if (!ownerReferences.isEmpty()) {
-            return concatFullName(extractNamespace(helmRelease), ownerReferences.get(0).getName());
-        } else {
-            logger.warn("[{}<{}>] doesn't have owner resource", extractType(helmRelease), extractFullName(helmRelease));
-            return null;
-        }
-    }
-
-    private static String extractFullName(HasMetadata obj) {
-        return concatFullName(extractNamespace(obj), extractName(obj));
-    }
-
-    private static String concatFullName(String namespace, String name) {
-        return namespace + "." + name;
-    }
-
     public static String hashNameIfNeeded(String resName) {
         if (resName.length() >= HelmRelease.NAME_LENGTH_LIMIT) {
-            return digest(resName);
+            String result = digest(resName);
+            logger.debug("Resource '{}' name has been hashed to '{}'", resName, result);
+            return result;
         }
         return resName;
     }

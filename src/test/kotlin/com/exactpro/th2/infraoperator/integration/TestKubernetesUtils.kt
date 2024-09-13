@@ -17,6 +17,7 @@
 package com.exactpro.th2.infraoperator.integration
 
 import com.exactpro.th2.infraoperator.operator.manager.impl.ConfigMapEventHandler.SECRET_TYPE_OPAQUE
+import com.exactpro.th2.infraoperator.spec.Th2CustomResource
 import com.exactpro.th2.infraoperator.spec.Th2Spec
 import com.exactpro.th2.infraoperator.spec.box.Th2Box
 import com.exactpro.th2.infraoperator.spec.corebox.Th2CoreBox
@@ -151,13 +152,14 @@ fun KubernetesClient.deleteConfigMap(
 fun KubernetesClient.awaitPhase(
     namespace: String,
     name: String,
+    resourceType: Class<out Th2CustomResource>,
     phase: RolloutPhase,
     timeout: Long = 5_000,
     unit: TimeUnit = TimeUnit.MILLISECONDS,
 ) {
     await("awaitStatus ($name $phase)")
         .timeout(timeout, unit)
-        .until {  resources(Th2Box::class.java)?.inNamespace(namespace)?.withName(name)?.get()?.status?.phase == phase }
+        .until {  resources(resourceType)?.inNamespace(namespace)?.withName(name)?.get()?.status?.phase == phase }
 }
 
 fun KubernetesClient.createTh2Mstore(

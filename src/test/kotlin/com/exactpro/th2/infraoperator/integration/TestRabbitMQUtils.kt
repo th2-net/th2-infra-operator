@@ -123,7 +123,7 @@ fun Client.assertBindings(
     timeout: Long = 5_000,
     unit: TimeUnit = TimeUnit.MILLISECONDS,
 ) {
-    await("assertBindings('$queue'), bindings: $routingKeys")
+    await("assertBindings('$queue'), routing keys: $routingKeys")
         .timeout(timeout, unit)
         .until { getQueueBindings(vHost, queue).size == routingKeys.size }
 
