@@ -25,6 +25,7 @@ import com.exactpro.th2.infraoperator.spec.dictionary.Th2DictionarySpec
 import com.exactpro.th2.infraoperator.spec.estore.Th2Estore
 import com.exactpro.th2.infraoperator.spec.helmrelease.HelmRelease
 import com.exactpro.th2.infraoperator.spec.mstore.Th2Mstore
+import com.exactpro.th2.infraoperator.spec.shared.status.RolloutPhase
 import com.exactpro.th2.infraoperator.util.JsonUtils.YAML_MAPPER
 import io.fabric8.kubernetes.api.model.ConfigMap
 import io.fabric8.kubernetes.api.model.Namespace
@@ -125,12 +126,12 @@ fun KubernetesClient.awaitConfigMap(
     return resources(ConfigMap::class.java).inNamespace(namespace).withName(name).get()
 }
 
-fun KubernetesClient.awaitNoConfigMap(
+fun KubernetesClient.awaitNoConfigMaps(
     namespace: String,
     timeout: Long = 5_000,
     unit: TimeUnit = TimeUnit.MILLISECONDS,
 ) {
-    await("awaitNoConfigMap")
+    await("awaitNoConfigMaps")
         .timeout(timeout, unit)
         .until { resources(ConfigMap::class.java).inNamespace(namespace).list().items.isEmpty() }
 }
@@ -145,6 +146,18 @@ fun KubernetesClient.deleteConfigMap(
         .inNamespace(namespace)
         ?.withName(name)
         ?.awaitDeleteResource("deleteConfigMap('$namespace/$name')", timeout, unit)
+}
+
+fun KubernetesClient.awaitPhase(
+    namespace: String,
+    name: String,
+    phase: RolloutPhase,
+    timeout: Long = 5_000,
+    unit: TimeUnit = TimeUnit.MILLISECONDS,
+) {
+    await("awaitStatus ($name $phase)")
+        .timeout(timeout, unit)
+        .until {  resources(Th2Box::class.java)?.inNamespace(namespace)?.withName(name)?.get()?.status?.phase == phase }
 }
 
 fun KubernetesClient.createTh2Mstore(
@@ -166,6 +179,16 @@ fun KubernetesClient.createTh2Mstore(
     ).create()
 }
 
+fun KubernetesClient.awaitNoTh2Mstores(
+    namespace: String,
+    timeout: Long = 5_000,
+    unit: TimeUnit = TimeUnit.MILLISECONDS,
+) {
+    await("awaitNoTh2Mstores")
+        .timeout(timeout, unit)
+        .until { resources(Th2Mstore::class.java).inNamespace(namespace).list().items.isEmpty() }
+}
+
 fun KubernetesClient.createTh2Estore(
     namespace: String,
     name: String,
@@ -185,6 +208,16 @@ fun KubernetesClient.createTh2Estore(
     ).create()
 }
 
+fun KubernetesClient.awaitNoTh2Estores(
+    namespace: String,
+    timeout: Long = 5_000,
+    unit: TimeUnit = TimeUnit.MILLISECONDS,
+) {
+    await("awaitNoTh2Estores")
+        .timeout(timeout, unit)
+        .until { resources(Th2Estore::class.java).inNamespace(namespace).list().items.isEmpty() }
+}
+
 fun KubernetesClient.createTh2CoreBox(
     namespace: String,
     name: String,
@@ -199,6 +232,16 @@ fun KubernetesClient.createTh2CoreBox(
     ).create()
 }
 
+fun KubernetesClient.awaitNoTh2CoreBoxes(
+    namespace: String,
+    timeout: Long = 5_000,
+    unit: TimeUnit = TimeUnit.MILLISECONDS,
+) {
+    await("awaitNoTh2CoreBoxes")
+        .timeout(timeout, unit)
+        .until { resources(Th2CoreBox::class.java).inNamespace(namespace).list().items.isEmpty() }
+}
+
 fun KubernetesClient.createTh2Box(
     namespace: String,
     name: String,
@@ -211,6 +254,31 @@ fun KubernetesClient.createTh2Box(
             this.spec = YAML_MAPPER.readValue(spec, Th2Spec::class.java)
         }
     ).create()
+}
+
+fun KubernetesClient.modifyTh2Box(
+    namespace: String,
+    name: String,
+    annotations: Map<String, String>,
+    spec: String,
+) {
+    resource(
+        resources(Th2Box::class.java).inNamespace(namespace).withName(name).get().apply {
+            this.metadata.annotations.putAll(annotations)
+            this.metadata.generation += 1
+            this.spec = YAML_MAPPER.readValue(spec, Th2Spec::class.java)
+        }
+    ).update()
+}
+
+fun KubernetesClient.awaitNoTh2Boxes(
+    namespace: String,
+    timeout: Long = 5_000,
+    unit: TimeUnit = TimeUnit.MILLISECONDS,
+) {
+    await("awaitNoTh2Boxes")
+        .timeout(timeout, unit)
+        .until { resources(Th2Box::class.java).inNamespace(namespace).list().items.isEmpty() }
 }
 
 fun KubernetesClient.createTh2Dictionary(
@@ -240,14 +308,25 @@ fun KubernetesClient.awaitHelmRelease(
     return resources(HelmRelease::class.java).inNamespace(namespace).withName(name).get()
 }
 
-fun KubernetesClient.awaitNoHelmRelease(
+fun KubernetesClient.awaitNoHelmReleases(
     namespace: String,
-    timeout: Long = 2000,
+    timeout: Long = 5_000,
     unit: TimeUnit = TimeUnit.MILLISECONDS,
 ) {
-    await("awaitNoHelmRelease")
+    await("awaitNoHelmReleases")
         .timeout(timeout, unit)
         .until { resources(HelmRelease::class.java).inNamespace(namespace).list().items.isEmpty() }
+}
+
+fun KubernetesClient.awaitNoHelmRelease(
+    namespace: String,
+    name: String,
+    timeout: Long = 5_000,
+    unit: TimeUnit = TimeUnit.MILLISECONDS,
+) {
+    await("awaitNoHelmRelease ($name)")
+        .timeout(timeout, unit)
+        .until { resources(HelmRelease::class.java).inNamespace(namespace).withName(name).get() == null }
 }
 
 private fun Deletable.awaitDeleteResource(

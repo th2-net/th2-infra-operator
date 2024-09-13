@@ -36,6 +36,7 @@ import io.fabric8.kubernetes.client.KubernetesClient;
 import io.fabric8.kubernetes.client.KubernetesClientException;
 import io.fabric8.kubernetes.client.Watcher;
 import io.fabric8.kubernetes.client.WatcherException;
+import io.fabric8.kubernetes.client.dsl.Resource;
 import io.prometheus.client.Histogram;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -153,13 +154,15 @@ public abstract class AbstractTh2Operator<CR extends Th2CustomResource> implemen
 
         if (resource.getSpec().getDisabled()) {
             try {
-                logger.info("Resource \"{}\" has been disabled, executing DELETE action", resourceLabel);
                 deletedEvent(resource);
-                kubClient.resources(HelmRelease.class)
-                        .inNamespace(extractNamespace(resource)).withName(extractName(resource)).delete();
+                Resource<HelmRelease> helmRelease = kubClient.resources(HelmRelease.class)
+                        .inNamespace(extractNamespace(resource)).withName(extractName(resource));
+                String helmReleaseLabel = CustomResourceUtils.annotationFor(helmRelease.get());
+                helmRelease.delete();
+                logger.info("Resource \"{}\" has been deleted", helmReleaseLabel);
                 resource.getStatus().disabled("Resource has been disabled");
+                logger.info("Resource \"{}\" has been disabled, executing DELETE action", resourceLabel);
                 updateStatus(resource);
-                logger.info("Resource \"{}\" has been deleted", resourceLabel);
             } catch (Exception e) {
                 resource.getStatus().failed("Unknown error");
                 updateStatus(resource);

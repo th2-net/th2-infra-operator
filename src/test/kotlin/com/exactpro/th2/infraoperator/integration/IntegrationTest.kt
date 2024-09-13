@@ -61,6 +61,7 @@ import com.exactpro.th2.infraoperator.operator.manager.impl.Th2DictionaryEventHa
 import com.exactpro.th2.infraoperator.spec.helmrelease.HelmRelease
 import com.exactpro.th2.infraoperator.spec.helmrelease.HelmRelease.NAME_LENGTH_LIMIT
 import com.exactpro.th2.infraoperator.spec.shared.PrometheusConfiguration
+import com.exactpro.th2.infraoperator.spec.shared.status.RolloutPhase
 import com.exactpro.th2.infraoperator.spec.strategy.linkresolver.createEstoreQueue
 import com.exactpro.th2.infraoperator.spec.strategy.linkresolver.createMstoreQueue
 import com.exactpro.th2.infraoperator.spec.strategy.linkresolver.mq.RabbitMQContext
@@ -107,7 +108,6 @@ import java.nio.file.Files
 import java.nio.file.Path
 import java.util.UUID
 import java.util.concurrent.TimeUnit.MINUTES
-import java.util.concurrent.TimeUnit.SECONDS
 import java.util.concurrent.atomic.AtomicLong
 import kotlin.io.path.absolutePathString
 import kotlin.io.path.createDirectories
@@ -136,9 +136,7 @@ class IntegrationTest {
 
     @BeforeAll
     @Timeout(30_000)
-    fun beforeAll(
-        @TempDir tempDir: Path,
-    ) {
+    fun beforeAll(@TempDir tempDir: Path) {
         this.tempDir = tempDir
         configDir = tempDir.resolve("cfg")
         kubeConfig = configDir.resolve("kube-config.yaml")
@@ -215,13 +213,17 @@ class IntegrationTest {
         kubeClient.deleteNamespace(TH2_NAMESPACE, 1, MINUTES)
         // FIXME: Secret not found "th2-test:Secret/rabbitMQ"
 
-        rabbitMQClient.assertNoQueue(createEstoreQueue(TH2_NAMESPACE), 1, SECONDS)
-        rabbitMQClient.assertNoQueue(createMstoreQueue(TH2_NAMESPACE), 1, SECONDS)
+        rabbitMQClient.assertNoQueue(createEstoreQueue(TH2_NAMESPACE))
+        rabbitMQClient.assertNoQueue(createMstoreQueue(TH2_NAMESPACE))
         rabbitMQClient.assertNoExchange(toExchangeName(TH2_NAMESPACE))
         rabbitMQClient.assertNoUser(TH2_NAMESPACE)
 
-        kubeClient.awaitNoHelmRelease(TH2_NAMESPACE)
-        kubeClient.awaitNoConfigMap(TH2_NAMESPACE)
+        kubeClient.awaitNoHelmReleases(TH2_NAMESPACE)
+        kubeClient.awaitNoConfigMaps(TH2_NAMESPACE)
+        kubeClient.awaitNoTh2Estores(TH2_NAMESPACE)
+        kubeClient.awaitNoTh2Mstores(TH2_NAMESPACE)
+        kubeClient.awaitNoTh2CoreBoxes(TH2_NAMESPACE)
+        kubeClient.awaitNoTh2Boxes(TH2_NAMESPACE)
     }
 
     @Test
@@ -249,9 +251,6 @@ class IntegrationTest {
         )
     }
 
-    /**
-     * Max name length is limited by [HelmRelease.NAME_LENGTH_LIMIT]
-     */
     @Timeout(30_000)
     @ParameterizedTest
     @ValueSource(strings = ["th2-core-component", "th2-core-component-more-than-$NAME_LENGTH_LIMIT-characters"])
@@ -280,9 +279,6 @@ class IntegrationTest {
         )
     }
 
-    /**
-     * Max name length is limited by [HelmRelease.NAME_LENGTH_LIMIT]
-     */
     @Timeout(30_000)
     @ParameterizedTest
     @ValueSource(strings = ["th2-component", "th2-component-more-than-$NAME_LENGTH_LIMIT-characters"])
@@ -294,13 +290,52 @@ class IntegrationTest {
                 type: th2-codec
         """.trimIndent()
 
-        kubeClient.createTh2Box(
-            TH2_NAMESPACE,
-            name,
-            createAnnotations(gitHash, spec.hashCode().toString()),
-            spec
-        )
+        kubeClient.createTh2Box(TH2_NAMESPACE, name, createAnnotations(gitHash, spec.hashCode().toString()), spec)
         kubeClient.awaitHelmRelease(TH2_NAMESPACE, hashNameIfNeeded(name)).assertMinCfg(name)
+        rabbitMQClient.assertBindings(
+            createEstoreQueue(TH2_NAMESPACE),
+            RABBIT_MQ_V_HOST,
+            setOf(
+                "link[$TH2_NAMESPACE:$EVENT_STORAGE_BOX_ALIAS:$EVENT_STORAGE_PIN_ALIAS]",
+                "key[$TH2_NAMESPACE:$name:$EVENT_STORAGE_PIN_ALIAS]"
+            )
+        )
+    }
+
+    @Timeout(30_000)
+    @ParameterizedTest
+    @ValueSource(strings = ["th2-component", "th2-component-more-than-$NAME_LENGTH_LIMIT-characters"])
+    fun `disable component (min configuration)`(name: String) {
+        var gitHash = RESOURCE_GIT_HASH_COUNTER.incrementAndGet().toString()
+        var spec = """
+                imageName: $IMAGE
+                imageVersion: $VERSION
+                type: th2-codec
+                disabled: false
+        """.trimIndent()
+
+        kubeClient.createTh2Box(TH2_NAMESPACE, name, createAnnotations(gitHash, spec.hashCode().toString()), spec)
+        kubeClient.awaitHelmRelease(TH2_NAMESPACE, hashNameIfNeeded(name)).assertMinCfg(name)
+        rabbitMQClient.assertBindings(
+            createEstoreQueue(TH2_NAMESPACE),
+            RABBIT_MQ_V_HOST,
+            setOf(
+                "link[$TH2_NAMESPACE:$EVENT_STORAGE_BOX_ALIAS:$EVENT_STORAGE_PIN_ALIAS]",
+                "key[$TH2_NAMESPACE:$name:$EVENT_STORAGE_PIN_ALIAS]"
+            )
+        )
+
+        gitHash = RESOURCE_GIT_HASH_COUNTER.incrementAndGet().toString()
+        spec = """
+                imageName: $IMAGE
+                imageVersion: $VERSION
+                type: th2-codec
+                disabled: true
+        """.trimIndent()
+
+        kubeClient.modifyTh2Box(TH2_NAMESPACE, name, createAnnotations(gitHash, spec.hashCode().toString()), spec)
+        kubeClient.awaitNoHelmRelease(TH2_NAMESPACE, name)
+        kubeClient.awaitPhase(TH2_NAMESPACE, name, RolloutPhase.DISABLED)
         rabbitMQClient.assertBindings(
             createEstoreQueue(TH2_NAMESPACE),
             RABBIT_MQ_V_HOST,

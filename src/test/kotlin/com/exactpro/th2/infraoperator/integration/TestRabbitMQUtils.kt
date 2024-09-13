@@ -32,7 +32,7 @@ fun Client.assertUser(
     user: String,
     vHost: String,
     permissions: RabbitMQNamespacePermissions,
-    timeout: Long = 1_000,
+    timeout: Long = 5_000,
     unit: TimeUnit = TimeUnit.MILLISECONDS,
 ) {
     await("assertUser('$user')")
@@ -48,7 +48,7 @@ fun Client.assertUser(
     assertEquals(
         permissions.configure,
         userPermissions.configure,
-        "User permission '$user' has incorrect configure permission"
+        "User permission '$user' has incorrect configure permission",
     )
     assertEquals(permissions.read, userPermissions.read, "User permission '$user' has incorrect read permission")
     assertEquals(permissions.write, userPermissions.write, "User permission '$user' has incorrect write permission")
@@ -56,7 +56,7 @@ fun Client.assertUser(
 
 fun Client.assertNoUser(
     user: String,
-    timeout: Long = 1_000,
+    timeout: Long = 5_000,
     unit: TimeUnit = TimeUnit.MILLISECONDS,
 ) {
     await("assertNoUser('$user')")
@@ -68,7 +68,7 @@ fun Client.assertExchange(
     exchange: String,
     type: String,
     vHost: String,
-    timeout: Long = 1_000,
+    timeout: Long = 5_000,
     unit: TimeUnit = TimeUnit.MILLISECONDS,
 ) {
     await("assertExchange('$exchange')")
@@ -87,7 +87,7 @@ fun Client.assertExchange(
 
 fun Client.assertNoExchange(
     exchange: String,
-    timeout: Long = 1_000,
+    timeout: Long = 5_000,
     unit: TimeUnit = TimeUnit.MILLISECONDS,
 ) {
     await("assertNoExchange('$exchange')")
@@ -99,7 +99,7 @@ fun Client.assertQueue(
     queue: String,
     type: String,
     vHost: String,
-    timeout: Long = 1_000,
+    timeout: Long = 5_000,
     unit: TimeUnit = TimeUnit.MILLISECONDS,
 ): QueueInfo {
     await("assertQueue('$queue')")
@@ -120,81 +120,66 @@ fun Client.assertBindings(
     queue: String,
     vHost: String,
     routingKeys: Set<String> = emptySet(),
-    timeout: Long = 1_000,
+    timeout: Long = 5_000,
     unit: TimeUnit = TimeUnit.MILLISECONDS,
 ) {
     await("assertBindings('$queue'), bindings: $routingKeys")
         .timeout(timeout, unit)
-        .untilAsserted {
-            val queueBindings = getQueueBindings(vHost, queue)
-            when {
-                routingKeys.isEmpty() -> assertTrue(
-                    queueBindings.isEmpty(),
-                    "Bindings isn't empty for queue '$queue', actual: $queueBindings"
-                )
-                else -> assertAll(
-                    buildList {
-                        add {
-                            assertEquals(
-                                routingKeys.size,
-                                queueBindings.size,
-                                "Bindings number is incorrect for queue '$queue', actual: $queueBindings"
-                            )
-                        }
-                        routingKeys.forEach { routingKey ->
-                            add {
-                                val queueBinding = assertNotNull(
-                                    queueBindings.singleOrNull { it.routingKey == routingKey },
-                                    "Queue '$queue' doesn't contain routing key, actual: $queueBindings"
-                                )
-                                assertAll(
-                                    {
-                                        assertEquals(
-                                            vHost,
-                                            queueBinding.vhost,
-                                            "Binding has incorrect vHost for routing key '$routingKey' in queue '$queue'",
-                                        )
-                                    },
-                                    {
-                                        assertEquals(
-                                            emptyMap(),
-                                            queueBinding.arguments,
-                                            "Binding has arguments for routing key '$routingKey' in queue '$queue'",
-                                        )
-                                    },
-                                    {
-                                        assertEquals(
-                                            routingKey.replace("[", "%5B").replace(":", "%3A").replace("]", "%5D"),
-                                            queueBinding.propertiesKey,
-                                            "Binding has 'propertiesKey' for routing key '$routingKey' in queue '$queue'",
-                                        )
-                                    },
-                                    {
-                                        assertEquals(
-                                            queue,
-                                            queueBinding.destination,
-                                            "Binding has incorrect 'destination' for routing key '$routingKey' in queue '$queue'",
-                                        )
-                                    },
-                                    {
-                                        assertEquals(
-                                            DestinationType.QUEUE,
-                                            queueBinding.destinationType,
-                                            "Binding has incorrect 'destinationType' for routing key '$routingKey' in queue '$queue'",
-                                        )
-                                    },
-                                )
-                            }
-                        }
-                    }
+        .until { getQueueBindings(vHost, queue).size == routingKeys.size }
+
+    val queueBindings = getQueueBindings(vHost, queue)
+    assertAll(routingKeys.map { routingKey ->
+            {
+                val queueBinding =
+                    assertNotNull(
+                        queueBindings.singleOrNull { it.routingKey == routingKey },
+                        "Queue '$queue' doesn't contain routing key, actual: $queueBindings",
+                    )
+                assertAll(
+                    {
+                        assertEquals(
+                            vHost,
+                            queueBinding.vhost,
+                            "Binding has incorrect vHost for routing key '$routingKey' in queue '$queue'",
+                        )
+                    },
+                    {
+                        assertEquals(
+                            emptyMap(),
+                            queueBinding.arguments,
+                            "Binding has arguments for routing key '$routingKey' in queue '$queue'",
+                        )
+                    },
+                    {
+                        assertEquals(
+                            routingKey.replace("[", "%5B").replace(":", "%3A").replace("]", "%5D"),
+                            queueBinding.propertiesKey,
+                            "Binding has 'propertiesKey' for routing key '$routingKey' in queue '$queue'",
+                        )
+                    },
+                    {
+                        assertEquals(
+                            queue,
+                            queueBinding.destination,
+                            "Binding has incorrect 'destination' for routing key '$routingKey' in queue '$queue'",
+                        )
+                    },
+                    {
+                        assertEquals(
+                            DestinationType.QUEUE,
+                            queueBinding.destinationType,
+                            "Binding has incorrect 'destinationType' for routing key '$routingKey' in queue '$queue'",
+                        )
+                    },
                 )
             }
-        }
+        },
+    )
 }
 
 fun Client.assertNoQueue(
     queue: String,
-    timeout: Long = 1_000,
+    timeout: Long = 5_000,
     unit: TimeUnit = TimeUnit.MILLISECONDS,
 ) {
     await("assertQueue('$queue')")

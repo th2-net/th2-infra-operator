@@ -39,7 +39,12 @@ import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
 
-import static com.exactpro.th2.infraoperator.operator.HelmReleaseTh2Op.*;
+import static com.exactpro.th2.infraoperator.operator.HelmReleaseTh2Op.DICTIONARIES_ALIAS;
+import static com.exactpro.th2.infraoperator.operator.HelmReleaseTh2Op.ENABLED_ALIAS;
+import static com.exactpro.th2.infraoperator.operator.HelmReleaseTh2Op.EXTENDED_SETTINGS_ALIAS;
+import static com.exactpro.th2.infraoperator.operator.HelmReleaseTh2Op.EXTERNAL_BOX_ALIAS;
+import static com.exactpro.th2.infraoperator.operator.HelmReleaseTh2Op.MQ_QUEUE_CONFIG_ALIAS;
+import static com.exactpro.th2.infraoperator.operator.HelmReleaseTh2Op.SERVICE_ALIAS;
 import static com.exactpro.th2.infraoperator.util.CustomResourceUtils.annotationFor;
 import static com.exactpro.th2.infraoperator.util.JsonUtils.JSON_MAPPER;
 import static com.exactpro.th2.infraoperator.util.JsonUtils.YAML_MAPPER;
