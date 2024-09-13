@@ -165,10 +165,19 @@ inline fun <reified T: Th2CustomResource> KubernetesClient.awaitPhase(
     phase: RolloutPhase,
     timeout: Long = 5_000,
     unit: TimeUnit = TimeUnit.MILLISECONDS,
+) = awaitPhase(namespace, name, phase, T::class.java, timeout, unit)
+
+fun KubernetesClient.awaitPhase(
+    namespace: String,
+    name: String,
+    phase: RolloutPhase,
+    resourceType: Class<out Th2CustomResource>,
+    timeout: Long = 5_000,
+    unit: TimeUnit = TimeUnit.MILLISECONDS,
 ) {
-    await("awaitStatus ($name ${T::class.java} $phase)")
+    await("awaitStatus ($name $resourceType $phase)")
         .timeout(timeout, unit)
-        .until {  resources(T::class.java)?.inNamespace(namespace)?.withName(name)?.get()?.status?.phase == phase }
+        .until {  resources(resourceType)?.inNamespace(namespace)?.withName(name)?.get()?.status?.phase == phase }
 }
 
 fun KubernetesClient.createTh2CustomResource(
@@ -186,20 +195,28 @@ fun KubernetesClient.createTh2CustomResource(
     ).create()
 }
 
-inline fun <reified T: Th2CustomResource> KubernetesClient.modifyTh2CustomResource(
+fun KubernetesClient.modifyTh2CustomResource(
     namespace: String,
     name: String,
     gitHash: String,
-    spec: String
+    spec: String,
+    resourceType: Class<out Th2CustomResource>,
 ) {
     resource(
-        resources(T::class.java).inNamespace(namespace).withName(name).get().apply {
+        resources(resourceType).inNamespace(namespace).withName(name).get().apply {
             this.metadata.annotations.putAll(createAnnotations(gitHash, spec.hashCode().toString()))
             this.metadata.generation += 1
             this.spec = YAML_MAPPER.readValue(spec, Th2Spec::class.java)
         }
     ).update()
 }
+
+inline fun <reified T: Th2CustomResource> KubernetesClient.modifyTh2CustomResource(
+    namespace: String,
+    name: String,
+    gitHash: String,
+    spec: String
+) = modifyTh2CustomResource(namespace, name, gitHash, spec, T::class.java)
 
 fun KubernetesClient.createTh2Dictionary(
     namespace: String,

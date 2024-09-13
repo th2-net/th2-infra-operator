@@ -57,11 +57,13 @@ import com.exactpro.th2.infraoperator.operator.manager.impl.ConfigMapEventHandle
 import com.exactpro.th2.infraoperator.operator.manager.impl.ConfigMapEventHandler.LOGGING_CM_NAME
 import com.exactpro.th2.infraoperator.operator.manager.impl.ConfigMapEventHandler.MQ_ROUTER_CM_NAME
 import com.exactpro.th2.infraoperator.operator.manager.impl.Th2DictionaryEventHandler.DICTIONARY_SUFFIX
+import com.exactpro.th2.infraoperator.spec.Th2CustomResource
 import com.exactpro.th2.infraoperator.spec.box.Th2Box
 import com.exactpro.th2.infraoperator.spec.corebox.Th2CoreBox
 import com.exactpro.th2.infraoperator.spec.estore.Th2Estore
 import com.exactpro.th2.infraoperator.spec.helmrelease.HelmRelease
 import com.exactpro.th2.infraoperator.spec.helmrelease.HelmRelease.NAME_LENGTH_LIMIT
+import com.exactpro.th2.infraoperator.spec.job.Th2Job
 import com.exactpro.th2.infraoperator.spec.mstore.Th2Mstore
 import com.exactpro.th2.infraoperator.spec.shared.PrometheusConfiguration
 import com.exactpro.th2.infraoperator.spec.shared.status.RolloutPhase.DISABLED
@@ -229,11 +231,129 @@ class IntegrationTest {
         kubeClient.awaitNoResources<Th2Box>(TH2_NAMESPACE)
     }
 
+    interface StoreComponentTest {
+        fun `add component`()
+    }
+
+    abstract inner class ComponentTest<T: Th2CustomResource> {
+        abstract val resourceClass: Class<T>
+        abstract val specType: String
+        abstract val runAsJob: Boolean
+        abstract fun createResources(): T
+
+        abstract fun add(name: String)
+        abstract fun disable(name: String)
+        abstract fun enable(name: String)
+
+        protected fun addTest(name: String) {
+            val gitHash = RESOURCE_GIT_HASH_COUNTER.incrementAndGet().toString()
+            val spec = """
+                imageName: $IMAGE
+                imageVersion: $VERSION
+                type: $specType
+            """.trimIndent()
+
+            kubeClient.createTh2CustomResource(TH2_NAMESPACE, name, gitHash, spec, this::createResources)
+            kubeClient.awaitPhase(TH2_NAMESPACE, name, SUCCEEDED, resourceClass)
+            kubeClient.awaitResource<HelmRelease>(TH2_NAMESPACE, hashNameIfNeeded(name)).assertMinCfg(name, runAsJob)
+            rabbitMQClient.assertBindings(
+                createEstoreQueue(TH2_NAMESPACE),
+                RABBIT_MQ_V_HOST,
+                setOf(
+                    "link[$TH2_NAMESPACE:$EVENT_STORAGE_BOX_ALIAS:$EVENT_STORAGE_PIN_ALIAS]",
+                    "key[$TH2_NAMESPACE:$name:$EVENT_STORAGE_PIN_ALIAS]"
+                )
+            )
+        }
+
+        protected fun disableTest(name: String) {
+            var gitHash = RESOURCE_GIT_HASH_COUNTER.incrementAndGet().toString()
+            var spec = """
+                imageName: $IMAGE
+                imageVersion: $VERSION
+                type: $specType
+                disabled: false
+            """.trimIndent()
+
+            kubeClient.createTh2CustomResource(TH2_NAMESPACE, name, gitHash, spec, this::createResources)
+            kubeClient.awaitPhase(TH2_NAMESPACE, name, SUCCEEDED, resourceClass)
+            kubeClient.awaitResource<HelmRelease>(TH2_NAMESPACE, hashNameIfNeeded(name)).assertMinCfg(name, runAsJob)
+            rabbitMQClient.assertBindings(
+                createEstoreQueue(TH2_NAMESPACE),
+                RABBIT_MQ_V_HOST,
+                setOf(
+                    "link[$TH2_NAMESPACE:$EVENT_STORAGE_BOX_ALIAS:$EVENT_STORAGE_PIN_ALIAS]",
+                    "key[$TH2_NAMESPACE:$name:$EVENT_STORAGE_PIN_ALIAS]"
+                )
+            )
+
+            gitHash = RESOURCE_GIT_HASH_COUNTER.incrementAndGet().toString()
+            spec = """
+                imageName: $IMAGE
+                imageVersion: $VERSION
+                type: $specType
+                disabled: true
+            """.trimIndent()
+
+            kubeClient.modifyTh2CustomResource(TH2_NAMESPACE, name, gitHash, spec, resourceClass)
+            kubeClient.awaitPhase(TH2_NAMESPACE, name, DISABLED, resourceClass)
+            kubeClient.awaitNoResource<HelmRelease>(TH2_NAMESPACE, name)
+            rabbitMQClient.assertBindings(
+                createEstoreQueue(TH2_NAMESPACE),
+                RABBIT_MQ_V_HOST,
+                setOf(
+                    "link[$TH2_NAMESPACE:$EVENT_STORAGE_BOX_ALIAS:$EVENT_STORAGE_PIN_ALIAS]",
+                    "key[$TH2_NAMESPACE:$name:$EVENT_STORAGE_PIN_ALIAS]"
+                )
+            )
+        }
+
+        protected fun enableTest(name: String) {
+            var gitHash = RESOURCE_GIT_HASH_COUNTER.incrementAndGet().toString()
+            var spec = """
+                imageName: $IMAGE
+                imageVersion: $VERSION
+                type: $specType
+                disabled: true
+            """.trimIndent()
+
+            kubeClient.createTh2CustomResource(TH2_NAMESPACE, name, gitHash, spec, this::createResources)
+            kubeClient.awaitPhase(TH2_NAMESPACE, name, DISABLED, resourceClass)
+            kubeClient.awaitNoResource<HelmRelease>(TH2_NAMESPACE, name)
+            rabbitMQClient.assertBindings(
+                createEstoreQueue(TH2_NAMESPACE),
+                RABBIT_MQ_V_HOST,
+                setOf("link[$TH2_NAMESPACE:$EVENT_STORAGE_BOX_ALIAS:$EVENT_STORAGE_PIN_ALIAS]")
+            )
+
+            gitHash = RESOURCE_GIT_HASH_COUNTER.incrementAndGet().toString()
+            spec = """
+                imageName: $IMAGE
+                imageVersion: $VERSION
+                type: $specType
+                disabled: false
+            """.trimIndent()
+
+            kubeClient.modifyTh2CustomResource(TH2_NAMESPACE, name, gitHash, spec, resourceClass)
+            kubeClient.awaitPhase(TH2_NAMESPACE, name, SUCCEEDED, resourceClass)
+            kubeClient.awaitResource<HelmRelease>(TH2_NAMESPACE, hashNameIfNeeded(name)).assertMinCfg(name, runAsJob)
+            rabbitMQClient.assertBindings(
+                createEstoreQueue(TH2_NAMESPACE),
+                RABBIT_MQ_V_HOST,
+                setOf(
+                    "link[$TH2_NAMESPACE:$EVENT_STORAGE_BOX_ALIAS:$EVENT_STORAGE_PIN_ALIAS]",
+                    "key[$TH2_NAMESPACE:$name:$EVENT_STORAGE_PIN_ALIAS]"
+                )
+            )
+        }
+    }
+
     @Nested
-    inner class Mstore {
+    inner class Mstore: StoreComponentTest {
+
         @Test
         @Timeout(30_000)
-        fun `add mstore`() {
+        override fun `add component`() {
             val gitHash = RESOURCE_GIT_HASH_COUNTER.incrementAndGet().toString()
             val spec = """
                 imageName: ghcr.io/th2-net/th2-mstore
@@ -248,10 +368,10 @@ class IntegrationTest {
     }
 
     @Nested
-    inner class Estore {
+    inner class Estore: StoreComponentTest {
         @Test
         @Timeout(30_000)
-        fun `add estore`() {
+        override fun `add component`() {
             val gitHash = RESOURCE_GIT_HASH_COUNTER.incrementAndGet().toString()
             val spec = """
                 imageName: ghcr.io/th2-net/th2-estore
@@ -271,144 +391,84 @@ class IntegrationTest {
     }
 
     @Nested
-    inner class CoreComponent {
+    inner class CoreComponent: ComponentTest<Th2CoreBox>() {
+        override val resourceClass: Class<Th2CoreBox>
+            get() = Th2CoreBox::class.java
+        override val specType: String
+            get() = "th2-rpt-data-provider"
+        override val runAsJob: Boolean
+            get() = false
+
+        override fun createResources(): Th2CoreBox = Th2CoreBox()
+
         @Timeout(30_000)
         @ParameterizedTest
         @ValueSource(strings = ["th2-core-component", "th2-core-component-more-than-$NAME_LENGTH_LIMIT-characters"])
-        fun `add core component (min configuration)`(name: String) {
-            val gitHash = RESOURCE_GIT_HASH_COUNTER.incrementAndGet().toString()
-            val spec = """
-                imageName: $IMAGE
-                imageVersion: $VERSION
-                type: th2-rpt-data-provider
-            """.trimIndent()
+        override fun add(name: String) = addTest(name)
 
-            kubeClient.createTh2CustomResource(TH2_NAMESPACE, name, gitHash, spec, ::Th2CoreBox)
-            kubeClient.awaitPhase<Th2CoreBox>(TH2_NAMESPACE, name, SUCCEEDED)
-            kubeClient.awaitResource<HelmRelease>(TH2_NAMESPACE, hashNameIfNeeded(name)).assertMinCfg(name)
-            rabbitMQClient.assertBindings(
-                createEstoreQueue(TH2_NAMESPACE),
-                RABBIT_MQ_V_HOST,
-                setOf(
-                    "link[$TH2_NAMESPACE:$EVENT_STORAGE_BOX_ALIAS:$EVENT_STORAGE_PIN_ALIAS]",
-                    "key[$TH2_NAMESPACE:$name:$EVENT_STORAGE_PIN_ALIAS]"
-                )
-            )
-        }
+        @Timeout(30_000)
+        @ParameterizedTest
+        @ValueSource(strings = ["th2-core-component", "th2-core-component-more-than-$NAME_LENGTH_LIMIT-characters"])
+        override fun disable(name: String) = disableTest(name)
+
+        @Timeout(30_000)
+        @ParameterizedTest
+        @ValueSource(strings = ["th2-core-component", "th2-core-component-more-than-$NAME_LENGTH_LIMIT-characters"])
+        override fun enable(name: String) = enableTest(name)
     }
 
     @Nested
-    inner class Component {
-        @Timeout(30_000)
-        @ParameterizedTest
-        @ValueSource(strings = ["th2-component", "th2-component-more-than-$NAME_LENGTH_LIMIT-characters"])
-        fun `add component (min configuration)`(name: String) {
-            val gitHash = RESOURCE_GIT_HASH_COUNTER.incrementAndGet().toString()
-            val spec = """
-                imageName: $IMAGE
-                imageVersion: $VERSION
-                type: th2-codec
-            """.trimIndent()
+    inner class Component: ComponentTest<Th2Box>() {
+        override val resourceClass: Class<Th2Box>
+            get() = Th2Box::class.java
+        override val specType: String
+            get() = "th2-codec"
+        override val runAsJob: Boolean
+            get() = false
 
-            kubeClient.createTh2CustomResource(TH2_NAMESPACE, name, gitHash, spec, ::Th2Box)
-            kubeClient.awaitPhase<Th2Box>(TH2_NAMESPACE, name, SUCCEEDED)
-            kubeClient.awaitResource<HelmRelease>(TH2_NAMESPACE, hashNameIfNeeded(name)).assertMinCfg(name)
-            rabbitMQClient.assertBindings(
-                createEstoreQueue(TH2_NAMESPACE),
-                RABBIT_MQ_V_HOST,
-                setOf(
-                    "link[$TH2_NAMESPACE:$EVENT_STORAGE_BOX_ALIAS:$EVENT_STORAGE_PIN_ALIAS]",
-                    "key[$TH2_NAMESPACE:$name:$EVENT_STORAGE_PIN_ALIAS]"
-                )
-            )
-        }
+        override fun createResources(): Th2Box = Th2Box()
 
         @Timeout(30_000)
         @ParameterizedTest
         @ValueSource(strings = ["th2-component", "th2-component-more-than-$NAME_LENGTH_LIMIT-characters"])
-        fun `disable component (min configuration)`(name: String) {
-            var gitHash = RESOURCE_GIT_HASH_COUNTER.incrementAndGet().toString()
-            var spec = """
-                imageName: $IMAGE
-                imageVersion: $VERSION
-                type: th2-codec
-                disabled: false
-            """.trimIndent()
-
-            kubeClient.createTh2CustomResource(TH2_NAMESPACE, name, gitHash, spec, ::Th2Box)
-            kubeClient.awaitPhase<Th2Box>(TH2_NAMESPACE, name, SUCCEEDED)
-            kubeClient.awaitResource<HelmRelease>(TH2_NAMESPACE, hashNameIfNeeded(name)).assertMinCfg(name)
-            rabbitMQClient.assertBindings(
-                createEstoreQueue(TH2_NAMESPACE),
-                RABBIT_MQ_V_HOST,
-                setOf(
-                    "link[$TH2_NAMESPACE:$EVENT_STORAGE_BOX_ALIAS:$EVENT_STORAGE_PIN_ALIAS]",
-                    "key[$TH2_NAMESPACE:$name:$EVENT_STORAGE_PIN_ALIAS]"
-                )
-            )
-
-            gitHash = RESOURCE_GIT_HASH_COUNTER.incrementAndGet().toString()
-            spec = """
-                imageName: $IMAGE
-                imageVersion: $VERSION
-                type: th2-codec
-                disabled: true
-            """.trimIndent()
-
-            kubeClient.modifyTh2CustomResource<Th2Box>(TH2_NAMESPACE, name, gitHash, spec)
-            kubeClient.awaitPhase<Th2Box>(TH2_NAMESPACE, name, DISABLED)
-            kubeClient.awaitNoResource<HelmRelease>(TH2_NAMESPACE, name)
-            rabbitMQClient.assertBindings(
-                createEstoreQueue(TH2_NAMESPACE),
-                RABBIT_MQ_V_HOST,
-                setOf(
-                    "link[$TH2_NAMESPACE:$EVENT_STORAGE_BOX_ALIAS:$EVENT_STORAGE_PIN_ALIAS]",
-                    "key[$TH2_NAMESPACE:$name:$EVENT_STORAGE_PIN_ALIAS]"
-                )
-            )
-        }
+        override fun add(name: String) = addTest(name)
 
         @Timeout(30_000)
         @ParameterizedTest
         @ValueSource(strings = ["th2-component", "th2-component-more-than-$NAME_LENGTH_LIMIT-characters"])
-        fun `enabled component (min configuration)`(name: String) {
-            var gitHash = RESOURCE_GIT_HASH_COUNTER.incrementAndGet().toString()
-            var spec = """
-                imageName: $IMAGE
-                imageVersion: $VERSION
-                type: th2-codec
-                disabled: true
-        """.trimIndent()
+        override fun disable(name: String) = disableTest(name)
 
-            kubeClient.createTh2CustomResource(TH2_NAMESPACE, name, gitHash, spec, ::Th2Box)
-            kubeClient.awaitPhase<Th2Box>(TH2_NAMESPACE, name, DISABLED)
-            kubeClient.awaitNoResource<HelmRelease>(TH2_NAMESPACE, name)
-            rabbitMQClient.assertBindings(
-                createEstoreQueue(TH2_NAMESPACE),
-                RABBIT_MQ_V_HOST,
-                setOf("link[$TH2_NAMESPACE:$EVENT_STORAGE_BOX_ALIAS:$EVENT_STORAGE_PIN_ALIAS]")
-            )
+        @Timeout(30_000)
+        @ParameterizedTest
+        @ValueSource(strings = ["th2-component", "th2-component-more-than-$NAME_LENGTH_LIMIT-characters"])
+        override fun enable(name: String) = enableTest(name)
+    }
 
-            gitHash = RESOURCE_GIT_HASH_COUNTER.incrementAndGet().toString()
-            spec = """
-                imageName: $IMAGE
-                imageVersion: $VERSION
-                type: th2-codec
-                disabled: false
-            """.trimIndent()
+    @Nested
+    inner class Job: ComponentTest<Th2Job>() {
+        override val resourceClass: Class<Th2Job>
+            get() = Th2Job::class.java
+        override val specType: String
+            get() = "th2-job" // supported values: "th2-job"
+        override val runAsJob: Boolean
+            get() = true
 
-            kubeClient.modifyTh2CustomResource<Th2Box>(TH2_NAMESPACE, name, gitHash, spec)
-            kubeClient.awaitPhase<Th2Box>(TH2_NAMESPACE, name, SUCCEEDED)
-            kubeClient.awaitResource<HelmRelease>(TH2_NAMESPACE, hashNameIfNeeded(name)).assertMinCfg(name)
-            rabbitMQClient.assertBindings(
-                createEstoreQueue(TH2_NAMESPACE),
-                RABBIT_MQ_V_HOST,
-                setOf(
-                    "link[$TH2_NAMESPACE:$EVENT_STORAGE_BOX_ALIAS:$EVENT_STORAGE_PIN_ALIAS]",
-                    "key[$TH2_NAMESPACE:$name:$EVENT_STORAGE_PIN_ALIAS]"
-                )
-            )
-        }
+        override fun createResources(): Th2Job = Th2Job()
+
+        @Timeout(30_000)
+        @ParameterizedTest
+        @ValueSource(strings = ["th2-job", "th2-job-more-than-$NAME_LENGTH_LIMIT-characters"])
+        override fun add(name: String) = addTest(name)
+
+        @Timeout(30_000)
+        @ParameterizedTest
+        @ValueSource(strings = ["th2-job", "th2-job-more-than-$NAME_LENGTH_LIMIT-characters"])
+        override fun disable(name: String) = disableTest(name)
+
+        @Timeout(30_000)
+        @ParameterizedTest
+        @ValueSource(strings = ["th2-job", "th2-job-more-than-$NAME_LENGTH_LIMIT-characters"])
+        override fun enable(name: String) = enableTest(name)
     }
 
     @Nested
@@ -441,14 +501,6 @@ class IntegrationTest {
                     }
                 }
             }
-        }
-    }
-
-    @Nested
-    inner class Job {
-        //    @Test
-        @Timeout(30_000)
-        fun `create job`() {
         }
     }
 
@@ -662,7 +714,7 @@ class IntegrationTest {
             deleteConfigMap(namespace, CRADLE_MANAGER_CM_NAME)
         }
 
-        private fun HelmRelease.assertMinCfg(name: String) {
+        private fun HelmRelease.assertMinCfg(name: String, runAsJob: Boolean) {
             expectThat(componentValuesSection) {
                 getValue(BOOK_CONFIG_ALIAS).isA<Map<String, Any?>>().and {
                     hasSize(1)
@@ -689,7 +741,7 @@ class IntegrationTest {
                     }
                     getValue("services").isA<Map<String, Any?>>().isEmpty()
                 }
-                getValue(IS_JOB_ALIAS) isEqualTo false
+                getValue(IS_JOB_ALIAS) isEqualTo runAsJob
                 getValue(SECRET_PATHS_CONFIG_ALIAS).isA<Map<String, Any?>>().isEmpty()
                 getValue(SECRET_VALUES_CONFIG_ALIAS).isA<Map<String, Any?>>().isEmpty()
                 getValue(SCHEMA_SECRETS_ALIAS).isA<Map<String, Any?>>().and {
