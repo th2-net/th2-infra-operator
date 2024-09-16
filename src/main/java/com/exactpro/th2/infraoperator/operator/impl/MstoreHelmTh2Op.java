@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2024 Exactpro (Exactpro Systems Limited)
+ * Copyright 2020-2021 Exactpro (Exactpro Systems Limited)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -28,9 +28,6 @@ import io.fabric8.kubernetes.client.informers.SharedIndexInformer;
 import io.fabric8.kubernetes.client.informers.SharedInformerFactory;
 
 public class MstoreHelmTh2Op extends StoreHelmTh2Op<Th2Mstore> {
-    public static final String MESSAGE_STORAGE_PIN_ALIAS = "mstore-pin";
-
-    public static final String MESSAGE_STORAGE_BOX_ALIAS = "mstore";
 
     private final MstoreClient mstoreClient;
 
@@ -60,4 +57,5 @@ public class MstoreHelmTh2Op extends StoreHelmTh2Op<Th2Mstore> {
     protected String getStorageName() {
         return MESSAGE_STORAGE_BOX_ALIAS;
     }
+
 }

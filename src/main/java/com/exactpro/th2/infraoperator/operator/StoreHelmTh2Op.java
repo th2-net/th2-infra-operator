@@ -30,6 +30,14 @@ public abstract class StoreHelmTh2Op<CR extends Th2CustomResource> extends HelmR
 
     private static final Logger LOGGER = LoggerFactory.getLogger(StoreHelmTh2Op.class);
 
+    public static final String EVENT_STORAGE_PIN_ALIAS = "estore-pin";
+
+    public static final String EVENT_STORAGE_BOX_ALIAS = "estore";
+
+    public static final String MESSAGE_STORAGE_PIN_ALIAS = "mstore-pin";
+
+    public static final String MESSAGE_STORAGE_BOX_ALIAS = "mstore";
+
     public StoreHelmTh2Op(KubernetesClient client) {
         super(client);
     }

@@ -17,8 +17,8 @@
 package com.exactpro.th2.infraoperator.spec.strategy.linkresolver.mq
 
 import com.exactpro.th2.infraoperator.model.LinkDescription
-import com.exactpro.th2.infraoperator.operator.impl.EstoreHelmTh2Op.EVENT_STORAGE_BOX_ALIAS
-import com.exactpro.th2.infraoperator.operator.impl.MstoreHelmTh2Op.MESSAGE_STORAGE_BOX_ALIAS
+import com.exactpro.th2.infraoperator.operator.StoreHelmTh2Op.EVENT_STORAGE_BOX_ALIAS
+import com.exactpro.th2.infraoperator.operator.StoreHelmTh2Op.MESSAGE_STORAGE_BOX_ALIAS
 import com.exactpro.th2.infraoperator.spec.Th2CustomResource
 import com.exactpro.th2.infraoperator.spec.shared.PinAttribute
 import com.exactpro.th2.infraoperator.spec.shared.pin.Link
@@ -34,7 +34,7 @@ import com.exactpro.th2.infraoperator.util.CustomResourceUtils.annotationFor
 import io.github.oshai.kotlinlogging.KotlinLogging
 
 object BindQueueLinkResolver {
-    private val logger = KotlinLogging.logger { }
+    private val K_LOGGER = KotlinLogging.logger { }
 
     @JvmStatic
     fun resolveDeclaredLinks(resource: Th2CustomResource) {
@@ -94,19 +94,15 @@ object BindQueueLinkResolver {
             return false
         }
         if (attributes.contains(PinAttribute.parsed.name)) {
-            logger.warn(
-                "Detected a pin: {}:{} with incorrect store configuration. attribute 'parsed' not allowed",
-                resourceLabel,
-                pinName
-            )
+            K_LOGGER.warn {
+                "Detected a pin: $resourceLabel:$pinName with incorrect store configuration. attribute 'parsed' not allowed"
+            }
             return false
         }
         if (!attributes.contains(PinAttribute.raw.name)) {
-            logger.warn(
-                "Detected a pin: {}:{} with incorrect store configuration. attribute 'raw' is missing",
-                resourceLabel,
-                pinName
-            )
+            K_LOGGER.warn {
+                "Detected a pin: $resourceLabel:$pinName with incorrect store configuration. attribute 'raw' is missing"
+            }
             return false
         }
         return true
@@ -118,19 +114,16 @@ object BindQueueLinkResolver {
             val queueName = queue.queueName.toString()
             val currentQueue = RabbitMQContext.getQueue(queueName)
             if (currentQueue == null) {
-                logger.info("Queue '{}' does not yet exist. skipping binding", queueName)
+                K_LOGGER.info {"Queue '$queueName' does not yet exist. skipping binding" }
                 return
             }
             channel.queueBind(queue.queueName.toString(), queue.exchange, queue.routingKey.toString())
-            logger.info(
-                "Queue '{}' successfully bound to '{}' (commit-{})",
-                queueName,
-                queue.routingKey.toString(),
-                commitHash
-            )
+            K_LOGGER.info {
+                "Queue '$queueName' successfully bound to '${queue.routingKey}' (commit-$commitHash)"
+            }
         } catch (e: Exception) {
             val message = "Exception while working with rabbitMq"
-            logger.error(message, e)
+            K_LOGGER.error(e) { message }
             throw NonTerminalException(message, e)
         }
     }
@@ -157,16 +150,16 @@ object BindQueueLinkResolver {
                 if (!currentBindings.contains(it)) {
                     val currentQueue = RabbitMQContext.getQueue(queueName)
                     if (currentQueue == null) {
-                        logger.info("Queue '{}' already removed. skipping unbinding", queueName)
+                        K_LOGGER.info { "Queue '$queueName' already removed. skipping unbinding" }
                         return
                     }
                     channel.queueUnbind(queueName, queue.namespace, it)
-                    logger.info("Unbind queue '{}' -> '{}'. (commit-{})", it, queueName, commitHash)
+                    K_LOGGER.info { "Unbind queue '$it' -> '$queueName'. (commit-$commitHash)" }
                 }
             }
         } catch (e: Exception) {
             val message = "Exception while removing extinct bindings"
-            logger.error(message, e)
+            K_LOGGER.error(e) { message }
             throw NonTerminalException(message, e)
         }
     }

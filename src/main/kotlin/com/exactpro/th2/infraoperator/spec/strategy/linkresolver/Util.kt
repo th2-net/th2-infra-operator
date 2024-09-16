@@ -18,10 +18,10 @@
 
 package com.exactpro.th2.infraoperator.spec.strategy.linkresolver
 
-import com.exactpro.th2.infraoperator.operator.impl.EstoreHelmTh2Op.EVENT_STORAGE_BOX_ALIAS
-import com.exactpro.th2.infraoperator.operator.impl.EstoreHelmTh2Op.EVENT_STORAGE_PIN_ALIAS
-import com.exactpro.th2.infraoperator.operator.impl.MstoreHelmTh2Op.MESSAGE_STORAGE_BOX_ALIAS
-import com.exactpro.th2.infraoperator.operator.impl.MstoreHelmTh2Op.MESSAGE_STORAGE_PIN_ALIAS
+import com.exactpro.th2.infraoperator.operator.StoreHelmTh2Op.EVENT_STORAGE_BOX_ALIAS
+import com.exactpro.th2.infraoperator.operator.StoreHelmTh2Op.EVENT_STORAGE_PIN_ALIAS
+import com.exactpro.th2.infraoperator.operator.StoreHelmTh2Op.MESSAGE_STORAGE_BOX_ALIAS
+import com.exactpro.th2.infraoperator.operator.StoreHelmTh2Op.MESSAGE_STORAGE_PIN_ALIAS
 import com.exactpro.th2.infraoperator.spec.strategy.linkresolver.queue.QueueName
 import com.exactpro.th2.infraoperator.spec.strategy.linkresolver.queue.RoutingKeyName
 

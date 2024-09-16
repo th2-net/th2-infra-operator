@@ -47,9 +47,9 @@ import com.exactpro.th2.infraoperator.operator.HelmReleaseTh2Op.ROOTLESS_ALIAS
 import com.exactpro.th2.infraoperator.operator.HelmReleaseTh2Op.SCHEMA_SECRETS_ALIAS
 import com.exactpro.th2.infraoperator.operator.HelmReleaseTh2Op.SECRET_PATHS_CONFIG_ALIAS
 import com.exactpro.th2.infraoperator.operator.HelmReleaseTh2Op.SECRET_VALUES_CONFIG_ALIAS
-import com.exactpro.th2.infraoperator.operator.impl.EstoreHelmTh2Op.EVENT_STORAGE_BOX_ALIAS
-import com.exactpro.th2.infraoperator.operator.impl.EstoreHelmTh2Op.EVENT_STORAGE_PIN_ALIAS
-import com.exactpro.th2.infraoperator.operator.impl.MstoreHelmTh2Op.MESSAGE_STORAGE_BOX_ALIAS
+import com.exactpro.th2.infraoperator.operator.StoreHelmTh2Op.EVENT_STORAGE_BOX_ALIAS
+import com.exactpro.th2.infraoperator.operator.StoreHelmTh2Op.EVENT_STORAGE_PIN_ALIAS
+import com.exactpro.th2.infraoperator.operator.StoreHelmTh2Op.MESSAGE_STORAGE_BOX_ALIAS
 import com.exactpro.th2.infraoperator.operator.manager.impl.ConfigMapEventHandler.BOOK_CONFIG_CM_NAME
 import com.exactpro.th2.infraoperator.operator.manager.impl.ConfigMapEventHandler.CRADLE_MANAGER_CM_NAME
 import com.exactpro.th2.infraoperator.operator.manager.impl.ConfigMapEventHandler.DEFAULT_BOOK
