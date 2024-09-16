@@ -177,12 +177,13 @@ fun Client.assertBindings(
     )
 }
 
-fun Client.assertNoQueue(
-    queue: String,
+fun Client.assertNoQueues(
+    queuePattern: String,
+    vHost: String,
     timeout: Long = 5_000,
     unit: TimeUnit = TimeUnit.MILLISECONDS,
 ) {
-    await("assertQueue('$queue')")
+    await("assertNoQueues('$queuePattern')")
         .timeout(timeout, unit)
-        .until { queues.firstOrNull { it.name == queue } == null }
+        .until { queues.map { it.name.matches(Regex(queuePattern)) && it.vhost == vHost }.isEmpty() }
 }
