@@ -87,18 +87,6 @@ fun KubernetesClient.createSecret(
     ).create()
 }
 
-fun KubernetesClient.deleteSecret(
-    namespace: String,
-    name: String,
-    timeout: Long = 200,
-    unit: TimeUnit = TimeUnit.MILLISECONDS,
-) {
-    secrets()
-        .inNamespace(namespace)
-        ?.withName(name)
-        ?.awaitDeleteResource("deleteSecret('$namespace/$name')", timeout, unit)
-}
-
 fun KubernetesClient.createConfigMap(
     namespace: String,
     name: String,
@@ -147,18 +135,6 @@ inline fun <reified T: HasMetadata> KubernetesClient.awaitNoResource(
         .until { resources(T::class.java).inNamespace(namespace).withName(name).get() == null }
 }
 
-fun KubernetesClient.deleteConfigMap(
-    namespace: String,
-    name: String,
-    timeout: Long = 200,
-    unit: TimeUnit = TimeUnit.MILLISECONDS,
-) {
-    configMaps()
-        .inNamespace(namespace)
-        ?.withName(name)
-        ?.awaitDeleteResource("deleteConfigMap('$namespace/$name')", timeout, unit)
-}
-
 inline fun <reified T: Th2CustomResource> KubernetesClient.awaitPhase(
     namespace: String,
     name: String,
@@ -180,43 +156,32 @@ fun KubernetesClient.awaitPhase(
         .until {  resources(resourceType)?.inNamespace(namespace)?.withName(name)?.get()?.status?.phase == phase }
 }
 
-fun KubernetesClient.createTh2CustomResource(
+fun <T: Th2CustomResource> KubernetesClient.createTh2CustomResource(
     namespace: String,
     name: String,
     gitHash: String,
     spec: String,
-    create: () -> Th2CustomResource,
-) {
-    resource(
-        create().apply {
-            this.metadata = createMeta(name, namespace, createAnnotations(gitHash, spec.hashCode().toString()))
-            this.spec = YAML_MAPPER.readValue(spec, Th2Spec::class.java)
-        }
-    ).create()
+    create: () -> T,
+): T = create().apply {
+    this.metadata = createMeta(name, namespace, createAnnotations(gitHash, spec.hashCode().toString()))
+    this.spec = YAML_MAPPER.readValue(spec, Th2Spec::class.java)
+}.also {
+    resource(it).create()
 }
 
-fun KubernetesClient.modifyTh2CustomResource(
+fun <T: Th2CustomResource> KubernetesClient.modifyTh2CustomResource(
     namespace: String,
     name: String,
     gitHash: String,
     spec: String,
-    resourceType: Class<out Th2CustomResource>,
-) {
-    resource(
-        resources(resourceType).inNamespace(namespace).withName(name).get().apply {
-            this.metadata.annotations.putAll(createAnnotations(gitHash, spec.hashCode().toString()))
-            this.metadata.generation += 1
-            this.spec = YAML_MAPPER.readValue(spec, Th2Spec::class.java)
-        }
-    ).update()
+    resourceType: Class<T>,
+): T = resources(resourceType).inNamespace(namespace).withName(name).get().apply {
+    this.metadata.annotations.putAll(createAnnotations(gitHash, spec.hashCode().toString()))
+    this.metadata.generation += 1
+    this.spec = YAML_MAPPER.readValue(spec, Th2Spec::class.java)
+}.also {
+    resource(it).update()
 }
-
-inline fun <reified T: Th2CustomResource> KubernetesClient.modifyTh2CustomResource(
-    namespace: String,
-    name: String,
-    gitHash: String,
-    spec: String
-) = modifyTh2CustomResource(namespace, name, gitHash, spec, T::class.java)
 
 fun KubernetesClient.createTh2Dictionary(
     namespace: String,

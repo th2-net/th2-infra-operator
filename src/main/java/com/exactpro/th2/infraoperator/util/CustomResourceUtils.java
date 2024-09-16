@@ -62,7 +62,7 @@ public class CustomResourceUtils {
         return hashNameIfNeeded(extractName(customResource));
     }
 
-    public static String hashNameIfNeeded(String resName) {
+    private static String hashNameIfNeeded(String resName) {
         if (resName.length() >= HelmRelease.NAME_LENGTH_LIMIT) {
             String result = digest(resName);
             logger.debug("Resource '{}' name has been hashed to '{}'", resName, result);

@@ -73,7 +73,7 @@ import com.exactpro.th2.infraoperator.spec.strategy.linkresolver.createMstoreQue
 import com.exactpro.th2.infraoperator.spec.strategy.linkresolver.mq.RabbitMQContext.DIRECT
 import com.exactpro.th2.infraoperator.spec.strategy.linkresolver.mq.RabbitMQContext.TOPIC
 import com.exactpro.th2.infraoperator.spec.strategy.linkresolver.mq.RabbitMQContext.toExchangeName
-import com.exactpro.th2.infraoperator.util.CustomResourceUtils.hashNameIfNeeded
+import com.exactpro.th2.infraoperator.util.CustomResourceUtils.extractHashedName
 import com.exactpro.th2.infraoperator.util.JsonUtils.JSON_MAPPER
 import com.exactpro.th2.infraoperator.util.JsonUtils.YAML_MAPPER
 import com.exactpro.th2.infraoperator.util.createKubernetesClient
@@ -185,11 +185,11 @@ class IntegrationTest {
         kubeClient.createRabbitMQAppConfigCfgMap(
             TH2_NAMESPACE,
             gitHash,
-            createRabbitMQConfig(rabbitMQContainer, TH2_NAMESPACE)
+            createRabbitMQConfig(rabbitMQContainer)
         )
 
         rabbitMQClient.assertUser(TH2_NAMESPACE, RABBIT_MQ_V_HOST, RABBIT_MQ_NAMESPACE_PERMISSIONS)
-        rabbitMQClient.assertExchange(toExchangeName(TH2_NAMESPACE), DIRECT, RABBIT_MQ_V_HOST)
+        rabbitMQClient.assertExchange(RABBIT_MQ_TH2_EXCHANGE, DIRECT, RABBIT_MQ_V_HOST)
         rabbitMQClient.assertQueue(createMstoreQueue(TH2_NAMESPACE), RABBIT_MQ_QUEUE_CLASSIC_TYPE, RABBIT_MQ_V_HOST)
         rabbitMQClient.assertQueue(createEstoreQueue(TH2_NAMESPACE), RABBIT_MQ_QUEUE_CLASSIC_TYPE, RABBIT_MQ_V_HOST)
 
@@ -252,9 +252,9 @@ class IntegrationTest {
                 type: $specType
             """.trimIndent()
 
-            kubeClient.createTh2CustomResource(TH2_NAMESPACE, name, gitHash, spec, this::createResources)
+            val resource = kubeClient.createTh2CustomResource(TH2_NAMESPACE, name, gitHash, spec, this::createResources)
             kubeClient.awaitPhase(TH2_NAMESPACE, name, SUCCEEDED, resourceClass)
-            kubeClient.awaitResource<HelmRelease>(TH2_NAMESPACE, hashNameIfNeeded(name)).assertMinCfg(name, runAsJob)
+            kubeClient.awaitResource<HelmRelease>(TH2_NAMESPACE, extractHashedName(resource)).assertMinCfg(name, runAsJob)
             rabbitMQClient.assertBindings(
                 createEstoreQueue(TH2_NAMESPACE),
                 RABBIT_MQ_V_HOST,
@@ -274,9 +274,9 @@ class IntegrationTest {
                 disabled: false
             """.trimIndent()
 
-            kubeClient.createTh2CustomResource(TH2_NAMESPACE, name, gitHash, spec, this::createResources)
+            val resource = kubeClient.createTh2CustomResource(TH2_NAMESPACE, name, gitHash, spec, this::createResources)
             kubeClient.awaitPhase(TH2_NAMESPACE, name, SUCCEEDED, resourceClass)
-            kubeClient.awaitResource<HelmRelease>(TH2_NAMESPACE, hashNameIfNeeded(name)).assertMinCfg(name, runAsJob)
+            kubeClient.awaitResource<HelmRelease>(TH2_NAMESPACE, extractHashedName(resource)).assertMinCfg(name, runAsJob)
             rabbitMQClient.assertBindings(
                 createEstoreQueue(TH2_NAMESPACE),
                 RABBIT_MQ_V_HOST,
@@ -333,9 +333,9 @@ class IntegrationTest {
                 disabled: false
             """.trimIndent()
 
-            kubeClient.modifyTh2CustomResource(TH2_NAMESPACE, name, gitHash, spec, resourceClass)
+            val resource = kubeClient.modifyTh2CustomResource(TH2_NAMESPACE, name, gitHash, spec, resourceClass)
             kubeClient.awaitPhase(TH2_NAMESPACE, name, SUCCEEDED, resourceClass)
-            kubeClient.awaitResource<HelmRelease>(TH2_NAMESPACE, hashNameIfNeeded(name)).assertMinCfg(name, runAsJob)
+            kubeClient.awaitResource<HelmRelease>(TH2_NAMESPACE, extractHashedName(resource)).assertMinCfg(name, runAsJob)
             rabbitMQClient.assertBindings(
                 createEstoreQueue(TH2_NAMESPACE),
                 RABBIT_MQ_V_HOST,
@@ -396,7 +396,7 @@ class IntegrationTest {
                 queues = mapOf(
                     PUBLISH_PIN to mapOf(
                         "attributes" to listOf("publish"),
-                        "exchange" to toExchangeName(TH2_NAMESPACE),
+                        "exchange" to RABBIT_MQ_TH2_EXCHANGE,
                         "filters" to emptyList<String>(),
                         "name" to routingKey,
                         "queue" to "",
@@ -409,7 +409,7 @@ class IntegrationTest {
                 queues = mapOf(
                     SUBSCRIBE_PIN to mapOf(
                         "attributes" to listOf("subscribe"),
-                        "exchange" to toExchangeName(TH2_NAMESPACE),
+                        "exchange" to RABBIT_MQ_TH2_EXCHANGE,
                         "filters" to emptyList<String>(),
                         "name" to "",
                         "queue" to queueName,
@@ -742,23 +742,27 @@ class IntegrationTest {
                 "th2-mstore-crd.yaml",
             )
 
+        private const val TH2_PREFIX = "th2-"
+        private const val TH2_NAMESPACE = "${TH2_PREFIX}test"
+        private const val TH2_BOOK = "test_book"
+
         private val RABBIT_MQ_NAMESPACE_PERMISSIONS = RabbitMQNamespacePermissions()
         private const val RABBIT_MQ_QUEUE_CLASSIC_TYPE = "classic"
         private const val RABBIT_MQ_V_HOST = "/"
         private const val RABBIT_MQ_TOPIC_EXCHANGE = "test-global-exchange"
+        private val RABBIT_MQ_TH2_EXCHANGE = toExchangeName(TH2_NAMESPACE)
 
-        private const val TH2_PREFIX = "th2-"
-        private const val TH2_NAMESPACE = "${TH2_PREFIX}test"
-        private const val TH2_BOOK = "test_book"
         private const val PUBLISH_PIN = "test-publish-pin"
         private const val SUBSCRIBE_PIN = "test-subscribe-pin"
+
         private const val SERVER_PIN = "test-server-pin"
         private const val CLIENT_PIN = "test-client-pin"
         private const val GRPC_SERVICE = "com.exactpro.th2.test.grpc.TestService"
+
         private const val IMAGE = "ghcr.io/th2-net/th2-estore"
         private const val VERSION = "0.0.0"
-        private const val DICTIONARY_CONTENT = "test-dictionary-content"
 
+        private const val DICTIONARY_CONTENT = "test-dictionary-content"
         private const val TEST_CONTENT = "test-content"
 
         @JvmStatic
@@ -794,13 +798,12 @@ class IntegrationTest {
 
         private fun createRabbitMQConfig(
             rabbitMQ: RabbitMQContainer,
-            namespace: String,
         ) = RabbitMQConfig(
             rabbitMQ.amqpPort,
             rabbitMQ.host,
             RABBIT_MQ_V_HOST,
-            toExchangeName(namespace),
-            namespace,
+            RABBIT_MQ_TH2_EXCHANGE,
+            TH2_NAMESPACE,
             "${'$'}{RABBITMQ_PASS}",
         )
 
@@ -982,7 +985,7 @@ class IntegrationTest {
                         getValue(EVENT_STORAGE_PIN_ALIAS).isA<Map<String, Any?>>().and {
                             hasSize(5)
                             getValue("attributes").isA<List<String>>() isEqualTo listOf("publish", "event")
-                            getValue("exchange") isEqualTo toExchangeName(TH2_NAMESPACE)
+                            getValue("exchange") isEqualTo RABBIT_MQ_TH2_EXCHANGE
                             getValue("filters").isA<List<String>>().isEmpty() // FIXME
                             getValue("name") isEqualTo "key[$TH2_NAMESPACE:$name:$EVENT_STORAGE_PIN_ALIAS]"
                             getValue("queue").isA<String>().isEmpty()
