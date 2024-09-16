@@ -16,14 +16,6 @@
 package com.exactpro.th2.infraoperator.integration
 
 import com.exactpro.th2.infraoperator.Th2CrdController
-import com.exactpro.th2.infraoperator.configuration.ConfigLoader.CONFIG_FILE_SYSTEM_PROPERTY
-import com.exactpro.th2.infraoperator.configuration.OperatorConfig
-import com.exactpro.th2.infraoperator.configuration.OperatorConfig.Companion.DEFAULT_RABBITMQ_CONFIGMAP_NAME
-import com.exactpro.th2.infraoperator.configuration.OperatorConfig.Companion.RABBITMQ_SECRET_PASSWORD_KEY
-import com.exactpro.th2.infraoperator.configuration.fields.ChartSpec
-import com.exactpro.th2.infraoperator.configuration.fields.RabbitMQConfig
-import com.exactpro.th2.infraoperator.configuration.fields.RabbitMQConfig.Companion.CONFIG_MAP_RABBITMQ_PROP_NAME
-import com.exactpro.th2.infraoperator.configuration.fields.RabbitMQManagementConfig
 import com.exactpro.th2.infraoperator.configuration.fields.RabbitMQNamespacePermissions
 import com.exactpro.th2.infraoperator.operator.HelmReleaseTh2Op.BOOK_CONFIG_ALIAS
 import com.exactpro.th2.infraoperator.operator.HelmReleaseTh2Op.BOOK_NAME_ALIAS
@@ -50,12 +42,6 @@ import com.exactpro.th2.infraoperator.operator.HelmReleaseTh2Op.SECRET_VALUES_CO
 import com.exactpro.th2.infraoperator.operator.StoreHelmTh2Op.EVENT_STORAGE_BOX_ALIAS
 import com.exactpro.th2.infraoperator.operator.StoreHelmTh2Op.EVENT_STORAGE_PIN_ALIAS
 import com.exactpro.th2.infraoperator.operator.StoreHelmTh2Op.MESSAGE_STORAGE_BOX_ALIAS
-import com.exactpro.th2.infraoperator.operator.manager.impl.ConfigMapEventHandler.BOOK_CONFIG_CM_NAME
-import com.exactpro.th2.infraoperator.operator.manager.impl.ConfigMapEventHandler.CRADLE_MANAGER_CM_NAME
-import com.exactpro.th2.infraoperator.operator.manager.impl.ConfigMapEventHandler.DEFAULT_BOOK
-import com.exactpro.th2.infraoperator.operator.manager.impl.ConfigMapEventHandler.GRPC_ROUTER_CM_NAME
-import com.exactpro.th2.infraoperator.operator.manager.impl.ConfigMapEventHandler.LOGGING_CM_NAME
-import com.exactpro.th2.infraoperator.operator.manager.impl.ConfigMapEventHandler.MQ_ROUTER_CM_NAME
 import com.exactpro.th2.infraoperator.operator.manager.impl.Th2DictionaryEventHandler.DICTIONARY_SUFFIX
 import com.exactpro.th2.infraoperator.spec.Th2CustomResource
 import com.exactpro.th2.infraoperator.spec.box.Th2Box
@@ -65,7 +51,6 @@ import com.exactpro.th2.infraoperator.spec.helmrelease.HelmRelease
 import com.exactpro.th2.infraoperator.spec.helmrelease.HelmRelease.NAME_LENGTH_LIMIT
 import com.exactpro.th2.infraoperator.spec.job.Th2Job
 import com.exactpro.th2.infraoperator.spec.mstore.Th2Mstore
-import com.exactpro.th2.infraoperator.spec.shared.PrometheusConfiguration
 import com.exactpro.th2.infraoperator.spec.shared.status.RolloutPhase.DISABLED
 import com.exactpro.th2.infraoperator.spec.shared.status.RolloutPhase.SUCCEEDED
 import com.exactpro.th2.infraoperator.spec.strategy.linkresolver.createEstoreQueue
@@ -74,15 +59,10 @@ import com.exactpro.th2.infraoperator.spec.strategy.linkresolver.mq.RabbitMQCont
 import com.exactpro.th2.infraoperator.spec.strategy.linkresolver.mq.RabbitMQContext.TOPIC
 import com.exactpro.th2.infraoperator.spec.strategy.linkresolver.mq.RabbitMQContext.toExchangeName
 import com.exactpro.th2.infraoperator.util.CustomResourceUtils.extractHashedName
-import com.exactpro.th2.infraoperator.util.JsonUtils.JSON_MAPPER
-import com.exactpro.th2.infraoperator.util.JsonUtils.YAML_MAPPER
 import com.exactpro.th2.infraoperator.util.createKubernetesClient
-import com.fasterxml.jackson.module.kotlin.readValue
 import com.rabbitmq.http.client.Client
 import io.fabric8.kubernetes.api.model.ConfigMap
-import io.fabric8.kubernetes.client.Config
 import io.fabric8.kubernetes.client.KubernetesClient
-import io.github.oshai.kotlinlogging.KotlinLogging
 import org.junit.jupiter.api.AfterAll
 import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.BeforeAll
@@ -107,25 +87,12 @@ import strikt.assertions.isEmpty
 import strikt.assertions.isEqualTo
 import strikt.assertions.isNotNull
 import strikt.assertions.isNull
-import java.nio.file.Files
 import java.nio.file.Path
-import java.util.UUID
 import java.util.concurrent.TimeUnit.MINUTES
-import java.util.concurrent.atomic.AtomicLong
-import kotlin.io.path.absolutePathString
-import kotlin.io.path.createDirectories
-import io.fabric8.kubernetes.api.model.apiextensions.v1.CustomResourceDefinition as CRD
 
 @Tag("integration-test")
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
 class IntegrationTest {
-    private lateinit var tempDir: Path
-
-    private lateinit var configDir: Path
-
-    private lateinit var kubeConfig: Path
-
-    private lateinit var operatorConfig: Path
 
     private lateinit var k3sContainer: K3sContainer
 
@@ -140,20 +107,20 @@ class IntegrationTest {
     @BeforeAll
     @Timeout(30_000)
     fun beforeAll(@TempDir tempDir: Path) {
-        this.tempDir = tempDir
-        configDir = tempDir.resolve("cfg")
-        kubeConfig = configDir.resolve("kube-config.yaml")
-        operatorConfig = configDir.resolve("infra-operator.yml")
-        configDir.createDirectories()
-
         k3sContainer = createK3sContainer()
         rabbitMQContainer = createRabbitMQContainer()
 
-        Files.writeString(kubeConfig, k3sContainer.kubeConfigYaml)
-        YAML_MAPPER.writeValue(operatorConfig.toFile(), createOperatorConfig(rabbitMQContainer))
-
-        System.setProperty(Config.KUBERNETES_KUBECONFIG_FILE, kubeConfig.absolutePathString())
-        System.setProperty(CONFIG_FILE_SYSTEM_PROPERTY, operatorConfig.absolutePathString())
+        prepareTh2CfgDir(
+            k3sContainer.kubeConfigYaml,
+            createOperatorConfig(
+                rabbitMQContainer,
+                setOf(TH2_PREFIX),
+                RABBIT_MQ_V_HOST,
+                RABBIT_MQ_TOPIC_EXCHANGE,
+                RABBIT_MQ_NAMESPACE_PERMISSIONS,
+            ),
+            tempDir,
+        )
 
         kubeClient = createKubernetesClient().apply { configureK3s() }
         rabbitMQClient = createRabbitMQClient(rabbitMQContainer)
@@ -185,7 +152,12 @@ class IntegrationTest {
         kubeClient.createRabbitMQAppConfigCfgMap(
             TH2_NAMESPACE,
             gitHash,
-            createRabbitMQConfig(rabbitMQContainer)
+            createRabbitMQConfig(
+                rabbitMQContainer,
+                RABBIT_MQ_V_HOST,
+                RABBIT_MQ_TH2_EXCHANGE,
+                TH2_NAMESPACE,
+            )
         )
 
         rabbitMQClient.assertUser(TH2_NAMESPACE, RABBIT_MQ_V_HOST, RABBIT_MQ_NAMESPACE_PERMISSIONS)
@@ -259,8 +231,8 @@ class IntegrationTest {
                 createEstoreQueue(TH2_NAMESPACE),
                 RABBIT_MQ_V_HOST,
                 setOf(
-                    "link[$TH2_NAMESPACE:$EVENT_STORAGE_BOX_ALIAS:$EVENT_STORAGE_PIN_ALIAS]",
-                    "key[$TH2_NAMESPACE:$name:$EVENT_STORAGE_PIN_ALIAS]"
+                    formatQueue(TH2_NAMESPACE, EVENT_STORAGE_BOX_ALIAS, EVENT_STORAGE_PIN_ALIAS),
+                    formatRoutingKey(TH2_NAMESPACE, name, EVENT_STORAGE_PIN_ALIAS)
                 )
             )
         }
@@ -281,8 +253,8 @@ class IntegrationTest {
                 createEstoreQueue(TH2_NAMESPACE),
                 RABBIT_MQ_V_HOST,
                 setOf(
-                    "link[$TH2_NAMESPACE:$EVENT_STORAGE_BOX_ALIAS:$EVENT_STORAGE_PIN_ALIAS]",
-                    "key[$TH2_NAMESPACE:$name:$EVENT_STORAGE_PIN_ALIAS]"
+                    formatQueue(TH2_NAMESPACE, EVENT_STORAGE_BOX_ALIAS, EVENT_STORAGE_PIN_ALIAS),
+                    formatRoutingKey(TH2_NAMESPACE, name, EVENT_STORAGE_PIN_ALIAS),
                 )
             )
 
@@ -301,8 +273,8 @@ class IntegrationTest {
                 createEstoreQueue(TH2_NAMESPACE),
                 RABBIT_MQ_V_HOST,
                 setOf(
-                    "link[$TH2_NAMESPACE:$EVENT_STORAGE_BOX_ALIAS:$EVENT_STORAGE_PIN_ALIAS]",
-                    "key[$TH2_NAMESPACE:$name:$EVENT_STORAGE_PIN_ALIAS]"
+                    formatQueue(TH2_NAMESPACE, EVENT_STORAGE_BOX_ALIAS, EVENT_STORAGE_PIN_ALIAS),
+                    formatRoutingKey(TH2_NAMESPACE, name, EVENT_STORAGE_PIN_ALIAS),
                 )
             )
         }
@@ -322,7 +294,7 @@ class IntegrationTest {
             rabbitMQClient.assertBindings(
                 createEstoreQueue(TH2_NAMESPACE),
                 RABBIT_MQ_V_HOST,
-                setOf("link[$TH2_NAMESPACE:$EVENT_STORAGE_BOX_ALIAS:$EVENT_STORAGE_PIN_ALIAS]")
+                setOf(formatQueue(TH2_NAMESPACE, EVENT_STORAGE_BOX_ALIAS, EVENT_STORAGE_PIN_ALIAS))
             )
 
             gitHash = RESOURCE_GIT_HASH_COUNTER.incrementAndGet().toString()
@@ -340,8 +312,8 @@ class IntegrationTest {
                 createEstoreQueue(TH2_NAMESPACE),
                 RABBIT_MQ_V_HOST,
                 setOf(
-                    "link[$TH2_NAMESPACE:$EVENT_STORAGE_BOX_ALIAS:$EVENT_STORAGE_PIN_ALIAS]",
-                    "key[$TH2_NAMESPACE:$name:$EVENT_STORAGE_PIN_ALIAS]"
+                    formatQueue(TH2_NAMESPACE, EVENT_STORAGE_BOX_ALIAS, EVENT_STORAGE_PIN_ALIAS),
+                    formatRoutingKey(TH2_NAMESPACE, name, EVENT_STORAGE_PIN_ALIAS)
                 )
             )
         }
@@ -387,8 +359,8 @@ class IntegrationTest {
             kubeClient.awaitPhase(TH2_NAMESPACE, pubName, SUCCEEDED, resourceClass)
             kubeClient.awaitPhase(TH2_NAMESPACE, subName, SUCCEEDED, subClass)
 
-            val queueName = "link[$TH2_NAMESPACE:$subName:$SUBSCRIBE_PIN]"
-            val routingKey = "key[$TH2_NAMESPACE:$pubName:$PUBLISH_PIN]"
+            val queueName = formatQueue(TH2_NAMESPACE, subName, SUBSCRIBE_PIN)
+            val routingKey = formatRoutingKey(TH2_NAMESPACE, pubName, PUBLISH_PIN)
 
             kubeClient.awaitResource<HelmRelease>(TH2_NAMESPACE, pubName).assertMinCfg(
                 pubName,
@@ -420,15 +392,15 @@ class IntegrationTest {
             rabbitMQClient.assertBindings(
                 queueName,
                 RABBIT_MQ_V_HOST,
-                setOf("link[$TH2_NAMESPACE:$subName:$SUBSCRIBE_PIN]", routingKey)
+                setOf(formatQueue(TH2_NAMESPACE, subName, SUBSCRIBE_PIN), routingKey)
             )
             rabbitMQClient.assertBindings(
                 createEstoreQueue(TH2_NAMESPACE),
                 RABBIT_MQ_V_HOST,
                 setOf(
-                    "link[$TH2_NAMESPACE:$EVENT_STORAGE_BOX_ALIAS:$EVENT_STORAGE_PIN_ALIAS]",
-                    "key[$TH2_NAMESPACE:$pubName:$EVENT_STORAGE_PIN_ALIAS]",
-                    "key[$TH2_NAMESPACE:$subName:$EVENT_STORAGE_PIN_ALIAS]",
+                    formatQueue(TH2_NAMESPACE, EVENT_STORAGE_BOX_ALIAS, EVENT_STORAGE_PIN_ALIAS),
+                    formatRoutingKey(TH2_NAMESPACE, pubName, EVENT_STORAGE_PIN_ALIAS),
+                    formatRoutingKey(TH2_NAMESPACE, subName, EVENT_STORAGE_PIN_ALIAS),
                 )
             )
         }
@@ -502,9 +474,9 @@ class IntegrationTest {
                 createEstoreQueue(TH2_NAMESPACE),
                 RABBIT_MQ_V_HOST,
                 setOf(
-                    "link[$TH2_NAMESPACE:$EVENT_STORAGE_BOX_ALIAS:$EVENT_STORAGE_PIN_ALIAS]",
-                    "key[$TH2_NAMESPACE:$serverName:$EVENT_STORAGE_PIN_ALIAS]",
-                    "key[$TH2_NAMESPACE:$clientName:$EVENT_STORAGE_PIN_ALIAS]",
+                    formatQueue(TH2_NAMESPACE, EVENT_STORAGE_BOX_ALIAS, EVENT_STORAGE_PIN_ALIAS),
+                    formatRoutingKey(TH2_NAMESPACE, serverName, EVENT_STORAGE_PIN_ALIAS),
+                    formatRoutingKey(TH2_NAMESPACE, clientName, EVENT_STORAGE_PIN_ALIAS),
                 )
             )
         }
@@ -546,7 +518,7 @@ class IntegrationTest {
                 createEstoreQueue(TH2_NAMESPACE),
                 RABBIT_MQ_V_HOST,
                 setOf(
-                    "link[$TH2_NAMESPACE:$EVENT_STORAGE_BOX_ALIAS:$EVENT_STORAGE_PIN_ALIAS]",
+                    formatQueue(TH2_NAMESPACE, EVENT_STORAGE_BOX_ALIAS, EVENT_STORAGE_PIN_ALIAS),
                 )
             )
         }
@@ -727,27 +699,11 @@ class IntegrationTest {
     }
 
     companion object {
-        private val K_LOGGER = KotlinLogging.logger {}
-
-        private val RESOURCE_GIT_HASH_COUNTER = AtomicLong(10_000_000)
-
-        private val CRD_RESOURCE_NAMES =
-            setOf(
-                "helmreleases-crd.yaml",
-                "th2-box-crd.yaml",
-                "th2-core-box-crd.yaml",
-                "th2-dictionary-crd.yaml",
-                "th2-estore-crd.yaml",
-                "th2-job-crd.yaml",
-                "th2-mstore-crd.yaml",
-            )
-
         private const val TH2_PREFIX = "th2-"
         private const val TH2_NAMESPACE = "${TH2_PREFIX}test"
         private const val TH2_BOOK = "test_book"
 
         private val RABBIT_MQ_NAMESPACE_PERMISSIONS = RabbitMQNamespacePermissions()
-        private const val RABBIT_MQ_QUEUE_CLASSIC_TYPE = "classic"
         private const val RABBIT_MQ_V_HOST = "/"
         private const val RABBIT_MQ_TOPIC_EXCHANGE = "test-global-exchange"
         private val RABBIT_MQ_TH2_EXCHANGE = toExchangeName(TH2_NAMESPACE)
@@ -763,7 +719,6 @@ class IntegrationTest {
         private const val VERSION = "0.0.0"
 
         private const val DICTIONARY_CONTENT = "test-dictionary-content"
-        private const val TEST_CONTENT = "test-content"
 
         @JvmStatic
         fun mqLinkArguments() = listOf(
@@ -771,144 +726,6 @@ class IntegrationTest {
             Arguments.of(Th2Box::class.java, ::Th2Box, "th2-codec", false),
             Arguments.of(Th2CoreBox::class.java, ::Th2CoreBox, "th2-rpt-data-provider", false),
         )
-
-        private fun createOperatorConfig(rabbitMQ: RabbitMQContainer) =
-            OperatorConfig(
-                chart = ChartSpec(),
-                namespacePrefixes = setOf(TH2_PREFIX),
-                rabbitMQManagement =
-                RabbitMQManagementConfig(
-                    host = rabbitMQ.host,
-                    managementPort = rabbitMQ.httpPort,
-                    applicationPort = rabbitMQ.amqpPort,
-                    vhostName = RABBIT_MQ_V_HOST,
-                    exchangeName = RABBIT_MQ_TOPIC_EXCHANGE,
-                    username = rabbitMQ.adminUsername,
-                    password = rabbitMQ.adminPassword,
-                    persistence = true,
-                    schemaPermissions = RABBIT_MQ_NAMESPACE_PERMISSIONS,
-                ),
-                prometheusConfiguration =
-                PrometheusConfiguration(
-                    "0.0.0.0",
-                    "9752",
-                    false.toString(),
-                ),
-            )
-
-        private fun createRabbitMQConfig(
-            rabbitMQ: RabbitMQContainer,
-        ) = RabbitMQConfig(
-            rabbitMQ.amqpPort,
-            rabbitMQ.host,
-            RABBIT_MQ_V_HOST,
-            RABBIT_MQ_TH2_EXCHANGE,
-            TH2_NAMESPACE,
-            "${'$'}{RABBITMQ_PASS}",
-        )
-
-        private fun KubernetesClient.configureK3s() {
-            CRD_RESOURCE_NAMES
-                .asSequence()
-                .map(Companion::loadCrd)
-                .map(this::resource)
-                .forEach { crd ->
-                    crd.create()
-                    K_LOGGER.info { "Applied CRD: ${crd.get().metadata.name}" }
-                }
-        }
-
-        private fun loadCrd(resourceName: String): CRD =
-            requireNotNull(IntegrationTest::class.java.classLoader.getResource("crds/$resourceName")) {
-                "Resource '$resourceName' isn't found"
-            }.let(YAML_MAPPER::readValue)
-
-        private fun KubernetesClient.createRabbitMQSecret(
-            namespace: String,
-            gitHash: String,
-        ) {
-            createSecret(
-                namespace,
-                "rabbitmq",
-                createAnnotations(gitHash, TEST_CONTENT),
-                mapOf(RABBITMQ_SECRET_PASSWORD_KEY to UUID.randomUUID().toString()),
-            )
-        }
-
-        private fun KubernetesClient.createRabbitMQAppConfigCfgMap(
-            namespace: String,
-            gitHash: String,
-            data: RabbitMQConfig,
-        ) {
-            val content = JSON_MAPPER.writeValueAsString(data)
-            createConfigMap(
-                namespace,
-                DEFAULT_RABBITMQ_CONFIGMAP_NAME,
-                createAnnotations(gitHash, content),
-                mapOf(CONFIG_MAP_RABBITMQ_PROP_NAME to content),
-            )
-        }
-
-        private fun KubernetesClient.createBookConfigCfgMap(
-            namespace: String,
-            gitHash: String,
-            book: String,
-        ) {
-            createConfigMap(
-                namespace,
-                BOOK_CONFIG_CM_NAME,
-                createAnnotations(gitHash, book),
-                mapOf(DEFAULT_BOOK to book),
-            )
-        }
-
-        private fun KubernetesClient.createLoggingCfgMap(
-            namespace: String,
-            gitHash: String,
-        ) {
-            createConfigMap(
-                namespace,
-                LOGGING_CM_NAME,
-                createAnnotations(gitHash, TEST_CONTENT),
-                mapOf("log4j2.properties" to TEST_CONTENT),
-            )
-        }
-
-        private fun KubernetesClient.createMQRouterCfgMap(
-            namespace: String,
-            gitHash: String,
-        ) {
-            createConfigMap(
-                namespace,
-                MQ_ROUTER_CM_NAME,
-                createAnnotations(gitHash, TEST_CONTENT),
-                mapOf("mq_router.json" to TEST_CONTENT),
-            )
-        }
-
-        private fun KubernetesClient.createGrpcRouterCfgMap(
-            namespace: String,
-            gitHash: String,
-        ) {
-            createConfigMap(
-                namespace,
-                GRPC_ROUTER_CM_NAME,
-                createAnnotations(gitHash, TEST_CONTENT),
-                mapOf("grpc_router.json" to TEST_CONTENT),
-            )
-        }
-
-        private fun KubernetesClient.createCradleManagerCfgMap(
-            namespace: String,
-            gitHash: String,
-        ) {
-            createConfigMap(
-                namespace,
-                CRADLE_MANAGER_CM_NAME,
-                createAnnotations(gitHash, TEST_CONTENT),
-                mapOf("cradle_manager.json" to TEST_CONTENT),
-            )
-        }
 
         private fun HelmRelease.assertMinCfg(
             name: String,
@@ -987,7 +804,7 @@ class IntegrationTest {
                             getValue("attributes").isA<List<String>>() isEqualTo listOf("publish", "event")
                             getValue("exchange") isEqualTo RABBIT_MQ_TH2_EXCHANGE
                             getValue("filters").isA<List<String>>().isEmpty() // FIXME
-                            getValue("name") isEqualTo "key[$TH2_NAMESPACE:$name:$EVENT_STORAGE_PIN_ALIAS]"
+                            getValue("name") isEqualTo formatRoutingKey(TH2_NAMESPACE, name, EVENT_STORAGE_PIN_ALIAS)
                             getValue("queue").isA<String>().isEmpty()
                         }
                         queues.forEach { (key, value) ->

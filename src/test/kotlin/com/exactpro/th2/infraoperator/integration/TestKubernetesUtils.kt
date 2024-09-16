@@ -199,7 +199,7 @@ fun KubernetesClient.createTh2Dictionary(
 
 fun createAnnotations(
     gitHash: String,
-    sourceHash: String,
+    sourceHash: Any,
 ) = mapOf(
     KEY_DETECTION_TIME to System.currentTimeMillis().toString(),
     GIT_COMMIT_HASH to gitHash,

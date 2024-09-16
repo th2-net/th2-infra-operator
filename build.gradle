@@ -77,12 +77,6 @@ wrapper {
     distributionType Wrapper.DistributionType.BIN
 }
 
-test {
-    useJUnitPlatform {
-        excludeTags("integration-test")
-    }
-}
-
 tasks.register("downloadCRDs", Download) {
     group = "verification"
     src([
@@ -94,6 +88,13 @@ tasks.register("downloadCRDs", Download) {
         'https://raw.githubusercontent.com/th2-net/th2-infra/master/chart/crds/th2-mstore-crd.yaml',
     ])
     dest layout.buildDirectory.dir('resources/test/crds').get()
+}
+
+test {
+    dependsOn("downloadCRDs")
+    useJUnitPlatform {
+        excludeTags("integration-test")
+    }
 }
 
 tasks.register("integrationTest", Test) {

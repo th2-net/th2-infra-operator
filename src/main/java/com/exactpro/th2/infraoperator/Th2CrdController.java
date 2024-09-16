@@ -35,7 +35,7 @@ import org.slf4j.LoggerFactory;
 import java.nio.file.Files;
 import java.nio.file.Path;
 
-public class Th2CrdController {
+public class Th2CrdController implements AutoCloseable {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(Th2CrdController.class);
 
@@ -45,7 +45,7 @@ public class Th2CrdController {
         OperatorMetrics.resetCacheErrors();
         try {
             RabbitMQUtils.deleteRabbitMQRubbish();
-            RabbitMQContext.declareTopicExchange();
+            RabbitMQContext.declareTopicExchange(); // FIXME: topic exchange should be removed when all namespaces are removed / disabled
 
             watchManager.addTarget(MstoreHelmTh2Op::new);
             watchManager.addTarget(EstoreHelmTh2Op::new);
@@ -81,5 +81,10 @@ public class Th2CrdController {
             loggerContext.reconfigure();
             LOGGER.info("Logger configuration from {} file is applied", path);
         }
+    }
+
+    @Override
+    public void close() throws Exception {
+
     }
 }

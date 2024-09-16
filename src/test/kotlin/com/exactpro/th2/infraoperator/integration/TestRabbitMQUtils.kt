@@ -28,6 +28,8 @@ import kotlin.test.assertFalse
 import kotlin.test.assertNotNull
 import kotlin.test.assertTrue
 
+const val RABBIT_MQ_QUEUE_CLASSIC_TYPE = "classic"
+
 fun Client.assertUser(
     user: String,
     vHost: String,
@@ -102,7 +104,7 @@ fun Client.assertQueue(
     timeout: Long = 5_000,
     unit: TimeUnit = TimeUnit.MILLISECONDS,
 ): QueueInfo {
-    await("assertQueue('$queue')")
+    await("assertQueue('$queue'")
         .timeout(timeout, unit)
         .until { getQueue(vHost, queue) != null }
 
@@ -114,6 +116,18 @@ fun Client.assertQueue(
             assertFalse(queueInfo.isExclusive, "Queue '$queue' is exclusive")
             assertFalse(queueInfo.isAutoDelete, "Queue '$queue' is auto delete")
         }
+}
+
+fun Client.awaitQueueSize(
+    queue: String,
+    vHost: String,
+    size: Long,
+    timeout: Long = 5_000,
+    unit: TimeUnit = TimeUnit.MILLISECONDS,
+) {
+    await("awaitQueueSize('$queue', size: $size")
+        .timeout(timeout, unit)
+        .until { getQueue(vHost, queue)?.let { it.messagesReady == size } }
 }
 
 fun Client.assertBindings(
@@ -186,4 +200,15 @@ fun Client.assertNoQueues(
     await("assertNoQueues('$queuePattern')")
         .timeout(timeout, unit)
         .until { queues.map { it.name.matches(Regex(queuePattern)) && it.vhost == vHost }.isEmpty() }
+}
+
+fun Client.assertNoQueue(
+    name: String,
+    vHost: String,
+    timeout: Long = 5_000,
+    unit: TimeUnit = TimeUnit.MILLISECONDS,
+) {
+    await("assertNoQueue('$name')")
+        .timeout(timeout, unit)
+        .until { getQueue(vHost, name) == null }
 }

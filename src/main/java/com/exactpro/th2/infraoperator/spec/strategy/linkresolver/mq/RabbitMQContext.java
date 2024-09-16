@@ -29,6 +29,7 @@ import com.exactpro.th2.infraoperator.spec.strategy.redeploy.RetryableTaskQueue;
 import com.exactpro.th2.infraoperator.spec.strategy.redeploy.tasks.RecreateQueuesAndBindings;
 import com.exactpro.th2.infraoperator.spec.strategy.redeploy.tasks.RetryRabbitSetup;
 import com.exactpro.th2.infraoperator.spec.strategy.redeploy.tasks.RetryTopicExchangeTask;
+import com.rabbitmq.client.BuiltinExchangeType;
 import com.rabbitmq.client.Channel;
 import com.rabbitmq.client.Connection;
 import com.rabbitmq.client.ConnectionFactory;
@@ -70,8 +71,8 @@ public final class RabbitMQContext {
     private static final Logger logger = LoggerFactory.getLogger(RabbitMQContext.class);
 
     private static final int RETRY_DELAY = 120;
-    public static final String TOPIC = "topic";
-    public static final String DIRECT = "direct";
+    public static final String TOPIC = BuiltinExchangeType.TOPIC.getType();
+    public static final String DIRECT = BuiltinExchangeType.DIRECT.getType();
 
     private static volatile RabbitMQManagementConfig managementConfig;
 

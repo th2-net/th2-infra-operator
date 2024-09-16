@@ -27,6 +27,8 @@ import com.exactpro.th2.infraoperator.model.box.mq.factory.MessageRouterConfigFa
 import com.exactpro.th2.infraoperator.spec.Th2CustomResource
 import com.exactpro.th2.infraoperator.spec.estore.Th2Estore
 import com.exactpro.th2.infraoperator.spec.mstore.Th2Mstore
+import com.exactpro.th2.infraoperator.spec.strategy.linkresolver.createEstoreQueue
+import com.exactpro.th2.infraoperator.spec.strategy.linkresolver.createMstoreQueue
 import com.exactpro.th2.infraoperator.spec.strategy.linkresolver.mq.RabbitMQContext
 import com.rabbitmq.client.Channel
 import com.rabbitmq.http.client.domain.ExchangeInfo
@@ -92,10 +94,11 @@ internal fun ResourceHolder.filterRubbishResources(
     exchanges.remove(topicExchange) // FIXME: topic exchange should be declare after each namespace creation
 
     K_LOGGER.debug { "Search RabbitMQ resources in $namespaces namespaces" }
-//    exchanges.remove(topicExchange) FIXME: uncomment this line when topic exchange is declared after each namespace creation
 
     val factories: Map<Class<out Th2CustomResource>, MessageRouterConfigFactory> = createFactories()
     namespaces.forEach { namespace ->
+        queues.remove(createEstoreQueue(namespace))
+        queues.remove(createMstoreQueue(namespace))
         exchanges.remove(namespace)
 
         client.customResources(namespace).asSequence()

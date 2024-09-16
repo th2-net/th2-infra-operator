@@ -16,6 +16,8 @@
 
 package com.exactpro.th2.infraoperator.util
 
+import com.exactpro.th2.infraoperator.spec.strategy.linkresolver.createEstoreQueue
+import com.exactpro.th2.infraoperator.spec.strategy.linkresolver.createMstoreQueue
 import com.exactpro.th2.infraoperator.spec.strategy.linkresolver.mq.RabbitMQContext.toExchangeName
 import com.rabbitmq.client.Channel
 import io.fabric8.kubernetes.api.model.KubernetesResourceList
@@ -76,7 +78,7 @@ class RabbitMQUtilsTest {
     }
 
     @Test
-    fun `no ns but rubbish queue`() {
+    fun `no ns and rubbish queue`() {
         val queueName = "test-link[th2-test-namespace:test-component:test-pin]"
         val client: KubernetesClient = mockKubernetesClient()
         val actual =
@@ -140,6 +142,27 @@ class RabbitMQUtilsTest {
             ResourceHolder(
                 queues = hashSetOf(queueName),
             )
+
+        assertEquals(expected, actual)
+    }
+
+    @Test
+    fun `empty ns and store queues`() {
+        val namespaceName = "th2-test-active-namespace"
+        val client: KubernetesClient =
+            mockKubernetesClient(
+                setOf(namespaceName),
+            )
+        val actual =
+            ResourceHolder(
+                queues = hashSetOf(createMstoreQueue(namespaceName), createEstoreQueue(namespaceName)),
+                exchanges = hashSetOf(toExchangeName(namespaceName), TOPIC_EXCHANGE_NAME),
+            ).filterRubbishResources(
+                client,
+                setOf("th2"),
+                TOPIC_EXCHANGE_NAME,
+            )
+        val expected = ResourceHolder()
 
         assertEquals(expected, actual)
     }
