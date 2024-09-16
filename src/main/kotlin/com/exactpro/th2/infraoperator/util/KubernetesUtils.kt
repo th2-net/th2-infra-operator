@@ -27,10 +27,9 @@ import com.exactpro.th2.infraoperator.spec.mstore.Th2Mstore
 import io.fabric8.kubernetes.api.model.Namespace
 import io.fabric8.kubernetes.client.KubernetesClient
 import io.fabric8.kubernetes.client.KubernetesClientBuilder
-import io.github.oshai.kotlinlogging.KotlinLogging
 import kotlin.streams.toList
 
-private val K_LOGGER = KotlinLogging.logger { }
+const val PHASE_ACTIVE = "Active"
 
 val CUSTOM_RESOURCE_KINDS: Set<Class<out Th2CustomResource>> =
     setOf(Th2Estore::class.java, Th2Mstore::class.java, Th2CoreBox::class.java, Th2Box::class.java, Th2Job::class.java)
@@ -57,9 +56,5 @@ fun KubernetesClient.customResources(namespace: String): List<Th2CustomResource>
 
 fun KubernetesClient.isNotActive(namespace: String): Boolean {
     val namespaceObj: Namespace? = namespaces().withName(namespace).get()
-    if (namespaceObj == null || namespaceObj.status.phase != "Active") {
-        K_LOGGER.info { "Namespace \"$namespace\" deleted or not active, cancelling" }
-        return true
-    }
-    return false
+    return namespaceObj == null || namespaceObj.status.phase != PHASE_ACTIVE
 }

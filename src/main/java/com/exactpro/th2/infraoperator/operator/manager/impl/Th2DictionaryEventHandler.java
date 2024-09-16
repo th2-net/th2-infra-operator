@@ -54,7 +54,7 @@ import static com.exactpro.th2.infraoperator.util.WatcherUtils.createExceptionHa
 
 public class Th2DictionaryEventHandler implements Watcher<Th2Dictionary> {
 
-    private static final Logger logger = LoggerFactory.getLogger(Th2DictionaryEventHandler.class);
+    private static final Logger LOGGER = LoggerFactory.getLogger(Th2DictionaryEventHandler.class);
 
     private KubernetesClient kubClient;
 
@@ -100,7 +100,7 @@ public class Th2DictionaryEventHandler implements Watcher<Th2Dictionary> {
             }
         } catch (Exception e) {
             String resourceLabel = annotationFor(dictionary);
-            logger.error("Terminal Exception processing {} event for {}. Will not try to redeploy",
+            LOGGER.error("Terminal Exception processing {} event for {}. Will not try to redeploy",
                     action, resourceLabel, e);
         } finally {
             //observe event processing time for only operator
@@ -114,9 +114,9 @@ public class Th2DictionaryEventHandler implements Watcher<Th2Dictionary> {
         String newChecksum = ExtractUtils.fullSourceHash(dictionary);
 
         //create or replace corresponding config map from Kubernetes
-        logger.debug("Creating config map for: \"{}\"", resourceLabel);
+        LOGGER.debug("Creating config map for: \"{}\"", resourceLabel);
         kubClient.resource(toConfigMap(dictionary)).inNamespace(namespace).createOrReplace();
-        logger.debug("Created config map for: \"{}\"", resourceLabel);
+        LOGGER.debug("Created config map for: \"{}\"", resourceLabel);
         sourceHashes.put(resourceLabel, newChecksum);
     }
 
@@ -128,25 +128,25 @@ public class Th2DictionaryEventHandler implements Watcher<Th2Dictionary> {
         String oldChecksum = sourceHashes.get(resourceLabel);
 
         if (oldChecksum != null && oldChecksum.equals(newChecksum)) {
-            logger.info("Dictionary: \"{}\" has not been changed", resourceLabel);
+            LOGGER.info("Dictionary: \"{}\" has not been changed", resourceLabel);
             return;
         }
 
         //update corresponding config map from Kubernetes
-        logger.debug("Updating config map for: \"{}\"", resourceLabel);
+        LOGGER.debug("Updating config map for: \"{}\"", resourceLabel);
         kubClient.resource(toConfigMap(dictionary)).inNamespace(namespace).createOrReplace();
-        logger.debug("Updated config map for: \"{}\"", resourceLabel);
+        LOGGER.debug("Updated config map for: \"{}\"", resourceLabel);
         sourceHashes.put(resourceLabel, newChecksum);
 
-        logger.info("Checking bindings for \"{}\"", resourceLabel);
+        LOGGER.info("Checking bindings for \"{}\"", resourceLabel);
 
         var linkedResources = getLinkedResources(dictionary);
         int items = linkedResources.size();
 
         if (items == 0) {
-            logger.info("No boxes needs to be updated");
+            LOGGER.info("No boxes needs to be updated");
         } else {
-            logger.info("{} box(es) needs to be updated", items);
+            LOGGER.info("{} box(es) needs to be updated", items);
             updateLinkedResources(dictionaryName, namespace, newChecksum, linkedResources);
         }
     }
@@ -157,10 +157,10 @@ public class Th2DictionaryEventHandler implements Watcher<Th2Dictionary> {
         String resourceLabel = annotationFor(dictionary);
 
         //delete corresponding config map from Kubernetes
-        logger.debug("Deleting config map for: \"{}\"", resourceLabel);
+        LOGGER.debug("Deleting config map for: \"{}\"", resourceLabel);
         kubClient.configMaps().inNamespace(namespace).withName(dictionaryName).delete();
         sourceHashes.remove(resourceLabel);
-        logger.debug("Deleted config map for: \"{}\"", resourceLabel);
+        LOGGER.debug("Deleted config map for: \"{}\"", resourceLabel);
     }
 
     private Set<String> getLinkedResources(Th2Dictionary dictionary) {
@@ -197,17 +197,18 @@ public class Th2DictionaryEventHandler implements Watcher<Th2Dictionary> {
                                        String checksum, Set<String> linkedResources) {
 
         if (isNotActive(kubClient, namespace)) {
+            LOGGER.info("Namespace \"{}\" deleted or not active, cancelling", namespace);
             return;
         }
         for (var linkedResourceName : linkedResources) {
-            logger.debug("Checking linked resource: '{}.{}'", namespace, linkedResourceName);
+            LOGGER.debug("Checking linked resource: '{}.{}'", namespace, linkedResourceName);
 
             var hr = OperatorState.INSTANCE.getHelmReleaseFromCache(linkedResourceName, namespace);
             if (hr == null) {
-                logger.info("HelmRelease of '{}.{}' resource not found in cache", namespace, linkedResourceName);
+                LOGGER.info("HelmRelease of '{}.{}' resource not found in cache", namespace, linkedResourceName);
                 continue;
             } else {
-                logger.debug("Found HelmRelease \"{}\"", CustomResourceUtils.annotationFor(hr));
+                LOGGER.debug("Found HelmRelease \"{}\"", CustomResourceUtils.annotationFor(hr));
             }
 
             Collection<DictionaryEntity> dictionaryConfig = extractDictionariesConfig(hr);
@@ -218,11 +219,11 @@ public class Th2DictionaryEventHandler implements Watcher<Th2Dictionary> {
                     }
                 }
                 hr.addComponentValue(DICTIONARIES_ALIAS, dictionaryConfig);
-                logger.debug("Updating \"{}\"", CustomResourceUtils.annotationFor(hr));
+                LOGGER.debug("Updating \"{}\"", CustomResourceUtils.annotationFor(hr));
                 createKubObj(namespace, hr);
-                logger.debug("Updated \"{}\"", CustomResourceUtils.annotationFor(hr));
+                LOGGER.debug("Updated \"{}\"", CustomResourceUtils.annotationFor(hr));
             } else {
-                logger.info("Dictionaries config for resource of '{}.{}' was null", namespace, linkedResourceName);
+                LOGGER.info("Dictionaries config for resource of '{}.{}' was null", namespace, linkedResourceName);
             }
         }
     }

@@ -56,7 +56,7 @@ import static io.fabric8.kubernetes.client.Watcher.Action.MODIFIED;
 
 public abstract class AbstractTh2Operator<CR extends Th2CustomResource> implements Watcher<CR> {
 
-    private static final Logger logger = LoggerFactory.getLogger(AbstractTh2Operator.class);
+    private static final Logger LOGGER = LoggerFactory.getLogger(AbstractTh2Operator.class);
 
     private static final int REDEPLOY_DELAY = 120;
 
@@ -83,21 +83,22 @@ public abstract class AbstractTh2Operator<CR extends Th2CustomResource> implemen
 
             if (cachedFingerprint != null && action.equals(MODIFIED)
                     && cachedFingerprint.equals(resourceFingerprint)) {
-                logger.debug("No changes detected for \"{}\"", resourceLabel);
+                LOGGER.debug("No changes detected for \"{}\"", resourceLabel);
                 return;
             }
             Histogram.Timer processTimer = OperatorMetrics.getCustomResourceEventTimer(resource);
             try {
-                logger.debug("refresh-token={}", resourceFingerprint.refreshToken);
+                LOGGER.debug("refresh-token={}", resourceFingerprint.refreshToken);
 
                 processEvent(action, resource);
 
             } catch (NonTerminalException e) {
-                logger.error("Non-terminal Exception processing {} event for \"{}\". Will try to redeploy.",
+                LOGGER.error("Non-terminal Exception processing {} event for \"{}\". Will try to redeploy.",
                         action, resourceLabel, e);
 
                 String namespace = resource.getMetadata().getNamespace();
                 if (isNotActive(kubClient, namespace)) {
+                    LOGGER.info("Namespace \"{}\" deleted or not active, cancelling", namespace);
                     return;
                 }
 
@@ -115,7 +116,7 @@ public abstract class AbstractTh2Operator<CR extends Th2CustomResource> implemen
                 );
                 retryableTaskQueue.add(triggerRedeployTask, true);
 
-                logger.info("Task \"{}\" added to scheduler, with delay \"{}\" seconds",
+                LOGGER.info("Task \"{}\" added to scheduler, with delay \"{}\" seconds",
                         triggerRedeployTask.getName(), REDEPLOY_DELAY);
             } finally {
                 fingerprints.put(resourceLabel, resourceFingerprint);
@@ -128,11 +129,12 @@ public abstract class AbstractTh2Operator<CR extends Th2CustomResource> implemen
         } catch (Exception e) {
             String namespace = resource.getMetadata().getNamespace();
             if (isNotActive(kubClient, namespace)) {
+                LOGGER.info("Namespace \"{}\" deleted or not active, cancelling", namespace);
                 return;
             }
             resource.getStatus().failed(e.getMessage());
             updateStatus(resource);
-            logger.error("Terminal Exception processing {} event for {}. Will not try to redeploy",
+            LOGGER.error("Terminal Exception processing {} event for {}. Will not try to redeploy",
                     action, resourceLabel, e);
         }
     }
@@ -150,7 +152,7 @@ public abstract class AbstractTh2Operator<CR extends Th2CustomResource> implemen
     protected void processEvent(Action action, CR resource) throws IOException {
 
         String resourceLabel = annotationFor(resource);
-        logger.debug("Processing event {} for \"{}\"", action, resourceLabel);
+        LOGGER.debug("Processing event {} for \"{}\"", action, resourceLabel);
 
         if (resource.getSpec().getDisabled()) {
             try {
@@ -165,19 +167,19 @@ public abstract class AbstractTh2Operator<CR extends Th2CustomResource> implemen
                         .withName(helmReleaseName);
                 HelmRelease helmRelease = helmReleaseResource.get();
                 if (helmRelease == null) {
-                    logger.info("Resource \"{}\" hasn't been deleted because it already doesn't exist", annotationFor(namespace, helmReleaseName, HelmRelease.class.getSimpleName()));
+                    LOGGER.info("Resource \"{}\" hasn't been deleted because it already doesn't exist", annotationFor(namespace, helmReleaseName, HelmRelease.class.getSimpleName()));
                 } else {
                     String helmReleaseLabel = annotationFor(helmRelease);
                     helmReleaseResource.delete();
-                    logger.info("Resource \"{}\" has been deleted", helmReleaseLabel);
+                    LOGGER.info("Resource \"{}\" has been deleted", helmReleaseLabel);
                 }
                 resource.getStatus().disabled("Resource has been disabled");
-                logger.info("Resource \"{}\" has been disabled, executing DELETE action", resourceLabel);
+                LOGGER.info("Resource \"{}\" has been disabled, executing DELETE action", resourceLabel);
                 updateStatus(resource);
             } catch (Exception e) {
                 resource.getStatus().failed("Unknown error");
                 updateStatus(resource);
-                logger.error("Exception while processing disable feature for: \"{}\"", resourceLabel, e);
+                LOGGER.error("Exception while processing disable feature for: \"{}\"", resourceLabel, e);
             }
             return;
         }
@@ -187,23 +189,23 @@ public abstract class AbstractTh2Operator<CR extends Th2CustomResource> implemen
                 resource.getStatus().installing();
                 resource = updateStatus(resource);
                 addedEvent(resource);
-                logger.info("Resource \"{}\" has been added", resourceLabel);
+                LOGGER.info("Resource \"{}\" has been added", resourceLabel);
                 break;
 
             case MODIFIED:
                 resource.getStatus().upgrading();
                 resource = updateStatus(resource);
                 modifiedEvent(resource);
-                logger.info("Resource \"{}\" has been modified", resourceLabel);
+                LOGGER.info("Resource \"{}\" has been modified", resourceLabel);
                 break;
 
             case DELETED:
                 deletedEvent(resource);
-                logger.info("Resource \"{}\" has been deleted", resourceLabel);
+                LOGGER.info("Resource \"{}\" has been deleted", resourceLabel);
                 break;
 
             case ERROR:
-                logger.warn("Error while processing \"{}\"", resourceLabel);
+                LOGGER.warn("Error while processing \"{}\"", resourceLabel);
                 resource.getStatus().failed("Unknown error from kubernetes");
                 resource = updateStatus(resource);
                 errorEvent(resource);
@@ -248,7 +250,7 @@ public abstract class AbstractTh2Operator<CR extends Th2CustomResource> implemen
         } catch (KubernetesClientException e) {
 
             if (HttpCode.ofCode(e.getCode()) == HttpCode.SERVER_CONFLICT) {
-                logger.warn("Failed to update status for \"{}\"  to \"{}\" because it has been " +
+                LOGGER.warn("Failed to update status for \"{}\"  to \"{}\" because it has been " +
                                 "already changed on the server. Trying to sync a resource...",
                         resourceLabel, resource.getStatus().getPhase());
                 var freshRes = resClient.inNamespace(extractNamespace(resource)).list().getItems().stream()
@@ -259,11 +261,11 @@ public abstract class AbstractTh2Operator<CR extends Th2CustomResource> implemen
                     freshRes.setStatus(resource.getStatus());
                     var updatedRes = updateStatus(freshRes);
                     fingerprints.put(resourceLabel, new ResourceFingerprint(updatedRes));
-                    logger.info("Status for \"{}\" resource successfully updated to \"{}\"",
+                    LOGGER.info("Status for \"{}\" resource successfully updated to \"{}\"",
                             resourceLabel, resource.getStatus().getPhase());
                     return updatedRes;
                 } else {
-                    logger.warn("Unable to update status for \"{}\" resource to \"{}\": resource not present",
+                    LOGGER.warn("Unable to update status for \"{}\" resource to \"{}\": resource not present",
                             resourceLabel, resource.getStatus().getPhase());
                     return resource;
                 }
@@ -281,7 +283,7 @@ public abstract class AbstractTh2Operator<CR extends Th2CustomResource> implemen
 
         createKubObj(extractNamespace(resource), kubObj);
 
-        logger.info("Generated \"{}\" based on \"{}\"" , annotationFor(kubObj) , annotationFor(resource));
+        LOGGER.info("Generated \"{}\" based on \"{}\"" , annotationFor(kubObj) , annotationFor(resource));
 
         String kubObjType = kubObj.getClass().getSimpleName();
 
@@ -294,13 +296,13 @@ public abstract class AbstractTh2Operator<CR extends Th2CustomResource> implemen
 
         mapProperties(resource, helmRelease);
 
-        logger.info("Generated additional properties from \"{}\" for the resource \"{}\""
+        LOGGER.info("Generated additional properties from \"{}\" for the resource \"{}\""
                 , annotationFor(resource)
                 , annotationFor(helmRelease));
 
         helmRelease.getMetadata().setOwnerReferences(List.of(createOwnerReference(resource)));
 
-        logger.info("Property \"OwnerReference\" with reference to \"{}\" has been set for the resource \"{}\""
+        LOGGER.info("Property \"OwnerReference\" with reference to \"{}\" has been set for the resource \"{}\""
                 , annotationFor(resource)
                 , annotationFor(helmRelease));
 
@@ -315,7 +317,7 @@ public abstract class AbstractTh2Operator<CR extends Th2CustomResource> implemen
         String finalName = extractHashedName(resource);
 
         if (!finalName.equals(resName)) {
-            logger.info("Name of resource \"{}\" exceeds limitations. Will be substituted with \"{}\"",
+            LOGGER.info("Name of resource \"{}\" exceeds limitations. Will be substituted with \"{}\"",
                     annotation, finalName);
         }
 
