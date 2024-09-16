@@ -4,6 +4,7 @@ plugins {
 //    alias(libs.plugins.detekt)
     alias(libs.plugins.kotlin)
     alias(libs.plugins.th2.component)
+    alias(libs.plugins.download)
 }
 
 group = 'com.exactpro.th2'
@@ -82,8 +83,22 @@ test {
     }
 }
 
-tasks.register("integrationTest", Test.class) {
+tasks.register("downloadCRDs", Download) {
     group = "verification"
+    src([
+        'https://raw.githubusercontent.com/th2-net/th2-infra/master/chart/crds/th2-box-crd.yaml',
+        'https://raw.githubusercontent.com/th2-net/th2-infra/master/chart/crds/th2-core-box-crd.yaml',
+        'https://raw.githubusercontent.com/th2-net/th2-infra/master/chart/crds/th2-dictionary-crd.yaml',
+        'https://raw.githubusercontent.com/th2-net/th2-infra/master/chart/crds/th2-estore-crd.yaml',
+        'https://raw.githubusercontent.com/th2-net/th2-infra/master/chart/crds/th2-job-crd.yaml',
+        'https://raw.githubusercontent.com/th2-net/th2-infra/master/chart/crds/th2-mstore-crd.yaml',
+    ])
+    dest layout.buildDirectory.dir('resources/test/crds').get()
+}
+
+tasks.register("integrationTest", Test) {
+    group = "verification"
+    dependsOn("downloadCRDs")
     useJUnitPlatform {
         includeTags("integration-test")
     }

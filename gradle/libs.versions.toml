@@ -1,6 +1,6 @@
 [versions]
 kotlin = "1.8.22"
-th2-plugin = "0.1.1"
+th2-plugin = "0.1.2"
 jupiter = "5.10.3"
 okhttp3 = "4.12.0"
 detekt = "1.23.6"
@@ -29,5 +29,6 @@ detekt-formatting = { group = "io.gitlab.arturbosch.detekt", name = "detekt-form
 [plugins]
 kotlin = { id = "org.jetbrains.kotlin.jvm", version.ref = "kotlin" }
 detekt = { id = "io.gitlab.arturbosch.detekt", version.ref = "detekt" }
+download = { id = "de.undercouch.download", version = "5.6.0" }
 
 th2-component = { id = "com.exactpro.th2.gradle.component", version.ref = "th2-plugin" }

@@ -147,7 +147,7 @@ openshift:
 ### 4.7.0
 + Improved clean rubbish from RabbitMQ on start to delete only redundant resources.
   The `cleanUpOnStart` option has been removed, the clean rubbish function is enabled.  
-+ Migrated to th2 plugin `0.1.1`
++ Migrated to th2 plugin `0.1.2`
 
 + Updated:
   + bom: `4.6.1`
