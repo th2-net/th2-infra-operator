@@ -237,7 +237,12 @@ class IntegrationTest {
             subSpecType: String,
             subRunAsJob: Boolean
         )
-        abstract fun `grpc link`(name: String)
+        abstract fun `grpc link`(
+            clientClass: Class<out Th2CustomResource>,
+            clientConstructor: () -> Th2CustomResource,
+            clientSpecType: String,
+            clientRunAsJob: Boolean
+        )
 
         protected fun addTest(name: String) {
             val gitHash = RESOURCE_GIT_HASH_COUNTER.incrementAndGet().toString()
@@ -342,10 +347,6 @@ class IntegrationTest {
         }
 
         protected fun mkLinkTest(
-            pubClass: Class<out Th2CustomResource>,
-            pubConstructor: () -> Th2CustomResource,
-            pubSpecType: String,
-            pubRunAsJob: Boolean,
             subClass: Class<out Th2CustomResource>,
             subConstructor: () -> Th2CustomResource,
             subSpecType: String,
@@ -355,10 +356,10 @@ class IntegrationTest {
             val pubName = "test-publisher"
             val subName = "test-subscriber"
 
-            val publisherSpec = """
+            val pubSpec = """
                 imageName: $IMAGE
                 imageVersion: $VERSION
-                type: $pubSpecType
+                type: $specType
                 pins:
                   mq:
                     publishers:
@@ -366,7 +367,7 @@ class IntegrationTest {
                       attributes: [publish]
             """.trimIndent()
 
-            val spec = """
+            val subSpec = """
                 imageName: $IMAGE
                 imageVersion: $VERSION
                 type: $subSpecType
@@ -380,10 +381,10 @@ class IntegrationTest {
                         pin: $PUBLISH_PIN
             """.trimIndent()
 
-            kubeClient.createTh2CustomResource(TH2_NAMESPACE, pubName, gitHash, publisherSpec, pubConstructor)
-            kubeClient.createTh2CustomResource(TH2_NAMESPACE, subName, gitHash, spec, subConstructor)
+            kubeClient.createTh2CustomResource(TH2_NAMESPACE, pubName, gitHash, pubSpec, ::createResources)
+            kubeClient.createTh2CustomResource(TH2_NAMESPACE, subName, gitHash, subSpec, subConstructor)
 
-            kubeClient.awaitPhase(TH2_NAMESPACE, pubName, SUCCEEDED, pubClass)
+            kubeClient.awaitPhase(TH2_NAMESPACE, pubName, SUCCEEDED, resourceClass)
             kubeClient.awaitPhase(TH2_NAMESPACE, subName, SUCCEEDED, subClass)
 
             val queueName = "link[$TH2_NAMESPACE:$subName:$SUBSCRIBE_PIN]"
@@ -391,7 +392,7 @@ class IntegrationTest {
 
             kubeClient.awaitResource<HelmRelease>(TH2_NAMESPACE, pubName).assertMinCfg(
                 pubName,
-                pubRunAsJob,
+                runAsJob,
                 queues = mapOf(
                     PUBLISH_PIN to mapOf(
                         "attributes" to listOf("publish"),
@@ -402,7 +403,7 @@ class IntegrationTest {
                     )
                 )
             )
-            kubeClient.awaitResource<HelmRelease>(TH2_NAMESPACE, hashNameIfNeeded(subName)).assertMinCfg(
+            kubeClient.awaitResource<HelmRelease>(TH2_NAMESPACE, subName).assertMinCfg(
                 subName,
                 subRunAsJob,
                 queues = mapOf(
@@ -432,23 +433,78 @@ class IntegrationTest {
             )
         }
 
-        protected fun grpcLinkTest(name: String) {
+        protected fun grpcLinkTest(
+            clientClass: Class<out Th2CustomResource>,
+            clientConstructor: () -> Th2CustomResource,
+            clientSpecType: String,
+            clientRunAsJob: Boolean,
+        ) {
             val gitHash = RESOURCE_GIT_HASH_COUNTER.incrementAndGet().toString()
-            val spec = """
+            val serverName = "test-server"
+            val clientName = "test-client"
+
+            val serverSpec = """
                 imageName: $IMAGE
                 imageVersion: $VERSION
                 type: $specType
+                pins:
+                  grpc:
+                    server:
+                    - name: $SERVER_PIN
+                      serviceClasses: [$GRPC_SERVICE]
             """.trimIndent()
 
-            kubeClient.createTh2CustomResource(TH2_NAMESPACE, name, gitHash, spec, this::createResources)
-            kubeClient.awaitPhase(TH2_NAMESPACE, name, SUCCEEDED, resourceClass)
-            kubeClient.awaitResource<HelmRelease>(TH2_NAMESPACE, hashNameIfNeeded(name)).assertMinCfg(name, runAsJob)
+            val clientSpec = """
+                imageName: $IMAGE
+                imageVersion: $VERSION
+                type: $clientSpecType
+                pins:
+                  grpc:
+                    client:
+                    - name: $CLIENT_PIN
+                      serviceClass: $GRPC_SERVICE
+                      strategy: robin
+                      linkTo:
+                      - box: $serverName
+                        pin: $SERVER_PIN
+            """.trimIndent()
+
+            kubeClient.createTh2CustomResource(TH2_NAMESPACE, serverName, gitHash, serverSpec, ::createResources)
+            kubeClient.createTh2CustomResource(TH2_NAMESPACE, clientName, gitHash, clientSpec, clientConstructor)
+
+            kubeClient.awaitPhase(TH2_NAMESPACE, serverName, SUCCEEDED, resourceClass)
+            kubeClient.awaitPhase(TH2_NAMESPACE, clientName, SUCCEEDED, clientClass)
+
+            kubeClient.awaitResource<HelmRelease>(TH2_NAMESPACE, serverName).assertMinCfg(serverName, runAsJob)
+            kubeClient.awaitResource<HelmRelease>(TH2_NAMESPACE, clientName).assertMinCfg(
+                clientName,
+                clientRunAsJob,
+                services = mapOf(
+                    CLIENT_PIN to mapOf(
+                        "endpoints" to mapOf(
+                            "test-server-endpoint" to mapOf(
+                                "attributes" to emptyList<String>(),
+                                "host" to serverName,
+                                "port" to 8080
+                            )
+                        ),
+                        "filters" to emptyList<String>(),
+                        "service-class" to GRPC_SERVICE,
+                        "strategy" to mapOf(
+                            "endpoints" to listOf("test-server-endpoint"),
+                            "name" to "robin",
+                        )
+                    )
+                )
+            )
+
             rabbitMQClient.assertBindings(
                 createEstoreQueue(TH2_NAMESPACE),
                 RABBIT_MQ_V_HOST,
                 setOf(
                     "link[$TH2_NAMESPACE:$EVENT_STORAGE_BOX_ALIAS:$EVENT_STORAGE_PIN_ALIAS]",
-                    "key[$TH2_NAMESPACE:$name:$EVENT_STORAGE_PIN_ALIAS]"
+                    "key[$TH2_NAMESPACE:$serverName:$EVENT_STORAGE_PIN_ALIAS]",
+                    "key[$TH2_NAMESPACE:$clientName:$EVENT_STORAGE_PIN_ALIAS]",
                 )
             )
         }
@@ -530,12 +586,17 @@ class IntegrationTest {
             subConstructor: () -> Th2CustomResource,
             subSpecType: String,
             subRunAsJob: Boolean
-        ) = mkLinkTest(resourceClass, ::createResources, specType, runAsJob, subClass, subConstructor, subSpecType, subRunAsJob)
+        ) = mkLinkTest(subClass, subConstructor, subSpecType, subRunAsJob)
 
         @Timeout(30_000)
         @ParameterizedTest
-        @ValueSource(strings = ["th2-core-component", "th2-core-component-more-than-$NAME_LENGTH_LIMIT-characters"])
-        override fun `grpc link`(name: String) = grpcLinkTest(name)
+        @MethodSource("com.exactpro.th2.infraoperator.integration.IntegrationTest#mqLinkArguments")
+        override fun `grpc link`(
+            clientClass: Class<out Th2CustomResource>,
+            clientConstructor: () -> Th2CustomResource,
+            clientSpecType: String,
+            clientRunAsJob: Boolean
+        ) = grpcLinkTest(clientClass, clientConstructor, clientSpecType, clientRunAsJob)
     }
 
     @Nested
@@ -572,12 +633,17 @@ class IntegrationTest {
             subConstructor: () -> Th2CustomResource,
             subSpecType: String,
             subRunAsJob: Boolean
-        ) = mkLinkTest(resourceClass, ::createResources, specType, runAsJob, subClass, subConstructor, subSpecType, subRunAsJob)
+        ) = mkLinkTest(subClass, subConstructor, subSpecType, subRunAsJob)
 
         @Timeout(30_000)
         @ParameterizedTest
-        @ValueSource(strings = ["th2-component", "th2-component-more-than-$NAME_LENGTH_LIMIT-characters"])
-        override fun `grpc link`(name: String) = grpcLinkTest(name)
+        @MethodSource("com.exactpro.th2.infraoperator.integration.IntegrationTest#mqLinkArguments")
+        override fun `grpc link`(
+            clientClass: Class<out Th2CustomResource>,
+            clientConstructor: () -> Th2CustomResource,
+            clientSpecType: String,
+            clientRunAsJob: Boolean
+        ) = grpcLinkTest(clientClass, clientConstructor, clientSpecType, clientRunAsJob)
     }
 
     @Nested
@@ -614,12 +680,17 @@ class IntegrationTest {
             subConstructor: () -> Th2CustomResource,
             subSpecType: String,
             subRunAsJob: Boolean
-        ) = mkLinkTest(resourceClass, ::createResources, specType, runAsJob, subClass, subConstructor, subSpecType, subRunAsJob)
+        ) = mkLinkTest(subClass, subConstructor, subSpecType, subRunAsJob)
 
         @Timeout(30_000)
         @ParameterizedTest
-        @ValueSource(strings = ["th2-job", "th2-job-more-than-$NAME_LENGTH_LIMIT-characters"])
-        override fun `grpc link`(name: String) = grpcLinkTest(name)
+        @MethodSource("com.exactpro.th2.infraoperator.integration.IntegrationTest#mqLinkArguments")
+        override fun `grpc link`(
+            clientClass: Class<out Th2CustomResource>,
+            clientConstructor: () -> Th2CustomResource,
+            clientSpecType: String,
+            clientRunAsJob: Boolean
+        ) = grpcLinkTest(clientClass, clientConstructor, clientSpecType, clientRunAsJob)
     }
 
     @Nested
@@ -681,8 +752,9 @@ class IntegrationTest {
         private const val TH2_BOOK = "test_book"
         private const val PUBLISH_PIN = "test-publish-pin"
         private const val SUBSCRIBE_PIN = "test-subscribe-pin"
-        private const val CFG_FIELD = "test-cfg-field"
-        private const val CFG_VALUE = "test-cfg-value"
+        private const val SERVER_PIN = "test-server-pin"
+        private const val CLIENT_PIN = "test-client-pin"
+        private const val GRPC_SERVICE = "com.exactpro.th2.test.grpc.TestService"
         private const val IMAGE = "ghcr.io/th2-net/th2-estore"
         private const val VERSION = "0.0.0"
         private const val DICTIONARY_CONTENT = "test-dictionary-content"
@@ -760,10 +832,6 @@ class IntegrationTest {
             )
         }
 
-        private fun KubernetesClient.deleteRabbitMQSecret(namespace: String) {
-            deleteSecret(namespace, "rabbitmq")
-        }
-
         private fun KubernetesClient.createRabbitMQAppConfigCfgMap(
             namespace: String,
             gitHash: String,
@@ -776,10 +844,6 @@ class IntegrationTest {
                 createAnnotations(gitHash, content),
                 mapOf(CONFIG_MAP_RABBITMQ_PROP_NAME to content),
             )
-        }
-
-        private fun KubernetesClient.deleteRabbitMQAppConfigCfgMap(namespace: String) {
-            deleteConfigMap(namespace, DEFAULT_RABBITMQ_CONFIGMAP_NAME)
         }
 
         private fun KubernetesClient.createBookConfigCfgMap(
@@ -795,10 +859,6 @@ class IntegrationTest {
             )
         }
 
-        private fun KubernetesClient.deleteBookConfigCfgMap(namespace: String) {
-            deleteConfigMap(namespace, BOOK_CONFIG_CM_NAME)
-        }
-
         private fun KubernetesClient.createLoggingCfgMap(
             namespace: String,
             gitHash: String,
@@ -809,10 +869,6 @@ class IntegrationTest {
                 createAnnotations(gitHash, TEST_CONTENT),
                 mapOf("log4j2.properties" to TEST_CONTENT),
             )
-        }
-
-        private fun KubernetesClient.deleteLoggingCfgMap(namespace: String) {
-            deleteConfigMap(namespace, LOGGING_CM_NAME)
         }
 
         private fun KubernetesClient.createMQRouterCfgMap(
@@ -827,10 +883,6 @@ class IntegrationTest {
             )
         }
 
-        private fun KubernetesClient.deleteMQRouterCfgMap(namespace: String) {
-            deleteConfigMap(namespace, MQ_ROUTER_CM_NAME)
-        }
-
         private fun KubernetesClient.createGrpcRouterCfgMap(
             namespace: String,
             gitHash: String,
@@ -841,10 +893,6 @@ class IntegrationTest {
                 createAnnotations(gitHash, TEST_CONTENT),
                 mapOf("grpc_router.json" to TEST_CONTENT),
             )
-        }
-
-        private fun KubernetesClient.deleteGrpcRouterCfgMap(namespace: String) {
-            deleteConfigMap(namespace, GRPC_ROUTER_CM_NAME)
         }
 
         private fun KubernetesClient.createCradleManagerCfgMap(
@@ -859,14 +907,11 @@ class IntegrationTest {
             )
         }
 
-        private fun KubernetesClient.deleteCradleManagerCfgMap(namespace: String) {
-            deleteConfigMap(namespace, CRADLE_MANAGER_CM_NAME)
-        }
-
         private fun HelmRelease.assertMinCfg(
             name: String,
             runAsJob: Boolean,
             queues: Map<String, Map<String, Any>> = emptyMap(),
+            services: Map<String, Map<String, Any>> = emptyMap(),
         ) {
             expectThat(componentValuesSection) {
                 getValue(BOOK_CONFIG_ALIAS).isA<Map<String, Any?>>().and {
@@ -892,7 +937,7 @@ class IntegrationTest {
                         getValue("port") isEqualTo 8080
                         getValue("workers") isEqualTo 5
                     }
-                    getValue("services").isA<Map<String, Any?>>().isEmpty()
+                    getValue("services").isA<Map<String, Any?>>() isEqualTo services
                 }
                 getValue(IS_JOB_ALIAS) isEqualTo runAsJob
                 getValue(SECRET_PATHS_CONFIG_ALIAS).isA<Map<String, Any?>>().isEmpty()
