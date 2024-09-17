@@ -19,7 +19,9 @@ package com.exactpro.th2.infraoperator.integration
 import com.exactpro.th2.infraoperator.configuration.fields.RabbitMQNamespacePermissions
 import com.rabbitmq.http.client.Client
 import com.rabbitmq.http.client.domain.DestinationType
+import com.rabbitmq.http.client.domain.ExchangeInfo
 import com.rabbitmq.http.client.domain.QueueInfo
+import io.github.oshai.kotlinlogging.KotlinLogging
 import org.junit.jupiter.api.assertAll
 import org.testcontainers.shaded.org.awaitility.Awaitility.await
 import java.util.concurrent.TimeUnit
@@ -29,6 +31,8 @@ import kotlin.test.assertNotNull
 import kotlin.test.assertTrue
 
 const val RABBIT_MQ_QUEUE_CLASSIC_TYPE = "classic"
+
+private val K_LOGGER = KotlinLogging.logger {}
 
 fun Client.assertUser(
     user: String,
@@ -87,14 +91,34 @@ fun Client.assertExchange(
     assertFalse(exchangeInfo.isAutoDelete, "Exchange '$exchange' is auto delete")
 }
 
+fun Client.assertNoExchanges(
+    exchangePattern: String,
+    vHost: String,
+    timeout: Long = 5_000,
+    unit: TimeUnit = TimeUnit.MILLISECONDS,
+) {
+    val filter: (ExchangeInfo) -> Boolean = {
+        exchangeInfo ->  exchangeInfo.name.matches(Regex(exchangePattern)) && exchangeInfo.vhost == vHost
+    }
+    await("assertNoExchanges('$exchangePattern')")
+        .timeout(timeout, unit)
+        .conditionEvaluationListener { _ ->
+            K_LOGGER.debug {
+                "Remaining exchanges by '$exchangePattern': ${exchanges.filter(filter).map(ExchangeInfo::getName)}"
+            }
+        }
+        .until { exchanges.none(filter) }
+}
+
 fun Client.assertNoExchange(
     exchange: String,
+    vHost: String,
     timeout: Long = 5_000,
     unit: TimeUnit = TimeUnit.MILLISECONDS,
 ) {
     await("assertNoExchange('$exchange')")
         .timeout(timeout, unit)
-        .until { exchanges.firstOrNull { it.name == exchange } == null }
+        .until { exchanges.firstOrNull { it.name == exchange && it.vhost == vHost } == null }
 }
 
 fun Client.assertQueue(
@@ -197,9 +221,17 @@ fun Client.assertNoQueues(
     timeout: Long = 5_000,
     unit: TimeUnit = TimeUnit.MILLISECONDS,
 ) {
+    val filter: (QueueInfo) -> Boolean = {
+            queueInfo ->  queueInfo.name.matches(Regex(queuePattern)) && queueInfo.vhost == vHost
+    }
     await("assertNoQueues('$queuePattern')")
         .timeout(timeout, unit)
-        .until { queues.map { it.name.matches(Regex(queuePattern)) && it.vhost == vHost }.isEmpty() }
+        .conditionEvaluationListener { _ ->
+            K_LOGGER.debug {
+                "Remaining queues by '$queuePattern': ${queues.filter(filter).map(QueueInfo::getName)}"
+            }
+        }
+        .until { queues.none(filter) }
 }
 
 fun Client.assertNoQueue(

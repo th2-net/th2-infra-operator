@@ -105,19 +105,24 @@ public class ConfigMapEventHandler implements Watcher<ConfigMap> {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(ConfigMapEventHandler.class);
 
-    private KubernetesClient client;
+    private final KubernetesClient kubClient;
+
+    private final RabbitMQContext rabbitMQContext;
+
+    private final DefaultWatchManager watchManager;
 
     private MixedOperation<HelmRelease, KubernetesResourceList<HelmRelease>, Resource<HelmRelease>> helmReleaseClient;
 
     public KubernetesClient getClient() {
-        return client;
+        return kubClient;
     }
 
     public static ConfigMapEventHandler newInstance(SharedInformerFactory sharedInformerFactory,
                                                     KubernetesClient client,
+                                                    RabbitMQContext rabbitMQContext,
+                                                    DefaultWatchManager watchManager,
                                                     EventQueue eventQueue) {
-        var res = new ConfigMapEventHandler(client);
-        res.client = client;
+        var res = new ConfigMapEventHandler(client, rabbitMQContext, watchManager);
         res.helmReleaseClient = client.resources(HelmRelease.class);
 
         SharedIndexInformer<ConfigMap> configMapInformer = sharedInformerFactory.sharedIndexInformerFor(
@@ -129,8 +134,10 @@ public class ConfigMapEventHandler implements Watcher<ConfigMap> {
         return res;
     }
 
-    private ConfigMapEventHandler(KubernetesClient client) {
-        this.client = client;
+    private ConfigMapEventHandler(KubernetesClient kubClient, RabbitMQContext rabbitMQContext, DefaultWatchManager watchManager) {
+        this.kubClient = kubClient;
+        this.rabbitMQContext = rabbitMQContext;
+        this.watchManager = watchManager;
     }
 
     @Override
@@ -165,10 +172,10 @@ public class ConfigMapEventHandler implements Watcher<ConfigMap> {
                     if (!Objects.equals(rabbitMQConfig, newRabbitMQConfig)) {
                         Histogram.Timer processTimer = OperatorMetrics.getConfigMapEventTimer(resource);
                         configMaps.setRabbitMQConfig4Namespace(namespace, newRabbitMQConfig);
-                        RabbitMQContext.setUpRabbitMqForNamespace(namespace);
+                        rabbitMQContext.setUpRabbitMqForNamespace(namespace);
                         LOGGER.info("RabbitMQ ConfigMap has been updated in namespace \"{}\". Updating all boxes",
                                 namespace);
-                        DefaultWatchManager.getInstance().refreshBoxes(namespace);
+                        watchManager.refreshBoxes(namespace);
                         LOGGER.info("box-definition(s) have been updated");
                         processTimer.observeDuration();
                     } else {
@@ -256,7 +263,7 @@ public class ConfigMapEventHandler implements Watcher<ConfigMap> {
                     Histogram.Timer processTimer = OperatorMetrics.getConfigMapEventTimer(resource);
                     OperatorState.INSTANCE.setBookName(namespace, newBookName);
                     LOGGER.info("\"{}\" has been updated. Updating all boxes", resourceLabel);
-                    DefaultWatchManager.getInstance().refreshBoxes(namespace);
+                    watchManager.refreshBoxes(namespace);
                     LOGGER.info("box-definition(s) have been updated");
                     processTimer.observeDuration();
                 }
@@ -318,7 +325,7 @@ public class ConfigMapEventHandler implements Watcher<ConfigMap> {
 
     private String readRabbitMQPasswordForSchema(String namespace, String secretName) throws Exception {
 
-        Secret secret = client.secrets().inNamespace(namespace).withName(secretName).get();
+        Secret secret = kubClient.secrets().inNamespace(namespace).withName(secretName).get();
         if (secret == null) {
             throw new Exception(String.format("Secret not found \"%s\"",
                     annotationFor(namespace, "Secret", secretName)));

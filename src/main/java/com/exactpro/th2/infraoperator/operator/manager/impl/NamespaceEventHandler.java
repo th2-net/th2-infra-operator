@@ -37,23 +37,27 @@ import static com.exactpro.th2.infraoperator.util.WatcherUtils.createExceptionHa
 public class NamespaceEventHandler implements ResourceEventHandler<Namespace>, Watcher<Namespace> {
     private static final Logger LOGGER = LoggerFactory.getLogger(NamespaceEventHandler.class);
 
+    private final RabbitMQContext rabbitMQContext;
+
     private final EventQueue eventQueue;
 
     private final OperatorConfig config = ConfigLoader.getConfig();
 
     public static NamespaceEventHandler newInstance(SharedInformerFactory sharedInformerFactory,
+                                                    RabbitMQContext rabbitMQContext,
                                                     EventQueue eventQueue) {
         SharedIndexInformer<Namespace> namespaceInformer = sharedInformerFactory.sharedIndexInformerFor(
                 Namespace.class,
                 RESYNC_TIME);
 
-        var res = new NamespaceEventHandler(eventQueue);
+        var res = new NamespaceEventHandler(rabbitMQContext, eventQueue);
         namespaceInformer.exceptionHandler(createExceptionHandler(Namespace.class));
         namespaceInformer.addEventHandler(res);
         return res;
     }
 
-    public NamespaceEventHandler(EventQueue eventQueue) {
+    public NamespaceEventHandler(RabbitMQContext rabbitMQContext, EventQueue eventQueue) {
+        this.rabbitMQContext = rabbitMQContext;
         this.eventQueue = eventQueue;
     }
 
@@ -114,7 +118,7 @@ public class NamespaceEventHandler implements ResourceEventHandler<Namespace>, W
             lock.lock();
             try {
                 LOGGER.info("Processing {} event for namespace: \"{}\"", action, namespaceName);
-                RabbitMQContext.cleanupRabbit(namespaceName);
+                rabbitMQContext.cleanupRabbit(namespaceName);
                 LOGGER.info("Deleted namespace {}", namespaceName);
             } catch (Exception e) {
                 LOGGER.error("Exception processing event for \"{}\"", resourceLabel, e);

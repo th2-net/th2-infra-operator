@@ -33,10 +33,9 @@ import com.exactpro.th2.infraoperator.util.CustomResourceUtils
 import com.exactpro.th2.infraoperator.util.CustomResourceUtils.annotationFor
 import io.github.oshai.kotlinlogging.KotlinLogging
 
-object BindQueueLinkResolver {
-    private val K_LOGGER = KotlinLogging.logger { }
-
-    @JvmStatic
+class BindQueueLinkResolver(
+    private val rabbitMQContext: RabbitMQContext,
+) {
     fun resolveDeclaredLinks(resource: Th2CustomResource) {
         val namespace = resource.metadata.namespace
         val resourceName = resource.metadata.name
@@ -55,7 +54,6 @@ object BindQueueLinkResolver {
         }
     }
 
-    @JvmStatic
     fun resolveHiddenLinks(resource: Th2CustomResource) {
         val namespace = resource.metadata.namespace
         val resourceName = resource.metadata.name
@@ -110,9 +108,9 @@ object BindQueueLinkResolver {
 
     private fun bindQueues(queue: LinkDescription, commitHash: String) {
         try {
-            val channel = RabbitMQContext.getChannel()
+            val channel = rabbitMQContext.channel
             val queueName = queue.queueName.toString()
-            val currentQueue = RabbitMQContext.getQueue(queueName)
+            val currentQueue = rabbitMQContext.getQueue(queueName)
             if (currentQueue == null) {
                 K_LOGGER.info {"Queue '$queueName' does not yet exist. skipping binding" }
                 return
@@ -135,7 +133,7 @@ object BindQueueLinkResolver {
         resName: String? = null
     ) {
         val queueName = queue.toString()
-        val bindingOnRabbit = RabbitMQContext.getQueueBindings(queueName)
+        val bindingOnRabbit = rabbitMQContext.getQueueBindings(queueName)
             ?.map { it.routingKey }
             ?.filter {
                 it.matches(ROUTING_KEY_REGEXP.toRegex()) &&
@@ -145,10 +143,10 @@ object BindQueueLinkResolver {
             RoutingKeyName(queue.namespace, it.box, it.pin).toString()
         }
         try {
-            val channel = RabbitMQContext.getChannel()
+            val channel = rabbitMQContext.channel
             bindingOnRabbit?.forEach {
                 if (!currentBindings.contains(it)) {
-                    val currentQueue = RabbitMQContext.getQueue(queueName)
+                    val currentQueue = rabbitMQContext.getQueue(queueName)
                     if (currentQueue == null) {
                         K_LOGGER.info { "Queue '$queueName' already removed. skipping unbinding" }
                         return
@@ -162,5 +160,9 @@ object BindQueueLinkResolver {
             K_LOGGER.error(e) { message }
             throw NonTerminalException(message, e)
         }
+    }
+
+    companion object {
+        private val K_LOGGER = KotlinLogging.logger { }
     }
 }

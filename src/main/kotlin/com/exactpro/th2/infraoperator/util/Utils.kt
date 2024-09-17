@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2024 Exactpro (Exactpro Systems Limited)
+ * Copyright 2024-2024 Exactpro (Exactpro Systems Limited)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,16 +14,19 @@
  * limitations under the License.
  */
 
-package com.exactpro.th2.infraoperator.operator;
+@file:JvmName("Utils")
 
-import com.exactpro.th2.infraoperator.spec.Th2CustomResource;
-import com.exactpro.th2.infraoperator.spec.strategy.linkresolver.mq.RabbitMQContext;
-import io.fabric8.kubernetes.client.KubernetesClient;
+package com.exactpro.th2.infraoperator.util
 
-public abstract class GenericHelmTh2Op<CR extends Th2CustomResource> extends HelmReleaseTh2Op<CR> {
+import io.github.oshai.kotlinlogging.KotlinLogging
 
-    public GenericHelmTh2Op(KubernetesClient kubClient, RabbitMQContext rabbitMQContext) {
-        super(kubClient, rabbitMQContext);
+private val K_LOGGER = KotlinLogging.logger {}
+
+fun close(closeable: AutoCloseable, name: String) {
+    try {
+        closeable.close()
+        K_LOGGER.info { "$name closed" }
+    } catch (e: Exception) {
+        K_LOGGER.error(e) { "$name close failure" }
     }
-
 }

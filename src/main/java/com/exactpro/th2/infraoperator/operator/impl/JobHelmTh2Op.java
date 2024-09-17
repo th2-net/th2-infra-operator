@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2021 Exactpro (Exactpro Systems Limited)
+ * Copyright 2020-2024 Exactpro (Exactpro Systems Limited)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -22,6 +22,7 @@ import com.exactpro.th2.infraoperator.model.kubernetes.client.ResourceClient;
 import com.exactpro.th2.infraoperator.model.kubernetes.client.impl.JobClient;
 import com.exactpro.th2.infraoperator.operator.GenericHelmTh2Op;
 import com.exactpro.th2.infraoperator.spec.job.Th2Job;
+import com.exactpro.th2.infraoperator.spec.strategy.linkresolver.mq.RabbitMQContext;
 import com.exactpro.th2.infraoperator.util.CustomResourceUtils;
 import io.fabric8.kubernetes.client.KubernetesClient;
 import io.fabric8.kubernetes.client.informers.SharedIndexInformer;
@@ -31,9 +32,9 @@ public class JobHelmTh2Op extends GenericHelmTh2Op<Th2Job> {
 
     private final JobClient jobClient;
 
-    public JobHelmTh2Op(KubernetesClient client) {
-        super(client);
-        this.jobClient = new JobClient(client);
+    public JobHelmTh2Op(KubernetesClient kubClient, RabbitMQContext rabbitMQContext) {
+        super(kubClient, rabbitMQContext);
+        this.jobClient = new JobClient(kubClient);
     }
 
     @Override

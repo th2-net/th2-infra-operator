@@ -124,7 +124,7 @@ class IntegrationTest {
 
         kubeClient = createKubernetesClient().apply { configureK3s() }
         rabbitMQClient = createRabbitMQClient(rabbitMQContainer)
-        controller = Th2CrdController().apply(Th2CrdController::start)
+        controller = Th2CrdController()
 
         rabbitMQClient.assertExchange(RABBIT_MQ_TOPIC_EXCHANGE, TOPIC, RABBIT_MQ_V_HOST)
     }
@@ -140,6 +140,9 @@ class IntegrationTest {
         }
         if (this::rabbitMQContainer.isInitialized) {
             rabbitMQContainer.stop()
+        }
+        if (this::controller.isInitialized) {
+            controller.close()
         }
     }
 
@@ -179,7 +182,7 @@ class IntegrationTest {
         // FIXME: Secret not found "th2-test:Secret/rabbitMQ"
 
         rabbitMQClient.assertNoQueues("link\\[.*\\]", RABBIT_MQ_V_HOST)
-        rabbitMQClient.assertNoExchange(toExchangeName(TH2_NAMESPACE))
+        rabbitMQClient.assertNoExchange(toExchangeName(TH2_NAMESPACE), RABBIT_MQ_V_HOST)
         rabbitMQClient.assertNoUser(TH2_NAMESPACE)
 
         kubeClient.awaitNoResources<HelmRelease>(TH2_NAMESPACE)

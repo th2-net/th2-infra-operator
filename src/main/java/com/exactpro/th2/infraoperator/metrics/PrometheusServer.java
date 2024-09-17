@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2021 Exactpro (Exactpro Systems Limited)
+ * Copyright 2020-2024 Exactpro (Exactpro Systems Limited)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,40 +16,47 @@
 
 package com.exactpro.th2.infraoperator.metrics;
 
-import com.exactpro.th2.infraoperator.configuration.ConfigLoader;
 import com.exactpro.th2.infraoperator.spec.shared.PrometheusConfiguration;
 import io.prometheus.client.exporter.HTTPServer;
 import io.prometheus.client.hotspot.DefaultExports;
+import org.jetbrains.annotations.Nullable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
-import java.util.concurrent.atomic.AtomicReference;
+import java.util.concurrent.locks.Lock;
+import java.util.concurrent.locks.ReentrantLock;
 
-public class PrometheusServer {
-    private static final Logger logger = LoggerFactory.getLogger(PrometheusServer.class);
+public class PrometheusServer implements AutoCloseable {
+    private static final Logger LOGGER = LoggerFactory.getLogger(PrometheusServer.class);
+    private final Lock lock = new ReentrantLock();
+    @Nullable
+    private final HTTPServer server;
 
-    private static final AtomicReference<HTTPServer> prometheusExporter = new AtomicReference<>();
-
-    public static void start() {
+    static {
         DefaultExports.initialize();
-        PrometheusConfiguration<String> prometheusConfiguration = ConfigLoader.getConfig().getPrometheusConfiguration();
+    }
 
-        String host = prometheusConfiguration.getHost();
-        int port = Integer.parseInt(prometheusConfiguration.getPort());
-        boolean enabled = Boolean.parseBoolean(prometheusConfiguration.getEnabled());
+    public PrometheusServer(PrometheusConfiguration<String> configuration) throws IOException {
+        if (Boolean.parseBoolean(configuration.getEnabled())) {
+            String host = configuration.getHost();
+            int port = Integer.parseInt(configuration.getPort());
+            server = new HTTPServer(host, port);
+            LOGGER.info("Started prometheus server on: \"{}:{}\"", host, port);
+        } else {
+            server = null;
+        }
+    }
 
-        prometheusExporter.updateAndGet(server -> {
-            if (server == null && enabled) {
-                try {
-                    server = new HTTPServer(host, port);
-                    logger.info("Started prometheus server on: \"{}:{}\"", host, port);
-                    return server;
-                } catch (IOException e) {
-                    throw new RuntimeException("Failed to create Prometheus exporter", e);
-                }
+    @Override
+    public void close() {
+        lock.lock();
+        try {
+            if (server != null) {
+                server.close();
             }
-            return server;
-        });
+        } finally {
+            lock.unlock();
+        }
     }
 }

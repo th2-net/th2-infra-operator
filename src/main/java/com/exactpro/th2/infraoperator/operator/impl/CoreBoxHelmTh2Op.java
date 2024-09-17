@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2021 Exactpro (Exactpro Systems Limited)
+ * Copyright 2020-2024 Exactpro (Exactpro Systems Limited)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -22,6 +22,7 @@ import com.exactpro.th2.infraoperator.model.kubernetes.client.ResourceClient;
 import com.exactpro.th2.infraoperator.model.kubernetes.client.impl.CoreBoxClient;
 import com.exactpro.th2.infraoperator.operator.GenericHelmTh2Op;
 import com.exactpro.th2.infraoperator.spec.corebox.Th2CoreBox;
+import com.exactpro.th2.infraoperator.spec.strategy.linkresolver.mq.RabbitMQContext;
 import com.exactpro.th2.infraoperator.util.CustomResourceUtils;
 import io.fabric8.kubernetes.client.KubernetesClient;
 import io.fabric8.kubernetes.client.informers.SharedIndexInformer;
@@ -31,9 +32,9 @@ public class CoreBoxHelmTh2Op extends GenericHelmTh2Op<Th2CoreBox> {
 
     private final CoreBoxClient coreBoxClient;
 
-    public CoreBoxHelmTh2Op(KubernetesClient client) {
-        super(client);
-        this.coreBoxClient = new CoreBoxClient(client);
+    public CoreBoxHelmTh2Op(KubernetesClient kubClient, RabbitMQContext rabbitMQContext) {
+        super(kubClient, rabbitMQContext);
+        this.coreBoxClient = new CoreBoxClient(kubClient);
     }
 
     @Override
