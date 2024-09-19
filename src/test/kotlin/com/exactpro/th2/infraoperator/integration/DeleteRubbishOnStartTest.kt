@@ -18,6 +18,8 @@ package com.exactpro.th2.infraoperator.integration
 
 import com.exactpro.th2.infraoperator.Th2CrdController
 import com.exactpro.th2.infraoperator.configuration.fields.RabbitMQNamespacePermissions
+import com.exactpro.th2.infraoperator.operator.StoreHelmTh2Op.EVENT_STORAGE_BOX_ALIAS
+import com.exactpro.th2.infraoperator.operator.StoreHelmTh2Op.EVENT_STORAGE_PIN_ALIAS
 import com.exactpro.th2.infraoperator.operator.StoreHelmTh2Op.MESSAGE_STORAGE_BOX_ALIAS
 import com.exactpro.th2.infraoperator.operator.StoreHelmTh2Op.MESSAGE_STORAGE_PIN_ALIAS
 import com.exactpro.th2.infraoperator.spec.box.Th2Box
@@ -26,23 +28,20 @@ import com.exactpro.th2.infraoperator.spec.strategy.linkresolver.mq.RabbitMQCont
 import com.exactpro.th2.infraoperator.spec.strategy.linkresolver.mq.RabbitMQContext.toExchangeName
 import com.exactpro.th2.infraoperator.util.createKubernetesClient
 import com.rabbitmq.client.AMQP
-import com.rabbitmq.client.Channel
 import com.rabbitmq.client.Connection
 import com.rabbitmq.http.client.Client
-import com.rabbitmq.http.client.domain.QueueInfo
 import io.fabric8.kubernetes.client.KubernetesClient
 import org.junit.jupiter.api.AfterAll
 import org.junit.jupiter.api.BeforeAll
-import org.junit.jupiter.api.Disabled
 import org.junit.jupiter.api.Tag
 import org.junit.jupiter.api.TestInstance
 import org.junit.jupiter.api.Timeout
+import org.junit.jupiter.api.assertAll
 import org.junit.jupiter.api.io.TempDir
 import org.testcontainers.containers.RabbitMQContainer
 import org.testcontainers.k3s.K3sContainer
 import java.nio.file.Path
 import kotlin.test.Test
-import kotlin.test.assertEquals
 
 @Tag("integration-test")
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
@@ -99,9 +98,50 @@ class DeleteRubbishOnStartTest {
     }
 
     @Test
-    @Disabled("implement Th2CrdController.close")
+    @Timeout(30_000)
     fun deleteAllTest() {
-        TODO()
+        val namespaces = listOf(
+            "${TH2_PREFIX}test-b",
+            "${TH2_PREFIX}test-c"
+        )
+        val component = "test-component"
+
+        rabbitMQConnection.createChannel().use { channel ->
+            val queues = mutableListOf<String>()
+            val exchanges = mutableListOf<String>()
+
+            namespaces.forEach { namespace ->
+                channel.createQueue(namespace, "rubbish-component", PIN_NAME)
+                    .assertQueue().queue.also(queues::add)
+                channel.createQueue(namespace, component, "rubbish-pin")
+                    .assertQueue().queue.also(queues::add)
+                channel.createQueue(namespace, component, PIN_NAME)
+                    .assertQueue().queue.also(queues::add)
+                channel.createQueue(namespace, MESSAGE_STORAGE_BOX_ALIAS, MESSAGE_STORAGE_PIN_ALIAS)
+                    .assertQueue().queue.also(queues::add)
+                channel.createQueue(namespace, EVENT_STORAGE_BOX_ALIAS, EVENT_STORAGE_PIN_ALIAS)
+                    .assertQueue().queue.also(queues::add)
+
+                toExchangeName(namespace).apply {
+                    channel.createExchange(this, DIRECT)
+                    rabbitMQClient.assertExchange(this, DIRECT, RABBIT_MQ_V_HOST)
+                    exchanges.add(this)
+                }
+            }
+
+            Th2CrdController().use {
+                assertAll(
+                    queues.map { queue ->
+                        { rabbitMQClient.assertNoQueue(queue, RABBIT_MQ_V_HOST) }
+                    } + exchanges.map { exchange ->
+                        { rabbitMQClient.assertNoExchange(exchange, RABBIT_MQ_V_HOST) }
+                    } + listOf(
+                        { rabbitMQClient.assertNoQueues("link\\[.*\\]", RABBIT_MQ_V_HOST) },
+                        { rabbitMQClient.assertNoExchanges("${TH2_PREFIX}.*", RABBIT_MQ_V_HOST) }
+                    )
+                )
+            }
+        }
     }
 
     @Test
@@ -160,19 +200,19 @@ class DeleteRubbishOnStartTest {
             """.trimIndent()
             kubeClient.createTh2CustomResource(exchangeB, component, gitHash, spec, ::Th2Box)
 
-            Th2CrdController().apply(Th2CrdController::start).use {
+            Th2CrdController().use {
                 kubeClient.awaitPhase(exchangeB, component, RolloutPhase.SUCCEEDED, Th2Box::class.java)
 
                 rabbitMQClient.assertNoQueue(queue01.queue, RABBIT_MQ_V_HOST)
                 rabbitMQClient.assertNoQueue(queue02.queue, RABBIT_MQ_V_HOST)
                 rabbitMQClient.assertNoQueue(queue03.queue, RABBIT_MQ_V_HOST)
 
-                rabbitMQClient.assertQueue(queue11.queue, RABBIT_MQ_QUEUE_CLASSIC_TYPE,  RABBIT_MQ_V_HOST)
-                    .assertQueueSize(channel, 1)
+                rabbitMQClient.assertQueue(queue11.queue, RABBIT_MQ_QUEUE_CLASSIC_TYPE, RABBIT_MQ_V_HOST)
+                rabbitMQClient.awaitQueueSize(queue11.queue, RABBIT_MQ_V_HOST, 1)
                 rabbitMQClient.assertQueue(queue12.queue, RABBIT_MQ_QUEUE_CLASSIC_TYPE,  RABBIT_MQ_V_HOST)
-                    .assertQueueSize(channel, 1)
+                rabbitMQClient.awaitQueueSize(queue12.queue, RABBIT_MQ_V_HOST, 1)
 
-                rabbitMQClient.assertNoExchange(exchangeC)
+                rabbitMQClient.assertNoExchange(exchangeC, RABBIT_MQ_V_HOST)
             }
         }
     }
@@ -196,11 +236,6 @@ class DeleteRubbishOnStartTest {
     private fun AMQP.Queue.DeclareOk.assertQueue(): AMQP.Queue.DeclareOk {
         rabbitMQClient.assertQueue(queue, RABBIT_MQ_QUEUE_CLASSIC_TYPE, RABBIT_MQ_V_HOST)
         return this
-    }
-
-    private fun QueueInfo.assertQueueSize(channel: Channel, size: Int) {
-        val declareOk = channel.queueDeclare(name, isDurable, isExclusive, isAutoDelete, arguments)
-        assertEquals(size, declareOk.messageCount)
     }
 
     companion object {

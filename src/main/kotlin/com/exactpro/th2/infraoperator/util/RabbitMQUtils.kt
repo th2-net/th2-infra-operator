@@ -39,11 +39,14 @@ import java.io.IOException
 
 private val K_LOGGER = KotlinLogging.logger { }
 
-fun deleteRabbitMQRubbish() {
+fun deleteRabbitMQRubbish(
+    kubernetesClient: KubernetesClient,
+    rabbitMQContext: RabbitMQContext,
+) {
     try {
         val resourceHolder = collectRabbitMQResources(
-            RabbitMQContext.getTh2Queues(),
-            RabbitMQContext.getTh2Exchanges(),
+            rabbitMQContext.th2Queues,
+            rabbitMQContext.th2Exchanges,
         )
 
         if (resourceHolder.isHolderEmpty()) {
@@ -51,17 +54,15 @@ fun deleteRabbitMQRubbish() {
         }
 
         val namespacePrefixes = ConfigLoader.loadConfiguration().namespacePrefixes
-        val topicExchange = RabbitMQContext.getTopicExchangeName()
+        val topicExchange = rabbitMQContext.topicExchangeName
 
-        createKubernetesClient().use { kuClient ->
-            resourceHolder.filterRubbishResources(
-                kuClient,
-                namespacePrefixes,
-                topicExchange,
-            )
-        }
+        resourceHolder.filterRubbishResources(
+            kubernetesClient,
+            namespacePrefixes,
+            topicExchange,
+        )
         K_LOGGER.info { "RabbitMQ rubbish: $resourceHolder" }
-        deleteRabbitMQRubbish(resourceHolder, RabbitMQContext::getChannel)
+        deleteRabbitMQRubbish(resourceHolder, rabbitMQContext::getChannel)
     } catch (e: Exception) {
         K_LOGGER.error(e) { "Delete RabbitMQ rubbish failure" }
     }

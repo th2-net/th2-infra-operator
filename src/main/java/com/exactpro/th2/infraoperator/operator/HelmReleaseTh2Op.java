@@ -30,6 +30,7 @@ import com.exactpro.th2.infraoperator.spec.helmrelease.HelmReleaseSecrets;
 import com.exactpro.th2.infraoperator.spec.shared.PrometheusConfiguration;
 import com.exactpro.th2.infraoperator.spec.strategy.linkresolver.mq.BindQueueLinkResolver;
 import com.exactpro.th2.infraoperator.spec.strategy.linkresolver.mq.DeclareQueueResolver;
+import com.exactpro.th2.infraoperator.spec.strategy.linkresolver.mq.RabbitMQContext;
 import com.exactpro.th2.infraoperator.util.CustomResourceUtils;
 import com.exactpro.th2.infraoperator.util.JsonUtils;
 
@@ -126,13 +127,17 @@ public abstract class HelmReleaseTh2Op<CR extends Th2CustomResource> extends Abs
     protected final MixedOperation<HelmRelease, KubernetesResourceList<HelmRelease>, Resource<HelmRelease>>
             helmReleaseClient;
 
-    public HelmReleaseTh2Op(KubernetesClient client) {
+    protected final DeclareQueueResolver declareQueueResolver;
+    protected final BindQueueLinkResolver bindQueueLinkResolver;
 
-        super(client);
+    public HelmReleaseTh2Op(KubernetesClient kubClient, RabbitMQContext rabbitMQContext) {
+
+        super(kubClient);
 
         this.grpcConfigFactory = new GrpcRouterConfigFactory();
-
-        helmReleaseClient = kubClient.resources(HelmRelease.class);
+        this.helmReleaseClient = this.kubClient.resources(HelmRelease.class);
+        this.declareQueueResolver = new DeclareQueueResolver(rabbitMQContext);
+        this.bindQueueLinkResolver = new BindQueueLinkResolver(rabbitMQContext);
     }
 
     public abstract SharedIndexInformer<CR> generateInformerFromFactory(SharedInformerFactory factory);
@@ -326,9 +331,9 @@ public abstract class HelmReleaseTh2Op<CR extends Th2CustomResource> extends Abs
         var lock = OperatorState.INSTANCE.getLock(namespace);
         lock.lock();
         try {
-            DeclareQueueResolver.resolveAdd(resource);
-            BindQueueLinkResolver.resolveDeclaredLinks(resource);
-            BindQueueLinkResolver.resolveHiddenLinks(resource);
+            declareQueueResolver.resolveAdd(resource);
+            bindQueueLinkResolver.resolveDeclaredLinks(resource);
+            bindQueueLinkResolver.resolveHiddenLinks(resource);
             updateGrpcLinkedResourcesIfNeeded(resource);
             super.addedEvent(resource);
         } finally {
@@ -344,9 +349,9 @@ public abstract class HelmReleaseTh2Op<CR extends Th2CustomResource> extends Abs
         var lock = OperatorState.INSTANCE.getLock(namespace);
         lock.lock();
         try {
-            DeclareQueueResolver.resolveAdd(resource);
-            BindQueueLinkResolver.resolveDeclaredLinks(resource);
-            BindQueueLinkResolver.resolveHiddenLinks(resource);
+            declareQueueResolver.resolveAdd(resource);
+            bindQueueLinkResolver.resolveDeclaredLinks(resource);
+            bindQueueLinkResolver.resolveHiddenLinks(resource);
             updateGrpcLinkedResourcesIfNeeded(resource);
             super.modifiedEvent(resource);
         } finally {
@@ -361,7 +366,7 @@ public abstract class HelmReleaseTh2Op<CR extends Th2CustomResource> extends Abs
         lock.lock();
         try {
             super.deletedEvent(resource);
-            DeclareQueueResolver.resolveDelete(resource);
+            declareQueueResolver.resolveDelete(resource);
         } finally {
             lock.unlock();
         }

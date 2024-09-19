@@ -20,6 +20,7 @@ import com.exactpro.th2.infraoperator.configuration.ConfigLoader;
 import com.exactpro.th2.infraoperator.model.kubernetes.client.ResourceClient;
 import com.exactpro.th2.infraoperator.operator.HelmReleaseTh2Op;
 import com.exactpro.th2.infraoperator.spec.Th2CustomResource;
+import com.exactpro.th2.infraoperator.spec.strategy.linkresolver.mq.RabbitMQContext;
 import com.exactpro.th2.infraoperator.util.CustomResourceUtils;
 import com.exactpro.th2.infraoperator.util.Strings;
 import com.fasterxml.uuid.Generators;
@@ -38,18 +39,17 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.function.Function;
+import java.util.function.BiFunction;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
 
 import static com.exactpro.th2.infraoperator.operator.AbstractTh2Operator.REFRESH_TOKEN_ALIAS;
 import static com.exactpro.th2.infraoperator.util.CustomResourceUtils.annotationFor;
-import static com.exactpro.th2.infraoperator.util.KubernetesUtils.createKubernetesClient;
 import static com.exactpro.th2.infraoperator.util.WatcherUtils.createExceptionHandler;
 
-public class DefaultWatchManager {
+public class DefaultWatchManager implements AutoCloseable {
 
-    private static final Logger logger = LoggerFactory.getLogger(DefaultWatchManager.class);
+    private static final Logger LOGGER = LoggerFactory.getLogger(DefaultWatchManager.class);
 
     private boolean isWatching = false;
 
@@ -59,29 +59,29 @@ public class DefaultWatchManager {
 
     private final SharedInformerFactory sharedInformerFactory;
 
-    private static DefaultWatchManager instance;
-
     private final EventDispatcher eventDispatcher;
 
-    private final KubernetesClient client;
+    private final KubernetesClient kubClient;
 
-    private synchronized SharedInformerFactory getInformerFactory() {
+    private final RabbitMQContext rabbitMQContext;
+
+    private SharedInformerFactory getInformerFactory() {
         return sharedInformerFactory;
     }
 
-    private DefaultWatchManager(KubernetesClient client) {
-        this.sharedInformerFactory = client.informers();
+    public DefaultWatchManager(KubernetesClient kubClient, RabbitMQContext rabbitMQContext) {
+        this.sharedInformerFactory = kubClient.informers();
         this.eventDispatcher = new EventDispatcher();
-        this.client = client;
+        this.kubClient = kubClient;
+        this.rabbitMQContext = rabbitMQContext;
 
         sharedInformerFactory.addSharedInformerEventListener(exception -> {
-            logger.error("Exception in InformerFactory : {}", exception.getMessage());
+            LOGGER.error("Exception in InformerFactory : {}", exception.getMessage());
         });
-        instance = this;
     }
 
-    public void startInformers() {
-        logger.info("Starting all informers...");
+    public synchronized void startInformers() {
+        LOGGER.info("Starting all informers...");
 
         SharedInformerFactory sharedInformerFactory = getInformerFactory();
 
@@ -92,11 +92,11 @@ public class DefaultWatchManager {
         isWatching = true;
 
         sharedInformerFactory.startAllRegisteredInformers();
-        logger.info("All informers has been started");
+        LOGGER.info("All informers has been started");
     }
 
-    public void stopInformers() {
-        logger.info("Shutting down informers");
+    private void stopInformers() {
+        LOGGER.info("Shutting down informers");
         getInformerFactory().stopAllRegisteredInformers();
     }
 
@@ -107,10 +107,10 @@ public class DefaultWatchManager {
     private void loadConfigMaps(EventHandlerContext context) {
 
         var configMapEventHandler = (ConfigMapEventHandler) context.getHandler(ConfigMapEventHandler.class);
-        List<ConfigMap> configMaps = client.configMaps().inAnyNamespace().list().getItems();
+        List<ConfigMap> configMaps = kubClient.configMaps().inAnyNamespace().list().getItems();
         configMaps = filterByNamespace(configMaps);
         for (var configMap : configMaps) {
-            logger.info("Loading \"{}\"", annotationFor(configMap));
+            LOGGER.info("Loading \"{}\"", annotationFor(configMap));
             configMapEventHandler.eventReceived(Watcher.Action.ADDED, configMap);
         }
     }
@@ -138,11 +138,11 @@ public class DefaultWatchManager {
 
         EventHandlerContext context = new EventHandlerContext();
 
-        context.addHandler(NamespaceEventHandler.newInstance(sharedInformerFactory, eventDispatcher.getEventQueue()));
-        context.addHandler(Th2DictionaryEventHandler.newInstance(sharedInformerFactory, client,
+        context.addHandler(NamespaceEventHandler.newInstance(sharedInformerFactory, rabbitMQContext, eventDispatcher.getEventQueue()));
+        context.addHandler(Th2DictionaryEventHandler.newInstance(sharedInformerFactory, kubClient,
                 eventDispatcher.getEventQueue()));
-        context.addHandler(ConfigMapEventHandler.newInstance(sharedInformerFactory, client,
-                eventDispatcher.getEventQueue()));
+        context.addHandler(ConfigMapEventHandler.newInstance(sharedInformerFactory, kubClient, rabbitMQContext,
+                this, eventDispatcher.getEventQueue()));
 
         /*
              resourceClients initialization should be done first
@@ -173,25 +173,25 @@ public class DefaultWatchManager {
         return context;
     }
 
-    public boolean isWatching() {
+    public synchronized boolean isWatching() {
         return isWatching;
     }
 
-    public <T extends Th2CustomResource> void addTarget(
-            Function<KubernetesClient, HelmReleaseTh2Op<T>> operator) {
+    public synchronized <T extends Th2CustomResource> void addTarget(
+            BiFunction<KubernetesClient, RabbitMQContext, HelmReleaseTh2Op<T>> operator) {
 
         helmWatchersCommands.add(() -> {
             // T extends Th2CustomResource -> T is a Th2CustomResource
             @SuppressWarnings("unchecked")
-            var th2ResOp = (HelmReleaseTh2Op<Th2CustomResource>) operator.apply(client);
+            var th2ResOp = (HelmReleaseTh2Op<Th2CustomResource>) operator.apply(kubClient, rabbitMQContext);
 
             return th2ResOp;
         });
     }
 
-    void refreshBoxes(String namespace) {
+    synchronized void refreshBoxes(String namespace) {
         if (!isWatching()) {
-            logger.warn("Not watching for resources yet");
+            LOGGER.warn("Not watching for resources yet");
             return;
         }
 
@@ -204,7 +204,7 @@ public class DefaultWatchManager {
             }
         }
 
-        logger.info("{} boxes updated", refreshedBoxes);
+        LOGGER.info("{} boxes updated", refreshedBoxes);
     }
 
     private void createResource(String linkNamespace, Th2CustomResource resource,
@@ -215,20 +215,16 @@ public class DefaultWatchManager {
         resMeta.setAnnotations(Objects.nonNull(resMeta.getAnnotations()) ? resMeta.getAnnotations() : new HashMap<>());
         resMeta.getAnnotations().put(REFRESH_TOKEN_ALIAS, refreshToken);
         resClient.getInstance().inNamespace(linkNamespace).resource(resource).createOrReplace();
-        logger.debug("refreshed \"{}\" with refresh-token={}",
+        LOGGER.debug("refreshed \"{}\" with refresh-token={}",
                 CustomResourceUtils.annotationFor(resource), refreshToken);
     }
 
-    public static synchronized DefaultWatchManager getInstance() {
-        if (instance == null) {
-            instance = new DefaultWatchManager(createKubernetesClient());
-        }
-
-        return instance;
-    }
-
-    public void close() {
+    @Override
+    public synchronized void close() throws InterruptedException {
+        stopInformers();
         eventDispatcher.interrupt();
-        client.close();
+        eventDispatcher.join(5_000);
+        resourceClients.clear();
+        helmWatchersCommands.clear();
     }
 }
