@@ -1,4 +1,4 @@
-name: "Run integration tests for LDP"
+name: "Run integration tests for infra-operator"
 
 on:
   push:

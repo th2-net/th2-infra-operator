@@ -24,12 +24,9 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
-import java.util.concurrent.locks.Lock;
-import java.util.concurrent.locks.ReentrantLock;
 
 public class PrometheusServer implements AutoCloseable {
     private static final Logger LOGGER = LoggerFactory.getLogger(PrometheusServer.class);
-    private final Lock lock = new ReentrantLock();
     @Nullable
     private final HTTPServer server;
 
@@ -50,13 +47,8 @@ public class PrometheusServer implements AutoCloseable {
 
     @Override
     public void close() {
-        lock.lock();
-        try {
-            if (server != null) {
-                server.close();
-            }
-        } finally {
-            lock.unlock();
+        if (server != null) {
+            server.close();
         }
     }
 }
