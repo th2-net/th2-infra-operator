@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.exactpro.th2.infraoperator.integration
 
 import com.exactpro.th2.infraoperator.Th2CrdController
@@ -79,6 +80,7 @@ import org.junit.jupiter.params.provider.MethodSource
 import org.junit.jupiter.params.provider.ValueSource
 import org.testcontainers.containers.RabbitMQContainer
 import org.testcontainers.k3s.K3sContainer
+import strikt.api.Assertion
 import strikt.api.expectThat
 import strikt.assertions.getValue
 import strikt.assertions.hasSize
@@ -197,7 +199,7 @@ class IntegrationTest {
         fun `add component`()
     }
 
-    abstract inner class ComponentTest<T: Th2CustomResource> {
+    abstract inner class ComponentTest<T : Th2CustomResource> {
         abstract val resourceClass: Class<T>
         abstract val specType: String
         abstract val runAsJob: Boolean
@@ -229,7 +231,10 @@ class IntegrationTest {
 
             val resource = kubeClient.createTh2CustomResource(TH2_NAMESPACE, name, gitHash, spec, this::createResources)
             kubeClient.awaitPhase(TH2_NAMESPACE, name, SUCCEEDED, resourceClass)
-            kubeClient.awaitResource<HelmRelease>(TH2_NAMESPACE, extractHashedName(resource)).assertMinCfg(name, runAsJob)
+            kubeClient.awaitResource<HelmRelease>(
+                TH2_NAMESPACE,
+                extractHashedName(resource)
+            ).assertMinCfg(name, runAsJob)
             rabbitMQClient.assertBindings(
                 createEstoreQueue(TH2_NAMESPACE),
                 RABBIT_MQ_V_HOST,
@@ -251,7 +256,10 @@ class IntegrationTest {
 
             val resource = kubeClient.createTh2CustomResource(TH2_NAMESPACE, name, gitHash, spec, this::createResources)
             kubeClient.awaitPhase(TH2_NAMESPACE, name, SUCCEEDED, resourceClass)
-            kubeClient.awaitResource<HelmRelease>(TH2_NAMESPACE, extractHashedName(resource)).assertMinCfg(name, runAsJob)
+            kubeClient.awaitResource<HelmRelease>(
+                TH2_NAMESPACE,
+                extractHashedName(resource)
+            ).assertMinCfg(name, runAsJob)
             rabbitMQClient.assertBindings(
                 createEstoreQueue(TH2_NAMESPACE),
                 RABBIT_MQ_V_HOST,
@@ -310,7 +318,10 @@ class IntegrationTest {
 
             val resource = kubeClient.modifyTh2CustomResource(TH2_NAMESPACE, name, gitHash, spec, resourceClass)
             kubeClient.awaitPhase(TH2_NAMESPACE, name, SUCCEEDED, resourceClass)
-            kubeClient.awaitResource<HelmRelease>(TH2_NAMESPACE, extractHashedName(resource)).assertMinCfg(name, runAsJob)
+            kubeClient.awaitResource<HelmRelease>(
+                TH2_NAMESPACE,
+                extractHashedName(resource)
+            ).assertMinCfg(name, runAsJob)
             rabbitMQClient.assertBindings(
                 createEstoreQueue(TH2_NAMESPACE),
                 RABBIT_MQ_V_HOST,
@@ -368,28 +379,12 @@ class IntegrationTest {
             kubeClient.awaitResource<HelmRelease>(TH2_NAMESPACE, pubName).assertMinCfg(
                 pubName,
                 runAsJob,
-                queues = mapOf(
-                    PUBLISH_PIN to mapOf(
-                        "attributes" to listOf("publish"),
-                        "exchange" to RABBIT_MQ_TH2_EXCHANGE,
-                        "filters" to emptyList<String>(),
-                        "name" to routingKey,
-                        "queue" to "",
-                    )
-                )
+                queues = createQueueCfg(PUBLISH_PIN, listOf("publish"), routingKey = routingKey, queueName = "")
             )
             kubeClient.awaitResource<HelmRelease>(TH2_NAMESPACE, subName).assertMinCfg(
                 subName,
                 subRunAsJob,
-                queues = mapOf(
-                    SUBSCRIBE_PIN to mapOf(
-                        "attributes" to listOf("subscribe"),
-                        "exchange" to RABBIT_MQ_TH2_EXCHANGE,
-                        "filters" to emptyList<String>(),
-                        "name" to "",
-                        "queue" to queueName,
-                    )
-                )
+                queues = createQueueCfg(SUBSCRIBE_PIN, listOf("subscribe"), routingKey = "", queueName = queueName)
             )
 
             rabbitMQClient.assertBindings(
@@ -454,23 +449,7 @@ class IntegrationTest {
             kubeClient.awaitResource<HelmRelease>(TH2_NAMESPACE, clientName).assertMinCfg(
                 clientName,
                 clientRunAsJob,
-                services = mapOf(
-                    CLIENT_PIN to mapOf(
-                        "endpoints" to mapOf(
-                            "test-server-endpoint" to mapOf(
-                                "attributes" to emptyList<String>(),
-                                "host" to serverName,
-                                "port" to 8080
-                            )
-                        ),
-                        "filters" to emptyList<String>(),
-                        "service-class" to GRPC_SERVICE,
-                        "strategy" to mapOf(
-                            "endpoints" to listOf("test-server-endpoint"),
-                            "name" to "robin",
-                        )
-                    )
-                )
+                services = createGrpcCfg(serverName)
             )
 
             rabbitMQClient.assertBindings(
@@ -486,7 +465,7 @@ class IntegrationTest {
     }
 
     @Nested
-    inner class Mstore: StoreComponentTest {
+    inner class Mstore : StoreComponentTest {
 
         @Test
         @Timeout(30_000)
@@ -505,7 +484,7 @@ class IntegrationTest {
     }
 
     @Nested
-    inner class Estore: StoreComponentTest {
+    inner class Estore : StoreComponentTest {
         @Test
         @Timeout(30_000)
         override fun `add component`() {
@@ -528,7 +507,7 @@ class IntegrationTest {
     }
 
     @Nested
-    inner class CoreComponent: ComponentTest<Th2CoreBox>() {
+    inner class CoreComponent : ComponentTest<Th2CoreBox>() {
         override val resourceClass: Class<Th2CoreBox>
             get() = Th2CoreBox::class.java
         override val specType: String
@@ -575,7 +554,7 @@ class IntegrationTest {
     }
 
     @Nested
-    inner class Component: ComponentTest<Th2Box>() {
+    inner class Component : ComponentTest<Th2Box>() {
         override val resourceClass: Class<Th2Box>
             get() = Th2Box::class.java
         override val specType: String
@@ -622,7 +601,7 @@ class IntegrationTest {
     }
 
     @Nested
-    inner class Job: ComponentTest<Th2Job>() {
+    inner class Job : ComponentTest<Th2Job>() {
         override val resourceClass: Class<Th2Job>
             get() = Th2Job::class.java
         override val specType: String
@@ -678,7 +657,7 @@ class IntegrationTest {
             val name = "th2-dictionary"
             val spec = """
                 data: $DICTIONARY_CONTENT
-        """.trimIndent()
+            """.trimIndent()
 
             val annotations = createAnnotations(gitHash, spec.hashCode().toString())
             kubeClient.createTh2Dictionary(
@@ -730,6 +709,39 @@ class IntegrationTest {
             Arguments.of(Th2CoreBox::class.java, ::Th2CoreBox, "th2-rpt-data-provider", false),
         )
 
+        private fun createQueueCfg(
+            pinName: String,
+            attributes: List<String>,
+            routingKey: String,
+            queueName: String,
+        ) = mapOf(
+            pinName to mapOf(
+                "attributes" to attributes,
+                "exchange" to RABBIT_MQ_TH2_EXCHANGE,
+                "filters" to emptyList<String>(),
+                "name" to routingKey,
+                "queue" to queueName,
+            )
+        )
+
+        private fun createGrpcCfg(serverName: String) = mapOf(
+            CLIENT_PIN to mapOf(
+                "endpoints" to mapOf(
+                    "$serverName-endpoint" to mapOf(
+                        "attributes" to emptyList<String>(),
+                        "host" to serverName,
+                        "port" to 8080
+                    )
+                ),
+                "filters" to emptyList<String>(),
+                "service-class" to GRPC_SERVICE,
+                "strategy" to mapOf(
+                    "endpoints" to listOf("$serverName-endpoint"),
+                    "name" to "robin",
+                )
+            )
+        )
+
         private fun HelmRelease.assertMinCfg(
             name: String,
             runAsJob: Boolean,
@@ -737,31 +749,18 @@ class IntegrationTest {
             services: Map<String, Map<String, Any>> = emptyMap(),
         ) {
             expectThat(componentValuesSection) {
-                getValue(BOOK_CONFIG_ALIAS).isA<Map<String, Any?>>().and {
-                    hasSize(1)
+                getValue(BOOK_CONFIG_ALIAS).isA<Map<String, Any?>>().hasSize(1).and {
                     getValue(BOOK_NAME_ALIAS) isEqualTo TH2_BOOK
                 }
-                getValue(CRADLE_MGR_ALIAS).isA<Map<String, Any?>>().and {
-                    hasSize(2)
+                getValue(CRADLE_MGR_ALIAS).isA<Map<String, Any?>>().hasSize(2).and {
                     getValue(CHECKSUM_ALIAS).isNotNull()
                     getValue(CONFIG_ALIAS).isNull() // FIXME: shouldn't be null
                 }
                 getValue(CUSTOM_CONFIG_ALIAS).isA<Map<String, Any?>>().isEmpty()
                 getValue(DICTIONARIES_ALIAS).isA<List<Any?>>().isEmpty() // FIXME
                 getValue(PULL_SECRETS_ALIAS).isA<List<Any?>>().isEmpty() // FIXME
-                getValue(EXTENDED_SETTINGS_ALIAS).isA<Map<String, Any?>>().and {
-                    isEmpty() // FIXME: add extendedSettings
-                }
-                getValue(GRPC_P2P_CONFIG_ALIAS).isA<Map<String, Any?>>().and {
-                    hasSize(2)
-                    getValue("server").isA<Map<String, Any?>>().and {
-                        getValue("attributes").isNull() // FIXME: add attributes
-                        getValue("host").isNull() // FIXME: add host
-                        getValue("port") isEqualTo 8080
-                        getValue("workers") isEqualTo 5
-                    }
-                    getValue("services").isA<Map<String, Any?>>() isEqualTo services
-                }
+                getValue(EXTENDED_SETTINGS_ALIAS).isA<Map<String, Any?>>().isEmpty()
+                verifyGrpcCfg(services)
                 getValue(IS_JOB_ALIAS) isEqualTo runAsJob
                 getValue(SECRET_PATHS_CONFIG_ALIAS).isA<Map<String, Any?>>().isEmpty()
                 getValue(SECRET_VALUES_CONFIG_ALIAS).isA<Map<String, Any?>>().isEmpty()
@@ -769,50 +768,60 @@ class IntegrationTest {
                     getValue("cassandra") isEqualTo "cassandra"
                     getValue("rabbitMQ") isEqualTo "rabbitMQ"
                 }
-                getValue(GRPC_ROUTER_ALIAS).isA<Map<String, Any?>>().and {
-                    hasSize(2)
+                getValue(GRPC_ROUTER_ALIAS).isA<Map<String, Any?>>().hasSize(2).and {
                     getValue(CHECKSUM_ALIAS).isNotNull()
                     getValue(CONFIG_ALIAS).isNull() // FIXME
                 }
                 getValue(DOCKER_IMAGE_ALIAS) isEqualTo "$IMAGE:$VERSION"
                 getValue(COMPONENT_NAME_ALIAS) isEqualTo name
-                getValue(ROOTLESS_ALIAS).isA<Map<String, Any?>>().and {
-                    hasSize(1)
+                getValue(ROOTLESS_ALIAS).isA<Map<String, Any?>>().hasSize(1).and {
                     getValue("enabled") isEqualTo false // FIXME
                 }
-                getValue(PROMETHEUS_CONFIG_ALIAS).isA<Map<String, Any?>>().and {
-                    hasSize(1)
+                getValue(PROMETHEUS_CONFIG_ALIAS).isA<Map<String, Any?>>().hasSize(1).and {
                     getValue("enabled") isEqualTo true // FIXME
                 }
-                getValue(LOGGING_ALIAS).isA<Map<String, Any?>>().and {
-                    hasSize(2)
+                getValue(LOGGING_ALIAS).isA<Map<String, Any?>>().hasSize(2).and {
                     getValue(CHECKSUM_ALIAS).isNotNull()
                     getValue(CONFIG_ALIAS).isNull() // FIXME
                 }
-                getValue(MQ_ROUTER_ALIAS).isA<Map<String, Any?>>().and {
-                    hasSize(2)
+                getValue(MQ_ROUTER_ALIAS).isA<Map<String, Any?>>().hasSize(2).and {
                     getValue(CHECKSUM_ALIAS).isNotNull()
                     getValue(CONFIG_ALIAS).isNull() // FIXME
                 }
-                getValue(MQ_QUEUE_CONFIG_ALIAS).isA<Map<String, Any?>>().and {
-                    hasSize(2)
-                    getValue("globalNotification").isA<Map<String, Any?>>().and {
-                        hasSize(1)
-                        getValue("exchange") isEqualTo RABBIT_MQ_TOPIC_EXCHANGE
+                verifyMqCfg(name, queues)
+            }
+        }
+
+        private fun Assertion.Builder<MutableMap<String, Any>>.verifyGrpcCfg(services: Map<String, Map<String, Any>>) {
+            getValue(GRPC_P2P_CONFIG_ALIAS).isA<Map<String, Any?>>().hasSize(2).and {
+                getValue("server").isA<Map<String, Any?>>().hasSize(4) and {
+                    getValue("attributes").isNull() // FIXME: add attributes
+                    getValue("host").isNull() // FIXME: add host
+                    getValue("port") isEqualTo 8080
+                    getValue("workers") isEqualTo 5
+                }
+                getValue("services").isA<Map<String, Any?>>() isEqualTo services
+            }
+        }
+
+        private fun Assertion.Builder<MutableMap<String, Any>>.verifyMqCfg(
+            name: String,
+            queues: Map<String, Map<String, Any>>
+        ) {
+            getValue(MQ_QUEUE_CONFIG_ALIAS).isA<Map<String, Any?>>().hasSize(2).and {
+                getValue("globalNotification").isA<Map<String, Any?>>().hasSize(1).and {
+                    getValue("exchange") isEqualTo RABBIT_MQ_TOPIC_EXCHANGE
+                }
+                getValue("queues").isA<Map<String, Any?>>().hasSize(1 + queues.size).and {
+                    getValue(EVENT_STORAGE_PIN_ALIAS).isA<Map<String, Any?>>().hasSize(5).and {
+                        getValue("attributes").isA<List<String>>() isEqualTo listOf("publish", "event")
+                        getValue("exchange") isEqualTo RABBIT_MQ_TH2_EXCHANGE
+                        getValue("filters").isA<List<String>>().isEmpty() // FIXME
+                        getValue("name") isEqualTo formatRoutingKey(TH2_NAMESPACE, name, EVENT_STORAGE_PIN_ALIAS)
+                        getValue("queue").isA<String>().isEmpty()
                     }
-                    getValue("queues").isA<Map<String, Any?>>().and {
-                        hasSize(1 + queues.size)
-                        getValue(EVENT_STORAGE_PIN_ALIAS).isA<Map<String, Any?>>().and {
-                            hasSize(5)
-                            getValue("attributes").isA<List<String>>() isEqualTo listOf("publish", "event")
-                            getValue("exchange") isEqualTo RABBIT_MQ_TH2_EXCHANGE
-                            getValue("filters").isA<List<String>>().isEmpty() // FIXME
-                            getValue("name") isEqualTo formatRoutingKey(TH2_NAMESPACE, name, EVENT_STORAGE_PIN_ALIAS)
-                            getValue("queue").isA<String>().isEmpty()
-                        }
-                        queues.forEach { (key, value) ->
-                            getValue(key).isA<Map<String, Any?>>() isEqualTo value
-                        }
+                    queues.forEach { (key, value) ->
+                        getValue(key).isA<Map<String, Any?>>() isEqualTo value
                     }
                 }
             }

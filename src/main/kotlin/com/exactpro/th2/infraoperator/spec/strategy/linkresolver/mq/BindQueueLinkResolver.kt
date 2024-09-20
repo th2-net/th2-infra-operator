@@ -93,13 +93,15 @@ class BindQueueLinkResolver(
         }
         if (attributes.contains(PinAttribute.parsed.name)) {
             K_LOGGER.warn {
-                "Detected a pin: $resourceLabel:$pinName with incorrect store configuration. attribute 'parsed' not allowed"
+                "Detected a pin: $resourceLabel:$pinName with incorrect store configuration. " +
+                    "attribute 'parsed' not allowed"
             }
             return false
         }
         if (!attributes.contains(PinAttribute.raw.name)) {
             K_LOGGER.warn {
-                "Detected a pin: $resourceLabel:$pinName with incorrect store configuration. attribute 'raw' is missing"
+                "Detected a pin: $resourceLabel:$pinName with incorrect store configuration. " +
+                    "attribute 'raw' is missing"
             }
             return false
         }
@@ -112,7 +114,7 @@ class BindQueueLinkResolver(
             val queueName = queue.queueName.toString()
             val currentQueue = rabbitMQContext.getQueue(queueName)
             if (currentQueue == null) {
-                K_LOGGER.info {"Queue '$queueName' does not yet exist. skipping binding" }
+                K_LOGGER.info { "Queue '$queueName' does not yet exist. skipping binding" }
                 return
             }
             channel.queueBind(queue.queueName.toString(), queue.exchange, queue.routingKey.toString())

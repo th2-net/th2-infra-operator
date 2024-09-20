@@ -138,7 +138,9 @@ public class DefaultWatchManager implements AutoCloseable {
 
         EventHandlerContext context = new EventHandlerContext();
 
-        context.addHandler(NamespaceEventHandler.newInstance(sharedInformerFactory, rabbitMQContext, eventDispatcher.getEventQueue()));
+        context.addHandler(NamespaceEventHandler.newInstance(sharedInformerFactory,
+                rabbitMQContext,
+                eventDispatcher.getEventQueue()));
         context.addHandler(Th2DictionaryEventHandler.newInstance(sharedInformerFactory, kubClient,
                 eventDispatcher.getEventQueue()));
         context.addHandler(ConfigMapEventHandler.newInstance(sharedInformerFactory, kubClient, rabbitMQContext,

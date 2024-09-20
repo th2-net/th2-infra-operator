@@ -134,7 +134,9 @@ public class ConfigMapEventHandler implements Watcher<ConfigMap> {
         return res;
     }
 
-    private ConfigMapEventHandler(KubernetesClient kubClient, RabbitMQContext rabbitMQContext, DefaultWatchManager watchManager) {
+    private ConfigMapEventHandler(KubernetesClient kubClient,
+                                  RabbitMQContext rabbitMQContext,
+                                  DefaultWatchManager watchManager) {
         this.kubClient = kubClient;
         this.rabbitMQContext = rabbitMQContext;
         this.watchManager = watchManager;

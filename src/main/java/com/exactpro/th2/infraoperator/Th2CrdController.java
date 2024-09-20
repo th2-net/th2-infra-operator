@@ -53,9 +53,13 @@ public class Th2CrdController implements AutoCloseable {
     private static final Logger LOGGER = LoggerFactory.getLogger(Th2CrdController.class);
 
     private final PrometheusServer prometheusServer;
+
     private final KubernetesClient kubClient;
+
     private final DefaultWatchManager watchManager;
+
     private final RabbitMQContext rabbitMQContext;
+
     private final ContinuousTaskWorker continuousTaskWorker;
 
     public Th2CrdController() throws IOException, URISyntaxException {
@@ -68,7 +72,8 @@ public class Th2CrdController implements AutoCloseable {
 
         OperatorMetrics.resetCacheErrors();
         RabbitMQUtils.deleteRabbitMQRubbish(kubClient, rabbitMQContext);
-        rabbitMQContext.declareTopicExchange(); // FIXME: topic exchange should be removed when all namespaces are removed / disabled
+        // TODO: topic exchange should be removed when all namespaces are removed / disabled
+        rabbitMQContext.declareTopicExchange();
 
         watchManager.addTarget(MstoreHelmTh2Op::new);
         watchManager.addTarget(EstoreHelmTh2Op::new);

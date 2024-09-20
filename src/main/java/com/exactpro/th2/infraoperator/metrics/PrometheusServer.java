@@ -27,6 +27,7 @@ import java.io.IOException;
 
 public class PrometheusServer implements AutoCloseable {
     private static final Logger LOGGER = LoggerFactory.getLogger(PrometheusServer.class);
+
     @Nullable
     private final HTTPServer server;
 

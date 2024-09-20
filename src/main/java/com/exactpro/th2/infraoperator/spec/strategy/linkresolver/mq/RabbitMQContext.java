@@ -75,9 +75,13 @@ public final class RabbitMQContext implements AutoCloseable {
     private static final Logger LOGGER = LoggerFactory.getLogger(RabbitMQContext.class);
 
     private static final int RETRY_DELAY = 120;
+
     public static final String TOPIC = BuiltinExchangeType.TOPIC.getType();
+
     public static final String DIRECT = BuiltinExchangeType.DIRECT.getType();
+
     private final RabbitMQManagementConfig managementConfig;
+
     private final ChannelContext channelContext;
 
     private final Client rmqClient;
@@ -322,7 +326,12 @@ public final class RabbitMQContext implements AutoCloseable {
         }
     }
 
-    public static Client createClient(String host, int port, String username, String password) throws MalformedURLException, URISyntaxException {
+    public static Client createClient(
+        String host,
+        int port,
+        String username,
+        String password
+    ) throws MalformedURLException, URISyntaxException {
             return new Client(new ClientParameters()
                     .url(format("http://%s:%s/api", host, port))
                     .username(username)
@@ -330,7 +339,9 @@ public final class RabbitMQContext implements AutoCloseable {
             );
     }
 
-    private static Client createClient(RabbitMQManagementConfig rabbitMQMngConfig) throws MalformedURLException, URISyntaxException {
+    private static Client createClient(
+        RabbitMQManagementConfig rabbitMQMngConfig
+    ) throws MalformedURLException, URISyntaxException {
         return createClient(rabbitMQMngConfig.getHost(),
                 rabbitMQMngConfig.getManagementPort(),
                 rabbitMQMngConfig.getUsername(),

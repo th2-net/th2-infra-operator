@@ -101,7 +101,7 @@ fun KubernetesClient.createConfigMap(
     ).create()
 }
 
-inline fun <reified T: HasMetadata> KubernetesClient.awaitResource(
+inline fun <reified T : HasMetadata> KubernetesClient.awaitResource(
     namespace: String,
     name: String,
     timeout: Long = 5_000,
@@ -114,7 +114,7 @@ inline fun <reified T: HasMetadata> KubernetesClient.awaitResource(
     return resources(T::class.java).inNamespace(namespace).withName(name).get()
 }
 
-inline fun <reified T: HasMetadata> KubernetesClient.awaitNoResources(
+inline fun <reified T : HasMetadata> KubernetesClient.awaitNoResources(
     namespace: String,
     timeout: Long = 5_000,
     unit: TimeUnit = TimeUnit.MILLISECONDS,
@@ -124,7 +124,7 @@ inline fun <reified T: HasMetadata> KubernetesClient.awaitNoResources(
         .until { resources(T::class.java).inNamespace(namespace).list().items.isEmpty() }
 }
 
-inline fun <reified T: HasMetadata> KubernetesClient.awaitNoResource(
+inline fun <reified T : HasMetadata> KubernetesClient.awaitNoResource(
     namespace: String,
     name: String,
     timeout: Long = 5_000,
@@ -135,7 +135,7 @@ inline fun <reified T: HasMetadata> KubernetesClient.awaitNoResource(
         .until { resources(T::class.java).inNamespace(namespace).withName(name).get() == null }
 }
 
-inline fun <reified T: Th2CustomResource> KubernetesClient.awaitPhase(
+inline fun <reified T : Th2CustomResource> KubernetesClient.awaitPhase(
     namespace: String,
     name: String,
     phase: RolloutPhase,
@@ -153,10 +153,10 @@ fun KubernetesClient.awaitPhase(
 ) {
     await("awaitStatus ($name $resourceType $phase)")
         .timeout(timeout, unit)
-        .until {  resources(resourceType)?.inNamespace(namespace)?.withName(name)?.get()?.status?.phase == phase }
+        .until { resources(resourceType)?.inNamespace(namespace)?.withName(name)?.get()?.status?.phase == phase }
 }
 
-fun <T: Th2CustomResource> KubernetesClient.createTh2CustomResource(
+fun <T : Th2CustomResource> KubernetesClient.createTh2CustomResource(
     namespace: String,
     name: String,
     gitHash: String,
@@ -169,7 +169,7 @@ fun <T: Th2CustomResource> KubernetesClient.createTh2CustomResource(
     resource(it).create()
 }
 
-fun <T: Th2CustomResource> KubernetesClient.modifyTh2CustomResource(
+fun <T : Th2CustomResource> KubernetesClient.modifyTh2CustomResource(
     namespace: String,
     name: String,
     gitHash: String,
@@ -191,9 +191,9 @@ fun KubernetesClient.createTh2Dictionary(
 ) {
     resource(
         Th2Dictionary().apply {
-        this.metadata = createMeta(name, namespace, annotations)
-        this.spec = YAML_MAPPER.readValue(spec, Th2DictionarySpec::class.java)
-    }
+            this.metadata = createMeta(name, namespace, annotations)
+            this.spec = YAML_MAPPER.readValue(spec, Th2DictionarySpec::class.java)
+        }
     ).create()
 }
 

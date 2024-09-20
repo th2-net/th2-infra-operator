@@ -128,6 +128,7 @@ public abstract class HelmReleaseTh2Op<CR extends Th2CustomResource> extends Abs
             helmReleaseClient;
 
     protected final DeclareQueueResolver declareQueueResolver;
+
     protected final BindQueueLinkResolver bindQueueLinkResolver;
 
     public HelmReleaseTh2Op(KubernetesClient kubClient, RabbitMQContext rabbitMQContext) {

@@ -223,7 +223,13 @@ fun Channel.createQueue(
     exclusive: Boolean = false,
     autoDelete: Boolean = false,
     arguments: Map<String, Any> = emptyMap(),
-): AMQP.Queue.DeclareOk = queueDeclare(formatQueue(namespace, component, pin), durable, exclusive, autoDelete, arguments)
+): AMQP.Queue.DeclareOk = queueDeclare(
+    formatQueue(namespace, component, pin),
+    durable,
+    exclusive,
+    autoDelete,
+    arguments
+)
 
 fun Channel.createExchange(
     exchange: String,

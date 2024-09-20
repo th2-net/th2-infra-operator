@@ -132,9 +132,13 @@ class DeleteRubbishOnStartTest {
             Th2CrdController().use {
                 assertAll(
                     queues.map { queue ->
-                        { rabbitMQClient.assertNoQueue(queue, RABBIT_MQ_V_HOST) }
+                        {
+                            rabbitMQClient.assertNoQueue(queue, RABBIT_MQ_V_HOST)
+                        }
                     } + exchanges.map { exchange ->
-                        { rabbitMQClient.assertNoExchange(exchange, RABBIT_MQ_V_HOST) }
+                        {
+                            rabbitMQClient.assertNoExchange(exchange, RABBIT_MQ_V_HOST)
+                        }
                     } + listOf(
                         { rabbitMQClient.assertNoQueues("link\\[.*\\]", RABBIT_MQ_V_HOST) },
                         { rabbitMQClient.assertNoExchanges("${TH2_PREFIX}.*", RABBIT_MQ_V_HOST) }
@@ -162,16 +166,27 @@ class DeleteRubbishOnStartTest {
             channel.confirmSelect()
             /** queue of not existed component */
             val queue01 = channel.createQueue(namespaceB, "rubbish-component", PIN_NAME).assertQueue()
+
             /** queue of not exited pin */
             val queue02 = channel.createQueue(namespaceB, component, "rubbish-pin").assertQueue()
+
             /** mstore queue of not existed namespace */
-            val queue03 = channel.createQueue(namespaceC, MESSAGE_STORAGE_BOX_ALIAS, MESSAGE_STORAGE_PIN_ALIAS).assertQueue()
+            val queue03 = channel.createQueue(
+                namespaceC,
+                MESSAGE_STORAGE_BOX_ALIAS,
+                MESSAGE_STORAGE_PIN_ALIAS
+            ).assertQueue()
 
             /** mstore queue of existed namespace */
-            val queue11 = channel.createQueue(namespaceB, MESSAGE_STORAGE_BOX_ALIAS, MESSAGE_STORAGE_PIN_ALIAS).assertQueue()
+            val queue11 = channel.createQueue(
+                namespaceB,
+                MESSAGE_STORAGE_BOX_ALIAS,
+                MESSAGE_STORAGE_PIN_ALIAS
+            ).assertQueue()
                 .also {
                     channel.basicPublish("", it.queue, null, "test-content".toByteArray())
                 }
+
             /** queue of exited component and pin */
             val queue12 = channel.createQueue(namespaceB, component, PIN_NAME).assertQueue()
                 .also {
@@ -209,7 +224,7 @@ class DeleteRubbishOnStartTest {
 
                 rabbitMQClient.assertQueue(queue11.queue, RABBIT_MQ_QUEUE_CLASSIC_TYPE, RABBIT_MQ_V_HOST)
                 rabbitMQClient.awaitQueueSize(queue11.queue, RABBIT_MQ_V_HOST, 1)
-                rabbitMQClient.assertQueue(queue12.queue, RABBIT_MQ_QUEUE_CLASSIC_TYPE,  RABBIT_MQ_V_HOST)
+                rabbitMQClient.assertQueue(queue12.queue, RABBIT_MQ_QUEUE_CLASSIC_TYPE, RABBIT_MQ_V_HOST)
                 rabbitMQClient.awaitQueueSize(queue12.queue, RABBIT_MQ_V_HOST, 1)
 
                 rabbitMQClient.assertNoExchange(exchangeC, RABBIT_MQ_V_HOST)
@@ -223,7 +238,7 @@ class DeleteRubbishOnStartTest {
         kubeClient.createRabbitMQAppConfigCfgMap(
             namespace,
             gitHash,
-            createRabbitMQConfig(rabbitMQContainer, RABBIT_MQ_V_HOST,  toExchangeName(namespace), namespace)
+            createRabbitMQConfig(rabbitMQContainer, RABBIT_MQ_V_HOST, toExchangeName(namespace), namespace)
         )
 
         kubeClient.createBookConfigCfgMap(namespace, gitHash, TH2_BOOK)

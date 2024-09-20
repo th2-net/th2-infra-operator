@@ -167,7 +167,8 @@ public abstract class AbstractTh2Operator<CR extends Th2CustomResource> implemen
                         .withName(helmReleaseName);
                 HelmRelease helmRelease = helmReleaseResource.get();
                 if (helmRelease == null) {
-                    LOGGER.info("Resource \"{}\" hasn't been deleted because it already doesn't exist", annotationFor(namespace, helmReleaseName, HelmRelease.class.getSimpleName()));
+                    LOGGER.info("Resource \"{}\" hasn't been deleted because it already doesn't exist",
+                            annotationFor(namespace, helmReleaseName, HelmRelease.class.getSimpleName()));
                 } else {
                     String helmReleaseLabel = annotationFor(helmRelease);
                     helmReleaseResource.delete();

@@ -98,7 +98,8 @@ fun Client.assertNoExchanges(
     unit: TimeUnit = TimeUnit.MILLISECONDS,
 ) {
     val filter: (ExchangeInfo) -> Boolean = {
-        exchangeInfo ->  exchangeInfo.name.matches(Regex(exchangePattern)) && exchangeInfo.vhost == vHost
+            exchangeInfo ->
+        exchangeInfo.name.matches(Regex(exchangePattern)) && exchangeInfo.vhost == vHost
     }
     await("assertNoExchanges('$exchangePattern')")
         .timeout(timeout, unit)
@@ -166,7 +167,8 @@ fun Client.assertBindings(
         .until { getQueueBindings(vHost, queue).size == routingKeys.size }
 
     val queueBindings = getQueueBindings(vHost, queue)
-    assertAll(routingKeys.map { routingKey ->
+    assertAll(
+        routingKeys.map { routingKey ->
             {
                 val queueBinding =
                     assertNotNull(
@@ -222,7 +224,8 @@ fun Client.assertNoQueues(
     unit: TimeUnit = TimeUnit.MILLISECONDS,
 ) {
     val filter: (QueueInfo) -> Boolean = {
-            queueInfo ->  queueInfo.name.matches(Regex(queuePattern)) && queueInfo.vhost == vHost
+            queueInfo ->
+        queueInfo.name.matches(Regex(queuePattern)) && queueInfo.vhost == vHost
     }
     await("assertNoQueues('$queuePattern')")
         .timeout(timeout, unit)
