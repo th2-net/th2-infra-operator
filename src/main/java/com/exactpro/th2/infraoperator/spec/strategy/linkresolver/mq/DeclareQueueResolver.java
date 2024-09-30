@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2021 Exactpro (Exactpro Systems Limited)
+ * Copyright 2020-2024 Exactpro (Exactpro Systems Limited)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -28,6 +28,7 @@ import com.exactpro.th2.infraoperator.util.ExtractUtils;
 import com.exactpro.th2.infraoperator.util.HelmReleaseUtils;
 import com.rabbitmq.client.Channel;
 import com.rabbitmq.http.client.domain.QueueInfo;
+import org.jetbrains.annotations.NotNull;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -36,45 +37,48 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 
-import static com.exactpro.th2.infraoperator.operator.StoreHelmTh2Op.EVENT_STORAGE_BOX_ALIAS;
-import static com.exactpro.th2.infraoperator.operator.StoreHelmTh2Op.EVENT_STORAGE_PIN_ALIAS;
-import static com.exactpro.th2.infraoperator.operator.StoreHelmTh2Op.MESSAGE_STORAGE_BOX_ALIAS;
-import static com.exactpro.th2.infraoperator.operator.StoreHelmTh2Op.MESSAGE_STORAGE_PIN_ALIAS;
-import static com.exactpro.th2.infraoperator.spec.strategy.linkresolver.mq.RabbitMQContext.getChannel;
+import static com.exactpro.th2.infraoperator.spec.strategy.linkresolver.Util.createEstoreQueue;
+import static com.exactpro.th2.infraoperator.spec.strategy.linkresolver.Util.createMstoreQueue;
 import static com.exactpro.th2.infraoperator.util.ExtractUtils.extractName;
 
 public class DeclareQueueResolver {
 
-    private static final Logger logger = LoggerFactory.getLogger(DeclareQueueResolver.class);
+    private static final Logger LOGGER = LoggerFactory.getLogger(DeclareQueueResolver.class);
 
-    public static void resolveAdd(Th2CustomResource resource) {
+    private final RabbitMQContext rabbitMQContext;
+
+    public DeclareQueueResolver(RabbitMQContext rabbitMQContext) {
+        this.rabbitMQContext = rabbitMQContext;
+    }
+
+    public void resolveAdd(Th2CustomResource resource) {
         String namespace = ExtractUtils.extractNamespace(resource);
         try {
             declareQueueBunch(namespace, resource);
         } catch (Exception e) {
             String message = "Exception while working with rabbitMq";
-            logger.error(message, e);
+            LOGGER.error(message, e);
             throw new NonTerminalException(message, e);
         }
     }
 
-    public static void resolveDelete(Th2CustomResource resource) {
+    public void resolveDelete(Th2CustomResource resource) {
         String namespace = ExtractUtils.extractNamespace(resource);
         try {
-            Channel channel = getChannel();
+            Channel channel = rabbitMQContext.getChannel();
             //get queues that are associated with current box.
             Set<String> boxQueueNames = generateBoxQueues(namespace, resource);
             removeExtinctQueues(channel, boxQueueNames, CustomResourceUtils.annotationFor(resource), namespace);
         } catch (Exception e) {
             String message = "Exception while working with rabbitMq";
-            logger.error(message, e);
+            LOGGER.error(message, e);
             throw new NonTerminalException(message, e);
         }
     }
 
-    private static void declareQueueBunch(String namespace, Th2CustomResource resource) throws IOException {
+    private void declareQueueBunch(String namespace, Th2CustomResource resource) throws IOException {
 
-        Channel channel = getChannel();
+        Channel channel = rabbitMQContext.getChannel();
 
         boolean persistence = ConfigLoader.getConfig().getRabbitMQManagement().getPersistence();
         //get queues that are associated with current box and are not linked through Th2Link resources
@@ -87,9 +91,9 @@ public class DeclareQueueResolver {
             //remove from set if pin for queue still exists.
             boxQueues.remove(queueName);
             var newQueueArguments = RabbitMQContext.generateQueueArguments(pin.getSettings());
-            var currentQueue = RabbitMQContext.getQueue(queueName);
+            var currentQueue = rabbitMQContext.getQueue(queueName);
             if (currentQueue != null && !currentQueue.getArguments().equals(newQueueArguments)) {
-                logger.warn("Arguments for queue '{}' were modified. Recreating with new arguments", queueName);
+                LOGGER.warn("Arguments for queue '{}' were modified. Recreating with new arguments", queueName);
                 channel.queueDelete(queueName);
             }
             var declareResult = channel.queueDeclare(queueName
@@ -97,14 +101,14 @@ public class DeclareQueueResolver {
                     , false
                     , false
                     , newQueueArguments);
-            logger.info("Queue '{}' of resource {} was successfully declared",
+            LOGGER.info("Queue '{}' of resource {} was successfully declared",
                     declareResult.getQueue(), extractName(resource));
         }
         //remove from rabbit queues that are left i.e. inactive
         removeExtinctQueues(channel, boxQueues, CustomResourceUtils.annotationFor(resource), namespace);
     }
 
-    private static Set<String> getBoxPreviousQueues(String namespace, String boxName) {
+    private Set<String> getBoxPreviousQueues(String namespace, String boxName) {
         HelmRelease hr = OperatorState.INSTANCE.getHelmReleaseFromCache(boxName, namespace);
         if (hr == null) {
             return getBoxQueuesFromRabbit(namespace, boxName);
@@ -112,9 +116,13 @@ public class DeclareQueueResolver {
         return HelmReleaseUtils.extractQueues(hr.getComponentValuesSection());
     }
 
-    private static Set<String> getBoxQueuesFromRabbit(String namespace, String boxName) {
+    /**
+     * Collect all queues related to the {@code namespace} {@code boxName} component in RabbitMQ
+     * @return mutable set of queues
+    */
+    private @NotNull Set<String> getBoxQueuesFromRabbit(String namespace, String boxName) {
 
-        List<QueueInfo> queueInfoList = RabbitMQContext.getQueues();
+        List<QueueInfo> queueInfoList = rabbitMQContext.getQueues();
 
         Set<String> queueNames = new HashSet<>();
         queueInfoList.forEach(q -> {
@@ -141,20 +149,20 @@ public class DeclareQueueResolver {
             String resourceLabel,
             String namespace
     ) {
-        String estoreQueue = new QueueName(namespace, EVENT_STORAGE_BOX_ALIAS, EVENT_STORAGE_PIN_ALIAS).toString();
-        String mstoreQueue = new QueueName(namespace, MESSAGE_STORAGE_BOX_ALIAS, MESSAGE_STORAGE_PIN_ALIAS).toString();
+        String estoreQueue = createEstoreQueue(namespace);
+        String mstoreQueue = createMstoreQueue(namespace);
 
         if (!extinctQueueNames.isEmpty()) {
-            logger.info("Trying to delete queues associated with \"{}\"", resourceLabel);
+            LOGGER.info("Trying to delete queues associated with \"{}\"", resourceLabel);
             extinctQueueNames
                     .stream()
                     .filter(name -> !name.equals(estoreQueue) && !name.equals(mstoreQueue))
                     .forEach(queueName -> {
                         try {
                             channel.queueDelete(queueName);
-                            logger.info("Deleted queue: [{}]", queueName);
+                            LOGGER.info("Deleted queue: [{}]", queueName);
                         } catch (IOException e) {
-                            logger.error("Exception deleting queue: [{}]", queueName, e);
+                            LOGGER.error("Exception deleting queue: [{}]", queueName, e);
                         }
                     });
         }

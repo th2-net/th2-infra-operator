@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2021 Exactpro (Exactpro Systems Limited)
+ * Copyright 2020-2024 Exactpro (Exactpro Systems Limited)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -30,12 +30,11 @@ import org.slf4j.LoggerFactory;
 import java.util.HashMap;
 
 import static com.exactpro.th2.infraoperator.operator.AbstractTh2Operator.REFRESH_TOKEN_ALIAS;
+import static com.exactpro.th2.infraoperator.util.KubernetesUtils.PHASE_ACTIVE;
 
 public class TriggerRedeployTask implements Task {
 
     private static final Logger logger = LoggerFactory.getLogger(TriggerRedeployTask.class);
-
-    public static final String PHASE_ACTIVE = "Active";
 
     private final ResourceClient<? extends CustomResource> resourceClient;
 

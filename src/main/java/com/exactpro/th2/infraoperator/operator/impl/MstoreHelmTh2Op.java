@@ -22,6 +22,7 @@ import com.exactpro.th2.infraoperator.model.kubernetes.client.ResourceClient;
 import com.exactpro.th2.infraoperator.model.kubernetes.client.impl.MstoreClient;
 import com.exactpro.th2.infraoperator.operator.StoreHelmTh2Op;
 import com.exactpro.th2.infraoperator.spec.mstore.Th2Mstore;
+import com.exactpro.th2.infraoperator.spec.strategy.linkresolver.mq.RabbitMQContext;
 import com.exactpro.th2.infraoperator.util.CustomResourceUtils;
 import io.fabric8.kubernetes.client.KubernetesClient;
 import io.fabric8.kubernetes.client.informers.SharedIndexInformer;
@@ -31,9 +32,9 @@ public class MstoreHelmTh2Op extends StoreHelmTh2Op<Th2Mstore> {
 
     private final MstoreClient mstoreClient;
 
-    public MstoreHelmTh2Op(KubernetesClient client) {
-        super(client);
-        this.mstoreClient = new MstoreClient(client);
+    public MstoreHelmTh2Op(KubernetesClient kubClient, RabbitMQContext rabbitMQContext) {
+        super(kubClient, rabbitMQContext);
+        this.mstoreClient = new MstoreClient(kubClient);
     }
 
     @Override

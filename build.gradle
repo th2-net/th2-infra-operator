@@ -1,141 +1,117 @@
-/*
- * Copyright 2020-2021 Exactpro (Exactpro Systems Limited)
- *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
- */
-
 plugins {
-    id 'java'
+    id 'application'
     id 'checkstyle'
-    id "io.gitlab.arturbosch.detekt" version "${detekt_version}"
-    id "org.jetbrains.kotlin.jvm" version "${kotlin_version}"
-    id "org.owasp.dependencycheck" version "${owaspVersion}"
+    alias(libs.plugins.detekt)
+    alias(libs.plugins.kotlin)
+    alias(libs.plugins.th2.component)
+    alias(libs.plugins.download)
 }
 
 group = 'com.exactpro.th2'
 version = release_version
+
+kotlin {
+    jvmToolchain(11)
+}
 
 repositories {
     mavenCentral()
 }
 
 checkstyle {
-    toolVersion = "10.12.0"
+    toolVersion = "10.12.4"
 }
 
 detekt {
     buildUponDefaultConfig = true
     autoCorrect = true
-    config = files("$rootDir/config/detekt/detekt.yml")
-}
-
-ext {
-    uuid_generator_version = '4.2.0'
-    okhttp_version = '4.10.0'
-    fabric8_version = '6.6.2'
-    rabbit_amqp_version = '5.16.0'
-    rabbit_http_version = '5.0.0'
-    kotlin_logging_version = '3.0.0' // 3.0.0 the las version supported 1.6.21
-    jetbrains_annotations_version = '24.0.1'
-    mockito_version = '3.11.2'
-    jupiter_version = '5.9.2'
-    guava_version = '32.0.1-jre'
-    snakeyaml_version = '2.0'
-}
-
-configurations.configureEach() {
-    resolutionStrategy {
-        force "com.google.guava:guava:$guava_version"
-        force "org.yaml:snakeyaml:$snakeyaml_version"
-    }
+    config.setFrom("$rootDir/config/detekt/detekt.yml")
 }
 
 dependencies {
-    api platform('com.exactpro.th2:bom:4.3.0')
     implementation "com.fasterxml.jackson.dataformat:jackson-dataformat-yaml"
-    implementation group: 'com.fasterxml.jackson.module', name: 'jackson-module-kotlin'
-    implementation "com.fasterxml.uuid:java-uuid-generator:${uuid_generator_version}"
-
-    implementation "com.squareup.okhttp3:okhttp:${okhttp_version}"
+    implementation "com.fasterxml.jackson.module:jackson-module-kotlin"
+    implementation libs.java.uuid.generator
 
     implementation "org.apache.commons:commons-text"
 
-    implementation "io.fabric8:kubernetes-client:${fabric8_version}"
-    implementation "com.rabbitmq:amqp-client:${rabbit_amqp_version}"
-    implementation "com.rabbitmq:http-client:${rabbit_http_version}"
+    implementation libs.kubernetes.client
+    implementation(libs.okhttp) {
+        because "okhttp:3.12.12 has vulnerabilities"
+    }
+    implementation(libs.logging.interceptor) {
+        because "logging-interceptor:3.12.12 has vulnerabilities"
+    }
 
-    implementation "org.slf4j:slf4j-api"
-    implementation "org.apache.logging.log4j:log4j-slf4j2-impl"
-    implementation "org.apache.logging.log4j:log4j-core"
-    implementation group: 'io.github.microutils', name: 'kotlin-logging', version: kotlin_logging_version
+    implementation "com.rabbitmq:amqp-client"
+    implementation libs.http.client
 
-    implementation "org.jetbrains:annotations:${jetbrains_annotations_version}"
+    implementation 'org.apache.logging.log4j:log4j-slf4j2-impl'
+    implementation 'org.apache.logging.log4j:log4j-core'
+    implementation libs.kotlin.logging
+    implementation "org.jetbrains:annotations"
 
     implementation "io.prometheus:simpleclient"
     implementation "io.prometheus:simpleclient_httpserver"
     implementation "io.prometheus:simpleclient_hotspot"
 
-    testImplementation group: 'org.mockito', name: 'mockito-core', version: "${mockito_version}"
+    implementation "com.google.guava:guava"
 
-    testImplementation "org.junit.jupiter:junit-jupiter-api:${jupiter_version}"
-    testRuntimeOnly "org.junit.jupiter:junit-jupiter-engine:${jupiter_version}"
+    testImplementation(platform(libs.testcontainers.bom))
+    testImplementation 'org.testcontainers:rabbitmq'
+    testImplementation 'org.testcontainers:k3s'
 
-    detektPlugins("io.gitlab.arturbosch.detekt:detekt-formatting:${detekt_version}")
+
+    testImplementation libs.mockito.core
+    testImplementation libs.mockito.kotlin
+    testImplementation libs.junit.jupiter
+    testImplementation libs.junit.jupiter.params
+    testImplementation "org.jetbrains.kotlin:kotlin-test-junit5"
+    testImplementation libs.bcpkix.jdk18on
+    testImplementation libs.awaitility
+    testImplementation libs.strikt.core
+
+    detektPlugins libs.detekt.formatting
+}
+
+wrapper {
+    version '8.7'
+    distributionType Wrapper.DistributionType.BIN
+}
+
+tasks.register("downloadCRDs", Download) {
+    group = "verification"
+    src([
+        'https://raw.githubusercontent.com/th2-net/th2-infra/master/chart/crds/th2-box-crd.yaml',
+        'https://raw.githubusercontent.com/th2-net/th2-infra/master/chart/crds/th2-core-box-crd.yaml',
+        'https://raw.githubusercontent.com/th2-net/th2-infra/master/chart/crds/th2-dictionary-crd.yaml',
+        'https://raw.githubusercontent.com/th2-net/th2-infra/master/chart/crds/th2-estore-crd.yaml',
+        'https://raw.githubusercontent.com/th2-net/th2-infra/master/chart/crds/th2-job-crd.yaml',
+        'https://raw.githubusercontent.com/th2-net/th2-infra/master/chart/crds/th2-mstore-crd.yaml',
+    ])
+    dest layout.buildDirectory.dir('resources/test/crds').get()
+}
+
+checkstyleTest.dependsOn("downloadCRDs")
+
+test {
+    dependsOn("downloadCRDs")
+    useJUnitPlatform {
+        excludeTags("integration-test")
+    }
+}
+
+tasks.register("integrationTest", Test) {
+    group = "verification"
+    dependsOn("downloadCRDs")
+    useJUnitPlatform {
+        includeTags("integration-test")
+    }
+    testLogging {
+        showStandardStreams = true
+    }
 }
 
 dependencyCheck {
-    formats=['SARIF', 'JSON', 'HTML']
-    failBuildOnCVSS=5
-
-    analyzers {
-        assemblyEnabled = false
-        nugetconfEnabled = false
-        nodeEnabled = false
-    }
-}
-
-jar {
-    duplicatesStrategy = DuplicatesStrategy.INCLUDE
-    manifest {
-        attributes(
-                'Created-By': "${System.getProperty('java.version')} (${System.getProperty('java.vendor')})",
-                'Specification-Title': '',
-                'Specification-Vendor': 'Exactpro Systems LLC',
-                'Main-Class': 'com.exactpro.th2.infraoperator.Th2CrdController',
-                'Implementation-Title': project.archivesBaseName,
-                'Implementation-Vendor': 'Exactpro Systems LLC',
-                'Implementation-Vendor-Id': 'com.exactpro',
-                'Implementation-Version': project.version
-        )
-    }
-
-    from {
-        configurations.runtimeClasspath.collect { it.isDirectory() ? it : zipTree(it) }
-    }
-}
-
-test {
-    useJUnitPlatform()
-}
-
-compileKotlin {
-    kotlinOptions {
-        jvmTarget = "11"
-    }
-}
-
-compileTestKotlin {
-    kotlinOptions {
-        jvmTarget = "11"
-    }
+    skipConfigurations += "checkstyle"
 }

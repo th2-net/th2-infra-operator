@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2021 Exactpro (Exactpro Systems Limited)
+ * Copyright 2020-2024 Exactpro (Exactpro Systems Limited)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,12 +17,13 @@
 package com.exactpro.th2.infraoperator.operator;
 
 import com.exactpro.th2.infraoperator.spec.Th2CustomResource;
+import com.exactpro.th2.infraoperator.spec.strategy.linkresolver.mq.RabbitMQContext;
 import io.fabric8.kubernetes.client.KubernetesClient;
 
 public abstract class GenericHelmTh2Op<CR extends Th2CustomResource> extends HelmReleaseTh2Op<CR> {
 
-    public GenericHelmTh2Op(KubernetesClient client) {
-        super(client);
+    public GenericHelmTh2Op(KubernetesClient kubClient, RabbitMQContext rabbitMQContext) {
+        super(kubClient, rabbitMQContext);
     }
 
 }

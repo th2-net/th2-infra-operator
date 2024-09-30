@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2021 Exactpro (Exactpro Systems Limited)
+ * Copyright 2020-2024 Exactpro (Exactpro Systems Limited)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -21,6 +21,8 @@ import com.exactpro.th2.infraoperator.spec.helmrelease.HelmRelease;
 
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
+
+import static java.util.Collections.unmodifiableSet;
 
 public enum OperatorState {
     INSTANCE;
@@ -102,6 +104,10 @@ public enum OperatorState {
         Collection<Th2CustomResource> resources = new ArrayList<>();
         namespaceStates.values().forEach(namespaceState -> resources.addAll(namespaceState.getAllBoxes()));
         return resources;
+    }
+
+    public Collection<String> getNamespaces() {
+        return unmodifiableSet(namespaceStates.keySet());
     }
 
     private NamespaceState computeIfAbsent(String namespace) {

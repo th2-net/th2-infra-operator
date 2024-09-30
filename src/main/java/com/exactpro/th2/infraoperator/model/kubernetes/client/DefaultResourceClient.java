@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2021 Exactpro (Exactpro Systems Limited)
+ * Copyright 2020-2024 Exactpro (Exactpro Systems Limited)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -21,14 +21,10 @@ import io.fabric8.kubernetes.client.CustomResource;
 import io.fabric8.kubernetes.client.KubernetesClient;
 import io.fabric8.kubernetes.client.dsl.MixedOperation;
 import io.fabric8.kubernetes.client.dsl.Resource;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 public abstract class DefaultResourceClient<CR extends CustomResource> implements ResourceClient<CR> {
 
-    private static final Logger logger = LoggerFactory.getLogger(DefaultResourceClient.class);
-
-    private final KubernetesClient client;
+    private final KubernetesClient kubClient;
 
     private final Class<CR> resourceType;
 
@@ -37,15 +33,15 @@ public abstract class DefaultResourceClient<CR extends CustomResource> implement
     private final String crdName;
 
     public DefaultResourceClient(
-            KubernetesClient client,
+            KubernetesClient kubClient,
             Class<CR> resourceType,
             String crdName
     ) {
-        this.client = client;
+        this.kubClient = kubClient;
         this.resourceType = resourceType;
         this.crdName = crdName;
 
-        instance = client.resources(resourceType);
+        instance = kubClient.resources(resourceType);
     }
 
     @Override
@@ -54,7 +50,7 @@ public abstract class DefaultResourceClient<CR extends CustomResource> implement
     }
 
     public KubernetesClient getClient() {
-        return this.client;
+        return this.kubClient;
     }
 
     public MixedOperation<CR, ? extends KubernetesResourceList<CR>, ? extends Resource<CR>> getInstance() {

@@ -1,20 +1,14 @@
-name: Build and publish Docker images to github registry
+name: Build and publish dev release Docker image to Github Container Registry ghcr.io
 
-on:
-  push:
-    branches:
-      - master
-      - version-*
-    paths:
-      - gradle.properties
+on: workflow_dispatch
 
 jobs:
   build:
     uses: th2-net/.github/.github/workflows/compound-java.yml@main
     with:
       build-target: 'Docker'
-      runsOn: ubuntu-latest
-      gradleVersion: '7'
+      devRelease: true
+      createTag: true
       docker-username: ${{ github.actor }}
       #     FIXME: strict scanner was disabled for 4.6.4 hotfix publishing and must be removed after that
       strict-scanner: false

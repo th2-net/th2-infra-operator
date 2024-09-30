@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2021 Exactpro (Exactpro Systems Limited)
+ * Copyright 2020-2024 Exactpro (Exactpro Systems Limited)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -32,26 +32,32 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import static com.exactpro.th2.infraoperator.util.CustomResourceUtils.RESYNC_TIME;
+import static com.exactpro.th2.infraoperator.util.WatcherUtils.createExceptionHandler;
 
 public class NamespaceEventHandler implements ResourceEventHandler<Namespace>, Watcher<Namespace> {
-    private static final Logger logger = LoggerFactory.getLogger(NamespaceEventHandler.class);
+    private static final Logger LOGGER = LoggerFactory.getLogger(NamespaceEventHandler.class);
 
-    private EventQueue eventQueue;
+    private final RabbitMQContext rabbitMQContext;
+
+    private final EventQueue eventQueue;
 
     private final OperatorConfig config = ConfigLoader.getConfig();
 
     public static NamespaceEventHandler newInstance(SharedInformerFactory sharedInformerFactory,
+                                                    RabbitMQContext rabbitMQContext,
                                                     EventQueue eventQueue) {
         SharedIndexInformer<Namespace> namespaceInformer = sharedInformerFactory.sharedIndexInformerFor(
                 Namespace.class,
                 RESYNC_TIME);
 
-        var res = new NamespaceEventHandler(eventQueue);
+        var res = new NamespaceEventHandler(rabbitMQContext, eventQueue);
+        namespaceInformer.exceptionHandler(createExceptionHandler(Namespace.class));
         namespaceInformer.addEventHandler(res);
         return res;
     }
 
-    public NamespaceEventHandler(EventQueue eventQueue) {
+    public NamespaceEventHandler(RabbitMQContext rabbitMQContext, EventQueue eventQueue) {
+        this.rabbitMQContext = rabbitMQContext;
         this.eventQueue = eventQueue;
     }
 
@@ -62,7 +68,7 @@ public class NamespaceEventHandler implements ResourceEventHandler<Namespace>, W
             return;
         }
 
-        logger.debug("Received ADDED event for namespace: \"{}\"", namespace.getMetadata().getName());
+        LOGGER.debug("Received ADDED event for namespace: \"{}\"", namespace.getMetadata().getName());
     }
 
     @Override
@@ -74,7 +80,7 @@ public class NamespaceEventHandler implements ResourceEventHandler<Namespace>, W
             return;
         }
 
-        logger.debug("Received MODIFIED event for namespace: \"{}\"", newNamespace.getMetadata().getName());
+        LOGGER.debug("Received MODIFIED event for namespace: \"{}\"", newNamespace.getMetadata().getName());
     }
 
     @Override
@@ -87,7 +93,7 @@ public class NamespaceEventHandler implements ResourceEventHandler<Namespace>, W
 
         String resourceLabel = String.format("namespace:%s", namespaceName);
         String eventId = EventCounter.newEvent();
-        logger.debug("Received DELETED event for namespace: \"{}\"", namespaceName);
+        LOGGER.debug("Received DELETED event for namespace: \"{}\"", namespaceName);
 
         eventQueue.addEvent(EventQueue.generateEvent(
                 eventId,
@@ -109,23 +115,22 @@ public class NamespaceEventHandler implements ResourceEventHandler<Namespace>, W
 
             String resourceLabel = String.format("namespace:%s", namespaceName);
 
+            lock.lock();
             try {
-                lock.lock();
-
-                logger.debug("Processing {} event for namespace: \"{}\"", action, namespaceName);
-                RabbitMQContext.cleanupRabbit(namespaceName);
-                logger.info("Deleted namespace {}", namespaceName);
+                LOGGER.info("Processing {} event for namespace: \"{}\"", action, namespaceName);
+                rabbitMQContext.cleanupRabbit(namespaceName);
+                LOGGER.info("Deleted namespace {}", namespaceName);
             } catch (Exception e) {
-                logger.error("Exception processing event for \"{}\"", resourceLabel, e);
+                LOGGER.error("Exception processing event for \"{}\"", resourceLabel, e);
             } finally {
                 lock.unlock();
             }
 
             long duration = System.currentTimeMillis() - startDateTime;
-            logger.info("Event for \"{}\" processed in {}ms", resourceLabel, duration);
+            LOGGER.info("Event for \"{}\" processed in {}ms", resourceLabel, duration);
 
         } catch (Exception e) {
-            logger.error("Exception processing event", e);
+            LOGGER.error("Exception processing event", e);
         }
     }
 

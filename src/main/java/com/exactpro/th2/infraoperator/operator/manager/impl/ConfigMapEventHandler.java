@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2021 Exactpro (Exactpro Systems Limited)
+ * Copyright 2020-2024 Exactpro (Exactpro Systems Limited)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -29,7 +29,6 @@ import com.exactpro.th2.infraoperator.spec.strategy.linkresolver.mq.RabbitMQCont
 import com.exactpro.th2.infraoperator.util.CustomResourceUtils;
 import com.exactpro.th2.infraoperator.util.ExtractUtils;
 import com.exactpro.th2.infraoperator.util.HelmReleaseUtils;
-import com.exactpro.th2.infraoperator.util.Strings;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectReader;
@@ -45,15 +44,25 @@ import io.fabric8.kubernetes.client.dsl.Resource;
 import io.fabric8.kubernetes.client.informers.SharedIndexInformer;
 import io.fabric8.kubernetes.client.informers.SharedInformerFactory;
 import io.prometheus.client.Histogram;
+import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.*;
+import java.util.Base64;
+import java.util.Collection;
+import java.util.Map;
+import java.util.Objects;
 
 import static com.exactpro.th2.infraoperator.configuration.OperatorConfig.RABBITMQ_SECRET_PASSWORD_KEY;
-import static com.exactpro.th2.infraoperator.operator.HelmReleaseTh2Op.*;
+import static com.exactpro.th2.infraoperator.operator.HelmReleaseTh2Op.CHECKSUM_ALIAS;
+import static com.exactpro.th2.infraoperator.operator.HelmReleaseTh2Op.CONFIG_ALIAS;
+import static com.exactpro.th2.infraoperator.operator.HelmReleaseTh2Op.CRADLE_MGR_ALIAS;
+import static com.exactpro.th2.infraoperator.operator.HelmReleaseTh2Op.GRPC_ROUTER_ALIAS;
+import static com.exactpro.th2.infraoperator.operator.HelmReleaseTh2Op.LOGGING_ALIAS;
+import static com.exactpro.th2.infraoperator.operator.HelmReleaseTh2Op.MQ_ROUTER_ALIAS;
 import static com.exactpro.th2.infraoperator.util.CustomResourceUtils.annotationFor;
 import static com.exactpro.th2.infraoperator.util.JsonUtils.JSON_MAPPER;
+import static com.exactpro.th2.infraoperator.util.WatcherUtils.createExceptionHandler;
 
 public class ConfigMapEventHandler implements Watcher<ConfigMap> {
     public static final String SECRET_TYPE_OPAQUE = "Opaque";
@@ -74,7 +83,7 @@ public class ConfigMapEventHandler implements Watcher<ConfigMap> {
 
     public static final String BOOK_CONFIG_CM_NAME = "book-config";
 
-    private static final String DEFAULT_BOOK = "defaultBook";
+    public static final String DEFAULT_BOOK = "defaultBook";
 
     private static final Map<String, ConfigMapMeta> cmMapping = Map.of(
             LOGGING_CM_NAME, new ConfigMapMeta(LOGGING_ALIAS, ""),
@@ -94,33 +103,43 @@ public class ConfigMapEventHandler implements Watcher<ConfigMap> {
         }
     }
 
-    private static final Logger logger = LoggerFactory.getLogger(ConfigMapEventHandler.class);
+    private static final Logger LOGGER = LoggerFactory.getLogger(ConfigMapEventHandler.class);
 
-    private KubernetesClient client;
+    private final KubernetesClient kubClient;
+
+    private final RabbitMQContext rabbitMQContext;
+
+    private final DefaultWatchManager watchManager;
 
     private MixedOperation<HelmRelease, KubernetesResourceList<HelmRelease>, Resource<HelmRelease>> helmReleaseClient;
 
     public KubernetesClient getClient() {
-        return client;
+        return kubClient;
     }
 
     public static ConfigMapEventHandler newInstance(SharedInformerFactory sharedInformerFactory,
                                                     KubernetesClient client,
+                                                    RabbitMQContext rabbitMQContext,
+                                                    DefaultWatchManager watchManager,
                                                     EventQueue eventQueue) {
-        var res = new ConfigMapEventHandler(client);
-        res.client = client;
+        var res = new ConfigMapEventHandler(client, rabbitMQContext, watchManager);
         res.helmReleaseClient = client.resources(HelmRelease.class);
 
         SharedIndexInformer<ConfigMap> configMapInformer = sharedInformerFactory.sharedIndexInformerFor(
                 ConfigMap.class,
                 CustomResourceUtils.RESYNC_TIME);
 
+        configMapInformer.exceptionHandler(createExceptionHandler(ConfigMap.class));
         configMapInformer.addEventHandler(new GenericResourceEventHandler<>(res, eventQueue));
         return res;
     }
 
-    private ConfigMapEventHandler(KubernetesClient client) {
-        this.client = client;
+    private ConfigMapEventHandler(KubernetesClient kubClient,
+                                  RabbitMQContext rabbitMQContext,
+                                  DefaultWatchManager watchManager) {
+        this.kubClient = kubClient;
+        this.rabbitMQContext = rabbitMQContext;
+        this.watchManager = watchManager;
     }
 
     @Override
@@ -132,18 +151,18 @@ public class ConfigMapEventHandler implements Watcher<ConfigMap> {
 
         if (configMapName.equals(ConfigLoader.getConfig().getRabbitMQConfigMapName())) {
             try {
-                logger.info("Processing {} event for \"{}\"", action, resourceLabel);
+                LOGGER.info("Processing {} event for \"{}\"", action, resourceLabel);
                 var lock = OperatorState.INSTANCE.getLock(namespace);
+                lock.lock();
                 try {
-                    lock.lock();
 
                     OperatorConfig opConfig = ConfigLoader.getConfig();
                     ConfigMaps configMaps = ConfigMaps.INSTANCE;
                     RabbitMQConfig rabbitMQConfig = configMaps.getRabbitMQConfig4Namespace(namespace);
 
                     String configContent = resource.getData().get(RabbitMQConfig.CONFIG_MAP_RABBITMQ_PROP_NAME);
-                    if (Strings.isNullOrEmpty(configContent)) {
-                        logger.error("Key \"{}\" not found in \"{}\"", RabbitMQConfig.CONFIG_MAP_RABBITMQ_PROP_NAME,
+                    if (StringUtils.isBlank(configContent)) {
+                        LOGGER.error("Key \"{}\" not found in \"{}\"", RabbitMQConfig.CONFIG_MAP_RABBITMQ_PROP_NAME,
                                 resourceLabel);
                         return;
                     }
@@ -155,20 +174,20 @@ public class ConfigMapEventHandler implements Watcher<ConfigMap> {
                     if (!Objects.equals(rabbitMQConfig, newRabbitMQConfig)) {
                         Histogram.Timer processTimer = OperatorMetrics.getConfigMapEventTimer(resource);
                         configMaps.setRabbitMQConfig4Namespace(namespace, newRabbitMQConfig);
-                        RabbitMQContext.setUpRabbitMqForNamespace(namespace);
-                        logger.info("RabbitMQ ConfigMap has been updated in namespace \"{}\". Updating all boxes",
+                        rabbitMQContext.setUpRabbitMqForNamespace(namespace);
+                        LOGGER.info("RabbitMQ ConfigMap has been updated in namespace \"{}\". Updating all boxes",
                                 namespace);
-                        DefaultWatchManager.getInstance().refreshBoxes(namespace);
-                        logger.info("box-definition(s) have been updated");
+                        watchManager.refreshBoxes(namespace);
+                        LOGGER.info("box-definition(s) have been updated");
                         processTimer.observeDuration();
                     } else {
-                        logger.info("RabbitMQ ConfigMap data hasn't changed");
+                            LOGGER.info("RabbitMQ ConfigMap data hasn't changed");
                     }
                 } finally {
                     lock.unlock();
                 }
             } catch (Exception e) {
-                logger.error("Exception processing {} event for \"{}\"", action, resourceLabel, e);
+                LOGGER.error("Exception processing {} event for \"{}\"", action, resourceLabel, e);
             }
         } else if (configMapName.equals(BOOK_CONFIG_CM_NAME)) {
             updateDefaultBookName(action, namespace, resource, resourceLabel);
@@ -182,7 +201,7 @@ public class ConfigMapEventHandler implements Watcher<ConfigMap> {
     private void updateConfigMap(Action action, String namespace, ConfigMap resource, final String cmName,
                                  String resourceLabel) {
         try {
-            logger.info("Processing {} event for \"{}\"", action, resourceLabel);
+            LOGGER.info("Processing {} event for \"{}\"", action, resourceLabel);
             if (isActionInvalid(action, resourceLabel)) {
                 return;
             }
@@ -192,8 +211,8 @@ public class ConfigMapEventHandler implements Watcher<ConfigMap> {
             String dataFileName = titles.dataFileName;
 
             var lock = OperatorState.INSTANCE.getLock(namespace);
+            lock.lock();
             try {
-                lock.lock();
                 String oldChecksum = OperatorState.INSTANCE.getConfigChecksum(namespace, alias);
                 String newChecksum = ExtractUtils.fullSourceHash(resource);
                 if (!newChecksum.equals(oldChecksum)) {
@@ -204,27 +223,27 @@ public class ConfigMapEventHandler implements Watcher<ConfigMap> {
                         cmData = resource.getData().get(dataFileName);
                         OperatorState.INSTANCE.putConfigData(namespace, alias, cmData);
                     }
-                    logger.info("\"{}\" has been updated. Updating all boxes", resourceLabel);
+                    LOGGER.info("\"{}\" has been updated. Updating all boxes", resourceLabel);
                     int refreshedBoxesCount = updateResourceChecksumAndData(namespace, newChecksum, cmData, alias);
-                    logger.info("{} HelmRelease(s) have been updated", refreshedBoxesCount);
+                    LOGGER.info("{} HelmRelease(s) have been updated", refreshedBoxesCount);
                     processTimer.observeDuration();
                 }
             } finally {
                 lock.unlock();
             }
         } catch (Exception e) {
-            logger.error("Exception processing {} event for \"{}\"", action, resourceLabel, e);
+            LOGGER.error("Exception processing {} event for \"{}\"", action, resourceLabel, e);
         }
     }
 
     private boolean isActionInvalid(Action action, String resourceLabel) {
         boolean isInvalid = false;
         if (action == Action.DELETED) {
-            logger.error("DELETED action is not supported for \"{}\". ", resourceLabel);
+            LOGGER.error("DELETED action is not supported for \"{}\". ", resourceLabel);
             isInvalid = true;
 
         } else if (action == Action.ERROR) {
-            logger.error("Received ERROR action for \"{}\" Canceling update", resourceLabel);
+            LOGGER.error("Received ERROR action for \"{}\" Canceling update", resourceLabel);
             isInvalid = true;
         }
         return isInvalid;
@@ -232,29 +251,29 @@ public class ConfigMapEventHandler implements Watcher<ConfigMap> {
 
     private void updateDefaultBookName(Action action, String namespace, ConfigMap resource, String resourceLabel) {
         try {
-            logger.info("Processing {} event for \"{}\"", action, resourceLabel);
+            LOGGER.info("Processing {} event for \"{}\"", action, resourceLabel);
             if (isActionInvalid(action, resourceLabel)) {
                 return;
             }
 
             var lock = OperatorState.INSTANCE.getLock(namespace);
+            lock.lock();
             try {
-                lock.lock();
                 String oldBookName = OperatorState.INSTANCE.getBookName(namespace);
                 String newBookName = resource.getData().get(DEFAULT_BOOK);
                 if (!newBookName.equals(oldBookName)) {
                     Histogram.Timer processTimer = OperatorMetrics.getConfigMapEventTimer(resource);
                     OperatorState.INSTANCE.setBookName(namespace, newBookName);
-                    logger.info("\"{}\" has been updated. Updating all boxes", resourceLabel);
-                    DefaultWatchManager.getInstance().refreshBoxes(namespace);
-                    logger.info("box-definition(s) have been updated");
+                    LOGGER.info("\"{}\" has been updated. Updating all boxes", resourceLabel);
+                    watchManager.refreshBoxes(namespace);
+                    LOGGER.info("box-definition(s) have been updated");
                     processTimer.observeDuration();
                 }
             } finally {
                 lock.unlock();
             }
         } catch (Exception e) {
-            logger.error("Exception processing {} event for \"{}\"", action, resourceLabel, e);
+            LOGGER.error("Exception processing {} event for \"{}\"", action, resourceLabel, e);
         }
     }
 
@@ -276,9 +295,9 @@ public class ConfigMapEventHandler implements Watcher<ConfigMap> {
             config.put(CHECKSUM_ALIAS, checksum);
             hr.addComponentValue(key, config);
 
-            logger.debug("Updating \"{}\" resource", CustomResourceUtils.annotationFor(hr));
+            LOGGER.debug("Updating \"{}\" resource", CustomResourceUtils.annotationFor(hr));
             createKubObj(namespace, hr);
-            logger.debug("\"{}\" Updated", CustomResourceUtils.annotationFor(hr));
+            LOGGER.debug("\"{}\" Updated", CustomResourceUtils.annotationFor(hr));
         }
         return helmReleases.size();
     }
@@ -288,7 +307,7 @@ public class ConfigMapEventHandler implements Watcher<ConfigMap> {
         OperatorState.INSTANCE.putHelmReleaseInCache(helmRelease, namespace);
     }
 
-    private Map<String, Object> getConfigFromCR(CustomResource customResource, String key) {
+    private Map<String, Object> getConfigFromCR(CustomResource<?, ?> customResource, String key) {
         Th2Spec spec = (Th2Spec) customResource.getSpec();
         switch (key) {
             case MQ_ROUTER_ALIAS:
@@ -308,7 +327,7 @@ public class ConfigMapEventHandler implements Watcher<ConfigMap> {
 
     private String readRabbitMQPasswordForSchema(String namespace, String secretName) throws Exception {
 
-        Secret secret = client.secrets().inNamespace(namespace).withName(secretName).get();
+        Secret secret = kubClient.secrets().inNamespace(namespace).withName(secretName).get();
         if (secret == null) {
             throw new Exception(String.format("Secret not found \"%s\"",
                     annotationFor(namespace, "Secret", secretName)));

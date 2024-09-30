@@ -29,7 +29,8 @@ import com.exactpro.th2.infraoperator.spec.strategy.redeploy.RetryableTaskQueue;
 import com.exactpro.th2.infraoperator.spec.strategy.redeploy.tasks.RecreateQueuesAndBindings;
 import com.exactpro.th2.infraoperator.spec.strategy.redeploy.tasks.RetryRabbitSetup;
 import com.exactpro.th2.infraoperator.spec.strategy.redeploy.tasks.RetryTopicExchangeTask;
-import com.exactpro.th2.infraoperator.util.Strings;
+import com.exactpro.th2.infraoperator.util.Utils;
+import com.rabbitmq.client.BuiltinExchangeType;
 import com.rabbitmq.client.Channel;
 import com.rabbitmq.client.Connection;
 import com.rabbitmq.client.ConnectionFactory;
@@ -41,6 +42,7 @@ import com.rabbitmq.http.client.domain.BindingInfo;
 import com.rabbitmq.http.client.domain.ExchangeInfo;
 import com.rabbitmq.http.client.domain.QueueInfo;
 import com.rabbitmq.http.client.domain.UserPermissions;
+import org.apache.commons.lang3.StringUtils;
 import org.jetbrains.annotations.NotNull;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -48,160 +50,175 @@ import org.slf4j.LoggerFactory;
 import java.io.IOException;
 import java.net.MalformedURLException;
 import java.net.URISyntaxException;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.concurrent.TimeoutException;
+import java.util.concurrent.locks.Lock;
+import java.util.concurrent.locks.ReentrantLock;
+import java.util.stream.Collectors;
 
-import static com.exactpro.th2.infraoperator.operator.StoreHelmTh2Op.*;
+import static com.exactpro.th2.infraoperator.spec.strategy.linkresolver.Util.createEstoreQueue;
+import static com.exactpro.th2.infraoperator.spec.strategy.linkresolver.Util.createMstoreQueue;
 import static com.exactpro.th2.infraoperator.spec.strategy.linkresolver.queue.QueueName.QUEUE_NAME_REGEXP;
+import static com.exactpro.th2.infraoperator.util.Strings.anyPrefixMatch;
 import static java.lang.String.format;
+import static java.util.Collections.emptyList;
+import static java.util.Objects.requireNonNullElse;
+import static org.apache.commons.lang3.StringUtils.isNoneBlank;
 
-public final class RabbitMQContext {
+public final class RabbitMQContext implements AutoCloseable {
 
-    private static final Logger logger = LoggerFactory.getLogger(RabbitMQContext.class);
+    private static final Logger LOGGER = LoggerFactory.getLogger(RabbitMQContext.class);
 
     private static final int RETRY_DELAY = 120;
 
-    private static volatile RabbitMQManagementConfig managementConfig;
+    public static final String TOPIC = BuiltinExchangeType.TOPIC.getType();
 
-    private static volatile ChannelContext channelContext;
+    public static final String DIRECT = BuiltinExchangeType.DIRECT.getType();
 
-    private static volatile Client rmqClient;
+    private final RabbitMQManagementConfig managementConfig;
+
+    private final ChannelContext channelContext;
+
+    private final Client rmqClient;
 
     private static final RetryableTaskQueue retryableTaskQueue = new RetryableTaskQueue();
 
-    private RabbitMQContext() {
+    public RabbitMQContext(RabbitMQManagementConfig managementConfig) throws MalformedURLException, URISyntaxException {
+        this.managementConfig = managementConfig;
+        this.rmqClient = createClient(managementConfig);
+        this.channelContext = new ChannelContext(this, managementConfig);
     }
 
-    public static void declareTopicExchange() {
-        String exchangeName = getManagementConfig().getExchangeName();
-        RabbitMQManagementConfig rabbitMQManagementConfig = getManagementConfig();
+    public String getTopicExchangeName() {
+        return managementConfig.getExchangeName();
+    }
+
+    public void declareTopicExchange() {
+        String exchangeName = getTopicExchangeName();
         try {
-            getChannel().exchangeDeclare(exchangeName, "topic", rabbitMQManagementConfig.getPersistence());
+            getChannel().exchangeDeclare(exchangeName, TOPIC, managementConfig.getPersistence());
         } catch (Exception e) {
-            logger.error("Exception setting up exchange: \"{}\"", exchangeName, e);
-            RetryTopicExchangeTask retryTopicExchangeTask = new RetryTopicExchangeTask(exchangeName, RETRY_DELAY);
+            LOGGER.error("Exception setting up exchange: \"{}\"", exchangeName, e);
+            RetryTopicExchangeTask retryTopicExchangeTask = new RetryTopicExchangeTask(this, exchangeName, RETRY_DELAY);
             retryableTaskQueue.add(retryTopicExchangeTask, true);
-            logger.info("Task \"{}\" added to scheduler, with delay \"{}\" seconds",
+            LOGGER.info("Task \"{}\" added to scheduler, with delay \"{}\" seconds",
                     retryTopicExchangeTask.getName(), RETRY_DELAY);
         }
     }
 
-    public static void setUpRabbitMqForNamespace(String namespace) {
+    public void setUpRabbitMqForNamespace(String namespace) {
         try {
             createUser(namespace);
-            declareExchange(namespace);
+            declareTopicExchange();
+            declareExchange(toExchangeName(namespace));
             createStoreQueues(namespace);
         } catch (Exception e) {
-            logger.error("Exception setting up rabbitMq for namespace: \"{}\"", namespace, e);
-            RetryRabbitSetup retryRabbitSetup = new RetryRabbitSetup(namespace, RETRY_DELAY);
+            LOGGER.error("Exception setting up rabbitMq for namespace: \"{}\"", namespace, e);
+            RetryRabbitSetup retryRabbitSetup = new RetryRabbitSetup(this, namespace, RETRY_DELAY);
             retryableTaskQueue.add(retryRabbitSetup, true);
-            logger.info("Task \"{}\" added to scheduler, with delay \"{}\" seconds",
+            LOGGER.info("Task \"{}\" added to scheduler, with delay \"{}\" seconds",
                     retryRabbitSetup.getName(), RETRY_DELAY);
         }
     }
 
-    private static void createUser(String namespace) throws Exception {
+    private void createUser(String namespace) {
 
-        RabbitMQManagementConfig rabbitMQManagementConfig = getManagementConfig();
         RabbitMQConfig rabbitMQConfig = getRabbitMQConfig(namespace);
 
         String password = rabbitMQConfig.getPassword();
-        String vHostName = rabbitMQManagementConfig.getVhostName();
+        String vHostName = managementConfig.getVhostName();
 
-        if (Strings.isNullOrEmpty(namespace)) {
+        if (StringUtils.isBlank(namespace)) {
             return;
         }
 
         try {
-            Client rmqClient = getClient();
-
             if (rmqClient.getVhost(vHostName) == null) {
-                logger.error("vHost: \"{}\" is not present", vHostName);
+                LOGGER.error("vHost: \"{}\" is not present", vHostName);
                 return;
             }
 
             rmqClient.createUser(namespace, password.toCharArray(), new ArrayList<>());
-            logger.info("Created user \"{}\" on vHost \"{}\"", namespace, vHostName);
+            LOGGER.info("Created user \"{}\" on vHost \"{}\"", namespace, vHostName);
 
             // set permissions
-            RabbitMQNamespacePermissions rabbitMQNamespacePermissions =
-                    rabbitMQManagementConfig.getSchemaPermissions();
+            RabbitMQNamespacePermissions rabbitMQNamespacePermissions = managementConfig.getSchemaPermissions();
             UserPermissions permissions = new UserPermissions();
             permissions.setConfigure(rabbitMQNamespacePermissions.getConfigure());
             permissions.setRead(rabbitMQNamespacePermissions.getRead());
             permissions.setWrite(rabbitMQNamespacePermissions.getWrite());
 
             rmqClient.updatePermissions(vHostName, namespace, permissions);
-            logger.info("User \"{}\" permissions set in RabbitMQ", namespace);
+            LOGGER.info("User \"{}\" permissions set in RabbitMQ", namespace);
         } catch (Exception e) {
-            logger.error("Exception setting up user: \"{}\" for vHost: \"{}\"", namespace, vHostName, e);
+            LOGGER.error("Exception setting up user: \"{}\" for vHost: \"{}\"", namespace, vHostName, e);
             throw e;
         }
     }
 
-    private static void declareExchange(String exchangeName) throws Exception {
-        RabbitMQManagementConfig rabbitMQManagementConfig = getManagementConfig();
+    private void declareExchange(String exchangeName) throws Exception {
         try {
-            getChannel().exchangeDeclare(exchangeName, "direct", rabbitMQManagementConfig.getPersistence());
+            getChannel().exchangeDeclare(exchangeName, DIRECT, managementConfig.getPersistence());
         } catch (Exception e) {
-            logger.error("Exception setting up exchange: \"{}\"", exchangeName, e);
+            LOGGER.error("Exception setting up exchange: \"{}\"", exchangeName, e);
             throw e;
         }
     }
 
-    private static void createStoreQueues(String namespace) throws Exception {
+    private void createStoreQueues(String namespace) throws Exception {
         var channel = getChannel();
-        RabbitMQManagementConfig rabbitMQManagementConfig = getManagementConfig();
         var declareResult = channel.queueDeclare(
-                new QueueName(namespace, EVENT_STORAGE_BOX_ALIAS, EVENT_STORAGE_PIN_ALIAS).toString(),
-                rabbitMQManagementConfig.getPersistence(),
+                createEstoreQueue(namespace),
+                managementConfig.getPersistence(),
                 false,
                 false,
                 null
         );
-        logger.info("Queue \"{}\" was successfully declared", declareResult.getQueue());
+        LOGGER.info("Queue \"{}\" was successfully declared", declareResult.getQueue());
         declareResult = channel.queueDeclare(
-                new QueueName(namespace, MESSAGE_STORAGE_BOX_ALIAS, MESSAGE_STORAGE_PIN_ALIAS).toString(),
-                rabbitMQManagementConfig.getPersistence(),
+                createMstoreQueue(namespace),
+                managementConfig.getPersistence(),
                 false,
                 false,
                 null
         );
-        logger.info("Queue \"{}\" was successfully declared", declareResult.getQueue());
+        LOGGER.info("Queue \"{}\" was successfully declared", declareResult.getQueue());
     }
 
-    public static void cleanupRabbit(String namespace) throws Exception {
-        removeSchemaExchange(namespace);
+    public void cleanupRabbit(String namespace) {
+        removeSchemaExchange(toExchangeName(namespace));
         removeSchemaQueues(namespace);
         removeSchemaUser(namespace);
 
     }
 
-    private static void removeSchemaUser(String namespace) throws Exception {
-        RabbitMQManagementConfig rabbitMQManagementConfig = getManagementConfig();
-
-        String vHostName = rabbitMQManagementConfig.getVhostName();
-
-        Client rmqClient = getClient();
+    private void removeSchemaUser(String namespace) {
+        String vHostName = managementConfig.getVhostName();
 
         if (rmqClient.getVhost(vHostName) == null) {
-            logger.error("vHost: \"{}\" is not present", vHostName);
+            LOGGER.error("vHost: \"{}\" is not present", vHostName);
             return;
         }
 
         rmqClient.deleteUser(namespace);
-        logger.info("Deleted user \"{}\" from vHost \"{}\"", namespace, vHostName);
+        LOGGER.info("Deleted user \"{}\" from vHost \"{}\"", namespace, vHostName);
 
     }
 
-    private static void removeSchemaExchange(String exchangeName) {
+    private void removeSchemaExchange(String exchangeName) {
         try {
             getChannel().exchangeDelete(exchangeName);
         } catch (Exception e) {
-            logger.error("Exception deleting exchange: \"{}\"", exchangeName, e);
+            LOGGER.error("Exception deleting exchange: \"{}\"", exchangeName, e);
         }
     }
 
-    private static void removeSchemaQueues(String namespace) {
+    private void removeSchemaQueues(String namespace) {
         try {
             Channel channel = getChannel();
 
@@ -212,69 +229,23 @@ public final class RabbitMQContext {
                 if (queue != null && queue.getNamespace().equals(namespace)) {
                     try {
                         channel.queueDelete(queueName);
-                        logger.info("Deleted queue: [{}]", queueName);
+                        LOGGER.info("Deleted queue: [{}]", queueName);
                     } catch (IOException e) {
-                        logger.error("Exception deleting queue: [{}]", queueName, e);
+                        LOGGER.error("Exception deleting queue: [{}]", queueName, e);
                     }
                 }
             });
         } catch (Exception e) {
-            logger.error("Exception cleaning up queues for: \"{}\"", namespace, e);
+            LOGGER.error("Exception cleaning up queues for: \"{}\"", namespace, e);
         }
     }
 
-    public static void cleanUpRabbitBeforeStart() {
-        try {
-            if (!getManagementConfig().getCleanUpOnStart()) {
-                logger.info("Cleanup RabbitMQ before start is skipped by config");
-                return;
-            }
-
-            Channel channel = getChannel();
-            List<String> namespacePrefixes = ConfigLoader.getConfig().getNamespacePrefixes();
-
-            List<QueueInfo> queueInfoList = getQueues();
-            queueInfoList.forEach(q -> {
-                String queueName = q.getName();
-                if (queueName != null && queueName.matches(QUEUE_NAME_REGEXP)) {
-                    try {
-                        channel.queueDelete(queueName);
-                        logger.info("Deleted queue: [{}]", queueName);
-                    } catch (IOException e) {
-                        logger.error("Exception deleting queue: [{}]", queueName, e);
-                    }
-                }
-            });
-
-            List<ExchangeInfo> exchangeInfoList = getExchanges();
-            exchangeInfoList.forEach(e -> {
-                String exchangeName = e.getName();
-                for (String namespacePrefix : namespacePrefixes) {
-                    if (exchangeName.startsWith(namespacePrefix)) {
-                        try {
-                            channel.exchangeDelete(exchangeName);
-                            break;
-                        } catch (IOException ex) {
-                            logger.error("Exception deleting exchange: [{}]", exchangeName, ex);
-                            break;
-                        }
-                    }
-                }
-            });
-        } catch (Exception e) {
-            logger.error("Exception cleaning up rabbit", e);
-        }
+    public static String toExchangeName(String namespace) {
+        return namespace;
     }
 
-    public static Channel getChannel() {
-        Channel channel = getChannelContext().channel;
-        if (!channel.isOpen()) {
-            logger.warn("RabbitMQ connection is broken, trying to reconnect...");
-            getChannelContext().close();
-            channel = getChannelContext().channel;
-            logger.info("RabbitMQ connection has been restored");
-        }
-        return channel;
+    public Channel getChannel() {
+        return channelContext.getChannel();
     }
 
     public static Map<String, Object> generateQueueArguments(PinSettings pinSettings) throws NumberFormatException {
@@ -292,84 +263,89 @@ public final class RabbitMQContext {
         }
     }
 
-    public static List<QueueInfo> getQueues() {
-
-        String vHostName = getManagementConfig().getVhostName();
+    public @NotNull List<QueueInfo> getQueues() {
+        String vHostName = managementConfig.getVhostName();
 
         try {
-            Client rmqClient = getClient();
-            return rmqClient.getQueues(vHostName);
+            return requireNonNullElse(rmqClient.getQueues(vHostName), emptyList());
         } catch (Exception e) {
             String message = "Exception while fetching queues";
-            logger.error(message, e);
+            LOGGER.error(message, e);
             throw new NonTerminalException(message, e);
         }
     }
 
-    public static List<BindingInfo> getQueueBindings(String queue) {
-        String vHostName = getManagementConfig().getVhostName();
+    public @NotNull List<QueueInfo> getTh2Queues() {
+        return getQueues().stream()
+                .filter(queueInfo -> queueInfo.getName() != null && queueInfo.getName().matches(QUEUE_NAME_REGEXP))
+                .collect(Collectors.toList());
+    }
+
+    public List<BindingInfo> getQueueBindings(String queue) {
+        String vHostName = managementConfig.getVhostName();
         try {
-            Client rmqClient = getClient();
             return rmqClient.getQueueBindings(vHostName, queue);
         } catch (Exception e) {
             String message = "Exception while fetching bindings";
-            logger.error(message, e);
+            LOGGER.error(message, e);
             throw new NonTerminalException(message, e);
         }
     }
 
-    public static List<ExchangeInfo> getExchanges() {
-
+    public @NotNull List<ExchangeInfo> getExchanges() {
         try {
-            Client rmqClient = getClient();
             return rmqClient.getExchanges();
         } catch (Exception e) {
             String message = "Exception while fetching exchanges";
-            logger.error(message, e);
+            LOGGER.error(message, e);
             throw new NonTerminalException(message, e);
         }
     }
 
-    public static QueueInfo getQueue(String queueName) {
+    public @NotNull List<ExchangeInfo> getTh2Exchanges() {
+        Collection<String> namespacePrefixes = ConfigLoader.getConfig().getNamespacePrefixes();
+        String topicExchange = getTopicExchangeName();
+        return getExchanges().stream()
+                .filter(exchangeInfo -> {
+                    String name = exchangeInfo.getName();
+                    return isNoneBlank(name)
+                            && (name.equals(topicExchange) || anyPrefixMatch(name, namespacePrefixes));
 
-        String vHostName = getManagementConfig().getVhostName();
+                }).collect(Collectors.toList());
+    }
+
+    public QueueInfo getQueue(String queueName) {
+
+        String vHostName = managementConfig.getVhostName();
         try {
-            Client rmqClient = getClient();
             return rmqClient.getQueue(vHostName, queueName);
         } catch (Exception e) {
             String message = "Exception while fetching queue";
-            logger.error(message, e);
+            LOGGER.error(message, e);
             throw new NonTerminalException(message, e);
         }
     }
 
-    private static RabbitMQManagementConfig getManagementConfig() {
-        // we do not need to synchronize as we are assigning immutable object from singleton
-        if (managementConfig == null) {
-            managementConfig = ConfigLoader.getConfig().getRabbitMQManagement();
-        }
-        return managementConfig;
-    }
-
-    private static Client getClient() throws MalformedURLException, URISyntaxException {
-        if (rmqClient == null) {
-            RabbitMQManagementConfig rabbitMQMngConfig = getManagementConfig();
-            String apiStr = "http://%s:%s/api";
-            rmqClient = new Client(new ClientParameters()
-                    .url(format(apiStr, rabbitMQMngConfig.getHost(), rabbitMQMngConfig.getManagementPort()))
-                    .username(rabbitMQMngConfig.getUsername())
-                    .password(rabbitMQMngConfig.getPassword())
+    public static Client createClient(
+        String host,
+        int port,
+        String username,
+        String password
+    ) throws MalformedURLException, URISyntaxException {
+            return new Client(new ClientParameters()
+                    .url(format("http://%s:%s/api", host, port))
+                    .username(username)
+                    .password(password)
             );
-        }
-        return rmqClient;
     }
 
-    private static ChannelContext getChannelContext() {
-        // we do not need to synchronize as we are assigning immutable object from singleton
-        if (channelContext == null) {
-            channelContext = new ChannelContext();
-        }
-        return channelContext;
+    private static Client createClient(
+        RabbitMQManagementConfig rabbitMQMngConfig
+    ) throws MalformedURLException, URISyntaxException {
+        return createClient(rabbitMQMngConfig.getHost(),
+                rabbitMQMngConfig.getManagementPort(),
+                rabbitMQMngConfig.getUsername(),
+                rabbitMQMngConfig.getPassword());
     }
 
     private static RabbitMQConfig getRabbitMQConfig(String namespace) {
@@ -382,49 +358,77 @@ public final class RabbitMQContext {
         return rabbitMQConfig;
     }
 
-    static class ChannelContext {
+    @Override
+    public void close() {
+        Utils.close(channelContext, "AMQP channel context");
+    }
+
+    static class ChannelContext implements AutoCloseable {
+
+        private final Lock lock = new ReentrantLock();
+
+        private final RabbitMQContext rabbitMQContext;
+
+        private final RabbitMQManagementConfig rabbitMQManagementConfig;
 
         private Connection connection;
 
         private Channel channel;
 
-        ChannelContext() {
-            ConnectionFactory connectionFactory = createConnectionFactory();
+        ChannelContext(RabbitMQContext rabbitMQContext, RabbitMQManagementConfig rabbitMQManagementConfig) {
+            this.rabbitMQContext = rabbitMQContext;
+            this.rabbitMQManagementConfig = rabbitMQManagementConfig;
+            getChannel();
+        }
+
+        public Channel getChannel() {
+            lock.lock();
             try {
-                this.connection = connectionFactory.newConnection();
-                this.connection.addShutdownListener(new RmqClientShutdownEventListener());
-                this.channel = connection.createChannel();
+                if (connection == null || !connection.isOpen()) {
+                    close();
+                    LOGGER.warn("RabbitMQ connection is broken, trying to reconnect...");
+                    connection = createConnection();
+                }
+                if (channel == null || !channel.isOpen()) {
+                    channel = connection.createChannel();
+                }
+                return channel;
             } catch (Exception e) {
                 close();
                 String message = "Exception while creating rabbitMq channel";
-                logger.error(message, e);
+                LOGGER.error(message, e);
                 throw new NonTerminalException(message, e);
+            } finally {
+                lock.unlock();
             }
         }
 
-        synchronized void close() {
+        @Override
+        public void close() {
+            lock.lock();
             try {
                 if (channel != null && channel.isOpen()) {
-                    channel.close();
+                    Utils.close(channel, "AMQP channel");
                 }
-            } catch (Exception e) {
-                logger.error("Exception closing RabbitMQ channel", e);
-            }
-            try {
                 if (connection != null && connection.isOpen()) {
-                    connection.close();
+                    Utils.close(connection, "AMQP connection");
                 }
-            } catch (Exception e) {
-                logger.error("Exception closing RabbitMQ connection for", e);
+                connection = null;
+                channel = null;
+            } finally {
+                lock.unlock();
             }
-            channel = null;
-            connection = null;
-            channelContext = null;
+        }
+
+        private Connection createConnection() throws IOException, TimeoutException {
+            ConnectionFactory connectionFactory = createConnectionFactory();
+            Connection connection = connectionFactory.newConnection();
+            connection.addShutdownListener(new RmqClientShutdownEventListener(rabbitMQContext));
+            return connection;
         }
 
         @NotNull
-        private static ConnectionFactory createConnectionFactory() {
-            RabbitMQManagementConfig rabbitMQManagementConfig = getManagementConfig();
+        private ConnectionFactory createConnectionFactory() {
             ConnectionFactory connectionFactory = new ConnectionFactory();
             connectionFactory.setHost(rabbitMQManagementConfig.getHost());
             connectionFactory.setPort(rabbitMQManagementConfig.getApplicationPort());
@@ -436,16 +440,22 @@ public final class RabbitMQContext {
     }
 
     private static class RmqClientShutdownEventListener implements ShutdownListener {
+        private final RabbitMQContext rabbitMQContext;
+
+        private RmqClientShutdownEventListener(RabbitMQContext rabbitMQContext) {
+            this.rabbitMQContext = rabbitMQContext;
+        }
 
         @Override
         public void shutdownCompleted(ShutdownSignalException cause) {
-            logger.error("Detected Rabbit mq connection lose", cause);
+            LOGGER.error("Detected Rabbit mq connection lose", cause);
             RecreateQueuesAndBindings recreateQueuesAndBindingsTask = new RecreateQueuesAndBindings(
+                    rabbitMQContext,
                     OperatorState.INSTANCE.getAllBoxResources(),
                     RETRY_DELAY
             );
             retryableTaskQueue.add(recreateQueuesAndBindingsTask, true);
-            logger.info("Task \"{}\" added to scheduler, with delay \"{}\" seconds",
+            LOGGER.info("Task \"{}\" added to scheduler, with delay \"{}\" seconds",
                     recreateQueuesAndBindingsTask.getName(), RETRY_DELAY);
         }
     }

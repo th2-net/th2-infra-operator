@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2022 Exactpro (Exactpro Systems Limited)
+ * Copyright 2020-2024 Exactpro (Exactpro Systems Limited)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -20,11 +20,14 @@ import com.exactpro.th2.infraoperator.spec.strategy.linkresolver.mq.RabbitMQCont
 
 public class RetryRabbitSetup implements Task {
 
+    private final RabbitMQContext rabbitMQContext;
+
     private final long retryDelay;
 
     private final String namespace;
 
-    public RetryRabbitSetup(String namespace, long retryDelay) {
+    public RetryRabbitSetup(RabbitMQContext rabbitMQContext, String namespace, long retryDelay) {
+        this.rabbitMQContext = rabbitMQContext;
         this.retryDelay = retryDelay;
         this.namespace = namespace;
     }
@@ -41,6 +44,6 @@ public class RetryRabbitSetup implements Task {
 
     @Override
     public void run() {
-        RabbitMQContext.setUpRabbitMqForNamespace(namespace);
+        rabbitMQContext.setUpRabbitMqForNamespace(namespace);
     }
 }

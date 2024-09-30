@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2021 Exactpro (Exactpro Systems Limited)
+ * Copyright 2020-2024 Exactpro (Exactpro Systems Limited)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -30,6 +30,7 @@ import com.exactpro.th2.infraoperator.spec.helmrelease.HelmReleaseSecrets;
 import com.exactpro.th2.infraoperator.spec.shared.PrometheusConfiguration;
 import com.exactpro.th2.infraoperator.spec.strategy.linkresolver.mq.BindQueueLinkResolver;
 import com.exactpro.th2.infraoperator.spec.strategy.linkresolver.mq.DeclareQueueResolver;
+import com.exactpro.th2.infraoperator.spec.strategy.linkresolver.mq.RabbitMQContext;
 import com.exactpro.th2.infraoperator.util.CustomResourceUtils;
 import com.exactpro.th2.infraoperator.util.JsonUtils;
 
@@ -65,25 +66,25 @@ public abstract class HelmReleaseTh2Op<CR extends Th2CustomResource> extends Abs
     public static final String ANNOTATIONS_ALIAS = "commonAnnotations";
 
     //component section
-    private static final String ROOTLESS_ALIAS = "rootless";
+    public static final String ROOTLESS_ALIAS = "rootless";
 
-    private static final String COMPONENT_NAME_ALIAS = "name";
+    public static final String COMPONENT_NAME_ALIAS = "name";
 
-    private static final String DOCKER_IMAGE_ALIAS = "image";
+    public static final String DOCKER_IMAGE_ALIAS = "image";
 
-    private static final String CUSTOM_CONFIG_ALIAS = "custom";
+    public static final String CUSTOM_CONFIG_ALIAS = "custom";
 
-    private static final String SECRET_VALUES_CONFIG_ALIAS = "secretValuesConfig";
+    public static final String SECRET_VALUES_CONFIG_ALIAS = "secretValuesConfig";
 
-    private static final String SECRET_PATHS_CONFIG_ALIAS = "secretPathsConfig";
+    public static final String SECRET_PATHS_CONFIG_ALIAS = "secretPathsConfig";
 
-    private static final String PROMETHEUS_CONFIG_ALIAS = "prometheus";
+    public static final String PROMETHEUS_CONFIG_ALIAS = "prometheus";
 
     public static final String DICTIONARIES_ALIAS = "dictionaries";
 
     public static final String MQ_QUEUE_CONFIG_ALIAS = "mq";
 
-    private static final String GRPC_P2P_CONFIG_ALIAS = "grpc";
+    public static final String GRPC_P2P_CONFIG_ALIAS = "grpc";
 
     public static final String MQ_ROUTER_ALIAS = "mqRouter";
 
@@ -126,13 +127,18 @@ public abstract class HelmReleaseTh2Op<CR extends Th2CustomResource> extends Abs
     protected final MixedOperation<HelmRelease, KubernetesResourceList<HelmRelease>, Resource<HelmRelease>>
             helmReleaseClient;
 
-    public HelmReleaseTh2Op(KubernetesClient client) {
+    protected final DeclareQueueResolver declareQueueResolver;
 
-        super(client);
+    protected final BindQueueLinkResolver bindQueueLinkResolver;
+
+    public HelmReleaseTh2Op(KubernetesClient kubClient, RabbitMQContext rabbitMQContext) {
+
+        super(kubClient);
 
         this.grpcConfigFactory = new GrpcRouterConfigFactory();
-
-        helmReleaseClient = kubClient.resources(HelmRelease.class);
+        this.helmReleaseClient = this.kubClient.resources(HelmRelease.class);
+        this.declareQueueResolver = new DeclareQueueResolver(rabbitMQContext);
+        this.bindQueueLinkResolver = new BindQueueLinkResolver(rabbitMQContext);
     }
 
     public abstract SharedIndexInformer<CR> generateInformerFromFactory(SharedInformerFactory factory);
@@ -324,11 +330,11 @@ public abstract class HelmReleaseTh2Op<CR extends Th2CustomResource> extends Abs
 
         String namespace = extractNamespace(resource);
         var lock = OperatorState.INSTANCE.getLock(namespace);
+        lock.lock();
         try {
-            lock.lock();
-            DeclareQueueResolver.resolveAdd(resource);
-            BindQueueLinkResolver.resolveDeclaredLinks(resource);
-            BindQueueLinkResolver.resolveHiddenLinks(resource);
+            declareQueueResolver.resolveAdd(resource);
+            bindQueueLinkResolver.resolveDeclaredLinks(resource);
+            bindQueueLinkResolver.resolveHiddenLinks(resource);
             updateGrpcLinkedResourcesIfNeeded(resource);
             super.addedEvent(resource);
         } finally {
@@ -342,12 +348,11 @@ public abstract class HelmReleaseTh2Op<CR extends Th2CustomResource> extends Abs
 
         String namespace = extractNamespace(resource);
         var lock = OperatorState.INSTANCE.getLock(namespace);
+        lock.lock();
         try {
-            lock.lock();
-
-            DeclareQueueResolver.resolveAdd(resource);
-            BindQueueLinkResolver.resolveDeclaredLinks(resource);
-            BindQueueLinkResolver.resolveHiddenLinks(resource);
+            declareQueueResolver.resolveAdd(resource);
+            bindQueueLinkResolver.resolveDeclaredLinks(resource);
+            bindQueueLinkResolver.resolveHiddenLinks(resource);
             updateGrpcLinkedResourcesIfNeeded(resource);
             super.modifiedEvent(resource);
         } finally {
@@ -359,10 +364,10 @@ public abstract class HelmReleaseTh2Op<CR extends Th2CustomResource> extends Abs
     protected void deletedEvent(CR resource) {
 
         var lock = OperatorState.INSTANCE.getLock(extractNamespace(resource));
+        lock.lock();
         try {
-            lock.lock();
             super.deletedEvent(resource);
-            DeclareQueueResolver.resolveDelete(resource);
+            declareQueueResolver.resolveDelete(resource);
         } finally {
             lock.unlock();
         }

@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2021 Exactpro (Exactpro Systems Limited)
+ * Copyright 2020-2024 Exactpro (Exactpro Systems Limited)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -18,24 +18,24 @@ package com.exactpro.th2.infraoperator.spec.strategy.linkresolver.mq
 
 import com.exactpro.th2.infraoperator.model.LinkDescription
 import com.exactpro.th2.infraoperator.operator.StoreHelmTh2Op.EVENT_STORAGE_BOX_ALIAS
-import com.exactpro.th2.infraoperator.operator.StoreHelmTh2Op.EVENT_STORAGE_PIN_ALIAS
 import com.exactpro.th2.infraoperator.operator.StoreHelmTh2Op.MESSAGE_STORAGE_BOX_ALIAS
-import com.exactpro.th2.infraoperator.operator.StoreHelmTh2Op.MESSAGE_STORAGE_PIN_ALIAS
 import com.exactpro.th2.infraoperator.spec.Th2CustomResource
 import com.exactpro.th2.infraoperator.spec.shared.PinAttribute
 import com.exactpro.th2.infraoperator.spec.shared.pin.Link
+import com.exactpro.th2.infraoperator.spec.strategy.linkresolver.createEstoreQueueName
+import com.exactpro.th2.infraoperator.spec.strategy.linkresolver.createEstoreRoutingKeyName
+import com.exactpro.th2.infraoperator.spec.strategy.linkresolver.createMstoreQueueName
 import com.exactpro.th2.infraoperator.spec.strategy.linkresolver.queue.QueueName
 import com.exactpro.th2.infraoperator.spec.strategy.linkresolver.queue.RoutingKeyName
 import com.exactpro.th2.infraoperator.spec.strategy.linkresolver.queue.RoutingKeyName.ROUTING_KEY_REGEXP
 import com.exactpro.th2.infraoperator.spec.strategy.redeploy.NonTerminalException
 import com.exactpro.th2.infraoperator.util.CustomResourceUtils
 import com.exactpro.th2.infraoperator.util.CustomResourceUtils.annotationFor
-import mu.KotlinLogging
+import io.github.oshai.kotlinlogging.KotlinLogging
 
-object BindQueueLinkResolver {
-    private val logger = KotlinLogging.logger { }
-
-    @JvmStatic
+class BindQueueLinkResolver(
+    private val rabbitMQContext: RabbitMQContext,
+) {
     fun resolveDeclaredLinks(resource: Th2CustomResource) {
         val namespace = resource.metadata.namespace
         val resourceName = resource.metadata.name
@@ -54,7 +54,6 @@ object BindQueueLinkResolver {
         }
     }
 
-    @JvmStatic
     fun resolveHiddenLinks(resource: Th2CustomResource) {
         val namespace = resource.metadata.namespace
         val resourceName = resource.metadata.name
@@ -65,14 +64,14 @@ object BindQueueLinkResolver {
         }
         // create event storage link for each resource
         val estoreLinkDescription = LinkDescription(
-            QueueName(namespace, EVENT_STORAGE_BOX_ALIAS, EVENT_STORAGE_PIN_ALIAS),
-            RoutingKeyName(namespace, resourceName, EVENT_STORAGE_PIN_ALIAS),
+            createEstoreQueueName(namespace),
+            createEstoreRoutingKeyName(namespace, resourceName),
             namespace
         )
         bindQueues(estoreLinkDescription, commitHash)
 
         val currentLinks: MutableList<Link> = ArrayList()
-        val queueName = QueueName(namespace, MESSAGE_STORAGE_BOX_ALIAS, MESSAGE_STORAGE_PIN_ALIAS)
+        val queueName = createMstoreQueueName(namespace)
         // create message store link for only resources that need it
         for ((pinName, attributes) in resource.spec.pins.mq.publishers) {
             if (checkStorePinAttributes(attributes, resourceLabel, pinName)) {
@@ -93,19 +92,17 @@ object BindQueueLinkResolver {
             return false
         }
         if (attributes.contains(PinAttribute.parsed.name)) {
-            logger.warn(
-                "Detected a pin: {}:{} with incorrect store configuration. attribute 'parsed' not allowed",
-                resourceLabel,
-                pinName
-            )
+            K_LOGGER.warn {
+                "Detected a pin: $resourceLabel:$pinName with incorrect store configuration. " +
+                    "attribute 'parsed' not allowed"
+            }
             return false
         }
         if (!attributes.contains(PinAttribute.raw.name)) {
-            logger.warn(
-                "Detected a pin: {}:{} with incorrect store configuration. attribute 'raw' is missing",
-                resourceLabel,
-                pinName
-            )
+            K_LOGGER.warn {
+                "Detected a pin: $resourceLabel:$pinName with incorrect store configuration. " +
+                    "attribute 'raw' is missing"
+            }
             return false
         }
         return true
@@ -113,23 +110,20 @@ object BindQueueLinkResolver {
 
     private fun bindQueues(queue: LinkDescription, commitHash: String) {
         try {
-            val channel = RabbitMQContext.getChannel()
+            val channel = rabbitMQContext.channel
             val queueName = queue.queueName.toString()
-            val currentQueue = RabbitMQContext.getQueue(queueName)
+            val currentQueue = rabbitMQContext.getQueue(queueName)
             if (currentQueue == null) {
-                logger.info("Queue '{}' does not yet exist. skipping binding", queueName)
+                K_LOGGER.info { "Queue '$queueName' does not yet exist. skipping binding" }
                 return
             }
             channel.queueBind(queue.queueName.toString(), queue.exchange, queue.routingKey.toString())
-            logger.info(
-                "Queue '{}' successfully bound to '{}' (commit-{})",
-                queueName,
-                queue.routingKey.toString(),
-                commitHash
-            )
+            K_LOGGER.info {
+                "Queue '$queueName' successfully bound to '${queue.routingKey}' (commit-$commitHash)"
+            }
         } catch (e: Exception) {
             val message = "Exception while working with rabbitMq"
-            logger.error(message, e)
+            K_LOGGER.error(e) { message }
             throw NonTerminalException(message, e)
         }
     }
@@ -141,7 +135,7 @@ object BindQueueLinkResolver {
         resName: String? = null
     ) {
         val queueName = queue.toString()
-        val bindingOnRabbit = RabbitMQContext.getQueueBindings(queueName)
+        val bindingOnRabbit = rabbitMQContext.getQueueBindings(queueName)
             ?.map { it.routingKey }
             ?.filter {
                 it.matches(ROUTING_KEY_REGEXP.toRegex()) &&
@@ -151,22 +145,26 @@ object BindQueueLinkResolver {
             RoutingKeyName(queue.namespace, it.box, it.pin).toString()
         }
         try {
-            val channel = RabbitMQContext.getChannel()
+            val channel = rabbitMQContext.channel
             bindingOnRabbit?.forEach {
                 if (!currentBindings.contains(it)) {
-                    val currentQueue = RabbitMQContext.getQueue(queueName)
+                    val currentQueue = rabbitMQContext.getQueue(queueName)
                     if (currentQueue == null) {
-                        logger.info("Queue '{}' already removed. skipping unbinding", queueName)
+                        K_LOGGER.info { "Queue '$queueName' already removed. skipping unbinding" }
                         return
                     }
                     channel.queueUnbind(queueName, queue.namespace, it)
-                    logger.info("Unbind queue '{}' -> '{}'. (commit-{})", it, queueName, commitHash)
+                    K_LOGGER.info { "Unbind queue '$it' -> '$queueName'. (commit-$commitHash)" }
                 }
             }
         } catch (e: Exception) {
             val message = "Exception while removing extinct bindings"
-            logger.error(message, e)
+            K_LOGGER.error(e) { message }
             throw NonTerminalException(message, e)
         }
+    }
+
+    companion object {
+        private val K_LOGGER = KotlinLogging.logger { }
     }
 }

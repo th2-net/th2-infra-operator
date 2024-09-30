@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2022 Exactpro (Exactpro Systems Limited)
+ * Copyright 2020-2024 Exactpro (Exactpro Systems Limited)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -30,24 +30,25 @@ import com.exactpro.th2.infraoperator.util.Strings;
 import io.fabric8.kubernetes.api.model.DefaultKubernetesResourceList;
 import io.fabric8.kubernetes.api.model.HasMetadata;
 import io.fabric8.kubernetes.client.KubernetesClient;
-import io.fabric8.kubernetes.client.KubernetesClientBuilder;
 import io.fabric8.kubernetes.client.dsl.MixedOperation;
 import io.fabric8.kubernetes.client.dsl.Resource;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.List;
+import java.util.Set;
 
 import static com.exactpro.th2.infraoperator.util.CustomResourceUtils.stamp;
+import static com.exactpro.th2.infraoperator.util.KubernetesUtils.createKubernetesClient;
 
 public class CheckResourceCacheTask implements Task {
     private static final Logger logger = LoggerFactory.getLogger(ContinuousTaskWorker.class);
 
     private final long retryDelay;
 
-    private final KubernetesClient client = new KubernetesClientBuilder().build();
+    private final KubernetesClient client = createKubernetesClient();
 
-    private final List<String> nsPrefixes = ConfigLoader.getConfig().getNamespacePrefixes();
+    private final Set<String> nsPrefixes = ConfigLoader.getConfig().getNamespacePrefixes();
 
     private final List<MixedOperation> operations = List.of(
             client.resources(Th2Box.class),

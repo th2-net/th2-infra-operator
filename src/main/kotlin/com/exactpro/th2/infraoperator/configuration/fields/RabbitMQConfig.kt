@@ -16,12 +16,14 @@
 
 package com.exactpro.th2.infraoperator.configuration.fields
 
+import com.fasterxml.jackson.annotation.JsonProperty
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize
 
 @JsonDeserialize
 data class RabbitMQConfig(
     val port: Int,
     val host: String,
+    @get:JsonProperty("vHost")
     val vHost: String,
     val exchangeName: String,
     val username: String,

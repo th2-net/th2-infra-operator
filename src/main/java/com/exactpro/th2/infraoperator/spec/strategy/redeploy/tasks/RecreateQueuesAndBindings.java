@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2022 Exactpro (Exactpro Systems Limited)
+ * Copyright 2020-2024 Exactpro (Exactpro Systems Limited)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -24,11 +24,22 @@ import com.exactpro.th2.infraoperator.spec.strategy.linkresolver.mq.RabbitMQCont
 import java.util.Collection;
 
 public class RecreateQueuesAndBindings implements Task {
+    private final RabbitMQContext rabbitMQContext;
+
+    private final DeclareQueueResolver declareQueueResolver;
+
+    private final BindQueueLinkResolver bindQueueLinkResolver;
+
     private final long retryDelay;
 
     private final Collection<Th2CustomResource> resources;
 
-    public RecreateQueuesAndBindings(Collection<Th2CustomResource> resources, long retryDelay) {
+    public RecreateQueuesAndBindings(RabbitMQContext rabbitMQContext,
+                                     Collection<Th2CustomResource> resources,
+                                     long retryDelay) {
+        this.rabbitMQContext = rabbitMQContext;
+        this.declareQueueResolver = new DeclareQueueResolver(rabbitMQContext);
+        this.bindQueueLinkResolver = new BindQueueLinkResolver(rabbitMQContext);
         this.resources = resources;
         this.retryDelay = retryDelay;
     }
@@ -45,11 +56,11 @@ public class RecreateQueuesAndBindings implements Task {
 
     @Override
     public void run() {
-        RabbitMQContext.getChannel();
+        rabbitMQContext.getChannel();
         resources.forEach(resource -> {
-            DeclareQueueResolver.resolveAdd(resource);
-            BindQueueLinkResolver.resolveDeclaredLinks(resource);
-            BindQueueLinkResolver.resolveHiddenLinks(resource);
+            declareQueueResolver.resolveAdd(resource);
+            bindQueueLinkResolver.resolveDeclaredLinks(resource);
+            bindQueueLinkResolver.resolveHiddenLinks(resource);
         });
     }
 }

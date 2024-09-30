@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2021 Exactpro (Exactpro Systems Limited)
+ * Copyright 2020-2024 Exactpro (Exactpro Systems Limited)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -18,6 +18,7 @@ package com.exactpro.th2.infraoperator.operator;
 
 import com.exactpro.th2.infraoperator.OperatorState;
 import com.exactpro.th2.infraoperator.spec.Th2CustomResource;
+import com.exactpro.th2.infraoperator.spec.strategy.linkresolver.mq.RabbitMQContext;
 import io.fabric8.kubernetes.client.KubernetesClient;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -28,7 +29,7 @@ import static com.exactpro.th2.infraoperator.util.ExtractUtils.*;
 
 public abstract class StoreHelmTh2Op<CR extends Th2CustomResource> extends HelmReleaseTh2Op<CR> {
 
-    private static final Logger logger = LoggerFactory.getLogger(StoreHelmTh2Op.class);
+    private static final Logger LOGGER = LoggerFactory.getLogger(StoreHelmTh2Op.class);
 
     public static final String EVENT_STORAGE_PIN_ALIAS = "estore-pin";
 
@@ -38,17 +39,16 @@ public abstract class StoreHelmTh2Op<CR extends Th2CustomResource> extends HelmR
 
     public static final String MESSAGE_STORAGE_BOX_ALIAS = "mstore";
 
-    public StoreHelmTh2Op(KubernetesClient client) {
-        super(client);
+    public StoreHelmTh2Op(KubernetesClient kubClient, RabbitMQContext rabbitMQContext) {
+        super(kubClient, rabbitMQContext);
     }
 
     private void nameCheck(CR resource) throws IOException {
         var msNamespace = extractNamespace(resource);
         var lock = OperatorState.INSTANCE.getLock(msNamespace);
 
+        lock.lock();
         try {
-            lock.lock();
-
             var msName = extractName(resource);
             var stName = getStorageName();
 
@@ -57,7 +57,7 @@ public abstract class StoreHelmTh2Op<CR extends Th2CustomResource> extends HelmR
                 var msg = String.format("%s<%s.%s> has an invalid name, must be '%s'",
                         extractType(resource), msNamespace, msName, stName);
 
-                logger.warn(msg);
+                LOGGER.warn(msg);
                 resource.getStatus().failed(msg);
                 updateStatus(resource);
                 return;
