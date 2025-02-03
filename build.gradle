@@ -74,6 +74,10 @@ dependencies {
     detektPlugins libs.detekt.formatting
 }
 
+application {
+    mainClassName = 'com.exactpro.th2.infraoperator.Th2CrdController'
+}
+
 wrapper {
     version '8.7'
     distributionType Wrapper.DistributionType.BIN

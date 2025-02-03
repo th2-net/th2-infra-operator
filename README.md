@@ -144,6 +144,9 @@ openshift:
 
 ## Release notes
 
+### 4.7.1
++ Fixed incorrect java entrypoint problem
+
 ### 4.7.0
 + Improved clean rubbish from RabbitMQ on start to delete only redundant resources.
   The `cleanUpOnStart` option has been removed, the clean rubbish function is enabled.  
