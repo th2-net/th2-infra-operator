@@ -75,11 +75,11 @@ dependencies {
 }
 
 application {
-    mainClassName = 'com.exactpro.th2.infraoperator.Th2CrdController'
+    mainClass.set('com.exactpro.th2.infraoperator.Th2CrdController')
 }
 
 wrapper {
-    version '8.7'
+    version '8.11.1'
     distributionType Wrapper.DistributionType.BIN
 }
 
