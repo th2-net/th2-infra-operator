@@ -29,9 +29,6 @@ import com.exactpro.th2.infraoperator.spec.shared.PrometheusConfiguration
 import com.exactpro.th2.infraoperator.spec.strategy.linkresolver.mq.RabbitMQContext
 import com.exactpro.th2.infraoperator.util.JsonUtils
 import com.fasterxml.jackson.module.kotlin.readValue
-import com.github.dockerjava.api.model.ExposedPort
-import com.github.dockerjava.api.model.PortBinding
-import com.github.dockerjava.api.model.Ports
 import com.rabbitmq.client.AMQP
 import com.rabbitmq.client.Channel
 import com.rabbitmq.client.Connection
@@ -45,15 +42,12 @@ import org.slf4j.LoggerFactory
 import org.testcontainers.containers.RabbitMQContainer
 import org.testcontainers.containers.output.Slf4jLogConsumer
 import org.testcontainers.k3s.K3sContainer
-import org.testcontainers.k3s.K3sContainer.KUBE_SECURE_PORT
-import org.testcontainers.k3s.K3sContainer.RANCHER_WEBHOOK_PORT
 import org.testcontainers.lifecycle.Startable
 import org.testcontainers.utility.DockerImageName
 import java.nio.file.Files
 import java.nio.file.Path
 import java.util.UUID
 import java.util.concurrent.atomic.AtomicLong
-import java.util.function.Consumer
 import kotlin.io.path.absolutePathString
 import kotlin.io.path.createDirectories
 
