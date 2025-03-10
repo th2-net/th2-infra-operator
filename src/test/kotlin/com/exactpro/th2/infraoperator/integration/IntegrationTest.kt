@@ -48,6 +48,7 @@ import com.exactpro.th2.infraoperator.operator.manager.impl.Th2DictionaryEventHa
 import com.exactpro.th2.infraoperator.spec.Th2CustomResource
 import com.exactpro.th2.infraoperator.spec.box.Th2Box
 import com.exactpro.th2.infraoperator.spec.corebox.Th2CoreBox
+import com.exactpro.th2.infraoperator.spec.dictionary.Th2DictionarySpec
 import com.exactpro.th2.infraoperator.spec.estore.Th2Estore
 import com.exactpro.th2.infraoperator.spec.helmrelease.HelmRelease
 import com.exactpro.th2.infraoperator.spec.helmrelease.HelmRelease.NAME_LENGTH_LIMIT
@@ -216,12 +217,14 @@ class IntegrationTest {
             subSpecType: String,
             subRunAsJob: Boolean
         )
+
         abstract fun `grpc link`(
             clientClass: Class<out Th2CustomResource>,
             clientConstructor: () -> Th2CustomResource,
             clientSpecType: String,
             clientRunAsJob: Boolean
         )
+
         abstract fun `dictionary link`(componentName: String, dictionaryName: String)
         abstract fun `modify linked dictionary`(componentName: String, dictionaryName: String)
 
@@ -475,12 +478,12 @@ class IntegrationTest {
                 imageVersion: $VERSION
                 type: $specType
                 customConfig:
-                  dictionary: ${'$'}{dictionary_link:${dictionaryName}}
+                  dictionary: ${'$'}{dictionary_link:$dictionaryName}
             """.trimIndent()
 
-            val dictionarySpec = """
-                data: $DICTIONARY_CONTENT
-            """.trimIndent()
+            val dictionarySpec = Th2DictionarySpec().apply {
+                data = DICTIONARY_CONTENT
+            }
             val annotations = createAnnotations(gitHash, dictionarySpec.hashCode().toString())
 
             kubeClient.createTh2Dictionary(TH2_NAMESPACE, dictionaryName, annotations, dictionarySpec)
@@ -491,15 +494,22 @@ class IntegrationTest {
                     }
                     get { data }.isA<Map<String, String>>().and {
                         hasSize(1)
-                        getValue("$dictionaryName$DICTIONARY_SUFFIX") isEqualTo DICTIONARY_CONTENT
+                        getValue("$dictionaryName$DICTIONARY_SUFFIX") isEqualTo dictionarySpec.data
                     }
                 }
             }
 
-            val resource = kubeClient.createTh2CustomResource(TH2_NAMESPACE, componentName, gitHash, componentSpec, ::createResources)
+            val resource = kubeClient.createTh2CustomResource(
+                TH2_NAMESPACE,
+                componentName,
+                gitHash,
+                componentSpec,
+                ::createResources
+            )
             kubeClient.awaitPhase(TH2_NAMESPACE, componentName, SUCCEEDED, resourceClass)
             kubeClient.awaitResource<HelmRelease>(TH2_NAMESPACE, extractHashedName(resource)).assertMinCfg(
-                componentName, runAsJob,
+                componentName,
+                runAsJob,
                 config = mapOf("dictionary" to "$dictionaryName${DICTIONARY_SUFFIX}"),
                 dictionaries = listOf(
                     mapOf("checksum" to INITIAL_CHECKSUM, "name" to "$dictionaryName${DICTIONARY_SUFFIX}")
@@ -523,24 +533,30 @@ class IntegrationTest {
                 imageVersion: $VERSION
                 type: $specType
                 customConfig:
-                  dictionary: ${'$'}{dictionary_link:${dictionaryName}}
+                  dictionary: ${'$'}{dictionary_link:$dictionaryName}
             """.trimIndent()
 
-            var dictionarySpec = """
-                data: $DICTIONARY_CONTENT
-            """.trimIndent()
+            var dictionarySpec = Th2DictionarySpec().apply {
+                data = DICTIONARY_CONTENT
+            }
             var annotations = createAnnotations(gitHash, dictionarySpec.hashCode().toString())
 
             kubeClient.createTh2Dictionary(TH2_NAMESPACE, dictionaryName, annotations, dictionarySpec)
             kubeClient.awaitResource<ConfigMap>(TH2_NAMESPACE, "$dictionaryName$DICTIONARY_SUFFIX")
 
-            val resource = kubeClient.createTh2CustomResource(TH2_NAMESPACE, componentName, gitHash, componentSpec, ::createResources)
+            val resource = kubeClient.createTh2CustomResource(
+                TH2_NAMESPACE,
+                componentName,
+                gitHash,
+                componentSpec,
+                ::createResources
+            )
             kubeClient.awaitResource<HelmRelease>(TH2_NAMESPACE, extractHashedName(resource))
 
             gitHash = RESOURCE_GIT_HASH_COUNTER.incrementAndGet().toString()
-            dictionarySpec = """
-                data: $DICTIONARY_CONTENT$DICTIONARY_CONTENT
-            """.trimIndent()
+            dictionarySpec = Th2DictionarySpec().apply {
+                data = "$DICTIONARY_CONTENT$DICTIONARY_CONTENT"
+            }
             val sourceHash = dictionarySpec.hashCode().toString()
             annotations = createAnnotations(gitHash, sourceHash)
 
@@ -552,13 +568,14 @@ class IntegrationTest {
                     }
                     get { data }.isA<Map<String, String>>().and {
                         hasSize(1)
-                        getValue("$dictionaryName$DICTIONARY_SUFFIX") isEqualTo "$DICTIONARY_CONTENT$DICTIONARY_CONTENT"
+                        getValue("$dictionaryName$DICTIONARY_SUFFIX") isEqualTo dictionarySpec.data
                     }
                 }
             }
 
             kubeClient.awaitResource<HelmRelease>(TH2_NAMESPACE, extractHashedName(resource)).assertMinCfg(
-                componentName, runAsJob,
+                componentName,
+                runAsJob,
                 config = mapOf("dictionary" to "$dictionaryName${DICTIONARY_SUFFIX}"),
                 dictionaries = listOf(
                     mapOf("checksum" to sourceHash, "name" to "$dictionaryName${DICTIONARY_SUFFIX}")
@@ -661,9 +678,13 @@ class IntegrationTest {
             "th2-core-component,th2-dictionary",
             "th2-core-component,th2-dictionary-more-than-$NAME_LENGTH_LIMIT-characters",
             "th2-core-component-more-than-$NAME_LENGTH_LIMIT-characters,th2-dictionary",
-            "th2-core-component-more-than-$NAME_LENGTH_LIMIT-characters,th2-dictionary-more-than-$NAME_LENGTH_LIMIT-characters",
+            "th2-core-component-more-than-$NAME_LENGTH_LIMIT-characters," +
+                "th2-dictionary-more-than-$NAME_LENGTH_LIMIT-characters",
         )
-        override fun `dictionary link`(componentName: String, dictionaryName: String) = dictionaryLinkTest(componentName, dictionaryName)
+        override fun `dictionary link`(componentName: String, dictionaryName: String) = dictionaryLinkTest(
+            componentName,
+            dictionaryName
+        )
 
         @Timeout(30_000)
         @ParameterizedTest
@@ -671,10 +692,16 @@ class IntegrationTest {
             "th2-core-component,th2-dictionary",
             "th2-core-component,th2-dictionary-more-than-$NAME_LENGTH_LIMIT-characters",
             "th2-core-component-more-than-$NAME_LENGTH_LIMIT-characters,th2-dictionary",
-            "th2-core-component-more-than-$NAME_LENGTH_LIMIT-characters,th2-dictionary-more-than-$NAME_LENGTH_LIMIT-characters",
+            "th2-core-component-more-than-$NAME_LENGTH_LIMIT-characters," +
+                "th2-dictionary-more-than-$NAME_LENGTH_LIMIT-characters",
         )
-        override fun `modify linked dictionary`(componentName: String, dictionaryName: String) = modifyLinkedDictionaryTest(componentName, dictionaryName)
-
+        override fun `modify linked dictionary`(
+            componentName: String,
+            dictionaryName: String
+        ) = modifyLinkedDictionaryTest(
+            componentName,
+            dictionaryName
+        )
     }
 
     @Nested
@@ -729,9 +756,13 @@ class IntegrationTest {
             "th2-component,th2-dictionary",
             "th2-component,th2-dictionary-more-than-$NAME_LENGTH_LIMIT-characters",
             "th2-component-more-than-$NAME_LENGTH_LIMIT-characters,th2-dictionary",
-            "th2-component-more-than-$NAME_LENGTH_LIMIT-characters,th2-dictionary-more-than-$NAME_LENGTH_LIMIT-characters",
+            "th2-component-more-than-$NAME_LENGTH_LIMIT-characters," +
+                "th2-dictionary-more-than-$NAME_LENGTH_LIMIT-characters",
         )
-        override fun `dictionary link`(componentName: String, dictionaryName: String) = dictionaryLinkTest(componentName, dictionaryName)
+        override fun `dictionary link`(componentName: String, dictionaryName: String) = dictionaryLinkTest(
+            componentName,
+            dictionaryName
+        )
 
         @Timeout(30_000)
         @ParameterizedTest
@@ -739,9 +770,16 @@ class IntegrationTest {
             "th2-component,th2-dictionary",
             "th2-component,th2-dictionary-more-than-$NAME_LENGTH_LIMIT-characters",
             "th2-component-more-than-$NAME_LENGTH_LIMIT-characters,th2-dictionary",
-            "th2-component-more-than-$NAME_LENGTH_LIMIT-characters,th2-dictionary-more-than-$NAME_LENGTH_LIMIT-characters",
+            "th2-component-more-than-$NAME_LENGTH_LIMIT-characters," +
+                "th2-dictionary-more-than-$NAME_LENGTH_LIMIT-characters",
         )
-        override fun `modify linked dictionary`(componentName: String, dictionaryName: String) = modifyLinkedDictionaryTest(componentName, dictionaryName)
+        override fun `modify linked dictionary`(
+            componentName: String,
+            dictionaryName: String
+        ) = modifyLinkedDictionaryTest(
+            componentName,
+            dictionaryName
+        )
     }
 
     @Nested
@@ -798,7 +836,10 @@ class IntegrationTest {
             "th2-job-more-than-$NAME_LENGTH_LIMIT-characters,th2-dictionary",
             "th2-job-more-than-$NAME_LENGTH_LIMIT-characters,th2-dictionary-more-than-$NAME_LENGTH_LIMIT-characters",
         )
-        override fun `dictionary link`(componentName: String, dictionaryName: String) = dictionaryLinkTest(componentName, dictionaryName)
+        override fun `dictionary link`(componentName: String, dictionaryName: String) = dictionaryLinkTest(
+            componentName,
+            dictionaryName
+        )
 
         @Timeout(30_000)
         @ParameterizedTest
@@ -808,20 +849,26 @@ class IntegrationTest {
             "th2-job-more-than-$NAME_LENGTH_LIMIT-characters,th2-dictionary",
             "th2-job-more-than-$NAME_LENGTH_LIMIT-characters,th2-dictionary-more-than-$NAME_LENGTH_LIMIT-characters",
         )
-        override fun `modify linked dictionary`(componentName: String, dictionaryName: String) = modifyLinkedDictionaryTest(componentName, dictionaryName)
+        override fun `modify linked dictionary`(
+            componentName: String,
+            dictionaryName: String
+        ) = modifyLinkedDictionaryTest(
+            componentName,
+            dictionaryName
+        )
     }
 
     @Nested
     inner class Dictionary {
 
-        @Test
         @Timeout(30_000)
-        fun `add dictionary (short name)`() {
+        @ParameterizedTest
+        @ValueSource(strings = ["th2-dictionary", "th2-dictionary-more-than-$NAME_LENGTH_LIMIT-characters"])
+        fun `add dictionary`(name: String) {
             val gitHash = RESOURCE_GIT_HASH_COUNTER.incrementAndGet().toString()
-            val name = "th2-dictionary"
-            val spec = """
-                data: $DICTIONARY_CONTENT
-            """.trimIndent()
+            val spec = Th2DictionarySpec().apply {
+                data = DICTIONARY_CONTENT
+            }
 
             val annotations = createAnnotations(gitHash, spec.hashCode().toString())
             kubeClient.createTh2Dictionary(
@@ -837,7 +884,7 @@ class IntegrationTest {
                     }
                     get { data }.isA<Map<String, String>>().and {
                         hasSize(1)
-                        getValue("$name$DICTIONARY_SUFFIX") isEqualTo DICTIONARY_CONTENT
+                        getValue("$name$DICTIONARY_SUFFIX") isEqualTo spec.data
                     }
                 }
             }

@@ -187,12 +187,12 @@ fun KubernetesClient.createTh2Dictionary(
     namespace: String,
     name: String,
     annotations: Map<String, String>,
-    spec: String,
+    spec: Th2DictionarySpec,
 ) {
     resource(
         Th2Dictionary().apply {
             this.metadata = createMeta(name, namespace, annotations)
-            this.spec = YAML_MAPPER.readValue(spec, Th2DictionarySpec::class.java)
+            this.spec = spec
         }
     ).create()
 }
@@ -201,11 +201,11 @@ fun KubernetesClient.modifyTh2Dictionary(
     namespace: String,
     name: String,
     annotations: Map<String, String>,
-    spec: String,
+    spec: Th2DictionarySpec,
 ): Th2Dictionary = resources(Th2Dictionary::class.java).inNamespace(namespace).withName(name).get().apply {
     metadata.annotations = annotations
     metadata.generation += 1
-    this.spec = YAML_MAPPER.readValue(spec, Th2DictionarySpec::class.java)
+    this.spec = spec
 }.also {
     resource(it).update()
 }

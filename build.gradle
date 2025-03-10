@@ -10,10 +10,6 @@ plugins {
 group = 'com.exactpro.th2'
 version = release_version
 
-kotlin {
-    jvmToolchain(11)
-}
-
 repositories {
     mavenCentral()
 }
