@@ -870,7 +870,7 @@ class IntegrationTest {
                 data = DICTIONARY_CONTENT
             }
 
-            val annotations = createAnnotations(gitHash, spec.hashCode().toString())
+            val annotations = createAnnotations(gitHash, spec.data.hashCode().toString())
             kubeClient.createTh2Dictionary(
                 TH2_NAMESPACE,
                 name,
