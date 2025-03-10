@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2024 Exactpro (Exactpro Systems Limited)
+ * Copyright 2020-2025 Exactpro (Exactpro Systems Limited)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -33,7 +33,6 @@ import com.exactpro.th2.infraoperator.spec.strategy.linkresolver.mq.DeclareQueue
 import com.exactpro.th2.infraoperator.spec.strategy.linkresolver.mq.RabbitMQContext;
 import com.exactpro.th2.infraoperator.util.CustomResourceUtils;
 import com.exactpro.th2.infraoperator.util.JsonUtils;
-
 import com.fasterxml.jackson.core.JsonProcessingException;
 import io.fabric8.kubernetes.api.model.KubernetesResourceList;
 import io.fabric8.kubernetes.client.KubernetesClient;
@@ -45,11 +44,18 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
-import java.util.*;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.Map;
+import java.util.Set;
 
 import static com.exactpro.th2.infraoperator.operator.manager.impl.ConfigMapEventHandler.mergeConfigs;
-import static com.exactpro.th2.infraoperator.util.ExtractUtils.*;
-import static com.exactpro.th2.infraoperator.util.HelmReleaseUtils.*;
+import static com.exactpro.th2.infraoperator.util.CustomResourceUtils.extractHashedName;
+import static com.exactpro.th2.infraoperator.util.ExtractUtils.extractName;
+import static com.exactpro.th2.infraoperator.util.ExtractUtils.extractNamespace;
+import static com.exactpro.th2.infraoperator.util.HelmReleaseUtils.generateDictionariesConfig;
+import static com.exactpro.th2.infraoperator.util.HelmReleaseUtils.generateSecretsConfig;
+import static com.exactpro.th2.infraoperator.util.HelmReleaseUtils.needsToBeDeleted;
 
 public abstract class HelmReleaseTh2Op<CR extends Th2CustomResource> extends AbstractTh2Operator<CR> {
 
@@ -266,8 +272,8 @@ public abstract class HelmReleaseTh2Op<CR extends Th2CustomResource> extends Abs
 
     private void mapDictionaries(CR resource, HelmRelease helmRelease) {
         OperatorState operatorState = OperatorState.INSTANCE;
-        String resName = resource.getMetadata().getName();
-        String resNamespace = resource.getMetadata().getNamespace();
+        String resName = extractHashedName(resource);
+        String resNamespace = extractNamespace(resource);
         Set<DictionaryEntity> dictionariesConfig = new HashSet<>();
         generateDictionariesConfig(resource.getSpec(), dictionariesConfig);
         helmRelease.addComponentValue(DICTIONARIES_ALIAS, dictionariesConfig);

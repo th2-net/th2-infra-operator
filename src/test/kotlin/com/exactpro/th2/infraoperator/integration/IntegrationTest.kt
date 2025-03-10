@@ -1,5 +1,5 @@
 /*
- * Copyright 2024-2024 Exactpro (Exactpro Systems Limited)
+ * Copyright 2024-2025 Exactpro (Exactpro Systems Limited)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -44,9 +44,11 @@ import com.exactpro.th2.infraoperator.operator.StoreHelmTh2Op.EVENT_STORAGE_BOX_
 import com.exactpro.th2.infraoperator.operator.StoreHelmTh2Op.EVENT_STORAGE_PIN_ALIAS
 import com.exactpro.th2.infraoperator.operator.StoreHelmTh2Op.MESSAGE_STORAGE_BOX_ALIAS
 import com.exactpro.th2.infraoperator.operator.manager.impl.Th2DictionaryEventHandler.DICTIONARY_SUFFIX
+import com.exactpro.th2.infraoperator.operator.manager.impl.Th2DictionaryEventHandler.INITIAL_CHECKSUM
 import com.exactpro.th2.infraoperator.spec.Th2CustomResource
 import com.exactpro.th2.infraoperator.spec.box.Th2Box
 import com.exactpro.th2.infraoperator.spec.corebox.Th2CoreBox
+import com.exactpro.th2.infraoperator.spec.dictionary.Th2DictionarySpec
 import com.exactpro.th2.infraoperator.spec.estore.Th2Estore
 import com.exactpro.th2.infraoperator.spec.helmrelease.HelmRelease
 import com.exactpro.th2.infraoperator.spec.helmrelease.HelmRelease.NAME_LENGTH_LIMIT
@@ -76,6 +78,7 @@ import org.junit.jupiter.api.Timeout
 import org.junit.jupiter.api.io.TempDir
 import org.junit.jupiter.params.ParameterizedTest
 import org.junit.jupiter.params.provider.Arguments
+import org.junit.jupiter.params.provider.CsvSource
 import org.junit.jupiter.params.provider.MethodSource
 import org.junit.jupiter.params.provider.ValueSource
 import org.testcontainers.containers.RabbitMQContainer
@@ -214,6 +217,7 @@ class IntegrationTest {
             subSpecType: String,
             subRunAsJob: Boolean
         )
+
         abstract fun `grpc link`(
             clientClass: Class<out Th2CustomResource>,
             clientConstructor: () -> Th2CustomResource,
@@ -221,13 +225,17 @@ class IntegrationTest {
             clientRunAsJob: Boolean
         )
 
+        abstract fun `dictionary link`(componentName: String, dictionaryName: String)
+        abstract fun `modify linked dictionary`(componentName: String, dictionaryName: String)
+
         protected fun addTest(name: String) {
             val gitHash = RESOURCE_GIT_HASH_COUNTER.incrementAndGet().toString()
-            val spec = """
+            val spec =
+                """
                 imageName: $IMAGE
                 imageVersion: $VERSION
                 type: $specType
-            """.trimIndent()
+                """.trimIndent()
 
             val resource = kubeClient.createTh2CustomResource(TH2_NAMESPACE, name, gitHash, spec, this::createResources)
             kubeClient.awaitPhase(TH2_NAMESPACE, name, SUCCEEDED, resourceClass)
@@ -247,12 +255,13 @@ class IntegrationTest {
 
         protected fun disableTest(name: String) {
             var gitHash = RESOURCE_GIT_HASH_COUNTER.incrementAndGet().toString()
-            var spec = """
+            var spec =
+                """
                 imageName: $IMAGE
                 imageVersion: $VERSION
                 type: $specType
                 disabled: false
-            """.trimIndent()
+                """.trimIndent()
 
             val resource = kubeClient.createTh2CustomResource(TH2_NAMESPACE, name, gitHash, spec, this::createResources)
             kubeClient.awaitPhase(TH2_NAMESPACE, name, SUCCEEDED, resourceClass)
@@ -270,12 +279,13 @@ class IntegrationTest {
             )
 
             gitHash = RESOURCE_GIT_HASH_COUNTER.incrementAndGet().toString()
-            spec = """
+            spec =
+                """
                 imageName: $IMAGE
                 imageVersion: $VERSION
                 type: $specType
                 disabled: true
-            """.trimIndent()
+                """.trimIndent()
 
             kubeClient.modifyTh2CustomResource(TH2_NAMESPACE, name, gitHash, spec, resourceClass)
             kubeClient.awaitPhase(TH2_NAMESPACE, name, DISABLED, resourceClass)
@@ -292,12 +302,13 @@ class IntegrationTest {
 
         protected fun enableTest(name: String) {
             var gitHash = RESOURCE_GIT_HASH_COUNTER.incrementAndGet().toString()
-            var spec = """
+            var spec =
+                """
                 imageName: $IMAGE
                 imageVersion: $VERSION
                 type: $specType
                 disabled: true
-            """.trimIndent()
+                """.trimIndent()
 
             kubeClient.createTh2CustomResource(TH2_NAMESPACE, name, gitHash, spec, this::createResources)
             kubeClient.awaitPhase(TH2_NAMESPACE, name, DISABLED, resourceClass)
@@ -309,12 +320,13 @@ class IntegrationTest {
             )
 
             gitHash = RESOURCE_GIT_HASH_COUNTER.incrementAndGet().toString()
-            spec = """
+            spec =
+                """
                 imageName: $IMAGE
                 imageVersion: $VERSION
                 type: $specType
                 disabled: false
-            """.trimIndent()
+                """.trimIndent()
 
             val resource = kubeClient.modifyTh2CustomResource(TH2_NAMESPACE, name, gitHash, spec, resourceClass)
             kubeClient.awaitPhase(TH2_NAMESPACE, name, SUCCEEDED, resourceClass)
@@ -341,8 +353,8 @@ class IntegrationTest {
             val gitHash = RESOURCE_GIT_HASH_COUNTER.incrementAndGet().toString()
             val pubName = "test-publisher"
             val subName = "test-subscriber"
-
-            val pubSpec = """
+            val pubSpec =
+                """
                 imageName: $IMAGE
                 imageVersion: $VERSION
                 type: $specType
@@ -351,9 +363,9 @@ class IntegrationTest {
                     publishers:
                     - name: $PUBLISH_PIN
                       attributes: [publish]
-            """.trimIndent()
-
-            val subSpec = """
+                """.trimIndent()
+            val subSpec =
+                """
                 imageName: $IMAGE
                 imageVersion: $VERSION
                 type: $subSpecType
@@ -365,17 +377,13 @@ class IntegrationTest {
                       linkTo:
                       - box: $pubName
                         pin: $PUBLISH_PIN
-            """.trimIndent()
-
+                """.trimIndent()
             kubeClient.createTh2CustomResource(TH2_NAMESPACE, pubName, gitHash, pubSpec, ::createResources)
             kubeClient.createTh2CustomResource(TH2_NAMESPACE, subName, gitHash, subSpec, subConstructor)
-
             kubeClient.awaitPhase(TH2_NAMESPACE, pubName, SUCCEEDED, resourceClass)
             kubeClient.awaitPhase(TH2_NAMESPACE, subName, SUCCEEDED, subClass)
-
             val queueName = formatQueue(TH2_NAMESPACE, subName, SUBSCRIBE_PIN)
             val routingKey = formatRoutingKey(TH2_NAMESPACE, pubName, PUBLISH_PIN)
-
             kubeClient.awaitResource<HelmRelease>(TH2_NAMESPACE, pubName).assertMinCfg(
                 pubName,
                 runAsJob,
@@ -386,7 +394,6 @@ class IntegrationTest {
                 subRunAsJob,
                 queues = createQueueCfg(SUBSCRIBE_PIN, listOf("subscribe"), routingKey = "", queueName = queueName)
             )
-
             rabbitMQClient.assertBindings(
                 queueName,
                 RABBIT_MQ_V_HOST,
@@ -413,7 +420,8 @@ class IntegrationTest {
             val serverName = "test-server"
             val clientName = "test-client"
 
-            val serverSpec = """
+            val serverSpec =
+                """
                 imageName: $IMAGE
                 imageVersion: $VERSION
                 type: $specType
@@ -422,9 +430,10 @@ class IntegrationTest {
                     server:
                     - name: $SERVER_PIN
                       serviceClasses: [$GRPC_SERVICE]
-            """.trimIndent()
+                """.trimIndent()
 
-            val clientSpec = """
+            val clientSpec =
+                """
                 imageName: $IMAGE
                 imageVersion: $VERSION
                 type: $clientSpecType
@@ -437,7 +446,7 @@ class IntegrationTest {
                       linkTo:
                       - box: $serverName
                         pin: $SERVER_PIN
-            """.trimIndent()
+                """.trimIndent()
 
             kubeClient.createTh2CustomResource(TH2_NAMESPACE, serverName, gitHash, serverSpec, ::createResources)
             kubeClient.createTh2CustomResource(TH2_NAMESPACE, clientName, gitHash, clientSpec, clientConstructor)
@@ -462,6 +471,121 @@ class IntegrationTest {
                 )
             )
         }
+
+        protected fun dictionaryLinkTest(componentName: String, dictionaryName: String) {
+            val gitHash = RESOURCE_GIT_HASH_COUNTER.incrementAndGet().toString()
+
+            val componentSpec =
+                """
+                imageName: $IMAGE
+                imageVersion: $VERSION
+                type: $specType
+                customConfig:
+                  dictionary: ${'$'}{dictionary_link:$dictionaryName}
+                """.trimIndent()
+
+            val dictionarySpec = Th2DictionarySpec().apply {
+                data = DICTIONARY_CONTENT
+            }
+            val annotations = createAnnotations(gitHash, dictionarySpec.data.hashCode().toString())
+
+            kubeClient.createTh2Dictionary(TH2_NAMESPACE, dictionaryName, annotations, dictionarySpec)
+            kubeClient.awaitResource<ConfigMap>(TH2_NAMESPACE, "$dictionaryName$DICTIONARY_SUFFIX").also { configMap ->
+                expectThat(configMap) {
+                    get { metadata }.and {
+                        get { this.annotations } isEqualTo annotations
+                    }
+                    get { data }.isA<Map<String, String>>().and {
+                        hasSize(1)
+                        getValue("$dictionaryName$DICTIONARY_SUFFIX") isEqualTo dictionarySpec.data
+                    }
+                }
+            }
+
+            val resource = kubeClient.createTh2CustomResource(
+                TH2_NAMESPACE,
+                componentName,
+                gitHash,
+                componentSpec,
+                ::createResources
+            )
+            kubeClient.awaitPhase(TH2_NAMESPACE, componentName, SUCCEEDED, resourceClass)
+            kubeClient.awaitResource<HelmRelease>(TH2_NAMESPACE, extractHashedName(resource)).assertMinCfg(
+                componentName,
+                runAsJob,
+                config = mapOf("dictionary" to "$dictionaryName${DICTIONARY_SUFFIX}"),
+                dictionaries = listOf(
+                    mapOf("checksum" to INITIAL_CHECKSUM, "name" to "$dictionaryName${DICTIONARY_SUFFIX}")
+                )
+            )
+            rabbitMQClient.assertBindings(
+                createEstoreQueue(TH2_NAMESPACE),
+                RABBIT_MQ_V_HOST,
+                setOf(
+                    formatQueue(TH2_NAMESPACE, EVENT_STORAGE_BOX_ALIAS, EVENT_STORAGE_PIN_ALIAS),
+                    formatRoutingKey(TH2_NAMESPACE, componentName, EVENT_STORAGE_PIN_ALIAS),
+                )
+            )
+        }
+
+        protected fun modifyLinkedDictionaryTest(componentName: String, dictionaryName: String) {
+            var gitHash = RESOURCE_GIT_HASH_COUNTER.incrementAndGet().toString()
+
+            val componentSpec =
+                """
+                imageName: $IMAGE
+                imageVersion: $VERSION
+                type: $specType
+                customConfig:
+                  dictionary: ${'$'}{dictionary_link:$dictionaryName}
+                """.trimIndent()
+
+            var dictionarySpec = Th2DictionarySpec().apply {
+                data = DICTIONARY_CONTENT
+            }
+            var annotations = createAnnotations(gitHash, dictionarySpec.data.hashCode().toString())
+
+            kubeClient.createTh2Dictionary(TH2_NAMESPACE, dictionaryName, annotations, dictionarySpec)
+            kubeClient.awaitResource<ConfigMap>(TH2_NAMESPACE, "$dictionaryName$DICTIONARY_SUFFIX")
+
+            val resource = kubeClient.createTh2CustomResource(
+                TH2_NAMESPACE,
+                componentName,
+                gitHash,
+                componentSpec,
+                ::createResources
+            )
+            kubeClient.awaitResource<HelmRelease>(TH2_NAMESPACE, extractHashedName(resource))
+
+            gitHash = RESOURCE_GIT_HASH_COUNTER.incrementAndGet().toString()
+            dictionarySpec = Th2DictionarySpec().apply {
+                data = "$DICTIONARY_CONTENT$DICTIONARY_CONTENT"
+            }
+            val sourceHash = dictionarySpec.data.hashCode().toString()
+            annotations = createAnnotations(gitHash, sourceHash)
+
+            kubeClient.modifyTh2Dictionary(TH2_NAMESPACE, dictionaryName, annotations, dictionarySpec)
+            kubeClient.awaitResource<ConfigMap>(TH2_NAMESPACE, "$dictionaryName$DICTIONARY_SUFFIX").also { configMap ->
+                expectThat(configMap) {
+                    get { metadata }.and {
+                        get { this.annotations } isEqualTo annotations
+                    }
+                    get { data }.isA<Map<String, String>>().and {
+                        hasSize(1)
+                        getValue("$dictionaryName$DICTIONARY_SUFFIX") isEqualTo dictionarySpec.data
+                    }
+                }
+            }
+
+            kubeClient.awaitResource<HelmRelease>(TH2_NAMESPACE, extractHashedName(resource)).assertMinCfg(
+                componentName,
+                runAsJob,
+                config = mapOf("dictionary" to "$dictionaryName${DICTIONARY_SUFFIX}"),
+                dictionaries = listOf(
+                    mapOf("checksum" to sourceHash, "name" to "$dictionaryName${DICTIONARY_SUFFIX}")
+                )
+            )
+        }
     }
 
     @Nested
@@ -471,10 +595,11 @@ class IntegrationTest {
         @Timeout(30_000)
         override fun `add component`() {
             val gitHash = RESOURCE_GIT_HASH_COUNTER.incrementAndGet().toString()
-            val spec = """
+            val spec =
+                """
                 imageName: ghcr.io/th2-net/th2-mstore
                 imageVersion: 0.0.0
-            """.trimIndent()
+                """.trimIndent()
             kubeClient.createTh2CustomResource(TH2_NAMESPACE, MESSAGE_STORAGE_BOX_ALIAS, gitHash, spec, ::Th2Mstore)
             kubeClient.awaitPhase<Th2Mstore>(TH2_NAMESPACE, MESSAGE_STORAGE_BOX_ALIAS, SUCCEEDED)
             kubeClient.awaitResource<HelmRelease>(TH2_NAMESPACE, MESSAGE_STORAGE_BOX_ALIAS)
@@ -489,10 +614,11 @@ class IntegrationTest {
         @Timeout(30_000)
         override fun `add component`() {
             val gitHash = RESOURCE_GIT_HASH_COUNTER.incrementAndGet().toString()
-            val spec = """
+            val spec =
+                """
                 imageName: ghcr.io/th2-net/th2-estore
                 imageVersion: 0.0.0
-            """.trimIndent()
+                """.trimIndent()
             kubeClient.createTh2CustomResource(TH2_NAMESPACE, EVENT_STORAGE_BOX_ALIAS, gitHash, spec, ::Th2Estore)
             kubeClient.awaitPhase<Th2Estore>(TH2_NAMESPACE, EVENT_STORAGE_BOX_ALIAS, SUCCEEDED)
             kubeClient.awaitResource<HelmRelease>(TH2_NAMESPACE, EVENT_STORAGE_BOX_ALIAS)
@@ -551,6 +677,37 @@ class IntegrationTest {
             clientSpecType: String,
             clientRunAsJob: Boolean
         ) = grpcLinkTest(clientClass, clientConstructor, clientSpecType, clientRunAsJob)
+
+        @Timeout(30_000)
+        @ParameterizedTest
+        @CsvSource(
+            "th2-core-component,th2-dictionary",
+            "th2-core-component,th2-dictionary-more-than-$NAME_LENGTH_LIMIT-characters",
+            "th2-core-component-more-than-$NAME_LENGTH_LIMIT-characters,th2-dictionary",
+            "th2-core-component-more-than-$NAME_LENGTH_LIMIT-characters," +
+                "th2-dictionary-more-than-$NAME_LENGTH_LIMIT-characters",
+        )
+        override fun `dictionary link`(componentName: String, dictionaryName: String) = dictionaryLinkTest(
+            componentName,
+            dictionaryName
+        )
+
+        @Timeout(30_000)
+        @ParameterizedTest
+        @CsvSource(
+            "th2-core-component,th2-dictionary",
+            "th2-core-component,th2-dictionary-more-than-$NAME_LENGTH_LIMIT-characters",
+            "th2-core-component-more-than-$NAME_LENGTH_LIMIT-characters,th2-dictionary",
+            "th2-core-component-more-than-$NAME_LENGTH_LIMIT-characters," +
+                "th2-dictionary-more-than-$NAME_LENGTH_LIMIT-characters",
+        )
+        override fun `modify linked dictionary`(
+            componentName: String,
+            dictionaryName: String
+        ) = modifyLinkedDictionaryTest(
+            componentName,
+            dictionaryName
+        )
     }
 
     @Nested
@@ -598,6 +755,37 @@ class IntegrationTest {
             clientSpecType: String,
             clientRunAsJob: Boolean
         ) = grpcLinkTest(clientClass, clientConstructor, clientSpecType, clientRunAsJob)
+
+        @Timeout(30_000)
+        @ParameterizedTest
+        @CsvSource(
+            "th2-component,th2-dictionary",
+            "th2-component,th2-dictionary-more-than-$NAME_LENGTH_LIMIT-characters",
+            "th2-component-more-than-$NAME_LENGTH_LIMIT-characters,th2-dictionary",
+            "th2-component-more-than-$NAME_LENGTH_LIMIT-characters," +
+                "th2-dictionary-more-than-$NAME_LENGTH_LIMIT-characters",
+        )
+        override fun `dictionary link`(componentName: String, dictionaryName: String) = dictionaryLinkTest(
+            componentName,
+            dictionaryName
+        )
+
+        @Timeout(30_000)
+        @ParameterizedTest
+        @CsvSource(
+            "th2-component,th2-dictionary",
+            "th2-component,th2-dictionary-more-than-$NAME_LENGTH_LIMIT-characters",
+            "th2-component-more-than-$NAME_LENGTH_LIMIT-characters,th2-dictionary",
+            "th2-component-more-than-$NAME_LENGTH_LIMIT-characters," +
+                "th2-dictionary-more-than-$NAME_LENGTH_LIMIT-characters",
+        )
+        override fun `modify linked dictionary`(
+            componentName: String,
+            dictionaryName: String
+        ) = modifyLinkedDictionaryTest(
+            componentName,
+            dictionaryName
+        )
     }
 
     @Nested
@@ -645,21 +833,50 @@ class IntegrationTest {
             clientSpecType: String,
             clientRunAsJob: Boolean
         ) = grpcLinkTest(clientClass, clientConstructor, clientSpecType, clientRunAsJob)
+
+        @Timeout(30_000)
+        @ParameterizedTest
+        @CsvSource(
+            "th2-job,th2-dictionary",
+            "th2-job,th2-dictionary-more-than-$NAME_LENGTH_LIMIT-characters",
+            "th2-job-more-than-$NAME_LENGTH_LIMIT-characters,th2-dictionary",
+            "th2-job-more-than-$NAME_LENGTH_LIMIT-characters,th2-dictionary-more-than-$NAME_LENGTH_LIMIT-characters",
+        )
+        override fun `dictionary link`(componentName: String, dictionaryName: String) = dictionaryLinkTest(
+            componentName,
+            dictionaryName
+        )
+
+        @Timeout(30_000)
+        @ParameterizedTest
+        @CsvSource(
+            "th2-job,th2-dictionary",
+            "th2-job,th2-dictionary-more-than-$NAME_LENGTH_LIMIT-characters",
+            "th2-job-more-than-$NAME_LENGTH_LIMIT-characters,th2-dictionary",
+            "th2-job-more-than-$NAME_LENGTH_LIMIT-characters,th2-dictionary-more-than-$NAME_LENGTH_LIMIT-characters",
+        )
+        override fun `modify linked dictionary`(
+            componentName: String,
+            dictionaryName: String
+        ) = modifyLinkedDictionaryTest(
+            componentName,
+            dictionaryName
+        )
     }
 
     @Nested
     inner class Dictionary {
 
-        @Test
         @Timeout(30_000)
-        fun `add dictionary (short name)`() {
+        @ParameterizedTest
+        @ValueSource(strings = ["th2-dictionary", "th2-dictionary-more-than-$NAME_LENGTH_LIMIT-characters"])
+        fun `add dictionary`(name: String) {
             val gitHash = RESOURCE_GIT_HASH_COUNTER.incrementAndGet().toString()
-            val name = "th2-dictionary"
-            val spec = """
-                data: $DICTIONARY_CONTENT
-            """.trimIndent()
+            val spec = Th2DictionarySpec().apply {
+                data = DICTIONARY_CONTENT
+            }
 
-            val annotations = createAnnotations(gitHash, spec.hashCode().toString())
+            val annotations = createAnnotations(gitHash, spec.data.hashCode().toString())
             kubeClient.createTh2Dictionary(
                 TH2_NAMESPACE,
                 name,
@@ -673,7 +890,7 @@ class IntegrationTest {
                     }
                     get { data }.isA<Map<String, String>>().and {
                         hasSize(1)
-                        getValue("$name$DICTIONARY_SUFFIX") isEqualTo DICTIONARY_CONTENT
+                        getValue("$name$DICTIONARY_SUFFIX") isEqualTo spec.data
                     }
                 }
             }
@@ -747,6 +964,8 @@ class IntegrationTest {
             runAsJob: Boolean,
             queues: Map<String, Map<String, Any>> = emptyMap(),
             services: Map<String, Map<String, Any>> = emptyMap(),
+            config: Map<String, Any?> = emptyMap(),
+            dictionaries: List<Map<String, String>> = emptyList(),
         ) {
             expectThat(componentValuesSection) {
                 getValue(BOOK_CONFIG_ALIAS).isA<Map<String, Any?>>().hasSize(1).and {
@@ -756,8 +975,8 @@ class IntegrationTest {
                     getValue(CHECKSUM_ALIAS).isNotNull()
                     getValue(CONFIG_ALIAS).isNull() // FIXME: shouldn't be null
                 }
-                getValue(CUSTOM_CONFIG_ALIAS).isA<Map<String, Any?>>().isEmpty()
-                getValue(DICTIONARIES_ALIAS).isA<List<Any?>>().isEmpty() // FIXME
+                getValue(CUSTOM_CONFIG_ALIAS).isA<Map<String, Any?>>() isEqualTo config
+                getValue(DICTIONARIES_ALIAS).isA<List<Map<String, String>>>() isEqualTo dictionaries
                 getValue(PULL_SECRETS_ALIAS).isA<List<Any?>>().isEmpty() // FIXME
                 getValue(EXTENDED_SETTINGS_ALIAS).isA<Map<String, Any?>>().isEmpty()
                 verifyGrpcCfg(services)

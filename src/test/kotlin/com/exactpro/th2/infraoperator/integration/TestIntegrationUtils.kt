@@ -1,5 +1,5 @@
 /*
- * Copyright 2024-2024 Exactpro (Exactpro Systems Limited)
+ * Copyright 2024-2025 Exactpro (Exactpro Systems Limited)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -88,7 +88,7 @@ fun KubernetesClient.createRabbitMQSecret(
     createSecret(
         namespace,
         "rabbitmq",
-        createAnnotations(gitHash, data),
+        createAnnotations(gitHash, data.hashCode().toString()),
         data,
     )
 }
@@ -102,7 +102,7 @@ fun KubernetesClient.createRabbitMQAppConfigCfgMap(
     createConfigMap(
         namespace,
         OperatorConfig.DEFAULT_RABBITMQ_CONFIGMAP_NAME,
-        createAnnotations(gitHash, content),
+        createAnnotations(gitHash, content.hashCode().toString()),
         mapOf(RabbitMQConfig.CONFIG_MAP_RABBITMQ_PROP_NAME to content),
     )
 }
@@ -115,7 +115,7 @@ fun KubernetesClient.createBookConfigCfgMap(
     createConfigMap(
         namespace,
         BOOK_CONFIG_CM_NAME,
-        createAnnotations(gitHash, book),
+        createAnnotations(gitHash, book.hashCode().toString()),
         mapOf(DEFAULT_BOOK to book),
     )
 }
@@ -128,7 +128,7 @@ fun KubernetesClient.createLoggingCfgMap(
     createConfigMap(
         namespace,
         ConfigMapEventHandler.LOGGING_CM_NAME,
-        createAnnotations(gitHash, data),
+        createAnnotations(gitHash, data.hashCode().toString()),
         data,
     )
 }
@@ -141,7 +141,7 @@ fun KubernetesClient.createMQRouterCfgMap(
     createConfigMap(
         namespace,
         ConfigMapEventHandler.MQ_ROUTER_CM_NAME,
-        createAnnotations(gitHash, data),
+        createAnnotations(gitHash, data.hashCode().toString()),
         data,
     )
 }
@@ -154,7 +154,7 @@ fun KubernetesClient.createGrpcRouterCfgMap(
     createConfigMap(
         namespace,
         ConfigMapEventHandler.GRPC_ROUTER_CM_NAME,
-        createAnnotations(gitHash, data),
+        createAnnotations(gitHash, data.hashCode().toString()),
         data,
     )
 }
@@ -167,7 +167,7 @@ fun KubernetesClient.createCradleManagerCfgMap(
     createConfigMap(
         namespace,
         ConfigMapEventHandler.CRADLE_MANAGER_CM_NAME,
-        createAnnotations(gitHash, data),
+        createAnnotations(gitHash, data.hashCode().toString()),
         data,
     )
 }

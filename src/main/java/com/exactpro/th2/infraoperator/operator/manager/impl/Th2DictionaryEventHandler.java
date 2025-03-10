@@ -205,7 +205,7 @@ public class Th2DictionaryEventHandler implements Watcher<Th2Dictionary> {
 
             var hr = OperatorState.INSTANCE.getHelmReleaseFromCache(linkedResourceName, namespace);
             if (hr == null) {
-                LOGGER.info("HelmRelease of '{}.{}' resource not found in cache", namespace, linkedResourceName);
+                LOGGER.error("HelmRelease of '{}.{}' resource not found in cache", namespace, linkedResourceName);
                 continue;
             } else {
                 LOGGER.debug("Found HelmRelease \"{}\"", CustomResourceUtils.annotationFor(hr));

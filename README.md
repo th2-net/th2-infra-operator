@@ -144,6 +144,11 @@ openshift:
 
 ## Release notes
 
+### 4.8.0
++ Fixed the problem infra-operator doesn't restart component with name longer than 26 character when related dictionary is updated
++ Updated:
+  + th2 gradle plugin: `0.2.3` (th2 bom: `4.11.0`)
+
 ### 4.7.1
 + Fixed incorrect java entrypoint problem
 
