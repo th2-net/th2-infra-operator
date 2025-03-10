@@ -230,11 +230,12 @@ class IntegrationTest {
 
         protected fun addTest(name: String) {
             val gitHash = RESOURCE_GIT_HASH_COUNTER.incrementAndGet().toString()
-            val spec = """
+            val spec =
+                """
                 imageName: $IMAGE
                 imageVersion: $VERSION
                 type: $specType
-            """.trimIndent()
+                """.trimIndent()
 
             val resource = kubeClient.createTh2CustomResource(TH2_NAMESPACE, name, gitHash, spec, this::createResources)
             kubeClient.awaitPhase(TH2_NAMESPACE, name, SUCCEEDED, resourceClass)
@@ -254,12 +255,13 @@ class IntegrationTest {
 
         protected fun disableTest(name: String) {
             var gitHash = RESOURCE_GIT_HASH_COUNTER.incrementAndGet().toString()
-            var spec = """
+            var spec =
+                """
                 imageName: $IMAGE
                 imageVersion: $VERSION
                 type: $specType
                 disabled: false
-            """.trimIndent()
+                """.trimIndent()
 
             val resource = kubeClient.createTh2CustomResource(TH2_NAMESPACE, name, gitHash, spec, this::createResources)
             kubeClient.awaitPhase(TH2_NAMESPACE, name, SUCCEEDED, resourceClass)
@@ -277,12 +279,13 @@ class IntegrationTest {
             )
 
             gitHash = RESOURCE_GIT_HASH_COUNTER.incrementAndGet().toString()
-            spec = """
+            spec =
+                """
                 imageName: $IMAGE
                 imageVersion: $VERSION
                 type: $specType
                 disabled: true
-            """.trimIndent()
+                """.trimIndent()
 
             kubeClient.modifyTh2CustomResource(TH2_NAMESPACE, name, gitHash, spec, resourceClass)
             kubeClient.awaitPhase(TH2_NAMESPACE, name, DISABLED, resourceClass)
@@ -299,12 +302,13 @@ class IntegrationTest {
 
         protected fun enableTest(name: String) {
             var gitHash = RESOURCE_GIT_HASH_COUNTER.incrementAndGet().toString()
-            var spec = """
+            var spec =
+                """
                 imageName: $IMAGE
                 imageVersion: $VERSION
                 type: $specType
                 disabled: true
-            """.trimIndent()
+                """.trimIndent()
 
             kubeClient.createTh2CustomResource(TH2_NAMESPACE, name, gitHash, spec, this::createResources)
             kubeClient.awaitPhase(TH2_NAMESPACE, name, DISABLED, resourceClass)
@@ -316,12 +320,13 @@ class IntegrationTest {
             )
 
             gitHash = RESOURCE_GIT_HASH_COUNTER.incrementAndGet().toString()
-            spec = """
+            spec =
+                """
                 imageName: $IMAGE
                 imageVersion: $VERSION
                 type: $specType
                 disabled: false
-            """.trimIndent()
+                """.trimIndent()
 
             val resource = kubeClient.modifyTh2CustomResource(TH2_NAMESPACE, name, gitHash, spec, resourceClass)
             kubeClient.awaitPhase(TH2_NAMESPACE, name, SUCCEEDED, resourceClass)
@@ -348,8 +353,8 @@ class IntegrationTest {
             val gitHash = RESOURCE_GIT_HASH_COUNTER.incrementAndGet().toString()
             val pubName = "test-publisher"
             val subName = "test-subscriber"
-
-            val pubSpec = """
+            val pubSpec =
+                """
                 imageName: $IMAGE
                 imageVersion: $VERSION
                 type: $specType
@@ -358,9 +363,9 @@ class IntegrationTest {
                     publishers:
                     - name: $PUBLISH_PIN
                       attributes: [publish]
-            """.trimIndent()
-
-            val subSpec = """
+                """.trimIndent()
+            val subSpec =
+                """
                 imageName: $IMAGE
                 imageVersion: $VERSION
                 type: $subSpecType
@@ -372,17 +377,13 @@ class IntegrationTest {
                       linkTo:
                       - box: $pubName
                         pin: $PUBLISH_PIN
-            """.trimIndent()
-
+                """.trimIndent()
             kubeClient.createTh2CustomResource(TH2_NAMESPACE, pubName, gitHash, pubSpec, ::createResources)
             kubeClient.createTh2CustomResource(TH2_NAMESPACE, subName, gitHash, subSpec, subConstructor)
-
             kubeClient.awaitPhase(TH2_NAMESPACE, pubName, SUCCEEDED, resourceClass)
             kubeClient.awaitPhase(TH2_NAMESPACE, subName, SUCCEEDED, subClass)
-
             val queueName = formatQueue(TH2_NAMESPACE, subName, SUBSCRIBE_PIN)
             val routingKey = formatRoutingKey(TH2_NAMESPACE, pubName, PUBLISH_PIN)
-
             kubeClient.awaitResource<HelmRelease>(TH2_NAMESPACE, pubName).assertMinCfg(
                 pubName,
                 runAsJob,
@@ -393,7 +394,6 @@ class IntegrationTest {
                 subRunAsJob,
                 queues = createQueueCfg(SUBSCRIBE_PIN, listOf("subscribe"), routingKey = "", queueName = queueName)
             )
-
             rabbitMQClient.assertBindings(
                 queueName,
                 RABBIT_MQ_V_HOST,
@@ -420,7 +420,8 @@ class IntegrationTest {
             val serverName = "test-server"
             val clientName = "test-client"
 
-            val serverSpec = """
+            val serverSpec =
+                """
                 imageName: $IMAGE
                 imageVersion: $VERSION
                 type: $specType
@@ -429,9 +430,10 @@ class IntegrationTest {
                     server:
                     - name: $SERVER_PIN
                       serviceClasses: [$GRPC_SERVICE]
-            """.trimIndent()
+                """.trimIndent()
 
-            val clientSpec = """
+            val clientSpec =
+                """
                 imageName: $IMAGE
                 imageVersion: $VERSION
                 type: $clientSpecType
@@ -444,7 +446,7 @@ class IntegrationTest {
                       linkTo:
                       - box: $serverName
                         pin: $SERVER_PIN
-            """.trimIndent()
+                """.trimIndent()
 
             kubeClient.createTh2CustomResource(TH2_NAMESPACE, serverName, gitHash, serverSpec, ::createResources)
             kubeClient.createTh2CustomResource(TH2_NAMESPACE, clientName, gitHash, clientSpec, clientConstructor)
@@ -473,13 +475,14 @@ class IntegrationTest {
         protected fun dictionaryLinkTest(componentName: String, dictionaryName: String) {
             val gitHash = RESOURCE_GIT_HASH_COUNTER.incrementAndGet().toString()
 
-            val componentSpec = """
+            val componentSpec =
+                """
                 imageName: $IMAGE
                 imageVersion: $VERSION
                 type: $specType
                 customConfig:
                   dictionary: ${'$'}{dictionary_link:$dictionaryName}
-            """.trimIndent()
+                """.trimIndent()
 
             val dictionarySpec = Th2DictionarySpec().apply {
                 data = DICTIONARY_CONTENT
@@ -528,13 +531,14 @@ class IntegrationTest {
         protected fun modifyLinkedDictionaryTest(componentName: String, dictionaryName: String) {
             var gitHash = RESOURCE_GIT_HASH_COUNTER.incrementAndGet().toString()
 
-            val componentSpec = """
+            val componentSpec =
+                """
                 imageName: $IMAGE
                 imageVersion: $VERSION
                 type: $specType
                 customConfig:
                   dictionary: ${'$'}{dictionary_link:$dictionaryName}
-            """.trimIndent()
+                """.trimIndent()
 
             var dictionarySpec = Th2DictionarySpec().apply {
                 data = DICTIONARY_CONTENT
@@ -591,10 +595,11 @@ class IntegrationTest {
         @Timeout(30_000)
         override fun `add component`() {
             val gitHash = RESOURCE_GIT_HASH_COUNTER.incrementAndGet().toString()
-            val spec = """
+            val spec =
+                """
                 imageName: ghcr.io/th2-net/th2-mstore
                 imageVersion: 0.0.0
-            """.trimIndent()
+                """.trimIndent()
             kubeClient.createTh2CustomResource(TH2_NAMESPACE, MESSAGE_STORAGE_BOX_ALIAS, gitHash, spec, ::Th2Mstore)
             kubeClient.awaitPhase<Th2Mstore>(TH2_NAMESPACE, MESSAGE_STORAGE_BOX_ALIAS, SUCCEEDED)
             kubeClient.awaitResource<HelmRelease>(TH2_NAMESPACE, MESSAGE_STORAGE_BOX_ALIAS)
@@ -609,10 +614,11 @@ class IntegrationTest {
         @Timeout(30_000)
         override fun `add component`() {
             val gitHash = RESOURCE_GIT_HASH_COUNTER.incrementAndGet().toString()
-            val spec = """
+            val spec =
+                """
                 imageName: ghcr.io/th2-net/th2-estore
                 imageVersion: 0.0.0
-            """.trimIndent()
+                """.trimIndent()
             kubeClient.createTh2CustomResource(TH2_NAMESPACE, EVENT_STORAGE_BOX_ALIAS, gitHash, spec, ::Th2Estore)
             kubeClient.awaitPhase<Th2Estore>(TH2_NAMESPACE, EVENT_STORAGE_BOX_ALIAS, SUCCEEDED)
             kubeClient.awaitResource<HelmRelease>(TH2_NAMESPACE, EVENT_STORAGE_BOX_ALIAS)
