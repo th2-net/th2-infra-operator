@@ -484,7 +484,7 @@ class IntegrationTest {
             val dictionarySpec = Th2DictionarySpec().apply {
                 data = DICTIONARY_CONTENT
             }
-            val annotations = createAnnotations(gitHash, dictionarySpec.hashCode().toString())
+            val annotations = createAnnotations(gitHash, dictionarySpec.data.hashCode().toString())
 
             kubeClient.createTh2Dictionary(TH2_NAMESPACE, dictionaryName, annotations, dictionarySpec)
             kubeClient.awaitResource<ConfigMap>(TH2_NAMESPACE, "$dictionaryName$DICTIONARY_SUFFIX").also { configMap ->
@@ -539,7 +539,7 @@ class IntegrationTest {
             var dictionarySpec = Th2DictionarySpec().apply {
                 data = DICTIONARY_CONTENT
             }
-            var annotations = createAnnotations(gitHash, dictionarySpec.hashCode().toString())
+            var annotations = createAnnotations(gitHash, dictionarySpec.data.hashCode().toString())
 
             kubeClient.createTh2Dictionary(TH2_NAMESPACE, dictionaryName, annotations, dictionarySpec)
             kubeClient.awaitResource<ConfigMap>(TH2_NAMESPACE, "$dictionaryName$DICTIONARY_SUFFIX")
@@ -557,7 +557,7 @@ class IntegrationTest {
             dictionarySpec = Th2DictionarySpec().apply {
                 data = "$DICTIONARY_CONTENT$DICTIONARY_CONTENT"
             }
-            val sourceHash = dictionarySpec.hashCode().toString()
+            val sourceHash = dictionarySpec.data.hashCode().toString()
             annotations = createAnnotations(gitHash, sourceHash)
 
             kubeClient.modifyTh2Dictionary(TH2_NAMESPACE, dictionaryName, annotations, dictionarySpec)
