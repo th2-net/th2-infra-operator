@@ -1,5 +1,5 @@
 /*
- * Copyright 2024-2024 Exactpro (Exactpro Systems Limited)
+ * Copyright 2024-2025 Exactpro (Exactpro Systems Limited)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -29,6 +29,9 @@ import com.exactpro.th2.infraoperator.spec.shared.PrometheusConfiguration
 import com.exactpro.th2.infraoperator.spec.strategy.linkresolver.mq.RabbitMQContext
 import com.exactpro.th2.infraoperator.util.JsonUtils
 import com.fasterxml.jackson.module.kotlin.readValue
+import com.github.dockerjava.api.model.ExposedPort
+import com.github.dockerjava.api.model.PortBinding
+import com.github.dockerjava.api.model.Ports
 import com.rabbitmq.client.AMQP
 import com.rabbitmq.client.Channel
 import com.rabbitmq.client.Connection
@@ -42,12 +45,15 @@ import org.slf4j.LoggerFactory
 import org.testcontainers.containers.RabbitMQContainer
 import org.testcontainers.containers.output.Slf4jLogConsumer
 import org.testcontainers.k3s.K3sContainer
+import org.testcontainers.k3s.K3sContainer.KUBE_SECURE_PORT
+import org.testcontainers.k3s.K3sContainer.RANCHER_WEBHOOK_PORT
 import org.testcontainers.lifecycle.Startable
 import org.testcontainers.utility.DockerImageName
 import java.nio.file.Files
 import java.nio.file.Path
 import java.util.UUID
 import java.util.concurrent.atomic.AtomicLong
+import java.util.function.Consumer
 import kotlin.io.path.absolutePathString
 import kotlin.io.path.createDirectories
 
@@ -88,7 +94,7 @@ fun KubernetesClient.createRabbitMQSecret(
     createSecret(
         namespace,
         "rabbitmq",
-        createAnnotations(gitHash, data),
+        createAnnotations(gitHash, data.hashCode().toString()),
         data,
     )
 }
@@ -102,7 +108,7 @@ fun KubernetesClient.createRabbitMQAppConfigCfgMap(
     createConfigMap(
         namespace,
         OperatorConfig.DEFAULT_RABBITMQ_CONFIGMAP_NAME,
-        createAnnotations(gitHash, content),
+        createAnnotations(gitHash, content.hashCode().toString()),
         mapOf(RabbitMQConfig.CONFIG_MAP_RABBITMQ_PROP_NAME to content),
     )
 }
@@ -115,7 +121,7 @@ fun KubernetesClient.createBookConfigCfgMap(
     createConfigMap(
         namespace,
         BOOK_CONFIG_CM_NAME,
-        createAnnotations(gitHash, book),
+        createAnnotations(gitHash, book.hashCode().toString()),
         mapOf(DEFAULT_BOOK to book),
     )
 }
@@ -128,7 +134,7 @@ fun KubernetesClient.createLoggingCfgMap(
     createConfigMap(
         namespace,
         ConfigMapEventHandler.LOGGING_CM_NAME,
-        createAnnotations(gitHash, data),
+        createAnnotations(gitHash, data.hashCode().toString()),
         data,
     )
 }
@@ -141,7 +147,7 @@ fun KubernetesClient.createMQRouterCfgMap(
     createConfigMap(
         namespace,
         ConfigMapEventHandler.MQ_ROUTER_CM_NAME,
-        createAnnotations(gitHash, data),
+        createAnnotations(gitHash, data.hashCode().toString()),
         data,
     )
 }
@@ -154,7 +160,7 @@ fun KubernetesClient.createGrpcRouterCfgMap(
     createConfigMap(
         namespace,
         ConfigMapEventHandler.GRPC_ROUTER_CM_NAME,
-        createAnnotations(gitHash, data),
+        createAnnotations(gitHash, data.hashCode().toString()),
         data,
     )
 }
@@ -167,7 +173,7 @@ fun KubernetesClient.createCradleManagerCfgMap(
     createConfigMap(
         namespace,
         ConfigMapEventHandler.CRADLE_MANAGER_CM_NAME,
-        createAnnotations(gitHash, data),
+        createAnnotations(gitHash, data.hashCode().toString()),
         data,
     )
 }

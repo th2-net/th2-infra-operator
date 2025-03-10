@@ -1,5 +1,5 @@
 /*
- * Copyright 2024-2024 Exactpro (Exactpro Systems Limited)
+ * Copyright 2024-2025 Exactpro (Exactpro Systems Limited)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -44,6 +44,7 @@ import com.exactpro.th2.infraoperator.operator.StoreHelmTh2Op.EVENT_STORAGE_BOX_
 import com.exactpro.th2.infraoperator.operator.StoreHelmTh2Op.EVENT_STORAGE_PIN_ALIAS
 import com.exactpro.th2.infraoperator.operator.StoreHelmTh2Op.MESSAGE_STORAGE_BOX_ALIAS
 import com.exactpro.th2.infraoperator.operator.manager.impl.Th2DictionaryEventHandler.DICTIONARY_SUFFIX
+import com.exactpro.th2.infraoperator.operator.manager.impl.Th2DictionaryEventHandler.INITIAL_CHECKSUM
 import com.exactpro.th2.infraoperator.spec.Th2CustomResource
 import com.exactpro.th2.infraoperator.spec.box.Th2Box
 import com.exactpro.th2.infraoperator.spec.corebox.Th2CoreBox
@@ -76,6 +77,7 @@ import org.junit.jupiter.api.Timeout
 import org.junit.jupiter.api.io.TempDir
 import org.junit.jupiter.params.ParameterizedTest
 import org.junit.jupiter.params.provider.Arguments
+import org.junit.jupiter.params.provider.CsvSource
 import org.junit.jupiter.params.provider.MethodSource
 import org.junit.jupiter.params.provider.ValueSource
 import org.testcontainers.containers.RabbitMQContainer
@@ -220,6 +222,8 @@ class IntegrationTest {
             clientSpecType: String,
             clientRunAsJob: Boolean
         )
+        abstract fun `dictionary link`(componentName: String, dictionaryName: String)
+        abstract fun `modify linked dictionary`(componentName: String, dictionaryName: String)
 
         protected fun addTest(name: String) {
             val gitHash = RESOURCE_GIT_HASH_COUNTER.incrementAndGet().toString()
@@ -462,6 +466,105 @@ class IntegrationTest {
                 )
             )
         }
+
+        protected fun dictionaryLinkTest(componentName: String, dictionaryName: String) {
+            val gitHash = RESOURCE_GIT_HASH_COUNTER.incrementAndGet().toString()
+
+            val componentSpec = """
+                imageName: $IMAGE
+                imageVersion: $VERSION
+                type: $specType
+                customConfig:
+                  dictionary: ${'$'}{dictionary_link:${dictionaryName}}
+            """.trimIndent()
+
+            val dictionarySpec = """
+                data: $DICTIONARY_CONTENT
+            """.trimIndent()
+            val annotations = createAnnotations(gitHash, dictionarySpec.hashCode().toString())
+
+            kubeClient.createTh2Dictionary(TH2_NAMESPACE, dictionaryName, annotations, dictionarySpec)
+            kubeClient.awaitResource<ConfigMap>(TH2_NAMESPACE, "$dictionaryName$DICTIONARY_SUFFIX").also { configMap ->
+                expectThat(configMap) {
+                    get { metadata }.and {
+                        get { this.annotations } isEqualTo annotations
+                    }
+                    get { data }.isA<Map<String, String>>().and {
+                        hasSize(1)
+                        getValue("$dictionaryName$DICTIONARY_SUFFIX") isEqualTo DICTIONARY_CONTENT
+                    }
+                }
+            }
+
+            val resource = kubeClient.createTh2CustomResource(TH2_NAMESPACE, componentName, gitHash, componentSpec, ::createResources)
+            kubeClient.awaitPhase(TH2_NAMESPACE, componentName, SUCCEEDED, resourceClass)
+            kubeClient.awaitResource<HelmRelease>(TH2_NAMESPACE, extractHashedName(resource)).assertMinCfg(
+                componentName, runAsJob,
+                config = mapOf("dictionary" to "$dictionaryName${DICTIONARY_SUFFIX}"),
+                dictionaries = listOf(
+                    mapOf("checksum" to INITIAL_CHECKSUM, "name" to "$dictionaryName${DICTIONARY_SUFFIX}")
+                )
+            )
+            rabbitMQClient.assertBindings(
+                createEstoreQueue(TH2_NAMESPACE),
+                RABBIT_MQ_V_HOST,
+                setOf(
+                    formatQueue(TH2_NAMESPACE, EVENT_STORAGE_BOX_ALIAS, EVENT_STORAGE_PIN_ALIAS),
+                    formatRoutingKey(TH2_NAMESPACE, componentName, EVENT_STORAGE_PIN_ALIAS),
+                )
+            )
+        }
+
+        protected fun modifyLinkedDictionaryTest(componentName: String, dictionaryName: String) {
+            var gitHash = RESOURCE_GIT_HASH_COUNTER.incrementAndGet().toString()
+
+            val componentSpec = """
+                imageName: $IMAGE
+                imageVersion: $VERSION
+                type: $specType
+                customConfig:
+                  dictionary: ${'$'}{dictionary_link:${dictionaryName}}
+            """.trimIndent()
+
+            var dictionarySpec = """
+                data: $DICTIONARY_CONTENT
+            """.trimIndent()
+            var annotations = createAnnotations(gitHash, dictionarySpec.hashCode().toString())
+
+            kubeClient.createTh2Dictionary(TH2_NAMESPACE, dictionaryName, annotations, dictionarySpec)
+            kubeClient.awaitResource<ConfigMap>(TH2_NAMESPACE, "$dictionaryName$DICTIONARY_SUFFIX")
+
+            val resource = kubeClient.createTh2CustomResource(TH2_NAMESPACE, componentName, gitHash, componentSpec, ::createResources)
+            kubeClient.awaitResource<HelmRelease>(TH2_NAMESPACE, extractHashedName(resource))
+
+            gitHash = RESOURCE_GIT_HASH_COUNTER.incrementAndGet().toString()
+            dictionarySpec = """
+                data: $DICTIONARY_CONTENT$DICTIONARY_CONTENT
+            """.trimIndent()
+            val sourceHash = dictionarySpec.hashCode().toString()
+            annotations = createAnnotations(gitHash, sourceHash)
+
+            kubeClient.modifyTh2Dictionary(TH2_NAMESPACE, dictionaryName, annotations, dictionarySpec)
+            kubeClient.awaitResource<ConfigMap>(TH2_NAMESPACE, "$dictionaryName$DICTIONARY_SUFFIX").also { configMap ->
+                expectThat(configMap) {
+                    get { metadata }.and {
+                        get { this.annotations } isEqualTo annotations
+                    }
+                    get { data }.isA<Map<String, String>>().and {
+                        hasSize(1)
+                        getValue("$dictionaryName$DICTIONARY_SUFFIX") isEqualTo "$DICTIONARY_CONTENT$DICTIONARY_CONTENT"
+                    }
+                }
+            }
+
+            kubeClient.awaitResource<HelmRelease>(TH2_NAMESPACE, extractHashedName(resource)).assertMinCfg(
+                componentName, runAsJob,
+                config = mapOf("dictionary" to "$dictionaryName${DICTIONARY_SUFFIX}"),
+                dictionaries = listOf(
+                    mapOf("checksum" to sourceHash, "name" to "$dictionaryName${DICTIONARY_SUFFIX}")
+                )
+            )
+        }
     }
 
     @Nested
@@ -551,6 +654,27 @@ class IntegrationTest {
             clientSpecType: String,
             clientRunAsJob: Boolean
         ) = grpcLinkTest(clientClass, clientConstructor, clientSpecType, clientRunAsJob)
+
+        @Timeout(30_000)
+        @ParameterizedTest
+        @CsvSource(
+            "th2-core-component,th2-dictionary",
+            "th2-core-component,th2-dictionary-more-than-$NAME_LENGTH_LIMIT-characters",
+            "th2-core-component-more-than-$NAME_LENGTH_LIMIT-characters,th2-dictionary",
+            "th2-core-component-more-than-$NAME_LENGTH_LIMIT-characters,th2-dictionary-more-than-$NAME_LENGTH_LIMIT-characters",
+        )
+        override fun `dictionary link`(componentName: String, dictionaryName: String) = dictionaryLinkTest(componentName, dictionaryName)
+
+        @Timeout(30_000)
+        @ParameterizedTest
+        @CsvSource(
+            "th2-core-component,th2-dictionary",
+            "th2-core-component,th2-dictionary-more-than-$NAME_LENGTH_LIMIT-characters",
+            "th2-core-component-more-than-$NAME_LENGTH_LIMIT-characters,th2-dictionary",
+            "th2-core-component-more-than-$NAME_LENGTH_LIMIT-characters,th2-dictionary-more-than-$NAME_LENGTH_LIMIT-characters",
+        )
+        override fun `modify linked dictionary`(componentName: String, dictionaryName: String) = modifyLinkedDictionaryTest(componentName, dictionaryName)
+
     }
 
     @Nested
@@ -598,6 +722,26 @@ class IntegrationTest {
             clientSpecType: String,
             clientRunAsJob: Boolean
         ) = grpcLinkTest(clientClass, clientConstructor, clientSpecType, clientRunAsJob)
+
+        @Timeout(30_000)
+        @ParameterizedTest
+        @CsvSource(
+            "th2-component,th2-dictionary",
+            "th2-component,th2-dictionary-more-than-$NAME_LENGTH_LIMIT-characters",
+            "th2-component-more-than-$NAME_LENGTH_LIMIT-characters,th2-dictionary",
+            "th2-component-more-than-$NAME_LENGTH_LIMIT-characters,th2-dictionary-more-than-$NAME_LENGTH_LIMIT-characters",
+        )
+        override fun `dictionary link`(componentName: String, dictionaryName: String) = dictionaryLinkTest(componentName, dictionaryName)
+
+        @Timeout(30_000)
+        @ParameterizedTest
+        @CsvSource(
+            "th2-component,th2-dictionary",
+            "th2-component,th2-dictionary-more-than-$NAME_LENGTH_LIMIT-characters",
+            "th2-component-more-than-$NAME_LENGTH_LIMIT-characters,th2-dictionary",
+            "th2-component-more-than-$NAME_LENGTH_LIMIT-characters,th2-dictionary-more-than-$NAME_LENGTH_LIMIT-characters",
+        )
+        override fun `modify linked dictionary`(componentName: String, dictionaryName: String) = modifyLinkedDictionaryTest(componentName, dictionaryName)
     }
 
     @Nested
@@ -645,6 +789,26 @@ class IntegrationTest {
             clientSpecType: String,
             clientRunAsJob: Boolean
         ) = grpcLinkTest(clientClass, clientConstructor, clientSpecType, clientRunAsJob)
+
+        @Timeout(30_000)
+        @ParameterizedTest
+        @CsvSource(
+            "th2-job,th2-dictionary",
+            "th2-job,th2-dictionary-more-than-$NAME_LENGTH_LIMIT-characters",
+            "th2-job-more-than-$NAME_LENGTH_LIMIT-characters,th2-dictionary",
+            "th2-job-more-than-$NAME_LENGTH_LIMIT-characters,th2-dictionary-more-than-$NAME_LENGTH_LIMIT-characters",
+        )
+        override fun `dictionary link`(componentName: String, dictionaryName: String) = dictionaryLinkTest(componentName, dictionaryName)
+
+        @Timeout(30_000)
+        @ParameterizedTest
+        @CsvSource(
+            "th2-job,th2-dictionary",
+            "th2-job,th2-dictionary-more-than-$NAME_LENGTH_LIMIT-characters",
+            "th2-job-more-than-$NAME_LENGTH_LIMIT-characters,th2-dictionary",
+            "th2-job-more-than-$NAME_LENGTH_LIMIT-characters,th2-dictionary-more-than-$NAME_LENGTH_LIMIT-characters",
+        )
+        override fun `modify linked dictionary`(componentName: String, dictionaryName: String) = modifyLinkedDictionaryTest(componentName, dictionaryName)
     }
 
     @Nested
@@ -747,6 +911,8 @@ class IntegrationTest {
             runAsJob: Boolean,
             queues: Map<String, Map<String, Any>> = emptyMap(),
             services: Map<String, Map<String, Any>> = emptyMap(),
+            config: Map<String, Any?> = emptyMap(),
+            dictionaries: List<Map<String, String>> = emptyList(),
         ) {
             expectThat(componentValuesSection) {
                 getValue(BOOK_CONFIG_ALIAS).isA<Map<String, Any?>>().hasSize(1).and {
@@ -756,8 +922,8 @@ class IntegrationTest {
                     getValue(CHECKSUM_ALIAS).isNotNull()
                     getValue(CONFIG_ALIAS).isNull() // FIXME: shouldn't be null
                 }
-                getValue(CUSTOM_CONFIG_ALIAS).isA<Map<String, Any?>>().isEmpty()
-                getValue(DICTIONARIES_ALIAS).isA<List<Any?>>().isEmpty() // FIXME
+                getValue(CUSTOM_CONFIG_ALIAS).isA<Map<String, Any?>>() isEqualTo config
+                getValue(DICTIONARIES_ALIAS).isA<List<Map<String, String>>>() isEqualTo dictionaries
                 getValue(PULL_SECRETS_ALIAS).isA<List<Any?>>().isEmpty() // FIXME
                 getValue(EXTENDED_SETTINGS_ALIAS).isA<Map<String, Any?>>().isEmpty()
                 verifyGrpcCfg(services)

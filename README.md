@@ -144,6 +144,9 @@ openshift:
 
 ## Release notes
 
+### 4.7.2
++ Fixed the problem infra-operator doesn't restart component with name longer than 26 character when related dictionary is updated
+
 ### 4.7.1
 + Fixed incorrect java entrypoint problem
 

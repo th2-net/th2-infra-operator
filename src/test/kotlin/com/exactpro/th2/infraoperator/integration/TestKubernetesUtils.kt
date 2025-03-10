@@ -1,5 +1,5 @@
 /*
- * Copyright 2024-2024 Exactpro (Exactpro Systems Limited)
+ * Copyright 2024-2025 Exactpro (Exactpro Systems Limited)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -197,13 +197,26 @@ fun KubernetesClient.createTh2Dictionary(
     ).create()
 }
 
+fun KubernetesClient.modifyTh2Dictionary(
+    namespace: String,
+    name: String,
+    annotations: Map<String, String>,
+    spec: String,
+): Th2Dictionary = resources(Th2Dictionary::class.java).inNamespace(namespace).withName(name).get().apply {
+    metadata.annotations = annotations
+    metadata.generation += 1
+    this.spec = YAML_MAPPER.readValue(spec, Th2DictionarySpec::class.java)
+}.also {
+    resource(it).update()
+}
+
 fun createAnnotations(
     gitHash: String,
-    sourceHash: Any,
+    sourceHash: String,
 ) = mapOf(
     KEY_DETECTION_TIME to System.currentTimeMillis().toString(),
     GIT_COMMIT_HASH to gitHash,
-    KEY_SOURCE_HASH to sourceHash.hashCode().toString(),
+    KEY_SOURCE_HASH to sourceHash,
 )
 
 private fun Deletable.awaitDeleteResource(
