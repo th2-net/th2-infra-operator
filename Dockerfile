@@ -1,4 +1,4 @@
-FROM gradle:8.11.1-jdk11 AS build
+FROM gradle:8.11.1-jdk21 AS build
 ARG app_version=0.0.0
 COPY ./ .
 RUN gradle --no-daemon clean build dockerPrepare -Prelease_version=${release_version}
