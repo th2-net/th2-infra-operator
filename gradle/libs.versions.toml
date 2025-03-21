@@ -1,5 +1,5 @@
 [versions]
-kotlin = "1.8.22"
+kotlin = "2.1.20"
 th2-plugin = "0.2.3"
 jupiter = "5.10.3"
 okhttp3 = "4.12.0"
