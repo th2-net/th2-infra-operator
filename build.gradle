@@ -32,12 +32,6 @@ dependencies {
     implementation "org.apache.commons:commons-text"
 
     implementation libs.kubernetes.client
-    implementation(libs.okhttp) {
-        because "okhttp:3.12.12 has vulnerabilities"
-    }
-    implementation(libs.logging.interceptor) {
-        because "logging-interceptor:3.12.12 has vulnerabilities"
-    }
 
     implementation "com.rabbitmq:amqp-client"
     implementation libs.http.client
@@ -63,7 +57,6 @@ dependencies {
     testImplementation libs.junit.jupiter
     testImplementation libs.junit.jupiter.params
     testImplementation "org.jetbrains.kotlin:kotlin-test-junit5"
-    testImplementation libs.bcpkix.jdk18on
     testImplementation libs.awaitility
     testImplementation libs.strikt.core
 
