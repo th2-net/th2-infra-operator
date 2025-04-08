@@ -50,7 +50,6 @@ import org.slf4j.LoggerFactory;
 import java.io.IOException;
 import java.net.MalformedURLException;
 import java.net.URISyntaxException;
-import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
@@ -75,7 +74,8 @@ public final class RabbitMQContext implements AutoCloseable {
     private static final Logger LOGGER = LoggerFactory.getLogger(RabbitMQContext.class);
 
     private static final List<String> USER_TAGS = List.of(
-            "monitoring" // this tag is required for interact with RabbitMQ management plugin https://www.rabbitmq.com/docs/management
+            // this tag is required for interact with RabbitMQ management https://www.rabbitmq.com/docs/management
+            "monitoring"
     );
 
     private static final int RETRY_DELAY = 120;
