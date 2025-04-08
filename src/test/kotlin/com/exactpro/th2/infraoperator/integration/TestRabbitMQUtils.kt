@@ -1,5 +1,5 @@
 /*
- * Copyright 2024-2024 Exactpro (Exactpro Systems Limited)
+ * Copyright 2024-2025 Exactpro (Exactpro Systems Limited)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -47,7 +47,7 @@ fun Client.assertUser(
 
     val userInfo = users.firstOrNull { it.name == user }
     assertNotNull(userInfo, "User '$user' isn't found")
-    assertEquals(emptyList(), userInfo.tags, "User '$user' has tags")
+    assertEquals(listOf("monitoring"), userInfo.tags, "User '$user' has unknown tags")
     val userPermissions = this.permissions.firstOrNull { it.user == user }
     assertNotNull(userPermissions, "User permission '$user' isn't found")
     assertEquals(vHost, userPermissions.vhost, "User permission '$user' has incorrect vHost")
