@@ -11,7 +11,7 @@ kubernetes-client = { group = "io.fabric8", name = "kubernetes-client", version 
 http-client = { group = "com.rabbitmq", name = "http-client", version = "5.3.0" }
 java-uuid-generator = { group = "com.fasterxml.uuid", name = "java-uuid-generator", version = "5.1.0" }
 
-mockito-core = { group = "org.mockito", name = "mockito-core", version = "5.17.0" }
+mockito-core = { group = "org.mockito", name = "mockito-core", version = "5.18.0" }
 mockito-kotlin = { group = "org.mockito.kotlin", name = "mockito-kotlin", version = "5.4.0" }
 junit-jupiter = { group = "org.junit.jupiter", name = "junit-jupiter", version.ref = "jupiter" }
 junit-jupiter-params = { group = "org.junit.jupiter", name = "junit-jupiter-params", version.ref = "jupiter" }
