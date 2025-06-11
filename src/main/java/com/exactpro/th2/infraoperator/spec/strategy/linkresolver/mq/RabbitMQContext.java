@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2024 Exactpro (Exactpro Systems Limited)
+ * Copyright 2020-2025 Exactpro (Exactpro Systems Limited)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -50,7 +50,6 @@ import org.slf4j.LoggerFactory;
 import java.io.IOException;
 import java.net.MalformedURLException;
 import java.net.URISyntaxException;
-import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
@@ -73,6 +72,11 @@ import static org.apache.commons.lang3.StringUtils.isNoneBlank;
 public final class RabbitMQContext implements AutoCloseable {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(RabbitMQContext.class);
+
+    private static final List<String> USER_TAGS = List.of(
+            // this tag is required for interact with RabbitMQ management https://www.rabbitmq.com/docs/management
+            "monitoring"
+    );
 
     private static final int RETRY_DELAY = 120;
 
@@ -139,12 +143,12 @@ public final class RabbitMQContext implements AutoCloseable {
 
         try {
             if (rmqClient.getVhost(vHostName) == null) {
-                LOGGER.error("vHost: \"{}\" is not present", vHostName);
+                LOGGER.error("vHost: \"{}\" is not present for add \"{}\" user", vHostName, namespace);
                 return;
             }
 
-            rmqClient.createUser(namespace, password.toCharArray(), new ArrayList<>());
-            LOGGER.info("Created user \"{}\" on vHost \"{}\"", namespace, vHostName);
+            rmqClient.createUser(namespace, password.toCharArray(), USER_TAGS);
+            LOGGER.info("Created user \"{}\" on vHost \"{}\" with tags {}", namespace, vHostName, USER_TAGS);
 
             // set permissions
             RabbitMQNamespacePermissions rabbitMQNamespacePermissions = managementConfig.getSchemaPermissions();
@@ -201,7 +205,7 @@ public final class RabbitMQContext implements AutoCloseable {
         String vHostName = managementConfig.getVhostName();
 
         if (rmqClient.getVhost(vHostName) == null) {
-            LOGGER.error("vHost: \"{}\" is not present", vHostName);
+            LOGGER.error("vHost: \"{}\" is not present for removing \"{}\" user", vHostName, namespace);
             return;
         }
 
