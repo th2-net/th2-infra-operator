@@ -17,7 +17,7 @@ junit-jupiter = { group = "org.junit.jupiter", name = "junit-jupiter", version.r
 junit-jupiter-params = { group = "org.junit.jupiter", name = "junit-jupiter-params", version.ref = "jupiter" }
 
 strikt-core = { group = "io.strikt", name = "strikt-core", version.ref = "strikt" }
-testcontainers-bom = { group = "org.testcontainers", name = "testcontainers-bom", version = "1.21.1" }
+testcontainers-bom = { group = "org.testcontainers", name = "testcontainers-bom", version = "1.21.2" }
 awaitility = { group = "org.awaitility", name = "awaitility", version = "4.3.0" }
 
 detekt-formatting = { group = "io.gitlab.arturbosch.detekt", name = "detekt-formatting", version.ref = "detekt" }
