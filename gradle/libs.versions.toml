@@ -1,7 +1,7 @@
 [versions]
 kotlin = "2.2.0"
 th2-plugin = "0.2.4"
-jupiter = "5.13.1"
+jupiter = "5.13.2"
 detekt = "1.23.8"
 strikt = "0.34.1"
 
