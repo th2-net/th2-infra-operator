@@ -204,6 +204,7 @@ fun createRabbitMQConfig(
     user: String,
 ) = RabbitMQConfig(
     rabbitMQ.amqpPort,
+    rabbitMQ.httpPort,
     rabbitMQ.host,
     vHost,
     exchange,
