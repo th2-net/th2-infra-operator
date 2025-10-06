@@ -144,6 +144,16 @@ openshift:
 
 ## Release notes
 
+### 4.9.0
+
++ Operator creates RabbitMQ user related to namespace with `monitoring` tag.
++ Updated:
+  + th2 gradle plugin: `0.2.4` (bom: `4.11.0`)
+  + kotlin: `2.1.20`
+  + kotlin-logging: `7.0.6`
+  + kubernetes-client: `7.1.0`
+  + rabbitmq-http-client: `5.3.0` 
+
 ### 4.8.0
 + Fixed the problem infra-operator doesn't restart component with name longer than 26 character when related dictionary is updated
 + Updated:
