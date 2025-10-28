@@ -106,5 +106,5 @@ tasks.register("integrationTest", Test) {
 }
 
 dependencyCheck {
-    skipConfigurations += "checkstyle"
+    getSkipConfigurations().add("checkstyle")
 }
