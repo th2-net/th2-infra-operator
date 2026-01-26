@@ -32,12 +32,6 @@ dependencies {
     implementation "org.apache.commons:commons-text"
 
     implementation libs.kubernetes.client
-    implementation(libs.vertx.core) { // remove after update kubernetes.client
-        because "4.5.21 version has CVE-2026-1002, CVE-2025-11965, CVE-2025-11966"
-    }
-    implementation(libs.vertx.auth.common) { // remove after update kubernetes.client
-        because "4.5.21 version has CVE-2025-11965, CVE-2025-11966"
-    }
 
     implementation "com.rabbitmq:amqp-client"
     implementation libs.http.client
