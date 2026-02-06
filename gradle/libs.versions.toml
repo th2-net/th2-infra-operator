@@ -1,5 +1,5 @@
 [versions]
-kotlin = "2.3.0"
+kotlin = "2.3.10"
 th2-plugin = "0.3.14"
 jupiter = "5.14.2"
 detekt = "1.23.8"
