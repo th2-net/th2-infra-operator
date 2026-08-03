@@ -103,8 +103,28 @@ tasks.register("integrationTest", Test) {
     testLogging {
         showStandardStreams = true
     }
+
+    if (isPodmanInstalled()) {
+        environment("DOCKER_HOST", "unix:///run/user/${getUid()}/podman/podman.sock")
+        environment("TESTCONTAINERS_RYUK_DISABLED", "true")
+    }
 }
 
 dependencyCheck {
     getSkipConfigurations().add("checkstyle")
+}
+
+static def isPodmanInstalled() {
+    try {
+        def process = new ProcessBuilder("podman", "--version").start()
+        process.waitFor()
+        return process.exitValue() == 0
+    } catch (IOException ignored) {
+        println("podman isn't installed")
+        return false
+    }
+}
+
+static def getUid() {
+    new ProcessBuilder("id", "-u").start().inputStream.text.trim()
 }

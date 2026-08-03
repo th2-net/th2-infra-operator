@@ -144,6 +144,18 @@ openshift:
 
 ## Release notes
 
+### 4.8.1
++ Fixed:
+  + [[GH-225] th2-infra-operator: queues for disabled components are recreated after a RabbitMQ restart](https://github.com/th2-net/th2-infra-operator/issues/225)
++ Updated:
+  + th2 gradle plugin: `0.3.14` (th2 bom: `4.14.3`)
+  + kotlin: `2.3.10`
+  + kotlin-logging: `7.0.14`
+  + kubernetes-client: `7.5.2`
+  + http-client: `5.4.0`
+  + java-uuid-generator: `5.2.0`
+  + 
+
 ### 4.8.0
 + Fixed the problem infra-operator doesn't restart component with name longer than 26 character when related dictionary is updated
 + Updated:
