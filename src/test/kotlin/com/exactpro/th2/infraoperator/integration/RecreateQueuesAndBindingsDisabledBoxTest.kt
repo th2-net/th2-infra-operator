@@ -44,10 +44,10 @@ import java.util.UUID
  *
  * This reproduces the reported bug: a box that was disabled (its queue correctly torn down) got its
  * queue silently recreated and bound after a RabbitMQ reconnect, because the recreation task iterated
- * every cached box resource without checking `spec.disabled`. Unlike [DisabledBoxQueueReconnectTest],
- * this test does not require a Kubernetes cluster or the operator's real 120s reconnect-retry delay -
- * it calls the exact same production code the reconnect handler calls, just without needing to wait for
- * an actual TCP-level connection drop to be detected.
+ * every cached box resource without checking `spec.disabled`. This test does not require a Kubernetes
+ * cluster or the operator's real 120s reconnect-retry delay - it calls the exact same production code
+ * the reconnect handler calls, just without needing to wait for an actual TCP-level connection drop to
+ * be detected.
  */
 @Tag("integration-test")
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
@@ -143,7 +143,9 @@ class RecreateQueuesAndBindingsDisabledBoxTest {
         val queueName = formatQueue(TH2_NAMESPACE, subName, SUBSCRIBE_PIN)
         val routingKey = formatRoutingKey(TH2_NAMESPACE, pubName, PUBLISH_PIN)
         rabbitMQClient.assertQueue(queueName, RABBIT_MQ_QUEUE_CLASSIC_TYPE, RABBIT_MQ_V_HOST)
-        rabbitMQClient.assertBindings(queueName, RABBIT_MQ_V_HOST, setOf(routingKey))
+        // the default-exchange auto-binding (routing key == queue name) is always present alongside
+        // the explicit one, see IntegrationTest's addTest/disableTest for the same pattern
+        rabbitMQClient.assertBindings(queueName, RABBIT_MQ_V_HOST, setOf(queueName, routingKey))
 
         // user disables the subscriber box: the operator tears its queue down immediately
         // (mirrors HelmReleaseTh2Op.deletedEvent -> DeclareQueueResolver.resolveDelete)
