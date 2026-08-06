@@ -63,6 +63,25 @@ dependencies {
     detektPlugins libs.detekt.formatting
 }
 
+// ---------------------------------------------------------------------------
+// Dependency vulnerability remediation — pins versions above what the th2 BOM
+// / transitive dependencies currently resolve to.
+// See build/reports/dependency-check-report.html for the source findings.
+// ---------------------------------------------------------------------------
+dependencies {
+    implementation platform(libs.jackson.bom)
+    implementation platform(libs.log4j.bom)
+    implementation platform(libs.netty.bom)
+
+    constraints {
+        implementation(libs.amqp.client)
+        implementation(libs.vertx.core)
+        implementation(libs.vertx.auth.common)
+        implementation(libs.vertx.web.client)
+        implementation(libs.vertx.web.common)
+    }
+}
+
 application {
     mainClass.set('com.exactpro.th2.infraoperator.Th2CrdController')
 }
@@ -112,6 +131,7 @@ tasks.register("integrationTest", Test) {
 
 dependencyCheck {
     getSkipConfigurations().add("checkstyle")
+    suppressionFile = "$rootDir/config/dependency-check/suppressions.xml"
 }
 
 static def isPodmanInstalled() {
