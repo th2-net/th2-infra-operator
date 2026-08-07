@@ -33,7 +33,7 @@ import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.TestInstance
 import org.junit.jupiter.api.Timeout
 import org.junit.jupiter.api.io.TempDir
-import org.testcontainers.containers.RabbitMQContainer
+import org.testcontainers.rabbitmq.RabbitMQContainer
 import java.nio.file.Path
 import java.util.UUID
 
@@ -98,42 +98,15 @@ class RecreateQueuesAndBindingsDisabledBoxTest {
 
     @Test
     @Timeout(30_000)
-    fun `reconnect recovery does not recreate a disabled box's queue`() {
+    fun `disabled queue not recreated`() {
         val declareQueueResolver = DeclareQueueResolver(rabbitMQContext)
         val bindQueueLinkResolver = BindQueueLinkResolver(rabbitMQContext)
 
         val pubName = "test-publisher"
         val subName = "test-subscriber"
 
-        val pubResource = th2Box(
-            pubName,
-            """
-            imageName: $IMAGE
-            imageVersion: $VERSION
-            type: th2-codec
-            pins:
-              mq:
-                publishers:
-                - name: $PUBLISH_PIN
-                  attributes: [publish]
-            """.trimIndent(),
-        )
-        val subResource = th2Box(
-            subName,
-            """
-            imageName: $IMAGE
-            imageVersion: $VERSION
-            type: th2-codec
-            pins:
-              mq:
-                subscribers:
-                - name: $SUBSCRIBE_PIN
-                  attributes: [subscribe]
-                  linkTo:
-                  - box: $pubName
-                    pin: $PUBLISH_PIN
-            """.trimIndent(),
-        )
+        val pubResource = th2Box(pubName, publisherSpec())
+        val subResource = th2Box(subName, subscriberSpec(pubName))
 
         // initial rollout: the operator declares + binds the subscriber's queue
         declareQueueResolver.resolveAdd(subResource)
@@ -149,23 +122,7 @@ class RecreateQueuesAndBindingsDisabledBoxTest {
 
         // user disables the subscriber box: the operator tears its queue down immediately
         // (mirrors HelmReleaseTh2Op.deletedEvent -> DeclareQueueResolver.resolveDelete)
-        val disabledSubResource = th2Box(
-            subName,
-            """
-            imageName: $IMAGE
-            imageVersion: $VERSION
-            type: th2-codec
-            disabled: true
-            pins:
-              mq:
-                subscribers:
-                - name: $SUBSCRIBE_PIN
-                  attributes: [subscribe]
-                  linkTo:
-                  - box: $pubName
-                    pin: $PUBLISH_PIN
-            """.trimIndent(),
-        )
+        val disabledSubResource = th2Box(subName, subscriberSpec(pubName, disabled = true))
         declareQueueResolver.resolveDelete(disabledSubResource)
         rabbitMQClient.assertNoQueue(queueName, RABBIT_MQ_V_HOST)
 
@@ -182,6 +139,32 @@ class RecreateQueuesAndBindingsDisabledBoxTest {
         // and unconsumed, accumulating messages forever
         rabbitMQClient.assertNoQueue(queueName, RABBIT_MQ_V_HOST)
     }
+
+    private fun publisherSpec(): String = """
+        imageName: $IMAGE
+        imageVersion: $VERSION
+        type: th2-codec
+        pins:
+          mq:
+            publishers:
+            - name: $PUBLISH_PIN
+              attributes: [publish]
+    """.trimIndent()
+
+    private fun subscriberSpec(pubName: String, disabled: Boolean = false): String = """
+        imageName: $IMAGE
+        imageVersion: $VERSION
+        type: th2-codec
+        ${if (disabled) "disabled: true" else ""}
+        pins:
+          mq:
+            subscribers:
+            - name: $SUBSCRIBE_PIN
+              attributes: [subscribe]
+              linkTo:
+              - box: $pubName
+                pin: $PUBLISH_PIN
+    """.trimIndent()
 
     private fun th2Box(name: String, spec: String): Th2Box = Th2Box().apply {
         metadata = ObjectMeta().apply {

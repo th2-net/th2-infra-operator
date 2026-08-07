@@ -39,10 +39,10 @@ import io.fabric8.kubernetes.client.Config
 import io.fabric8.kubernetes.client.KubernetesClient
 import io.github.oshai.kotlinlogging.KotlinLogging
 import org.slf4j.LoggerFactory
-import org.testcontainers.containers.RabbitMQContainer
 import org.testcontainers.containers.output.Slf4jLogConsumer
 import org.testcontainers.k3s.K3sContainer
 import org.testcontainers.lifecycle.Startable
+import org.testcontainers.rabbitmq.RabbitMQContainer
 import org.testcontainers.utility.DockerImageName
 import java.nio.file.Files
 import java.nio.file.Path
