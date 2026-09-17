@@ -81,8 +81,8 @@ import org.junit.jupiter.params.provider.Arguments
 import org.junit.jupiter.params.provider.CsvSource
 import org.junit.jupiter.params.provider.MethodSource
 import org.junit.jupiter.params.provider.ValueSource
-import org.testcontainers.containers.RabbitMQContainer
 import org.testcontainers.k3s.K3sContainer
+import org.testcontainers.rabbitmq.RabbitMQContainer
 import strikt.api.Assertion
 import strikt.api.expectThat
 import strikt.assertions.getValue
@@ -941,6 +941,7 @@ class IntegrationTest {
             )
         )
 
+        @Suppress("SameParameterValue")
         private fun createGrpcCfg(serverName: String) = mapOf(
             CLIENT_PIN to mapOf(
                 "endpoints" to mapOf(

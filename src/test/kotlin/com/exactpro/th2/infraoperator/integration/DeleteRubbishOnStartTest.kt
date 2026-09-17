@@ -38,8 +38,8 @@ import org.junit.jupiter.api.TestInstance
 import org.junit.jupiter.api.Timeout
 import org.junit.jupiter.api.assertAll
 import org.junit.jupiter.api.io.TempDir
-import org.testcontainers.containers.RabbitMQContainer
 import org.testcontainers.k3s.K3sContainer
+import org.testcontainers.rabbitmq.RabbitMQContainer
 import java.nio.file.Path
 import kotlin.test.Test
 
@@ -232,6 +232,7 @@ class DeleteRubbishOnStartTest {
         }
     }
 
+    @Suppress("SameParameterValue")
     private fun prepareNamespace(gitHash: String, namespace: String) {
         kubeClient.createNamespace(namespace)
         kubeClient.createRabbitMQSecret(namespace, gitHash)

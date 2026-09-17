@@ -63,6 +63,25 @@ dependencies {
     detektPlugins libs.detekt.formatting
 }
 
+// ---------------------------------------------------------------------------
+// Dependency vulnerability remediation — pins versions above what the th2 BOM
+// / transitive dependencies currently resolve to.
+// See build/reports/dependency-check-report.html for the source findings.
+// ---------------------------------------------------------------------------
+dependencies {
+    implementation platform(libs.jackson.bom)
+    implementation platform(libs.log4j.bom)
+    implementation platform(libs.netty.bom)
+
+    constraints {
+        implementation(libs.amqp.client)
+        implementation(libs.vertx.core)
+        implementation(libs.vertx.auth.common)
+        implementation(libs.vertx.web.client)
+        implementation(libs.vertx.web.common)
+    }
+}
+
 application {
     mainClass.set('com.exactpro.th2.infraoperator.Th2CrdController')
 }
@@ -103,8 +122,29 @@ tasks.register("integrationTest", Test) {
     testLogging {
         showStandardStreams = true
     }
+
+    if (isPodmanInstalled()) {
+        environment("DOCKER_HOST", "unix:///run/user/${getUid()}/podman/podman.sock")
+        environment("TESTCONTAINERS_RYUK_DISABLED", "true")
+    }
 }
 
 dependencyCheck {
     getSkipConfigurations().add("checkstyle")
+    suppressionFile = "$rootDir/config/dependency-check/suppressions.xml"
+}
+
+static def isPodmanInstalled() {
+    try {
+        def process = new ProcessBuilder("podman", "--version").start()
+        process.waitFor()
+        return process.exitValue() == 0
+    } catch (IOException ignored) {
+        println("podman isn't installed")
+        return false
+    }
+}
+
+static def getUid() {
+    new ProcessBuilder("id", "-u").start().inputStream.text.trim()
 }

@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2024 Exactpro (Exactpro Systems Limited)
+ * Copyright 2020-2026 Exactpro (Exactpro Systems Limited)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -57,10 +57,12 @@ public class RecreateQueuesAndBindings implements Task {
     @Override
     public void run() {
         rabbitMQContext.getChannel();
-        resources.forEach(resource -> {
-            declareQueueResolver.resolveAdd(resource);
-            bindQueueLinkResolver.resolveDeclaredLinks(resource);
-            bindQueueLinkResolver.resolveHiddenLinks(resource);
-        });
+        resources.stream()
+                .filter(resource -> !resource.getSpec().getDisabled())
+                .forEach(resource -> {
+                    declareQueueResolver.resolveAdd(resource);
+                    bindQueueLinkResolver.resolveDeclaredLinks(resource);
+                    bindQueueLinkResolver.resolveHiddenLinks(resource);
+                });
     }
 }
