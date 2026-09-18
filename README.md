@@ -156,9 +156,9 @@ openshift:
   + http-client: `5.4.0`
   + java-uuid-generator: `5.2.0`
   + amqp-client: `5.34.0`
-  + jackson-bom: `2.22.1`
+  + jackson-bom: `2.22.2`
   + log4j-bom: `2.26.1`
-  + netty-bom: `4.2.17.Final`
+  + netty-bom: `4.2.18.Final`
   + vertx: `4.5.31`
 
 ### 4.8.0

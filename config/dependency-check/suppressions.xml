@@ -27,4 +27,18 @@
       <cpe regex="true">cpe:2\.3:a:jetbrains:kotlin:(1\.6\.10|1\.8\.0|2\.0\.21):.*</cpe>
       <cve>CVE-2020-29582</cve>
    </suppress>
+   <suppress until="2026-10-31Z">
+      <notes><![CDATA[
+      CVE-2026-91776 (unbounded type id cache growth in TypeDeserializer) and CVE-2026-91777
+      (quadratic forward-reference resolution in Collection/Map deserializers) affect
+      jackson-databind 2.22.2. The fixes (FasterXML/jackson-databind#6203, #6204) were merged
+      in September 2026 but no patched release is on Maven Central yet - 2.22.2 is the latest
+      available version (see the `jackson-bom` version in gradle/libs.versions.toml).
+      Re-evaluate once a fixed jackson-bom is released, bump it and remove this suppression.
+      The `until` date makes the check fail again if this is forgotten.
+      ]]></notes>
+      <packageUrl regex="true">^pkg:maven/com\.fasterxml\.jackson\.core/jackson-databind@2\.22\.2$</packageUrl>
+      <cve>CVE-2026-91776</cve>
+      <cve>CVE-2026-91777</cve>
+   </suppress>
 </suppressions>
